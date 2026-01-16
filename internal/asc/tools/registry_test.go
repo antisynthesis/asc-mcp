@@ -121,9 +121,9 @@ func TestRegistry_ListTools(t *testing.T) {
 
 	tools := registry.ListTools()
 
-	// Should have 18 tools total
-	if len(tools) != 18 {
-		t.Errorf("expected 18 tools, got %d", len(tools))
+	// Should have 110 tools total
+	if len(tools) != 110 {
+		t.Errorf("expected 110 tools, got %d", len(tools))
 	}
 
 	// Verify tool structure
@@ -150,6 +150,114 @@ func TestRegistry_ListTools(t *testing.T) {
 		"list_profiles":     false,
 		"list_devices":      false,
 		"register_device":   false,
+		// App Info Localization tools
+		"get_app_infos":                false,
+		"list_app_info_localizations":  false,
+		"get_app_info_localization":    false,
+		"create_app_info_localization": false,
+		"update_app_info_localization": false,
+		"delete_app_info_localization": false,
+		// Version Localization tools
+		"list_version_localizations":  false,
+		"get_version_localization":    false,
+		"create_version_localization": false,
+		"update_version_localization": false,
+		"delete_version_localization": false,
+		// Customer Reviews tools
+		"list_customer_reviews":          false,
+		"get_customer_review":            false,
+		"create_customer_review_response": false,
+		"delete_customer_review_response": false,
+		// In-App Purchase tools
+		"list_in_app_purchases":  false,
+		"get_in_app_purchase":    false,
+		"create_in_app_purchase": false,
+		"update_in_app_purchase": false,
+		"delete_in_app_purchase": false,
+		// Subscription tools
+		"list_subscription_groups": false,
+		"get_subscription_group":   false,
+		"list_subscriptions":       false,
+		"get_subscription":         false,
+		// App Store Version tools
+		"list_app_store_versions":     false,
+		"get_app_store_version":       false,
+		"create_app_store_version":    false,
+		"update_app_store_version":    false,
+		"delete_app_store_version":    false,
+		"submit_app_for_review":       false,
+		"get_app_store_review_detail": false,
+		"create_app_store_review_detail": false,
+		"update_app_store_review_detail": false,
+		// Phased Release tools
+		"get_phased_release":    false,
+		"create_phased_release": false,
+		"update_phased_release": false,
+		"delete_phased_release": false,
+		// Screenshot tools
+		"list_screenshot_sets": false,
+		"list_screenshots":     false,
+		"get_screenshot":       false,
+		"delete_screenshot":    false,
+		"list_preview_sets":    false,
+		"list_previews":        false,
+		"get_preview":          false,
+		"delete_preview":       false,
+		// Pre-Order tools
+		"get_pre_order":    false,
+		"create_pre_order": false,
+		"update_pre_order": false,
+		"delete_pre_order": false,
+		// App Event tools
+		"list_app_events":  false,
+		"get_app_event":    false,
+		"create_app_event": false,
+		"update_app_event": false,
+		"delete_app_event": false,
+		// Analytics tools
+		"list_analytics_report_requests":   false,
+		"get_analytics_report_request":     false,
+		"create_analytics_report_request":  false,
+		"delete_analytics_report_request":  false,
+		"list_analytics_reports":           false,
+		"list_analytics_report_instances":  false,
+		"list_analytics_report_segments":   false,
+		// App Clip tools
+		"list_app_clips":                      false,
+		"get_app_clip":                        false,
+		"list_app_clip_default_experiences":   false,
+		"get_app_clip_default_experience":     false,
+		"list_app_clip_advanced_experiences":  false,
+		"get_app_clip_advanced_experience":    false,
+		// Game Center tools
+		"get_game_center_detail":           false,
+		"list_game_center_achievements":    false,
+		"get_game_center_achievement":      false,
+		"create_game_center_achievement":   false,
+		"update_game_center_achievement":   false,
+		"delete_game_center_achievement":   false,
+		"list_game_center_leaderboards":    false,
+		"get_game_center_leaderboard":      false,
+		"create_game_center_leaderboard":   false,
+		"update_game_center_leaderboard":   false,
+		"delete_game_center_leaderboard":   false,
+		// Xcode Cloud tools
+		"list_ci_products":    false,
+		"get_ci_product":      false,
+		"list_ci_workflows":   false,
+		"get_ci_workflow":     false,
+		"list_ci_build_runs":  false,
+		"get_ci_build_run":    false,
+		"start_ci_build_run":  false,
+		"cancel_ci_build_run": false,
+		// Reports tools
+		"get_sales_report":   false,
+		"get_finance_report": false,
+		// Encryption tools
+		"list_encryption_declarations":            false,
+		"get_encryption_declaration":              false,
+		"create_encryption_declaration":           false,
+		"assign_build_to_encryption_declaration": false,
 	}
 
 	for _, tool := range tools {

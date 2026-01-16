@@ -213,9 +213,9 @@ func TestServer_HandleToolsList(t *testing.T) {
 		t.Error("expected tools to be returned")
 	}
 
-	// Should have 18 tools
-	if len(result.Tools) != 18 {
-		t.Errorf("expected 18 tools, got %d", len(result.Tools))
+	// Should have 110 tools
+	if len(result.Tools) != 110 {
+		t.Errorf("expected 110 tools, got %d", len(result.Tools))
 	}
 }
 
