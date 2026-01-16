@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: asc-mcp
+  namespace: asc-mcp
+  labels:
+    app.kubernetes.io/name: asc-mcp
+    app.kubernetes.io/component: service
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: asc-mcp
+  ports: []
+  # Note: This service has no ports because asc-mcp is an MCP server
+  # that communicates via stdin/stdout, not network ports.
+  # The service exists for service discovery and potential future extensions.

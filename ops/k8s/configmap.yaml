@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: asc-mcp-config
+  namespace: asc-mcp
+  labels:
+    app.kubernetes.io/name: asc-mcp
+    app.kubernetes.io/component: configmap
+data:
+  # Application configuration
+  LOG_LEVEL: "info"
+  # Path where the private key will be mounted
+  ASC_PRIVATE_KEY_PATH: "/etc/asc-mcp/credentials/private-key.p8"
