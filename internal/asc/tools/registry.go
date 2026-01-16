@@ -27,10 +27,53 @@ func NewRegistry(client *api.Client) *Registry {
 		handlers: make(map[string]ToolHandler),
 	}
 
+	// Core app management
 	r.registerAppTools()
 	r.registerBuildTools()
 	r.registerTestFlightTools()
 	r.registerProvisioningTools()
+
+	// Localization
+	r.registerAppInfoLocalizationTools()
+	r.registerVersionLocalizationTools()
+
+	// Customer reviews
+	r.registerCustomerReviewTools()
+
+	// In-app purchases and subscriptions
+	r.registerInAppPurchaseTools()
+	r.registerSubscriptionTools()
+
+	// App Store versions and submissions
+	r.registerVersionSubmissionTools()
+	r.registerPhasedReleaseTools()
+
+	// Screenshots and previews
+	r.registerScreenshotTools()
+
+	// Pre-orders
+	r.registerPreOrderTools()
+
+	// App events
+	r.registerAppEventTools()
+
+	// Analytics
+	r.registerAnalyticsTools()
+
+	// App clips
+	r.registerAppClipTools()
+
+	// Game Center
+	r.registerGameCenterTools()
+
+	// Xcode Cloud
+	r.registerXcodeCloudTools()
+
+	// Reports
+	r.registerReportsTools()
+
+	// Encryption
+	r.registerEncryptionTools()
 
 	return r
 }
