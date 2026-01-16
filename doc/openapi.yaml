@@ -1,0 +1,1005 @@
+openapi: 3.1.0
+info:
+  title: asc-mcp MCP Server API
+  description: |
+    Model Context Protocol (MCP) server for Apple App Store Connect.
+
+    This server implements the MCP protocol (JSON-RPC 2.0 over stdio) and exposes
+    App Store Connect functionality as MCP tools for use with Claude and other
+    MCP-compatible clients.
+
+    Note: This specification documents the MCP tools interface. The actual transport
+    is JSON-RPC 2.0 over stdio, not HTTP REST.
+  version: 1.0.0
+  contact:
+    name: Antisynthesis
+  license:
+    name: MIT
+
+servers:
+  - url: stdio://localhost
+    description: MCP server (stdio transport)
+
+tags:
+  - name: MCP Protocol
+    description: Core MCP protocol methods
+  - name: App Management
+    description: Tools for managing apps
+  - name: Builds
+    description: Tools for managing builds
+  - name: TestFlight
+    description: Tools for TestFlight beta testing
+  - name: Provisioning
+    description: Tools for provisioning profiles, certificates, and devices
+
+paths:
+  /mcp/initialize:
+    post:
+      tags:
+        - MCP Protocol
+      summary: Initialize MCP session
+      description: |
+        Initialize the MCP protocol session. Must be called before any other method.
+        Returns server capabilities and protocol version.
+      operationId: initialize
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitializeRequest'
+      responses:
+        '200':
+          description: Successful initialization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InitializeResponse'
+
+  /mcp/tools/list:
+    post:
+      tags:
+        - MCP Protocol
+      summary: List available tools
+      description: Returns a list of all available MCP tools with their schemas.
+      operationId: toolsList
+      responses:
+        '200':
+          description: List of available tools
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolsListResponse'
+
+  /mcp/tools/call:
+    post:
+      tags:
+        - MCP Protocol
+      summary: Call a tool
+      description: Execute an MCP tool with the provided arguments.
+      operationId: toolsCall
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ToolsCallRequest'
+      responses:
+        '200':
+          description: Tool execution result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToolsCallResponse'
+
+  /tools/list_apps:
+    post:
+      tags:
+        - App Management
+      summary: List all apps
+      description: List all apps in your App Store Connect account.
+      operationId: listApps
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                limit:
+                  type: integer
+                  description: Maximum number of apps to return
+                  default: 50
+      responses:
+        '200':
+          description: List of apps
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppsListResult'
+
+  /tools/get_app:
+    post:
+      tags:
+        - App Management
+      summary: Get app details
+      description: Get detailed information about a specific app by its App Store Connect ID.
+      operationId: getApp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - app_id
+              properties:
+                app_id:
+                  type: string
+                  description: The App Store Connect app ID
+      responses:
+        '200':
+          description: App details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppResult'
+
+  /tools/get_app_versions:
+    post:
+      tags:
+        - App Management
+      summary: Get app versions
+      description: Get all App Store versions for a specific app.
+      operationId: getAppVersions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - app_id
+              properties:
+                app_id:
+                  type: string
+                  description: The App Store Connect app ID
+      responses:
+        '200':
+          description: List of app versions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppVersionsResult'
+
+  /tools/list_builds:
+    post:
+      tags:
+        - Builds
+      summary: List builds
+      description: List builds for your apps. Can filter by app ID.
+      operationId: listBuilds
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                app_id:
+                  type: string
+                  description: Filter builds by app ID
+                limit:
+                  type: integer
+                  description: Maximum number of builds to return
+                  default: 50
+      responses:
+        '200':
+          description: List of builds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildsListResult'
+
+  /tools/get_build:
+    post:
+      tags:
+        - Builds
+      summary: Get build details
+      description: Get detailed information about a specific build by its ID.
+      operationId: getBuild
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - build_id
+              properties:
+                build_id:
+                  type: string
+                  description: The build ID
+      responses:
+        '200':
+          description: Build details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildResult'
+
+  /tools/list_beta_groups:
+    post:
+      tags:
+        - TestFlight
+      summary: List beta groups
+      description: List TestFlight beta groups. Can filter by app ID.
+      operationId: listBetaGroups
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                app_id:
+                  type: string
+                  description: Filter beta groups by app ID
+      responses:
+        '200':
+          description: List of beta groups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BetaGroupsListResult'
+
+  /tools/create_beta_group:
+    post:
+      tags:
+        - TestFlight
+      summary: Create beta group
+      description: Create a new TestFlight beta group for an app.
+      operationId: createBetaGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - app_id
+                - name
+              properties:
+                app_id:
+                  type: string
+                  description: The App Store Connect app ID
+                name:
+                  type: string
+                  description: Name for the beta group
+                public_link_enabled:
+                  type: boolean
+                  description: Whether to enable public link
+                  default: false
+                public_link_limit:
+                  type: integer
+                  description: Maximum number of testers via public link
+      responses:
+        '200':
+          description: Created beta group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BetaGroupResult'
+
+  /tools/delete_beta_group:
+    post:
+      tags:
+        - TestFlight
+      summary: Delete beta group
+      description: Delete a TestFlight beta group.
+      operationId: deleteBetaGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - beta_group_id
+              properties:
+                beta_group_id:
+                  type: string
+                  description: The beta group ID to delete
+      responses:
+        '200':
+          description: Deletion confirmation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResult'
+
+  /tools/list_beta_testers:
+    post:
+      tags:
+        - TestFlight
+      summary: List beta testers
+      description: List TestFlight beta testers. Can filter by beta group ID.
+      operationId: listBetaTesters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                beta_group_id:
+                  type: string
+                  description: Filter testers by beta group ID
+      responses:
+        '200':
+          description: List of beta testers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BetaTestersListResult'
+
+  /tools/invite_beta_tester:
+    post:
+      tags:
+        - TestFlight
+      summary: Invite beta tester
+      description: Invite a new beta tester to TestFlight.
+      operationId: inviteBetaTester
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Tester's email address
+                first_name:
+                  type: string
+                  description: Tester's first name
+                last_name:
+                  type: string
+                  description: Tester's last name
+                beta_group_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: Beta groups to add the tester to
+      responses:
+        '200':
+          description: Invited beta tester
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BetaTesterResult'
+
+  /tools/remove_beta_tester:
+    post:
+      tags:
+        - TestFlight
+      summary: Remove beta tester
+      description: Remove a beta tester from TestFlight.
+      operationId: removeBetaTester
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - beta_tester_id
+              properties:
+                beta_tester_id:
+                  type: string
+                  description: The beta tester ID to remove
+      responses:
+        '200':
+          description: Removal confirmation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResult'
+
+  /tools/add_tester_to_group:
+    post:
+      tags:
+        - TestFlight
+      summary: Add tester to group
+      description: Add an existing beta tester to a beta group.
+      operationId: addTesterToGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - beta_tester_id
+                - beta_group_id
+              properties:
+                beta_tester_id:
+                  type: string
+                  description: The beta tester ID
+                beta_group_id:
+                  type: string
+                  description: The beta group ID
+      responses:
+        '200':
+          description: Addition confirmation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResult'
+
+  /tools/list_bundle_ids:
+    post:
+      tags:
+        - Provisioning
+      summary: List bundle IDs
+      description: List all registered bundle IDs in your App Store Connect account.
+      operationId: listBundleIds
+      responses:
+        '200':
+          description: List of bundle IDs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BundleIdsListResult'
+
+  /tools/get_bundle_id:
+    post:
+      tags:
+        - Provisioning
+      summary: Get bundle ID details
+      description: Get detailed information about a specific bundle ID.
+      operationId: getBundleId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bundle_id_id
+              properties:
+                bundle_id_id:
+                  type: string
+                  description: The bundle ID resource identifier
+      responses:
+        '200':
+          description: Bundle ID details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BundleIdResult'
+
+  /tools/list_certificates:
+    post:
+      tags:
+        - Provisioning
+      summary: List certificates
+      description: List all signing certificates in your App Store Connect account.
+      operationId: listCertificates
+      responses:
+        '200':
+          description: List of certificates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificatesListResult'
+
+  /tools/list_profiles:
+    post:
+      tags:
+        - Provisioning
+      summary: List provisioning profiles
+      description: List all provisioning profiles in your App Store Connect account.
+      operationId: listProfiles
+      responses:
+        '200':
+          description: List of provisioning profiles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfilesListResult'
+
+  /tools/list_devices:
+    post:
+      tags:
+        - Provisioning
+      summary: List devices
+      description: List all registered devices in your App Store Connect account.
+      operationId: listDevices
+      responses:
+        '200':
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevicesListResult'
+
+  /tools/register_device:
+    post:
+      tags:
+        - Provisioning
+      summary: Register device
+      description: Register a new device for development or ad hoc distribution.
+      operationId: registerDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - udid
+                - platform
+              properties:
+                name:
+                  type: string
+                  description: Device name
+                udid:
+                  type: string
+                  description: Device UDID
+                platform:
+                  type: string
+                  enum:
+                    - IOS
+                    - MAC_OS
+                  description: Device platform
+      responses:
+        '200':
+          description: Registered device
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceResult'
+
+components:
+  schemas:
+    InitializeRequest:
+      type: object
+      required:
+        - jsonrpc
+        - id
+        - method
+        - params
+      properties:
+        jsonrpc:
+          type: string
+          const: "2.0"
+        id:
+          oneOf:
+            - type: string
+            - type: integer
+        method:
+          type: string
+          const: initialize
+        params:
+          type: object
+          required:
+            - protocolVersion
+            - capabilities
+            - clientInfo
+          properties:
+            protocolVersion:
+              type: string
+              description: MCP protocol version
+            capabilities:
+              type: object
+              description: Client capabilities
+            clientInfo:
+              type: object
+              required:
+                - name
+                - version
+              properties:
+                name:
+                  type: string
+                version:
+                  type: string
+
+    InitializeResponse:
+      type: object
+      required:
+        - jsonrpc
+        - id
+        - result
+      properties:
+        jsonrpc:
+          type: string
+          const: "2.0"
+        id:
+          oneOf:
+            - type: string
+            - type: integer
+        result:
+          type: object
+          required:
+            - protocolVersion
+            - capabilities
+            - serverInfo
+          properties:
+            protocolVersion:
+              type: string
+            capabilities:
+              type: object
+              properties:
+                tools:
+                  type: object
+            serverInfo:
+              type: object
+              properties:
+                name:
+                  type: string
+                version:
+                  type: string
+
+    ToolsListResponse:
+      type: object
+      required:
+        - jsonrpc
+        - id
+        - result
+      properties:
+        jsonrpc:
+          type: string
+          const: "2.0"
+        id:
+          oneOf:
+            - type: string
+            - type: integer
+        result:
+          type: object
+          required:
+            - tools
+          properties:
+            tools:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tool'
+
+    Tool:
+      type: object
+      required:
+        - name
+        - description
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        inputSchema:
+          type: object
+          description: JSON Schema for tool input
+
+    ToolsCallRequest:
+      type: object
+      required:
+        - jsonrpc
+        - id
+        - method
+        - params
+      properties:
+        jsonrpc:
+          type: string
+          const: "2.0"
+        id:
+          oneOf:
+            - type: string
+            - type: integer
+        method:
+          type: string
+          const: tools/call
+        params:
+          type: object
+          required:
+            - name
+          properties:
+            name:
+              type: string
+              description: Tool name to call
+            arguments:
+              type: object
+              description: Tool arguments
+
+    ToolsCallResponse:
+      type: object
+      required:
+        - jsonrpc
+        - id
+        - result
+      properties:
+        jsonrpc:
+          type: string
+          const: "2.0"
+        id:
+          oneOf:
+            - type: string
+            - type: integer
+        result:
+          type: object
+          properties:
+            content:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - text
+                  text:
+                    type: string
+            isError:
+              type: boolean
+
+    AppsListResult:
+      type: object
+      properties:
+        apps:
+          type: array
+          items:
+            $ref: '#/components/schemas/App'
+
+    App:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        bundleId:
+          type: string
+        sku:
+          type: string
+        primaryLocale:
+          type: string
+
+    AppResult:
+      type: object
+      properties:
+        app:
+          $ref: '#/components/schemas/App'
+
+    AppVersionsResult:
+      type: object
+      properties:
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AppVersion'
+
+    AppVersion:
+      type: object
+      properties:
+        id:
+          type: string
+        versionString:
+          type: string
+        platform:
+          type: string
+        appStoreState:
+          type: string
+
+    BuildsListResult:
+      type: object
+      properties:
+        builds:
+          type: array
+          items:
+            $ref: '#/components/schemas/Build'
+
+    Build:
+      type: object
+      properties:
+        id:
+          type: string
+        version:
+          type: string
+        processingState:
+          type: string
+        uploadedDate:
+          type: string
+          format: date-time
+        expirationDate:
+          type: string
+          format: date-time
+
+    BuildResult:
+      type: object
+      properties:
+        build:
+          $ref: '#/components/schemas/Build'
+
+    BetaGroupsListResult:
+      type: object
+      properties:
+        betaGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/BetaGroup'
+
+    BetaGroup:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        publicLinkEnabled:
+          type: boolean
+        publicLinkLimit:
+          type: integer
+        testerCount:
+          type: integer
+
+    BetaGroupResult:
+      type: object
+      properties:
+        betaGroup:
+          $ref: '#/components/schemas/BetaGroup'
+
+    BetaTestersListResult:
+      type: object
+      properties:
+        betaTesters:
+          type: array
+          items:
+            $ref: '#/components/schemas/BetaTester'
+
+    BetaTester:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        inviteType:
+          type: string
+        state:
+          type: string
+
+    BetaTesterResult:
+      type: object
+      properties:
+        betaTester:
+          $ref: '#/components/schemas/BetaTester'
+
+    BundleIdsListResult:
+      type: object
+      properties:
+        bundleIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/BundleId'
+
+    BundleId:
+      type: object
+      properties:
+        id:
+          type: string
+        identifier:
+          type: string
+        name:
+          type: string
+        platform:
+          type: string
+        seedId:
+          type: string
+
+    BundleIdResult:
+      type: object
+      properties:
+        bundleId:
+          $ref: '#/components/schemas/BundleId'
+
+    CertificatesListResult:
+      type: object
+      properties:
+        certificates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Certificate'
+
+    Certificate:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        certificateType:
+          type: string
+        serialNumber:
+          type: string
+        expirationDate:
+          type: string
+          format: date-time
+
+    ProfilesListResult:
+      type: object
+      properties:
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Profile'
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        profileType:
+          type: string
+        profileState:
+          type: string
+        uuid:
+          type: string
+        expirationDate:
+          type: string
+          format: date-time
+
+    DevicesListResult:
+      type: object
+      properties:
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
+
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        udid:
+          type: string
+        model:
+          type: string
+        platform:
+          type: string
+        status:
+          type: string
+
+    DeviceResult:
+      type: object
+      properties:
+        device:
+          $ref: '#/components/schemas/Device'
+
+    SuccessResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+  securitySchemes:
+    appStoreConnect:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        App Store Connect API uses JWT tokens signed with ES256.
+        The token is generated automatically by the MCP server using
+        configured credentials (ASC_ISSUER_ID, ASC_KEY_ID, ASC_PRIVATE_KEY_PATH).
+
+security:
+  - appStoreConnect: []
