@@ -2184,3 +2184,1632 @@ type AppEncryptionDeclarationCreateAttributes struct {
 type AppEncryptionDeclarationCreateRelationships struct {
 	App RelationshipData `json:"app"`
 }
+
+// User types
+
+// UsersResponse represents a list of users.
+type UsersResponse struct {
+	Data     []User             `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// UserResponse represents a single user.
+type UserResponse struct {
+	Data     User  `json:"data"`
+	Included []any `json:"included,omitempty"`
+}
+
+// User represents an App Store Connect user.
+type User struct {
+	Type       string         `json:"type"`
+	ID         string         `json:"id"`
+	Attributes UserAttributes `json:"attributes"`
+}
+
+// UserAttributes contains user attributes.
+type UserAttributes struct {
+	Username             string   `json:"username,omitempty"`
+	FirstName            string   `json:"firstName,omitempty"`
+	LastName             string   `json:"lastName,omitempty"`
+	Email                string   `json:"email,omitempty"`
+	PreferredCurrencyTerritory string `json:"preferredCurrencyTerritory,omitempty"`
+	AgreedToTerms        bool     `json:"agreedToTerms,omitempty"`
+	Roles                []string `json:"roles,omitempty"`
+	AllAppsVisible       bool     `json:"allAppsVisible,omitempty"`
+	ProvisioningAllowed  bool     `json:"provisioningAllowed,omitempty"`
+	ExpirationDate       *time.Time `json:"expirationDate,omitempty"`
+}
+
+// UserUpdateRequest represents a request to update a user.
+type UserUpdateRequest struct {
+	Data UserUpdateData `json:"data"`
+}
+
+// UserUpdateData contains the data for updating a user.
+type UserUpdateData struct {
+	Type          string                  `json:"type"`
+	ID            string                  `json:"id"`
+	Attributes    UserUpdateAttributes    `json:"attributes"`
+	Relationships *UserUpdateRelationships `json:"relationships,omitempty"`
+}
+
+// UserUpdateAttributes contains attributes for updating a user.
+type UserUpdateAttributes struct {
+	Roles               []string `json:"roles,omitempty"`
+	AllAppsVisible      *bool    `json:"allAppsVisible,omitempty"`
+	ProvisioningAllowed *bool    `json:"provisioningAllowed,omitempty"`
+}
+
+// UserUpdateRelationships contains relationships for updating a user.
+type UserUpdateRelationships struct {
+	VisibleApps *RelationshipDataList `json:"visibleApps,omitempty"`
+}
+
+// UserInvitationsResponse represents a list of user invitations.
+type UserInvitationsResponse struct {
+	Data     []UserInvitation   `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// UserInvitationResponse represents a single user invitation.
+type UserInvitationResponse struct {
+	Data     UserInvitation `json:"data"`
+	Included []any          `json:"included,omitempty"`
+}
+
+// UserInvitation represents a user invitation.
+type UserInvitation struct {
+	Type       string                   `json:"type"`
+	ID         string                   `json:"id"`
+	Attributes UserInvitationAttributes `json:"attributes"`
+}
+
+// UserInvitationAttributes contains user invitation attributes.
+type UserInvitationAttributes struct {
+	Email               string     `json:"email,omitempty"`
+	FirstName           string     `json:"firstName,omitempty"`
+	LastName            string     `json:"lastName,omitempty"`
+	ExpirationDate      *time.Time `json:"expirationDate,omitempty"`
+	Roles               []string   `json:"roles,omitempty"`
+	AllAppsVisible      bool       `json:"allAppsVisible,omitempty"`
+	ProvisioningAllowed bool       `json:"provisioningAllowed,omitempty"`
+}
+
+// UserInvitationCreateRequest represents a request to create a user invitation.
+type UserInvitationCreateRequest struct {
+	Data UserInvitationCreateData `json:"data"`
+}
+
+// UserInvitationCreateData contains the data for creating a user invitation.
+type UserInvitationCreateData struct {
+	Type          string                            `json:"type"`
+	Attributes    UserInvitationCreateAttributes    `json:"attributes"`
+	Relationships *UserInvitationCreateRelationships `json:"relationships,omitempty"`
+}
+
+// UserInvitationCreateAttributes contains attributes for creating a user invitation.
+type UserInvitationCreateAttributes struct {
+	Email               string   `json:"email"`
+	FirstName           string   `json:"firstName"`
+	LastName            string   `json:"lastName"`
+	Roles               []string `json:"roles"`
+	AllAppsVisible      bool     `json:"allAppsVisible,omitempty"`
+	ProvisioningAllowed bool     `json:"provisioningAllowed,omitempty"`
+}
+
+// UserInvitationCreateRelationships contains relationships for creating a user invitation.
+type UserInvitationCreateRelationships struct {
+	VisibleApps *RelationshipDataList `json:"visibleApps,omitempty"`
+}
+
+// App Pricing types
+
+// AppPriceSchedulesResponse represents app price schedules.
+type AppPriceSchedulesResponse struct {
+	Data     []AppPriceSchedule `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// AppPriceScheduleResponse represents a single app price schedule.
+type AppPriceScheduleResponse struct {
+	Data     AppPriceSchedule `json:"data"`
+	Included []any            `json:"included,omitempty"`
+}
+
+// AppPriceSchedule represents an app price schedule.
+type AppPriceSchedule struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
+}
+
+// AppPricePointsResponse represents a list of app price points.
+type AppPricePointsResponse struct {
+	Data     []AppPricePoint    `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// AppPricePointResponse represents a single app price point.
+type AppPricePointResponse struct {
+	Data     AppPricePoint `json:"data"`
+	Included []any         `json:"included,omitempty"`
+}
+
+// AppPricePoint represents an app price point.
+type AppPricePoint struct {
+	Type       string                  `json:"type"`
+	ID         string                  `json:"id"`
+	Attributes AppPricePointAttributes `json:"attributes"`
+}
+
+// AppPricePointAttributes contains app price point attributes.
+type AppPricePointAttributes struct {
+	CustomerPrice string `json:"customerPrice,omitempty"`
+	Proceeds      string `json:"proceeds,omitempty"`
+}
+
+// TerritoryResponse represents a territory.
+type TerritoryResponse struct {
+	Data     Territory `json:"data"`
+	Included []any     `json:"included,omitempty"`
+}
+
+// TerritoriesResponse represents a list of territories.
+type TerritoriesResponse struct {
+	Data     []Territory        `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// Territory represents a territory.
+type Territory struct {
+	Type       string              `json:"type"`
+	ID         string              `json:"id"`
+	Attributes TerritoryAttributes `json:"attributes"`
+}
+
+// TerritoryAttributes contains territory attributes.
+type TerritoryAttributes struct {
+	Currency string `json:"currency,omitempty"`
+}
+
+// App Availability types
+
+// AppAvailabilityResponse represents app availability.
+type AppAvailabilityResponse struct {
+	Data     AppAvailability `json:"data"`
+	Included []any           `json:"included,omitempty"`
+}
+
+// AppAvailability represents app availability.
+type AppAvailability struct {
+	Type       string                    `json:"type"`
+	ID         string                    `json:"id"`
+	Attributes AppAvailabilityAttributes `json:"attributes"`
+}
+
+// AppAvailabilityAttributes contains app availability attributes.
+type AppAvailabilityAttributes struct {
+	AvailableInNewTerritories bool `json:"availableInNewTerritories,omitempty"`
+}
+
+// AppAvailabilityCreateRequest represents a request to set app availability.
+type AppAvailabilityCreateRequest struct {
+	Data AppAvailabilityCreateData `json:"data"`
+}
+
+// AppAvailabilityCreateData contains the data for setting app availability.
+type AppAvailabilityCreateData struct {
+	Type          string                             `json:"type"`
+	Attributes    AppAvailabilityCreateAttributes    `json:"attributes"`
+	Relationships AppAvailabilityCreateRelationships `json:"relationships"`
+}
+
+// AppAvailabilityCreateAttributes contains attributes for setting app availability.
+type AppAvailabilityCreateAttributes struct {
+	AvailableInNewTerritories bool `json:"availableInNewTerritories"`
+}
+
+// AppAvailabilityCreateRelationships contains relationships for setting app availability.
+type AppAvailabilityCreateRelationships struct {
+	App                    RelationshipData      `json:"app"`
+	AvailableTerritories   RelationshipDataList  `json:"availableTerritories"`
+}
+
+// TerritoryAvailabilitiesResponse represents territory availabilities.
+type TerritoryAvailabilitiesResponse struct {
+	Data     []TerritoryAvailability `json:"data"`
+	Links    PagedDocumentLinks      `json:"links"`
+	Meta     *PagingInformation      `json:"meta,omitempty"`
+	Included []any                   `json:"included,omitempty"`
+}
+
+// TerritoryAvailability represents territory availability.
+type TerritoryAvailability struct {
+	Type       string                          `json:"type"`
+	ID         string                          `json:"id"`
+	Attributes TerritoryAvailabilityAttributes `json:"attributes"`
+}
+
+// TerritoryAvailabilityAttributes contains territory availability attributes.
+type TerritoryAvailabilityAttributes struct {
+	Available         bool       `json:"available,omitempty"`
+	ReleaseDate       *time.Time `json:"releaseDate,omitempty"`
+	PreOrderEnabled   bool       `json:"preOrderEnabled,omitempty"`
+	PreOrderPublishDate *time.Time `json:"preOrderPublishDate,omitempty"`
+}
+
+// Age Rating Declaration types
+
+// AgeRatingDeclarationResponse represents an age rating declaration.
+type AgeRatingDeclarationResponse struct {
+	Data     AgeRatingDeclaration `json:"data"`
+	Included []any                `json:"included,omitempty"`
+}
+
+// AgeRatingDeclaration represents an age rating declaration.
+type AgeRatingDeclaration struct {
+	Type       string                         `json:"type"`
+	ID         string                         `json:"id"`
+	Attributes AgeRatingDeclarationAttributes `json:"attributes"`
+}
+
+// AgeRatingDeclarationAttributes contains age rating declaration attributes.
+type AgeRatingDeclarationAttributes struct {
+	AlcoholTobaccoOrDrugUseOrReferences      string `json:"alcoholTobaccoOrDrugUseOrReferences,omitempty"`
+	Contests                                  string `json:"contests,omitempty"`
+	Gambling                                  bool   `json:"gambling,omitempty"`
+	GamblingSimulated                         string `json:"gamblingSimulated,omitempty"`
+	KidsAgeBand                               string `json:"kidsAgeBand,omitempty"`
+	MatureOrSuggestiveThemes                  string `json:"matureOrSuggestiveThemes,omitempty"`
+	MedicalOrTreatmentInformation             string `json:"medicalOrTreatmentInformation,omitempty"`
+	ProfanityOrCrudeHumor                     string `json:"profanityOrCrudeHumor,omitempty"`
+	SexualContentGraphicAndNudity             string `json:"sexualContentGraphicAndNudity,omitempty"`
+	SexualContentOrNudity                     string `json:"sexualContentOrNudity,omitempty"`
+	HorrorOrFearThemes                        string `json:"horrorOrFearThemes,omitempty"`
+	UnrestrictedWebAccess                     bool   `json:"unrestrictedWebAccess,omitempty"`
+	ViolenceCartoonOrFantasy                  string `json:"violenceCartoonOrFantasy,omitempty"`
+	ViolenceRealistic                         string `json:"violenceRealistic,omitempty"`
+	ViolenceRealisticProlongedGraphicOrSadistic string `json:"violenceRealisticProlongedGraphicOrSadistic,omitempty"`
+	SeventeenPlus                             bool   `json:"seventeenPlus,omitempty"`
+}
+
+// AgeRatingDeclarationUpdateRequest represents a request to update an age rating declaration.
+type AgeRatingDeclarationUpdateRequest struct {
+	Data AgeRatingDeclarationUpdateData `json:"data"`
+}
+
+// AgeRatingDeclarationUpdateData contains the data for updating an age rating declaration.
+type AgeRatingDeclarationUpdateData struct {
+	Type       string                              `json:"type"`
+	ID         string                              `json:"id"`
+	Attributes AgeRatingDeclarationUpdateAttributes `json:"attributes"`
+}
+
+// AgeRatingDeclarationUpdateAttributes contains attributes for updating an age rating declaration.
+type AgeRatingDeclarationUpdateAttributes struct {
+	AlcoholTobaccoOrDrugUseOrReferences      string `json:"alcoholTobaccoOrDrugUseOrReferences,omitempty"`
+	Contests                                  string `json:"contests,omitempty"`
+	Gambling                                  *bool  `json:"gambling,omitempty"`
+	GamblingSimulated                         string `json:"gamblingSimulated,omitempty"`
+	KidsAgeBand                               string `json:"kidsAgeBand,omitempty"`
+	MatureOrSuggestiveThemes                  string `json:"matureOrSuggestiveThemes,omitempty"`
+	MedicalOrTreatmentInformation             string `json:"medicalOrTreatmentInformation,omitempty"`
+	ProfanityOrCrudeHumor                     string `json:"profanityOrCrudeHumor,omitempty"`
+	SexualContentGraphicAndNudity             string `json:"sexualContentGraphicAndNudity,omitempty"`
+	SexualContentOrNudity                     string `json:"sexualContentOrNudity,omitempty"`
+	HorrorOrFearThemes                        string `json:"horrorOrFearThemes,omitempty"`
+	UnrestrictedWebAccess                     *bool  `json:"unrestrictedWebAccess,omitempty"`
+	ViolenceCartoonOrFantasy                  string `json:"violenceCartoonOrFantasy,omitempty"`
+	ViolenceRealistic                         string `json:"violenceRealistic,omitempty"`
+	ViolenceRealisticProlongedGraphicOrSadistic string `json:"violenceRealisticProlongedGraphicOrSadistic,omitempty"`
+	SeventeenPlus                             *bool  `json:"seventeenPlus,omitempty"`
+}
+
+// IDFA Declaration types (App Tracking Transparency)
+
+// IdfaDeclarationResponse represents an IDFA declaration.
+type IdfaDeclarationResponse struct {
+	Data     IdfaDeclaration `json:"data"`
+	Included []any           `json:"included,omitempty"`
+}
+
+// IdfaDeclaration represents an IDFA declaration.
+type IdfaDeclaration struct {
+	Type       string                    `json:"type"`
+	ID         string                    `json:"id"`
+	Attributes IdfaDeclarationAttributes `json:"attributes"`
+}
+
+// IdfaDeclarationAttributes contains IDFA declaration attributes.
+type IdfaDeclarationAttributes struct {
+	ServesAds                              bool `json:"servesAds,omitempty"`
+	AttributesAppInstallationToPreviousAd  bool `json:"attributesAppInstallationToPreviousAd,omitempty"`
+	AttributesActionWithPreviousAd         bool `json:"attributesActionWithPreviousAd,omitempty"`
+	HonorsLimitedAdTracking                bool `json:"honorsLimitedAdTracking,omitempty"`
+}
+
+// IdfaDeclarationCreateRequest represents a request to create an IDFA declaration.
+type IdfaDeclarationCreateRequest struct {
+	Data IdfaDeclarationCreateData `json:"data"`
+}
+
+// IdfaDeclarationCreateData contains the data for creating an IDFA declaration.
+type IdfaDeclarationCreateData struct {
+	Type          string                             `json:"type"`
+	Attributes    IdfaDeclarationCreateAttributes    `json:"attributes"`
+	Relationships IdfaDeclarationCreateRelationships `json:"relationships"`
+}
+
+// IdfaDeclarationCreateAttributes contains attributes for creating an IDFA declaration.
+type IdfaDeclarationCreateAttributes struct {
+	ServesAds                              bool `json:"servesAds"`
+	AttributesAppInstallationToPreviousAd  bool `json:"attributesAppInstallationToPreviousAd"`
+	AttributesActionWithPreviousAd         bool `json:"attributesActionWithPreviousAd"`
+	HonorsLimitedAdTracking                bool `json:"honorsLimitedAdTracking"`
+}
+
+// IdfaDeclarationCreateRelationships contains relationships for creating an IDFA declaration.
+type IdfaDeclarationCreateRelationships struct {
+	AppStoreVersion RelationshipData `json:"appStoreVersion"`
+}
+
+// IdfaDeclarationUpdateRequest represents a request to update an IDFA declaration.
+type IdfaDeclarationUpdateRequest struct {
+	Data IdfaDeclarationUpdateData `json:"data"`
+}
+
+// IdfaDeclarationUpdateData contains the data for updating an IDFA declaration.
+type IdfaDeclarationUpdateData struct {
+	Type       string                          `json:"type"`
+	ID         string                          `json:"id"`
+	Attributes IdfaDeclarationUpdateAttributes `json:"attributes"`
+}
+
+// IdfaDeclarationUpdateAttributes contains attributes for updating an IDFA declaration.
+type IdfaDeclarationUpdateAttributes struct {
+	ServesAds                              *bool `json:"servesAds,omitempty"`
+	AttributesAppInstallationToPreviousAd  *bool `json:"attributesAppInstallationToPreviousAd,omitempty"`
+	AttributesActionWithPreviousAd         *bool `json:"attributesActionWithPreviousAd,omitempty"`
+	HonorsLimitedAdTracking                *bool `json:"honorsLimitedAdTracking,omitempty"`
+}
+
+// End User License Agreement types
+
+// EndUserLicenseAgreementResponse represents an EULA.
+type EndUserLicenseAgreementResponse struct {
+	Data     EndUserLicenseAgreement `json:"data"`
+	Included []any                   `json:"included,omitempty"`
+}
+
+// EndUserLicenseAgreement represents an end user license agreement.
+type EndUserLicenseAgreement struct {
+	Type       string                            `json:"type"`
+	ID         string                            `json:"id"`
+	Attributes EndUserLicenseAgreementAttributes `json:"attributes"`
+}
+
+// EndUserLicenseAgreementAttributes contains EULA attributes.
+type EndUserLicenseAgreementAttributes struct {
+	AgreementText string `json:"agreementText,omitempty"`
+}
+
+// EndUserLicenseAgreementCreateRequest represents a request to create an EULA.
+type EndUserLicenseAgreementCreateRequest struct {
+	Data EndUserLicenseAgreementCreateData `json:"data"`
+}
+
+// EndUserLicenseAgreementCreateData contains the data for creating an EULA.
+type EndUserLicenseAgreementCreateData struct {
+	Type          string                                     `json:"type"`
+	Attributes    EndUserLicenseAgreementCreateAttributes    `json:"attributes"`
+	Relationships EndUserLicenseAgreementCreateRelationships `json:"relationships"`
+}
+
+// EndUserLicenseAgreementCreateAttributes contains attributes for creating an EULA.
+type EndUserLicenseAgreementCreateAttributes struct {
+	AgreementText string `json:"agreementText"`
+}
+
+// EndUserLicenseAgreementCreateRelationships contains relationships for creating an EULA.
+type EndUserLicenseAgreementCreateRelationships struct {
+	App         RelationshipData     `json:"app"`
+	Territories RelationshipDataList `json:"territories"`
+}
+
+// EndUserLicenseAgreementUpdateRequest represents a request to update an EULA.
+type EndUserLicenseAgreementUpdateRequest struct {
+	Data EndUserLicenseAgreementUpdateData `json:"data"`
+}
+
+// EndUserLicenseAgreementUpdateData contains the data for updating an EULA.
+type EndUserLicenseAgreementUpdateData struct {
+	Type          string                                     `json:"type"`
+	ID            string                                     `json:"id"`
+	Attributes    EndUserLicenseAgreementUpdateAttributes    `json:"attributes"`
+	Relationships *EndUserLicenseAgreementUpdateRelationships `json:"relationships,omitempty"`
+}
+
+// EndUserLicenseAgreementUpdateAttributes contains attributes for updating an EULA.
+type EndUserLicenseAgreementUpdateAttributes struct {
+	AgreementText string `json:"agreementText,omitempty"`
+}
+
+// EndUserLicenseAgreementUpdateRelationships contains relationships for updating an EULA.
+type EndUserLicenseAgreementUpdateRelationships struct {
+	Territories *RelationshipDataList `json:"territories,omitempty"`
+}
+
+// Beta App Review Submission types
+
+// BetaAppReviewSubmissionsResponse represents a list of beta app review submissions.
+type BetaAppReviewSubmissionsResponse struct {
+	Data     []BetaAppReviewSubmission `json:"data"`
+	Links    PagedDocumentLinks        `json:"links"`
+	Meta     *PagingInformation        `json:"meta,omitempty"`
+	Included []any                     `json:"included,omitempty"`
+}
+
+// BetaAppReviewSubmissionResponse represents a single beta app review submission.
+type BetaAppReviewSubmissionResponse struct {
+	Data     BetaAppReviewSubmission `json:"data"`
+	Included []any                   `json:"included,omitempty"`
+}
+
+// BetaAppReviewSubmission represents a beta app review submission.
+type BetaAppReviewSubmission struct {
+	Type       string                            `json:"type"`
+	ID         string                            `json:"id"`
+	Attributes BetaAppReviewSubmissionAttributes `json:"attributes"`
+}
+
+// BetaAppReviewSubmissionAttributes contains beta app review submission attributes.
+type BetaAppReviewSubmissionAttributes struct {
+	BetaReviewState string     `json:"betaReviewState,omitempty"`
+	SubmittedDate   *time.Time `json:"submittedDate,omitempty"`
+}
+
+// BetaAppReviewSubmissionCreateRequest represents a request to create a beta app review submission.
+type BetaAppReviewSubmissionCreateRequest struct {
+	Data BetaAppReviewSubmissionCreateData `json:"data"`
+}
+
+// BetaAppReviewSubmissionCreateData contains the data for creating a beta app review submission.
+type BetaAppReviewSubmissionCreateData struct {
+	Type          string                                     `json:"type"`
+	Relationships BetaAppReviewSubmissionCreateRelationships `json:"relationships"`
+}
+
+// BetaAppReviewSubmissionCreateRelationships contains relationships for creating a beta app review submission.
+type BetaAppReviewSubmissionCreateRelationships struct {
+	Build RelationshipData `json:"build"`
+}
+
+// Beta License Agreement types
+
+// BetaLicenseAgreementResponse represents a beta license agreement.
+type BetaLicenseAgreementResponse struct {
+	Data     BetaLicenseAgreement `json:"data"`
+	Included []any                `json:"included,omitempty"`
+}
+
+// BetaLicenseAgreementsResponse represents a list of beta license agreements.
+type BetaLicenseAgreementsResponse struct {
+	Data     []BetaLicenseAgreement `json:"data"`
+	Links    PagedDocumentLinks     `json:"links"`
+	Meta     *PagingInformation     `json:"meta,omitempty"`
+	Included []any                  `json:"included,omitempty"`
+}
+
+// BetaLicenseAgreement represents a beta license agreement.
+type BetaLicenseAgreement struct {
+	Type       string                         `json:"type"`
+	ID         string                         `json:"id"`
+	Attributes BetaLicenseAgreementAttributes `json:"attributes"`
+}
+
+// BetaLicenseAgreementAttributes contains beta license agreement attributes.
+type BetaLicenseAgreementAttributes struct {
+	AgreementText string `json:"agreementText,omitempty"`
+}
+
+// BetaLicenseAgreementUpdateRequest represents a request to update a beta license agreement.
+type BetaLicenseAgreementUpdateRequest struct {
+	Data BetaLicenseAgreementUpdateData `json:"data"`
+}
+
+// BetaLicenseAgreementUpdateData contains the data for updating a beta license agreement.
+type BetaLicenseAgreementUpdateData struct {
+	Type       string                              `json:"type"`
+	ID         string                              `json:"id"`
+	Attributes BetaLicenseAgreementUpdateAttributes `json:"attributes"`
+}
+
+// BetaLicenseAgreementUpdateAttributes contains attributes for updating a beta license agreement.
+type BetaLicenseAgreementUpdateAttributes struct {
+	AgreementText string `json:"agreementText,omitempty"`
+}
+
+// Sandbox Tester types
+
+// SandboxTestersResponse represents a list of sandbox testers.
+type SandboxTestersResponse struct {
+	Data     []SandboxTester    `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// SandboxTesterResponse represents a single sandbox tester.
+type SandboxTesterResponse struct {
+	Data     SandboxTester `json:"data"`
+	Included []any         `json:"included,omitempty"`
+}
+
+// SandboxTester represents a sandbox tester.
+type SandboxTester struct {
+	Type       string                  `json:"type"`
+	ID         string                  `json:"id"`
+	Attributes SandboxTesterAttributes `json:"attributes"`
+}
+
+// SandboxTesterAttributes contains sandbox tester attributes.
+type SandboxTesterAttributes struct {
+	FirstName         string     `json:"firstName,omitempty"`
+	LastName          string     `json:"lastName,omitempty"`
+	Email             string     `json:"email,omitempty"`
+	Password          string     `json:"password,omitempty"`
+	ConfirmPassword   string     `json:"confirmPassword,omitempty"`
+	SecretQuestion    string     `json:"secretQuestion,omitempty"`
+	SecretAnswer      string     `json:"secretAnswer,omitempty"`
+	BirthDate         string     `json:"birthDate,omitempty"`
+	AppStoreTerritory string     `json:"appStoreTerritory,omitempty"`
+	Interruptable     bool       `json:"interruptable,omitempty"`
+	SubscriptionRenewalRate string `json:"subscriptionRenewalRate,omitempty"`
+}
+
+// SandboxTesterCreateRequest represents a request to create a sandbox tester.
+type SandboxTesterCreateRequest struct {
+	Data SandboxTesterCreateData `json:"data"`
+}
+
+// SandboxTesterCreateData contains the data for creating a sandbox tester.
+type SandboxTesterCreateData struct {
+	Type       string                       `json:"type"`
+	Attributes SandboxTesterCreateAttributes `json:"attributes"`
+}
+
+// SandboxTesterCreateAttributes contains attributes for creating a sandbox tester.
+type SandboxTesterCreateAttributes struct {
+	FirstName         string `json:"firstName"`
+	LastName          string `json:"lastName"`
+	Email             string `json:"email"`
+	Password          string `json:"password"`
+	ConfirmPassword   string `json:"confirmPassword"`
+	SecretQuestion    string `json:"secretQuestion"`
+	SecretAnswer      string `json:"secretAnswer"`
+	BirthDate         string `json:"birthDate"`
+	AppStoreTerritory string `json:"appStoreTerritory"`
+}
+
+// SandboxTesterUpdateRequest represents a request to update a sandbox tester.
+type SandboxTesterUpdateRequest struct {
+	Data SandboxTesterUpdateData `json:"data"`
+}
+
+// SandboxTesterUpdateData contains the data for updating a sandbox tester.
+type SandboxTesterUpdateData struct {
+	Type       string                       `json:"type"`
+	ID         string                       `json:"id"`
+	Attributes SandboxTesterUpdateAttributes `json:"attributes"`
+}
+
+// SandboxTesterUpdateAttributes contains attributes for updating a sandbox tester.
+type SandboxTesterUpdateAttributes struct {
+	Interruptable           *bool  `json:"interruptable,omitempty"`
+	SubscriptionRenewalRate string `json:"subscriptionRenewalRate,omitempty"`
+	Territory               string `json:"territory,omitempty"`
+}
+
+// Promoted Purchase types
+
+// PromotedPurchasesResponse represents a list of promoted purchases.
+type PromotedPurchasesResponse struct {
+	Data     []PromotedPurchase `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// PromotedPurchaseResponse represents a single promoted purchase.
+type PromotedPurchaseResponse struct {
+	Data     PromotedPurchase `json:"data"`
+	Included []any            `json:"included,omitempty"`
+}
+
+// PromotedPurchase represents a promoted purchase.
+type PromotedPurchase struct {
+	Type       string                     `json:"type"`
+	ID         string                     `json:"id"`
+	Attributes PromotedPurchaseAttributes `json:"attributes"`
+}
+
+// PromotedPurchaseAttributes contains promoted purchase attributes.
+type PromotedPurchaseAttributes struct {
+	VisibleForAllUsers bool   `json:"visibleForAllUsers,omitempty"`
+	Enabled            bool   `json:"enabled,omitempty"`
+	State              string `json:"state,omitempty"`
+}
+
+// PromotedPurchaseCreateRequest represents a request to create a promoted purchase.
+type PromotedPurchaseCreateRequest struct {
+	Data PromotedPurchaseCreateData `json:"data"`
+}
+
+// PromotedPurchaseCreateData contains the data for creating a promoted purchase.
+type PromotedPurchaseCreateData struct {
+	Type          string                              `json:"type"`
+	Attributes    PromotedPurchaseCreateAttributes    `json:"attributes"`
+	Relationships PromotedPurchaseCreateRelationships `json:"relationships"`
+}
+
+// PromotedPurchaseCreateAttributes contains attributes for creating a promoted purchase.
+type PromotedPurchaseCreateAttributes struct {
+	VisibleForAllUsers bool `json:"visibleForAllUsers"`
+	Enabled            bool `json:"enabled"`
+}
+
+// PromotedPurchaseCreateRelationships contains relationships for creating a promoted purchase.
+type PromotedPurchaseCreateRelationships struct {
+	App           RelationshipData `json:"app"`
+	InAppPurchase RelationshipData `json:"inAppPurchaseV2"`
+}
+
+// PromotedPurchaseUpdateRequest represents a request to update a promoted purchase.
+type PromotedPurchaseUpdateRequest struct {
+	Data PromotedPurchaseUpdateData `json:"data"`
+}
+
+// PromotedPurchaseUpdateData contains the data for updating a promoted purchase.
+type PromotedPurchaseUpdateData struct {
+	Type       string                           `json:"type"`
+	ID         string                           `json:"id"`
+	Attributes PromotedPurchaseUpdateAttributes `json:"attributes"`
+}
+
+// PromotedPurchaseUpdateAttributes contains attributes for updating a promoted purchase.
+type PromotedPurchaseUpdateAttributes struct {
+	VisibleForAllUsers *bool `json:"visibleForAllUsers,omitempty"`
+	Enabled            *bool `json:"enabled,omitempty"`
+}
+
+// Subscription Offer Code types
+
+// SubscriptionOfferCodesResponse represents a list of subscription offer codes.
+type SubscriptionOfferCodesResponse struct {
+	Data     []SubscriptionOfferCode `json:"data"`
+	Links    PagedDocumentLinks      `json:"links"`
+	Meta     *PagingInformation      `json:"meta,omitempty"`
+	Included []any                   `json:"included,omitempty"`
+}
+
+// SubscriptionOfferCodeResponse represents a single subscription offer code.
+type SubscriptionOfferCodeResponse struct {
+	Data     SubscriptionOfferCode `json:"data"`
+	Included []any                 `json:"included,omitempty"`
+}
+
+// SubscriptionOfferCode represents a subscription offer code.
+type SubscriptionOfferCode struct {
+	Type       string                          `json:"type"`
+	ID         string                          `json:"id"`
+	Attributes SubscriptionOfferCodeAttributes `json:"attributes"`
+}
+
+// SubscriptionOfferCodeAttributes contains subscription offer code attributes.
+type SubscriptionOfferCodeAttributes struct {
+	Name                string `json:"name,omitempty"`
+	CustomerEligibilities []string `json:"customerEligibilities,omitempty"`
+	OfferEligibility    string `json:"offerEligibility,omitempty"`
+	Duration            string `json:"duration,omitempty"`
+	OfferMode           string `json:"offerMode,omitempty"`
+	NumberOfPeriods     int    `json:"numberOfPeriods,omitempty"`
+	TotalNumberOfCodes  int    `json:"totalNumberOfCodes,omitempty"`
+	Active              bool   `json:"active,omitempty"`
+}
+
+// SubscriptionOfferCodeCreateRequest represents a request to create a subscription offer code.
+type SubscriptionOfferCodeCreateRequest struct {
+	Data SubscriptionOfferCodeCreateData `json:"data"`
+}
+
+// SubscriptionOfferCodeCreateData contains the data for creating a subscription offer code.
+type SubscriptionOfferCodeCreateData struct {
+	Type          string                                   `json:"type"`
+	Attributes    SubscriptionOfferCodeCreateAttributes    `json:"attributes"`
+	Relationships SubscriptionOfferCodeCreateRelationships `json:"relationships"`
+}
+
+// SubscriptionOfferCodeCreateAttributes contains attributes for creating a subscription offer code.
+type SubscriptionOfferCodeCreateAttributes struct {
+	Name                string   `json:"name"`
+	CustomerEligibilities []string `json:"customerEligibilities"`
+	OfferEligibility    string   `json:"offerEligibility"`
+	Duration            string   `json:"duration"`
+	OfferMode           string   `json:"offerMode"`
+	NumberOfPeriods     int      `json:"numberOfPeriods"`
+}
+
+// SubscriptionOfferCodeCreateRelationships contains relationships for creating a subscription offer code.
+type SubscriptionOfferCodeCreateRelationships struct {
+	Subscription RelationshipData `json:"subscription"`
+}
+
+// SubscriptionOfferCodeUpdateRequest represents a request to update a subscription offer code.
+type SubscriptionOfferCodeUpdateRequest struct {
+	Data SubscriptionOfferCodeUpdateData `json:"data"`
+}
+
+// SubscriptionOfferCodeUpdateData contains the data for updating a subscription offer code.
+type SubscriptionOfferCodeUpdateData struct {
+	Type       string                                `json:"type"`
+	ID         string                                `json:"id"`
+	Attributes SubscriptionOfferCodeUpdateAttributes `json:"attributes"`
+}
+
+// SubscriptionOfferCodeUpdateAttributes contains attributes for updating a subscription offer code.
+type SubscriptionOfferCodeUpdateAttributes struct {
+	Active *bool `json:"active,omitempty"`
+}
+
+// Subscription Price Point types
+
+// SubscriptionPricePointsResponse represents a list of subscription price points.
+type SubscriptionPricePointsResponse struct {
+	Data     []SubscriptionPricePoint `json:"data"`
+	Links    PagedDocumentLinks       `json:"links"`
+	Meta     *PagingInformation       `json:"meta,omitempty"`
+	Included []any                    `json:"included,omitempty"`
+}
+
+// SubscriptionPricePointResponse represents a single subscription price point.
+type SubscriptionPricePointResponse struct {
+	Data     SubscriptionPricePoint `json:"data"`
+	Included []any                  `json:"included,omitempty"`
+}
+
+// SubscriptionPricePoint represents a subscription price point.
+type SubscriptionPricePoint struct {
+	Type       string                           `json:"type"`
+	ID         string                           `json:"id"`
+	Attributes SubscriptionPricePointAttributes `json:"attributes"`
+}
+
+// SubscriptionPricePointAttributes contains subscription price point attributes.
+type SubscriptionPricePointAttributes struct {
+	CustomerPrice string `json:"customerPrice,omitempty"`
+	Proceeds      string `json:"proceeds,omitempty"`
+	ProceedsYear2 string `json:"proceedsYear2,omitempty"`
+}
+
+// Win-back Offer types
+
+// WinBackOffersResponse represents a list of win-back offers.
+type WinBackOffersResponse struct {
+	Data     []WinBackOffer     `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// WinBackOfferResponse represents a single win-back offer.
+type WinBackOfferResponse struct {
+	Data     WinBackOffer `json:"data"`
+	Included []any        `json:"included,omitempty"`
+}
+
+// WinBackOffer represents a win-back offer.
+type WinBackOffer struct {
+	Type       string                 `json:"type"`
+	ID         string                 `json:"id"`
+	Attributes WinBackOfferAttributes `json:"attributes"`
+}
+
+// WinBackOfferAttributes contains win-back offer attributes.
+type WinBackOfferAttributes struct {
+	ReferenceName       string     `json:"referenceName,omitempty"`
+	OfferID             string     `json:"offerId,omitempty"`
+	Duration            string     `json:"duration,omitempty"`
+	OfferMode           string     `json:"offerMode,omitempty"`
+	PeriodCount         int        `json:"periodCount,omitempty"`
+	CustomerEligibilityPaidSubscriptionDurationInMonths int `json:"customerEligibilityPaidSubscriptionDurationInMonths,omitempty"`
+	CustomerEligibilityTimeSinceLastSubscribedInMonths  *IntegerRange `json:"customerEligibilityTimeSinceLastSubscribedInMonths,omitempty"`
+	CustomerEligibilityWaitBetweenOffersInMonths       int `json:"customerEligibilityWaitBetweenOffersInMonths,omitempty"`
+	StartDate           *time.Time `json:"startDate,omitempty"`
+	EndDate             *time.Time `json:"endDate,omitempty"`
+	Priority            string     `json:"priority,omitempty"`
+	PromotionIntent     string     `json:"promotionIntent,omitempty"`
+}
+
+// IntegerRange represents an integer range.
+type IntegerRange struct {
+	Minimum int `json:"minimum,omitempty"`
+	Maximum int `json:"maximum,omitempty"`
+}
+
+// WinBackOfferCreateRequest represents a request to create a win-back offer.
+type WinBackOfferCreateRequest struct {
+	Data WinBackOfferCreateData `json:"data"`
+}
+
+// WinBackOfferCreateData contains the data for creating a win-back offer.
+type WinBackOfferCreateData struct {
+	Type          string                          `json:"type"`
+	Attributes    WinBackOfferCreateAttributes    `json:"attributes"`
+	Relationships WinBackOfferCreateRelationships `json:"relationships"`
+}
+
+// WinBackOfferCreateAttributes contains attributes for creating a win-back offer.
+type WinBackOfferCreateAttributes struct {
+	ReferenceName       string        `json:"referenceName"`
+	OfferID             string        `json:"offerId"`
+	Duration            string        `json:"duration"`
+	OfferMode           string        `json:"offerMode"`
+	PeriodCount         int           `json:"periodCount"`
+	CustomerEligibilityPaidSubscriptionDurationInMonths int `json:"customerEligibilityPaidSubscriptionDurationInMonths"`
+	CustomerEligibilityTimeSinceLastSubscribedInMonths  *IntegerRange `json:"customerEligibilityTimeSinceLastSubscribedInMonths,omitempty"`
+	CustomerEligibilityWaitBetweenOffersInMonths       int `json:"customerEligibilityWaitBetweenOffersInMonths,omitempty"`
+	StartDate           *time.Time    `json:"startDate,omitempty"`
+	EndDate             *time.Time    `json:"endDate,omitempty"`
+	Priority            string        `json:"priority"`
+	PromotionIntent     string        `json:"promotionIntent,omitempty"`
+}
+
+// WinBackOfferCreateRelationships contains relationships for creating a win-back offer.
+type WinBackOfferCreateRelationships struct {
+	Subscription RelationshipData      `json:"subscription"`
+	Prices       RelationshipDataList  `json:"prices"`
+}
+
+// WinBackOfferUpdateRequest represents a request to update a win-back offer.
+type WinBackOfferUpdateRequest struct {
+	Data WinBackOfferUpdateData `json:"data"`
+}
+
+// WinBackOfferUpdateData contains the data for updating a win-back offer.
+type WinBackOfferUpdateData struct {
+	Type       string                       `json:"type"`
+	ID         string                       `json:"id"`
+	Attributes WinBackOfferUpdateAttributes `json:"attributes"`
+}
+
+// WinBackOfferUpdateAttributes contains attributes for updating a win-back offer.
+type WinBackOfferUpdateAttributes struct {
+	CustomerEligibilityPaidSubscriptionDurationInMonths *int `json:"customerEligibilityPaidSubscriptionDurationInMonths,omitempty"`
+	CustomerEligibilityTimeSinceLastSubscribedInMonths  *IntegerRange `json:"customerEligibilityTimeSinceLastSubscribedInMonths,omitempty"`
+	CustomerEligibilityWaitBetweenOffersInMonths       *int `json:"customerEligibilityWaitBetweenOffersInMonths,omitempty"`
+	StartDate           *time.Time    `json:"startDate,omitempty"`
+	EndDate             *time.Time    `json:"endDate,omitempty"`
+	Priority            string        `json:"priority,omitempty"`
+	PromotionIntent     string        `json:"promotionIntent,omitempty"`
+}
+
+// App Store Version Experiment types (Product Page Optimization)
+
+// AppStoreVersionExperimentsResponse represents a list of experiments.
+type AppStoreVersionExperimentsResponse struct {
+	Data     []AppStoreVersionExperiment `json:"data"`
+	Links    PagedDocumentLinks          `json:"links"`
+	Meta     *PagingInformation          `json:"meta,omitempty"`
+	Included []any                       `json:"included,omitempty"`
+}
+
+// AppStoreVersionExperimentResponse represents a single experiment.
+type AppStoreVersionExperimentResponse struct {
+	Data     AppStoreVersionExperiment `json:"data"`
+	Included []any                     `json:"included,omitempty"`
+}
+
+// AppStoreVersionExperiment represents an App Store version experiment.
+type AppStoreVersionExperiment struct {
+	Type       string                              `json:"type"`
+	ID         string                              `json:"id"`
+	Attributes AppStoreVersionExperimentAttributes `json:"attributes"`
+}
+
+// AppStoreVersionExperimentAttributes contains experiment attributes.
+type AppStoreVersionExperimentAttributes struct {
+	Name                    string     `json:"name,omitempty"`
+	TrafficProportion       int        `json:"trafficProportion,omitempty"`
+	State                   string     `json:"state,omitempty"`
+	ReviewRequired          bool       `json:"reviewRequired,omitempty"`
+	StartDate               *time.Time `json:"startDate,omitempty"`
+	EndDate                 *time.Time `json:"endDate,omitempty"`
+	LatestControlVersion    string     `json:"latestControlVersion,omitempty"`
+	ControlVersionStartDate *time.Time `json:"controlVersionStartDate,omitempty"`
+}
+
+// AppStoreVersionExperimentCreateRequest represents a request to create an experiment.
+type AppStoreVersionExperimentCreateRequest struct {
+	Data AppStoreVersionExperimentCreateData `json:"data"`
+}
+
+// AppStoreVersionExperimentCreateData contains the data for creating an experiment.
+type AppStoreVersionExperimentCreateData struct {
+	Type          string                                       `json:"type"`
+	Attributes    AppStoreVersionExperimentCreateAttributes    `json:"attributes"`
+	Relationships AppStoreVersionExperimentCreateRelationships `json:"relationships"`
+}
+
+// AppStoreVersionExperimentCreateAttributes contains attributes for creating an experiment.
+type AppStoreVersionExperimentCreateAttributes struct {
+	Name              string `json:"name"`
+	TrafficProportion int    `json:"trafficProportion"`
+}
+
+// AppStoreVersionExperimentCreateRelationships contains relationships for creating an experiment.
+type AppStoreVersionExperimentCreateRelationships struct {
+	AppStoreVersion RelationshipData `json:"appStoreVersion"`
+}
+
+// AppStoreVersionExperimentUpdateRequest represents a request to update an experiment.
+type AppStoreVersionExperimentUpdateRequest struct {
+	Data AppStoreVersionExperimentUpdateData `json:"data"`
+}
+
+// AppStoreVersionExperimentUpdateData contains the data for updating an experiment.
+type AppStoreVersionExperimentUpdateData struct {
+	Type       string                                    `json:"type"`
+	ID         string                                    `json:"id"`
+	Attributes AppStoreVersionExperimentUpdateAttributes `json:"attributes"`
+}
+
+// AppStoreVersionExperimentUpdateAttributes contains attributes for updating an experiment.
+type AppStoreVersionExperimentUpdateAttributes struct {
+	Name              string `json:"name,omitempty"`
+	TrafficProportion *int   `json:"trafficProportion,omitempty"`
+	Started           *bool  `json:"started,omitempty"`
+}
+
+// Custom Product Page types
+
+// AppCustomProductPagesResponse represents a list of custom product pages.
+type AppCustomProductPagesResponse struct {
+	Data     []AppCustomProductPage `json:"data"`
+	Links    PagedDocumentLinks     `json:"links"`
+	Meta     *PagingInformation     `json:"meta,omitempty"`
+	Included []any                  `json:"included,omitempty"`
+}
+
+// AppCustomProductPageResponse represents a single custom product page.
+type AppCustomProductPageResponse struct {
+	Data     AppCustomProductPage `json:"data"`
+	Included []any                `json:"included,omitempty"`
+}
+
+// AppCustomProductPage represents a custom product page.
+type AppCustomProductPage struct {
+	Type       string                         `json:"type"`
+	ID         string                         `json:"id"`
+	Attributes AppCustomProductPageAttributes `json:"attributes"`
+}
+
+// AppCustomProductPageAttributes contains custom product page attributes.
+type AppCustomProductPageAttributes struct {
+	Name      string `json:"name,omitempty"`
+	URL       string `json:"url,omitempty"`
+	Visible   bool   `json:"visible,omitempty"`
+}
+
+// AppCustomProductPageCreateRequest represents a request to create a custom product page.
+type AppCustomProductPageCreateRequest struct {
+	Data AppCustomProductPageCreateData `json:"data"`
+}
+
+// AppCustomProductPageCreateData contains the data for creating a custom product page.
+type AppCustomProductPageCreateData struct {
+	Type          string                                  `json:"type"`
+	Attributes    AppCustomProductPageCreateAttributes    `json:"attributes"`
+	Relationships AppCustomProductPageCreateRelationships `json:"relationships"`
+}
+
+// AppCustomProductPageCreateAttributes contains attributes for creating a custom product page.
+type AppCustomProductPageCreateAttributes struct {
+	Name string `json:"name"`
+}
+
+// AppCustomProductPageCreateRelationships contains relationships for creating a custom product page.
+type AppCustomProductPageCreateRelationships struct {
+	App                    RelationshipData  `json:"app"`
+	AppStoreVersionTemplate *RelationshipData `json:"appStoreVersionTemplate,omitempty"`
+}
+
+// AppCustomProductPageUpdateRequest represents a request to update a custom product page.
+type AppCustomProductPageUpdateRequest struct {
+	Data AppCustomProductPageUpdateData `json:"data"`
+}
+
+// AppCustomProductPageUpdateData contains the data for updating a custom product page.
+type AppCustomProductPageUpdateData struct {
+	Type       string                               `json:"type"`
+	ID         string                               `json:"id"`
+	Attributes AppCustomProductPageUpdateAttributes `json:"attributes"`
+}
+
+// AppCustomProductPageUpdateAttributes contains attributes for updating a custom product page.
+type AppCustomProductPageUpdateAttributes struct {
+	Name    string `json:"name,omitempty"`
+	Visible *bool  `json:"visible,omitempty"`
+}
+
+// Routing App Coverage types
+
+// RoutingAppCoverageResponse represents a routing app coverage.
+type RoutingAppCoverageResponse struct {
+	Data     RoutingAppCoverage `json:"data"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// RoutingAppCoverage represents routing app coverage.
+type RoutingAppCoverage struct {
+	Type       string                       `json:"type"`
+	ID         string                       `json:"id"`
+	Attributes RoutingAppCoverageAttributes `json:"attributes"`
+}
+
+// RoutingAppCoverageAttributes contains routing app coverage attributes.
+type RoutingAppCoverageAttributes struct {
+	FileSize           int                 `json:"fileSize,omitempty"`
+	FileName           string              `json:"fileName,omitempty"`
+	SourceFileChecksum string              `json:"sourceFileChecksum,omitempty"`
+	UploadOperations   []UploadOperation   `json:"uploadOperations,omitempty"`
+	AssetDeliveryState *AssetDeliveryState `json:"assetDeliveryState,omitempty"`
+}
+
+// RoutingAppCoverageCreateRequest represents a request to create routing app coverage.
+type RoutingAppCoverageCreateRequest struct {
+	Data RoutingAppCoverageCreateData `json:"data"`
+}
+
+// RoutingAppCoverageCreateData contains the data for creating routing app coverage.
+type RoutingAppCoverageCreateData struct {
+	Type          string                                `json:"type"`
+	Attributes    RoutingAppCoverageCreateAttributes    `json:"attributes"`
+	Relationships RoutingAppCoverageCreateRelationships `json:"relationships"`
+}
+
+// RoutingAppCoverageCreateAttributes contains attributes for creating routing app coverage.
+type RoutingAppCoverageCreateAttributes struct {
+	FileSize int    `json:"fileSize"`
+	FileName string `json:"fileName"`
+}
+
+// RoutingAppCoverageCreateRelationships contains relationships for creating routing app coverage.
+type RoutingAppCoverageCreateRelationships struct {
+	AppStoreVersion RelationshipData `json:"appStoreVersion"`
+}
+
+// RoutingAppCoverageUpdateRequest represents a request to update routing app coverage.
+type RoutingAppCoverageUpdateRequest struct {
+	Data RoutingAppCoverageUpdateData `json:"data"`
+}
+
+// RoutingAppCoverageUpdateData contains the data for updating routing app coverage.
+type RoutingAppCoverageUpdateData struct {
+	Type       string                             `json:"type"`
+	ID         string                             `json:"id"`
+	Attributes RoutingAppCoverageUpdateAttributes `json:"attributes"`
+}
+
+// RoutingAppCoverageUpdateAttributes contains attributes for updating routing app coverage.
+type RoutingAppCoverageUpdateAttributes struct {
+	SourceFileChecksum string `json:"sourceFileChecksum,omitempty"`
+	Uploaded           *bool  `json:"uploaded,omitempty"`
+}
+
+// Power and Performance Metrics types
+
+// PerfPowerMetricsResponse represents power and performance metrics.
+type PerfPowerMetricsResponse struct {
+	Data     []PerfPowerMetric  `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// PerfPowerMetric represents a performance/power metric.
+type PerfPowerMetric struct {
+	Type       string                    `json:"type"`
+	ID         string                    `json:"id"`
+	Attributes PerfPowerMetricAttributes `json:"attributes"`
+}
+
+// PerfPowerMetricAttributes contains metric attributes.
+type PerfPowerMetricAttributes struct {
+	MetricType string `json:"metricType,omitempty"`
+	DeviceType string `json:"deviceType,omitempty"`
+	Platform   string `json:"platform,omitempty"`
+}
+
+// DiagnosticLogsResponse represents diagnostic logs.
+type DiagnosticLogsResponse struct {
+	Data     []DiagnosticLog    `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// DiagnosticLog represents a diagnostic log.
+type DiagnosticLog struct {
+	Type       string                  `json:"type"`
+	ID         string                  `json:"id"`
+	Attributes DiagnosticLogAttributes `json:"attributes"`
+}
+
+// DiagnosticLogAttributes contains diagnostic log attributes.
+type DiagnosticLogAttributes struct {
+	DiagnosticType string `json:"diagnosticType,omitempty"`
+}
+
+// DiagnosticSignaturesResponse represents diagnostic signatures.
+type DiagnosticSignaturesResponse struct {
+	Data     []DiagnosticSignature `json:"data"`
+	Links    PagedDocumentLinks    `json:"links"`
+	Meta     *PagingInformation    `json:"meta,omitempty"`
+	Included []any                 `json:"included,omitempty"`
+}
+
+// DiagnosticSignature represents a diagnostic signature.
+type DiagnosticSignature struct {
+	Type       string                        `json:"type"`
+	ID         string                        `json:"id"`
+	Attributes DiagnosticSignatureAttributes `json:"attributes"`
+}
+
+// DiagnosticSignatureAttributes contains diagnostic signature attributes.
+type DiagnosticSignatureAttributes struct {
+	DiagnosticType string `json:"diagnosticType,omitempty"`
+	Signature      string `json:"signature,omitempty"`
+	Weight         float64 `json:"weight,omitempty"`
+}
+
+// Review Attachment types
+
+// AppStoreReviewAttachmentsResponse represents a list of review attachments.
+type AppStoreReviewAttachmentsResponse struct {
+	Data     []AppStoreReviewAttachment `json:"data"`
+	Links    PagedDocumentLinks         `json:"links"`
+	Meta     *PagingInformation         `json:"meta,omitempty"`
+	Included []any                      `json:"included,omitempty"`
+}
+
+// AppStoreReviewAttachmentResponse represents a single review attachment.
+type AppStoreReviewAttachmentResponse struct {
+	Data     AppStoreReviewAttachment `json:"data"`
+	Included []any                    `json:"included,omitempty"`
+}
+
+// AppStoreReviewAttachment represents a review attachment.
+type AppStoreReviewAttachment struct {
+	Type       string                             `json:"type"`
+	ID         string                             `json:"id"`
+	Attributes AppStoreReviewAttachmentAttributes `json:"attributes"`
+}
+
+// AppStoreReviewAttachmentAttributes contains review attachment attributes.
+type AppStoreReviewAttachmentAttributes struct {
+	FileSize           int                 `json:"fileSize,omitempty"`
+	FileName           string              `json:"fileName,omitempty"`
+	SourceFileChecksum string              `json:"sourceFileChecksum,omitempty"`
+	UploadOperations   []UploadOperation   `json:"uploadOperations,omitempty"`
+	AssetDeliveryState *AssetDeliveryState `json:"assetDeliveryState,omitempty"`
+}
+
+// AppStoreReviewAttachmentCreateRequest represents a request to create a review attachment.
+type AppStoreReviewAttachmentCreateRequest struct {
+	Data AppStoreReviewAttachmentCreateData `json:"data"`
+}
+
+// AppStoreReviewAttachmentCreateData contains the data for creating a review attachment.
+type AppStoreReviewAttachmentCreateData struct {
+	Type          string                                      `json:"type"`
+	Attributes    AppStoreReviewAttachmentCreateAttributes    `json:"attributes"`
+	Relationships AppStoreReviewAttachmentCreateRelationships `json:"relationships"`
+}
+
+// AppStoreReviewAttachmentCreateAttributes contains attributes for creating a review attachment.
+type AppStoreReviewAttachmentCreateAttributes struct {
+	FileSize int    `json:"fileSize"`
+	FileName string `json:"fileName"`
+}
+
+// AppStoreReviewAttachmentCreateRelationships contains relationships for creating a review attachment.
+type AppStoreReviewAttachmentCreateRelationships struct {
+	AppStoreReviewDetail RelationshipData `json:"appStoreReviewDetail"`
+}
+
+// AppStoreReviewAttachmentUpdateRequest represents a request to update a review attachment.
+type AppStoreReviewAttachmentUpdateRequest struct {
+	Data AppStoreReviewAttachmentUpdateData `json:"data"`
+}
+
+// AppStoreReviewAttachmentUpdateData contains the data for updating a review attachment.
+type AppStoreReviewAttachmentUpdateData struct {
+	Type       string                                   `json:"type"`
+	ID         string                                   `json:"id"`
+	Attributes AppStoreReviewAttachmentUpdateAttributes `json:"attributes"`
+}
+
+// AppStoreReviewAttachmentUpdateAttributes contains attributes for updating a review attachment.
+type AppStoreReviewAttachmentUpdateAttributes struct {
+	SourceFileChecksum string `json:"sourceFileChecksum,omitempty"`
+	Uploaded           *bool  `json:"uploaded,omitempty"`
+}
+
+// App Category types
+
+// AppCategoriesResponse represents a list of app categories.
+type AppCategoriesResponse struct {
+	Data     []AppCategory      `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// AppCategoryResponse represents a single app category.
+type AppCategoryResponse struct {
+	Data     AppCategory `json:"data"`
+	Included []any       `json:"included,omitempty"`
+}
+
+// AppCategory represents an app category.
+type AppCategory struct {
+	Type       string                `json:"type"`
+	ID         string                `json:"id"`
+	Attributes AppCategoryAttributes `json:"attributes"`
+}
+
+// AppCategoryAttributes contains app category attributes.
+type AppCategoryAttributes struct {
+	Platforms []string `json:"platforms,omitempty"`
+}
+
+// Beta App Localization types
+
+// BetaAppLocalizationsResponse represents a list of beta app localizations.
+type BetaAppLocalizationsResponse struct {
+	Data     []BetaAppLocalization `json:"data"`
+	Links    PagedDocumentLinks    `json:"links"`
+	Meta     *PagingInformation    `json:"meta,omitempty"`
+	Included []any                 `json:"included,omitempty"`
+}
+
+// BetaAppLocalizationResponse represents a single beta app localization.
+type BetaAppLocalizationResponse struct {
+	Data     BetaAppLocalization `json:"data"`
+	Included []any               `json:"included,omitempty"`
+}
+
+// BetaAppLocalization represents a beta app localization.
+type BetaAppLocalization struct {
+	Type       string                        `json:"type"`
+	ID         string                        `json:"id"`
+	Attributes BetaAppLocalizationAttributes `json:"attributes"`
+}
+
+// BetaAppLocalizationAttributes contains beta app localization attributes.
+type BetaAppLocalizationAttributes struct {
+	FeedbackEmail      string `json:"feedbackEmail,omitempty"`
+	MarketingURL       string `json:"marketingUrl,omitempty"`
+	PrivacyPolicyURL   string `json:"privacyPolicyUrl,omitempty"`
+	TVOSPrivacyPolicy  string `json:"tvOsPrivacyPolicy,omitempty"`
+	Description        string `json:"description,omitempty"`
+	Locale             string `json:"locale,omitempty"`
+}
+
+// BetaAppLocalizationCreateRequest represents a request to create a beta app localization.
+type BetaAppLocalizationCreateRequest struct {
+	Data BetaAppLocalizationCreateData `json:"data"`
+}
+
+// BetaAppLocalizationCreateData contains the data for creating a beta app localization.
+type BetaAppLocalizationCreateData struct {
+	Type          string                                 `json:"type"`
+	Attributes    BetaAppLocalizationCreateAttributes    `json:"attributes"`
+	Relationships BetaAppLocalizationCreateRelationships `json:"relationships"`
+}
+
+// BetaAppLocalizationCreateAttributes contains attributes for creating a beta app localization.
+type BetaAppLocalizationCreateAttributes struct {
+	FeedbackEmail    string `json:"feedbackEmail,omitempty"`
+	MarketingURL     string `json:"marketingUrl,omitempty"`
+	PrivacyPolicyURL string `json:"privacyPolicyUrl,omitempty"`
+	TVOSPrivacyPolicy string `json:"tvOsPrivacyPolicy,omitempty"`
+	Description      string `json:"description,omitempty"`
+	Locale           string `json:"locale"`
+}
+
+// BetaAppLocalizationCreateRelationships contains relationships for creating a beta app localization.
+type BetaAppLocalizationCreateRelationships struct {
+	App RelationshipData `json:"app"`
+}
+
+// BetaAppLocalizationUpdateRequest represents a request to update a beta app localization.
+type BetaAppLocalizationUpdateRequest struct {
+	Data BetaAppLocalizationUpdateData `json:"data"`
+}
+
+// BetaAppLocalizationUpdateData contains the data for updating a beta app localization.
+type BetaAppLocalizationUpdateData struct {
+	Type       string                              `json:"type"`
+	ID         string                              `json:"id"`
+	Attributes BetaAppLocalizationUpdateAttributes `json:"attributes"`
+}
+
+// BetaAppLocalizationUpdateAttributes contains attributes for updating a beta app localization.
+type BetaAppLocalizationUpdateAttributes struct {
+	FeedbackEmail    string `json:"feedbackEmail,omitempty"`
+	MarketingURL     string `json:"marketingUrl,omitempty"`
+	PrivacyPolicyURL string `json:"privacyPolicyUrl,omitempty"`
+	TVOSPrivacyPolicy string `json:"tvOsPrivacyPolicy,omitempty"`
+	Description      string `json:"description,omitempty"`
+}
+
+// Beta Build Localization types
+
+// BetaBuildLocalizationsResponse represents a list of beta build localizations.
+type BetaBuildLocalizationsResponse struct {
+	Data     []BetaBuildLocalization `json:"data"`
+	Links    PagedDocumentLinks      `json:"links"`
+	Meta     *PagingInformation      `json:"meta,omitempty"`
+	Included []any                   `json:"included,omitempty"`
+}
+
+// BetaBuildLocalizationResponse represents a single beta build localization.
+type BetaBuildLocalizationResponse struct {
+	Data     BetaBuildLocalization `json:"data"`
+	Included []any                 `json:"included,omitempty"`
+}
+
+// BetaBuildLocalization represents a beta build localization.
+type BetaBuildLocalization struct {
+	Type       string                          `json:"type"`
+	ID         string                          `json:"id"`
+	Attributes BetaBuildLocalizationAttributes `json:"attributes"`
+}
+
+// BetaBuildLocalizationAttributes contains beta build localization attributes.
+type BetaBuildLocalizationAttributes struct {
+	WhatsNew string `json:"whatsNew,omitempty"`
+	Locale   string `json:"locale,omitempty"`
+}
+
+// BetaBuildLocalizationCreateRequest represents a request to create a beta build localization.
+type BetaBuildLocalizationCreateRequest struct {
+	Data BetaBuildLocalizationCreateData `json:"data"`
+}
+
+// BetaBuildLocalizationCreateData contains the data for creating a beta build localization.
+type BetaBuildLocalizationCreateData struct {
+	Type          string                                   `json:"type"`
+	Attributes    BetaBuildLocalizationCreateAttributes    `json:"attributes"`
+	Relationships BetaBuildLocalizationCreateRelationships `json:"relationships"`
+}
+
+// BetaBuildLocalizationCreateAttributes contains attributes for creating a beta build localization.
+type BetaBuildLocalizationCreateAttributes struct {
+	WhatsNew string `json:"whatsNew,omitempty"`
+	Locale   string `json:"locale"`
+}
+
+// BetaBuildLocalizationCreateRelationships contains relationships for creating a beta build localization.
+type BetaBuildLocalizationCreateRelationships struct {
+	Build RelationshipData `json:"build"`
+}
+
+// BetaBuildLocalizationUpdateRequest represents a request to update a beta build localization.
+type BetaBuildLocalizationUpdateRequest struct {
+	Data BetaBuildLocalizationUpdateData `json:"data"`
+}
+
+// BetaBuildLocalizationUpdateData contains the data for updating a beta build localization.
+type BetaBuildLocalizationUpdateData struct {
+	Type       string                                `json:"type"`
+	ID         string                                `json:"id"`
+	Attributes BetaBuildLocalizationUpdateAttributes `json:"attributes"`
+}
+
+// BetaBuildLocalizationUpdateAttributes contains attributes for updating a beta build localization.
+type BetaBuildLocalizationUpdateAttributes struct {
+	WhatsNew string `json:"whatsNew,omitempty"`
+}
+
+// Build Beta Detail types
+
+// BuildBetaDetailResponse represents a build beta detail.
+type BuildBetaDetailResponse struct {
+	Data     BuildBetaDetail `json:"data"`
+	Included []any           `json:"included,omitempty"`
+}
+
+// BuildBetaDetailsResponse represents a list of build beta details.
+type BuildBetaDetailsResponse struct {
+	Data     []BuildBetaDetail  `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
+}
+
+// BuildBetaDetail represents build beta details.
+type BuildBetaDetail struct {
+	Type       string                    `json:"type"`
+	ID         string                    `json:"id"`
+	Attributes BuildBetaDetailAttributes `json:"attributes"`
+}
+
+// BuildBetaDetailAttributes contains build beta detail attributes.
+type BuildBetaDetailAttributes struct {
+	AutoNotifyEnabled  bool   `json:"autoNotifyEnabled,omitempty"`
+	InternalBuildState string `json:"internalBuildState,omitempty"`
+	ExternalBuildState string `json:"externalBuildState,omitempty"`
+}
+
+// BuildBetaDetailUpdateRequest represents a request to update a build beta detail.
+type BuildBetaDetailUpdateRequest struct {
+	Data BuildBetaDetailUpdateData `json:"data"`
+}
+
+// BuildBetaDetailUpdateData contains the data for updating a build beta detail.
+type BuildBetaDetailUpdateData struct {
+	Type       string                         `json:"type"`
+	ID         string                         `json:"id"`
+	Attributes BuildBetaDetailUpdateAttributes `json:"attributes"`
+}
+
+// BuildBetaDetailUpdateAttributes contains attributes for updating a build beta detail.
+type BuildBetaDetailUpdateAttributes struct {
+	AutoNotifyEnabled *bool `json:"autoNotifyEnabled,omitempty"`
+}
+
+// Alternative Distribution types (EU DMA)
+
+// AlternativeDistributionPackageResponse represents an alternative distribution package.
+type AlternativeDistributionPackageResponse struct {
+	Data     AlternativeDistributionPackage `json:"data"`
+	Included []any                          `json:"included,omitempty"`
+}
+
+// AlternativeDistributionPackagesResponse represents a list of alternative distribution packages.
+type AlternativeDistributionPackagesResponse struct {
+	Data     []AlternativeDistributionPackage `json:"data"`
+	Links    PagedDocumentLinks               `json:"links"`
+	Meta     *PagingInformation               `json:"meta,omitempty"`
+	Included []any                            `json:"included,omitempty"`
+}
+
+// AlternativeDistributionPackage represents an alternative distribution package.
+type AlternativeDistributionPackage struct {
+	Type       string                                   `json:"type"`
+	ID         string                                   `json:"id"`
+	Attributes AlternativeDistributionPackageAttributes `json:"attributes"`
+}
+
+// AlternativeDistributionPackageAttributes contains alternative distribution package attributes.
+type AlternativeDistributionPackageAttributes struct {
+	// Attributes for alternative distribution packages
+}
+
+// AlternativeDistributionKeyResponse represents an alternative distribution key.
+type AlternativeDistributionKeyResponse struct {
+	Data     AlternativeDistributionKey `json:"data"`
+	Included []any                      `json:"included,omitempty"`
+}
+
+// AlternativeDistributionKeysResponse represents a list of alternative distribution keys.
+type AlternativeDistributionKeysResponse struct {
+	Data     []AlternativeDistributionKey `json:"data"`
+	Links    PagedDocumentLinks           `json:"links"`
+	Meta     *PagingInformation           `json:"meta,omitempty"`
+	Included []any                        `json:"included,omitempty"`
+}
+
+// AlternativeDistributionKey represents an alternative distribution key.
+type AlternativeDistributionKey struct {
+	Type       string                               `json:"type"`
+	ID         string                               `json:"id"`
+	Attributes AlternativeDistributionKeyAttributes `json:"attributes"`
+}
+
+// AlternativeDistributionKeyAttributes contains alternative distribution key attributes.
+type AlternativeDistributionKeyAttributes struct {
+	PublicKey string `json:"publicKey,omitempty"`
+}
+
+// AlternativeDistributionKeyCreateRequest represents a request to create an alternative distribution key.
+type AlternativeDistributionKeyCreateRequest struct {
+	Data AlternativeDistributionKeyCreateData `json:"data"`
+}
+
+// AlternativeDistributionKeyCreateData contains the data for creating an alternative distribution key.
+type AlternativeDistributionKeyCreateData struct {
+	Type          string                                    `json:"type"`
+	Attributes    AlternativeDistributionKeyCreateAttributes `json:"attributes"`
+	Relationships AlternativeDistributionKeyCreateRelationships `json:"relationships"`
+}
+
+// AlternativeDistributionKeyCreateAttributes contains attributes for creating an alternative distribution key.
+type AlternativeDistributionKeyCreateAttributes struct {
+	PublicKey string `json:"publicKey"`
+}
+
+// AlternativeDistributionKeyCreateRelationships contains relationships for creating an alternative distribution key.
+type AlternativeDistributionKeyCreateRelationships struct {
+	App RelationshipData `json:"app"`
+}
+
+// Marketplace Search Detail types
+
+// MarketplaceSearchDetailResponse represents marketplace search detail.
+type MarketplaceSearchDetailResponse struct {
+	Data     MarketplaceSearchDetail `json:"data"`
+	Included []any                   `json:"included,omitempty"`
+}
+
+// MarketplaceSearchDetail represents marketplace search details.
+type MarketplaceSearchDetail struct {
+	Type       string                            `json:"type"`
+	ID         string                            `json:"id"`
+	Attributes MarketplaceSearchDetailAttributes `json:"attributes"`
+}
+
+// MarketplaceSearchDetailAttributes contains marketplace search detail attributes.
+type MarketplaceSearchDetailAttributes struct {
+	CatalogURL string `json:"catalogUrl,omitempty"`
+}
+
+// MarketplaceSearchDetailCreateRequest represents a request to create marketplace search details.
+type MarketplaceSearchDetailCreateRequest struct {
+	Data MarketplaceSearchDetailCreateData `json:"data"`
+}
+
+// MarketplaceSearchDetailCreateData contains the data for creating marketplace search details.
+type MarketplaceSearchDetailCreateData struct {
+	Type          string                                     `json:"type"`
+	Attributes    MarketplaceSearchDetailCreateAttributes    `json:"attributes"`
+	Relationships MarketplaceSearchDetailCreateRelationships `json:"relationships"`
+}
+
+// MarketplaceSearchDetailCreateAttributes contains attributes for creating marketplace search details.
+type MarketplaceSearchDetailCreateAttributes struct {
+	CatalogURL string `json:"catalogUrl"`
+}
+
+// MarketplaceSearchDetailCreateRelationships contains relationships for creating marketplace search details.
+type MarketplaceSearchDetailCreateRelationships struct {
+	App RelationshipData `json:"app"`
+}
+
+// MarketplaceSearchDetailUpdateRequest represents a request to update marketplace search details.
+type MarketplaceSearchDetailUpdateRequest struct {
+	Data MarketplaceSearchDetailUpdateData `json:"data"`
+}
+
+// MarketplaceSearchDetailUpdateData contains the data for updating marketplace search details.
+type MarketplaceSearchDetailUpdateData struct {
+	Type       string                                  `json:"type"`
+	ID         string                                  `json:"id"`
+	Attributes MarketplaceSearchDetailUpdateAttributes `json:"attributes"`
+}
+
+// MarketplaceSearchDetailUpdateAttributes contains attributes for updating marketplace search details.
+type MarketplaceSearchDetailUpdateAttributes struct {
+	CatalogURL string `json:"catalogUrl,omitempty"`
+}

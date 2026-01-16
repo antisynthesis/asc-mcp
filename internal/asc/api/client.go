@@ -1904,3 +1904,1378 @@ func (c *Client) AssignBuildToEncryptionDeclaration(ctx context.Context, declara
 	_, err := c.Post(ctx, "/v1/appEncryptionDeclarations/"+declarationID+"/relationships/builds", body)
 	return err
 }
+
+// User management methods
+
+// ListUsers returns a list of users.
+func (c *Client) ListUsers(ctx context.Context, limit int) (*UsersResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/users", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp UsersResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetUser returns a single user.
+func (c *Client) GetUser(ctx context.Context, userID string) (*UserResponse, error) {
+	data, err := c.Get(ctx, "/v1/users/"+userID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp UserResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateUser updates a user.
+func (c *Client) UpdateUser(ctx context.Context, userID string, req *UserUpdateRequest) (*UserResponse, error) {
+	data, err := c.Patch(ctx, "/v1/users/"+userID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp UserResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteUser removes a user from the team.
+func (c *Client) DeleteUser(ctx context.Context, userID string) error {
+	return c.Delete(ctx, "/v1/users/"+userID)
+}
+
+// ListUserInvitations returns a list of user invitations.
+func (c *Client) ListUserInvitations(ctx context.Context, limit int) (*UserInvitationsResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/userInvitations", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp UserInvitationsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetUserInvitation returns a single user invitation.
+func (c *Client) GetUserInvitation(ctx context.Context, invitationID string) (*UserInvitationResponse, error) {
+	data, err := c.Get(ctx, "/v1/userInvitations/"+invitationID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp UserInvitationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateUserInvitation invites a new user.
+func (c *Client) CreateUserInvitation(ctx context.Context, req *UserInvitationCreateRequest) (*UserInvitationResponse, error) {
+	data, err := c.Post(ctx, "/v1/userInvitations", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp UserInvitationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteUserInvitation cancels a user invitation.
+func (c *Client) DeleteUserInvitation(ctx context.Context, invitationID string) error {
+	return c.Delete(ctx, "/v1/userInvitations/"+invitationID)
+}
+
+// App Pricing methods
+
+// GetAppPriceSchedule returns the price schedule for an app.
+func (c *Client) GetAppPriceSchedule(ctx context.Context, appID string) (*AppPriceScheduleResponse, error) {
+	data, err := c.Get(ctx, "/v1/apps/"+appID+"/appPriceSchedule", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppPriceScheduleResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// ListAppPricePoints returns price points for an app.
+func (c *Client) ListAppPricePoints(ctx context.Context, appID string, limit int) (*AppPricePointsResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/apps/"+appID+"/appPricePoints", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppPricePointsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// ListTerritories returns all territories.
+func (c *Client) ListTerritories(ctx context.Context, limit int) (*TerritoriesResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/territories", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp TerritoriesResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// App Availability methods
+
+// GetAppAvailability returns app availability.
+func (c *Client) GetAppAvailability(ctx context.Context, appID string) (*AppAvailabilityResponse, error) {
+	data, err := c.Get(ctx, "/v1/apps/"+appID+"/appAvailability", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppAvailabilityResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateAppAvailability sets app availability.
+func (c *Client) CreateAppAvailability(ctx context.Context, req *AppAvailabilityCreateRequest) (*AppAvailabilityResponse, error) {
+	data, err := c.Post(ctx, "/v1/appAvailabilities", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppAvailabilityResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// ListTerritoryAvailabilities returns territory availabilities.
+func (c *Client) ListTerritoryAvailabilities(ctx context.Context, appAvailabilityID string, limit int) (*TerritoryAvailabilitiesResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/appAvailabilities/"+appAvailabilityID+"/territoryAvailabilities", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp TerritoryAvailabilitiesResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// Age Rating Declaration methods
+
+// GetAgeRatingDeclaration returns an age rating declaration.
+func (c *Client) GetAgeRatingDeclaration(ctx context.Context, appInfoID string) (*AgeRatingDeclarationResponse, error) {
+	data, err := c.Get(ctx, "/v1/appInfos/"+appInfoID+"/ageRatingDeclaration", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AgeRatingDeclarationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateAgeRatingDeclaration updates an age rating declaration.
+func (c *Client) UpdateAgeRatingDeclaration(ctx context.Context, declarationID string, req *AgeRatingDeclarationUpdateRequest) (*AgeRatingDeclarationResponse, error) {
+	data, err := c.Patch(ctx, "/v1/ageRatingDeclarations/"+declarationID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AgeRatingDeclarationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// IDFA Declaration methods
+
+// GetIdfaDeclaration returns an IDFA declaration.
+func (c *Client) GetIdfaDeclaration(ctx context.Context, versionID string) (*IdfaDeclarationResponse, error) {
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+versionID+"/idfaDeclaration", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp IdfaDeclarationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateIdfaDeclaration creates an IDFA declaration.
+func (c *Client) CreateIdfaDeclaration(ctx context.Context, req *IdfaDeclarationCreateRequest) (*IdfaDeclarationResponse, error) {
+	data, err := c.Post(ctx, "/v1/idfaDeclarations", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp IdfaDeclarationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateIdfaDeclaration updates an IDFA declaration.
+func (c *Client) UpdateIdfaDeclaration(ctx context.Context, declarationID string, req *IdfaDeclarationUpdateRequest) (*IdfaDeclarationResponse, error) {
+	data, err := c.Patch(ctx, "/v1/idfaDeclarations/"+declarationID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp IdfaDeclarationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteIdfaDeclaration deletes an IDFA declaration.
+func (c *Client) DeleteIdfaDeclaration(ctx context.Context, declarationID string) error {
+	return c.Delete(ctx, "/v1/idfaDeclarations/"+declarationID)
+}
+
+// End User License Agreement methods
+
+// GetEndUserLicenseAgreement returns an EULA.
+func (c *Client) GetEndUserLicenseAgreement(ctx context.Context, appID string) (*EndUserLicenseAgreementResponse, error) {
+	data, err := c.Get(ctx, "/v1/apps/"+appID+"/endUserLicenseAgreement", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp EndUserLicenseAgreementResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateEndUserLicenseAgreement creates an EULA.
+func (c *Client) CreateEndUserLicenseAgreement(ctx context.Context, req *EndUserLicenseAgreementCreateRequest) (*EndUserLicenseAgreementResponse, error) {
+	data, err := c.Post(ctx, "/v1/endUserLicenseAgreements", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp EndUserLicenseAgreementResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateEndUserLicenseAgreement updates an EULA.
+func (c *Client) UpdateEndUserLicenseAgreement(ctx context.Context, agreementID string, req *EndUserLicenseAgreementUpdateRequest) (*EndUserLicenseAgreementResponse, error) {
+	data, err := c.Patch(ctx, "/v1/endUserLicenseAgreements/"+agreementID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp EndUserLicenseAgreementResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteEndUserLicenseAgreement deletes an EULA.
+func (c *Client) DeleteEndUserLicenseAgreement(ctx context.Context, agreementID string) error {
+	return c.Delete(ctx, "/v1/endUserLicenseAgreements/"+agreementID)
+}
+
+// Beta App Review Submission methods
+
+// ListBetaAppReviewSubmissions returns a list of beta app review submissions.
+func (c *Client) ListBetaAppReviewSubmissions(ctx context.Context, limit int) (*BetaAppReviewSubmissionsResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/betaAppReviewSubmissions", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaAppReviewSubmissionsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetBetaAppReviewSubmission returns a single beta app review submission.
+func (c *Client) GetBetaAppReviewSubmission(ctx context.Context, submissionID string) (*BetaAppReviewSubmissionResponse, error) {
+	data, err := c.Get(ctx, "/v1/betaAppReviewSubmissions/"+submissionID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaAppReviewSubmissionResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateBetaAppReviewSubmission submits a build for beta app review.
+func (c *Client) CreateBetaAppReviewSubmission(ctx context.Context, req *BetaAppReviewSubmissionCreateRequest) (*BetaAppReviewSubmissionResponse, error) {
+	data, err := c.Post(ctx, "/v1/betaAppReviewSubmissions", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaAppReviewSubmissionResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// Beta License Agreement methods
+
+// ListBetaLicenseAgreements returns a list of beta license agreements.
+func (c *Client) ListBetaLicenseAgreements(ctx context.Context, limit int) (*BetaLicenseAgreementsResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/betaLicenseAgreements", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaLicenseAgreementsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetBetaLicenseAgreement returns a single beta license agreement.
+func (c *Client) GetBetaLicenseAgreement(ctx context.Context, agreementID string) (*BetaLicenseAgreementResponse, error) {
+	data, err := c.Get(ctx, "/v1/betaLicenseAgreements/"+agreementID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaLicenseAgreementResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateBetaLicenseAgreement updates a beta license agreement.
+func (c *Client) UpdateBetaLicenseAgreement(ctx context.Context, agreementID string, req *BetaLicenseAgreementUpdateRequest) (*BetaLicenseAgreementResponse, error) {
+	data, err := c.Patch(ctx, "/v1/betaLicenseAgreements/"+agreementID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaLicenseAgreementResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// Sandbox Tester methods
+
+// ListSandboxTesters returns a list of sandbox testers.
+func (c *Client) ListSandboxTesters(ctx context.Context, limit int) (*SandboxTestersResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v2/sandboxTesters", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp SandboxTestersResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateSandboxTester creates a sandbox tester.
+func (c *Client) CreateSandboxTester(ctx context.Context, req *SandboxTesterCreateRequest) (*SandboxTesterResponse, error) {
+	data, err := c.Post(ctx, "/v2/sandboxTesters", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp SandboxTesterResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateSandboxTester updates a sandbox tester.
+func (c *Client) UpdateSandboxTester(ctx context.Context, testerID string, req *SandboxTesterUpdateRequest) (*SandboxTesterResponse, error) {
+	data, err := c.Patch(ctx, "/v2/sandboxTesters/"+testerID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp SandboxTesterResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteSandboxTester deletes a sandbox tester.
+func (c *Client) DeleteSandboxTester(ctx context.Context, testerID string) error {
+	return c.Delete(ctx, "/v2/sandboxTesters/"+testerID)
+}
+
+// Promoted Purchase methods
+
+// ListPromotedPurchases returns promoted purchases for an app.
+func (c *Client) ListPromotedPurchases(ctx context.Context, appID string, limit int) (*PromotedPurchasesResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/apps/"+appID+"/promotedPurchases", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp PromotedPurchasesResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetPromotedPurchase returns a single promoted purchase.
+func (c *Client) GetPromotedPurchase(ctx context.Context, promotedPurchaseID string) (*PromotedPurchaseResponse, error) {
+	data, err := c.Get(ctx, "/v1/promotedPurchases/"+promotedPurchaseID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp PromotedPurchaseResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreatePromotedPurchase creates a promoted purchase.
+func (c *Client) CreatePromotedPurchase(ctx context.Context, req *PromotedPurchaseCreateRequest) (*PromotedPurchaseResponse, error) {
+	data, err := c.Post(ctx, "/v1/promotedPurchases", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp PromotedPurchaseResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdatePromotedPurchase updates a promoted purchase.
+func (c *Client) UpdatePromotedPurchase(ctx context.Context, promotedPurchaseID string, req *PromotedPurchaseUpdateRequest) (*PromotedPurchaseResponse, error) {
+	data, err := c.Patch(ctx, "/v1/promotedPurchases/"+promotedPurchaseID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp PromotedPurchaseResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeletePromotedPurchase deletes a promoted purchase.
+func (c *Client) DeletePromotedPurchase(ctx context.Context, promotedPurchaseID string) error {
+	return c.Delete(ctx, "/v1/promotedPurchases/"+promotedPurchaseID)
+}
+
+// Subscription Offer Code methods
+
+// ListSubscriptionOfferCodes returns offer codes for a subscription.
+func (c *Client) ListSubscriptionOfferCodes(ctx context.Context, subscriptionID string, limit int) (*SubscriptionOfferCodesResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/subscriptions/"+subscriptionID+"/offerCodes", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp SubscriptionOfferCodesResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetSubscriptionOfferCode returns a single offer code.
+func (c *Client) GetSubscriptionOfferCode(ctx context.Context, offerCodeID string) (*SubscriptionOfferCodeResponse, error) {
+	data, err := c.Get(ctx, "/v1/subscriptionOfferCodes/"+offerCodeID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp SubscriptionOfferCodeResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateSubscriptionOfferCode creates an offer code.
+func (c *Client) CreateSubscriptionOfferCode(ctx context.Context, req *SubscriptionOfferCodeCreateRequest) (*SubscriptionOfferCodeResponse, error) {
+	data, err := c.Post(ctx, "/v1/subscriptionOfferCodes", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp SubscriptionOfferCodeResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateSubscriptionOfferCode updates an offer code.
+func (c *Client) UpdateSubscriptionOfferCode(ctx context.Context, offerCodeID string, req *SubscriptionOfferCodeUpdateRequest) (*SubscriptionOfferCodeResponse, error) {
+	data, err := c.Patch(ctx, "/v1/subscriptionOfferCodes/"+offerCodeID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp SubscriptionOfferCodeResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// Subscription Price Point methods
+
+// ListSubscriptionPricePoints returns price points for a subscription.
+func (c *Client) ListSubscriptionPricePoints(ctx context.Context, subscriptionID string, limit int) (*SubscriptionPricePointsResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/subscriptions/"+subscriptionID+"/pricePoints", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp SubscriptionPricePointsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// Win-back Offer methods
+
+// ListWinBackOffers returns win-back offers for a subscription.
+func (c *Client) ListWinBackOffers(ctx context.Context, subscriptionID string, limit int) (*WinBackOffersResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/subscriptions/"+subscriptionID+"/winBackOffers", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp WinBackOffersResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetWinBackOffer returns a single win-back offer.
+func (c *Client) GetWinBackOffer(ctx context.Context, offerID string) (*WinBackOfferResponse, error) {
+	data, err := c.Get(ctx, "/v1/winBackOffers/"+offerID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp WinBackOfferResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateWinBackOffer creates a win-back offer.
+func (c *Client) CreateWinBackOffer(ctx context.Context, req *WinBackOfferCreateRequest) (*WinBackOfferResponse, error) {
+	data, err := c.Post(ctx, "/v1/winBackOffers", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp WinBackOfferResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateWinBackOffer updates a win-back offer.
+func (c *Client) UpdateWinBackOffer(ctx context.Context, offerID string, req *WinBackOfferUpdateRequest) (*WinBackOfferResponse, error) {
+	data, err := c.Patch(ctx, "/v1/winBackOffers/"+offerID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp WinBackOfferResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteWinBackOffer deletes a win-back offer.
+func (c *Client) DeleteWinBackOffer(ctx context.Context, offerID string) error {
+	return c.Delete(ctx, "/v1/winBackOffers/"+offerID)
+}
+
+// App Store Version Experiment methods
+
+// ListAppStoreVersionExperiments returns experiments for a version.
+func (c *Client) ListAppStoreVersionExperiments(ctx context.Context, versionID string, limit int) (*AppStoreVersionExperimentsResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+versionID+"/appStoreVersionExperiments", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppStoreVersionExperimentsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetAppStoreVersionExperiment returns a single experiment.
+func (c *Client) GetAppStoreVersionExperiment(ctx context.Context, experimentID string) (*AppStoreVersionExperimentResponse, error) {
+	data, err := c.Get(ctx, "/v1/appStoreVersionExperiments/"+experimentID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppStoreVersionExperimentResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateAppStoreVersionExperiment creates an experiment.
+func (c *Client) CreateAppStoreVersionExperiment(ctx context.Context, req *AppStoreVersionExperimentCreateRequest) (*AppStoreVersionExperimentResponse, error) {
+	data, err := c.Post(ctx, "/v1/appStoreVersionExperiments", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppStoreVersionExperimentResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateAppStoreVersionExperiment updates an experiment.
+func (c *Client) UpdateAppStoreVersionExperiment(ctx context.Context, experimentID string, req *AppStoreVersionExperimentUpdateRequest) (*AppStoreVersionExperimentResponse, error) {
+	data, err := c.Patch(ctx, "/v1/appStoreVersionExperiments/"+experimentID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppStoreVersionExperimentResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteAppStoreVersionExperiment deletes an experiment.
+func (c *Client) DeleteAppStoreVersionExperiment(ctx context.Context, experimentID string) error {
+	return c.Delete(ctx, "/v1/appStoreVersionExperiments/"+experimentID)
+}
+
+// Custom Product Page methods
+
+// ListAppCustomProductPages returns custom product pages for an app.
+func (c *Client) ListAppCustomProductPages(ctx context.Context, appID string, limit int) (*AppCustomProductPagesResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/apps/"+appID+"/appCustomProductPages", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppCustomProductPagesResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetAppCustomProductPage returns a single custom product page.
+func (c *Client) GetAppCustomProductPage(ctx context.Context, pageID string) (*AppCustomProductPageResponse, error) {
+	data, err := c.Get(ctx, "/v1/appCustomProductPages/"+pageID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppCustomProductPageResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateAppCustomProductPage creates a custom product page.
+func (c *Client) CreateAppCustomProductPage(ctx context.Context, req *AppCustomProductPageCreateRequest) (*AppCustomProductPageResponse, error) {
+	data, err := c.Post(ctx, "/v1/appCustomProductPages", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppCustomProductPageResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateAppCustomProductPage updates a custom product page.
+func (c *Client) UpdateAppCustomProductPage(ctx context.Context, pageID string, req *AppCustomProductPageUpdateRequest) (*AppCustomProductPageResponse, error) {
+	data, err := c.Patch(ctx, "/v1/appCustomProductPages/"+pageID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppCustomProductPageResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteAppCustomProductPage deletes a custom product page.
+func (c *Client) DeleteAppCustomProductPage(ctx context.Context, pageID string) error {
+	return c.Delete(ctx, "/v1/appCustomProductPages/"+pageID)
+}
+
+// Routing App Coverage methods
+
+// GetRoutingAppCoverage returns routing app coverage.
+func (c *Client) GetRoutingAppCoverage(ctx context.Context, versionID string) (*RoutingAppCoverageResponse, error) {
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+versionID+"/routingAppCoverage", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp RoutingAppCoverageResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateRoutingAppCoverage creates routing app coverage.
+func (c *Client) CreateRoutingAppCoverage(ctx context.Context, req *RoutingAppCoverageCreateRequest) (*RoutingAppCoverageResponse, error) {
+	data, err := c.Post(ctx, "/v1/routingAppCoverages", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp RoutingAppCoverageResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateRoutingAppCoverage updates routing app coverage.
+func (c *Client) UpdateRoutingAppCoverage(ctx context.Context, coverageID string, req *RoutingAppCoverageUpdateRequest) (*RoutingAppCoverageResponse, error) {
+	data, err := c.Patch(ctx, "/v1/routingAppCoverages/"+coverageID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp RoutingAppCoverageResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteRoutingAppCoverage deletes routing app coverage.
+func (c *Client) DeleteRoutingAppCoverage(ctx context.Context, coverageID string) error {
+	return c.Delete(ctx, "/v1/routingAppCoverages/"+coverageID)
+}
+
+// Performance Metrics methods
+
+// ListPerfPowerMetrics returns performance and power metrics.
+func (c *Client) ListPerfPowerMetrics(ctx context.Context, appID string, limit int) (*PerfPowerMetricsResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/apps/"+appID+"/perfPowerMetrics", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp PerfPowerMetricsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// ListBuildPerfPowerMetrics returns performance metrics for a build.
+func (c *Client) ListBuildPerfPowerMetrics(ctx context.Context, buildID string, limit int) (*PerfPowerMetricsResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/builds/"+buildID+"/perfPowerMetrics", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp PerfPowerMetricsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// Diagnostic methods
+
+// ListDiagnosticSignatures returns diagnostic signatures.
+func (c *Client) ListDiagnosticSignatures(ctx context.Context, buildID string, limit int) (*DiagnosticSignaturesResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/builds/"+buildID+"/diagnosticSignatures", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp DiagnosticSignaturesResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// ListDiagnosticLogs returns diagnostic logs.
+func (c *Client) ListDiagnosticLogs(ctx context.Context, signatureID string, limit int) (*DiagnosticLogsResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/diagnosticSignatures/"+signatureID+"/logs", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp DiagnosticLogsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// Review Attachment methods
+
+// ListAppStoreReviewAttachments returns review attachments.
+func (c *Client) ListAppStoreReviewAttachments(ctx context.Context, reviewDetailID string, limit int) (*AppStoreReviewAttachmentsResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/appStoreReviewDetails/"+reviewDetailID+"/appStoreReviewAttachments", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppStoreReviewAttachmentsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetAppStoreReviewAttachment returns a single review attachment.
+func (c *Client) GetAppStoreReviewAttachment(ctx context.Context, attachmentID string) (*AppStoreReviewAttachmentResponse, error) {
+	data, err := c.Get(ctx, "/v1/appStoreReviewAttachments/"+attachmentID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppStoreReviewAttachmentResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateAppStoreReviewAttachment creates a review attachment.
+func (c *Client) CreateAppStoreReviewAttachment(ctx context.Context, req *AppStoreReviewAttachmentCreateRequest) (*AppStoreReviewAttachmentResponse, error) {
+	data, err := c.Post(ctx, "/v1/appStoreReviewAttachments", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppStoreReviewAttachmentResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateAppStoreReviewAttachment updates a review attachment.
+func (c *Client) UpdateAppStoreReviewAttachment(ctx context.Context, attachmentID string, req *AppStoreReviewAttachmentUpdateRequest) (*AppStoreReviewAttachmentResponse, error) {
+	data, err := c.Patch(ctx, "/v1/appStoreReviewAttachments/"+attachmentID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppStoreReviewAttachmentResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteAppStoreReviewAttachment deletes a review attachment.
+func (c *Client) DeleteAppStoreReviewAttachment(ctx context.Context, attachmentID string) error {
+	return c.Delete(ctx, "/v1/appStoreReviewAttachments/"+attachmentID)
+}
+
+// App Category methods
+
+// ListAppCategories returns all app categories.
+func (c *Client) ListAppCategories(ctx context.Context, limit int) (*AppCategoriesResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/appCategories", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppCategoriesResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetAppCategory returns a single app category.
+func (c *Client) GetAppCategory(ctx context.Context, categoryID string) (*AppCategoryResponse, error) {
+	data, err := c.Get(ctx, "/v1/appCategories/"+categoryID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppCategoryResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// Beta App Localization methods
+
+// ListBetaAppLocalizations returns beta app localizations.
+func (c *Client) ListBetaAppLocalizations(ctx context.Context, appID string, limit int) (*BetaAppLocalizationsResponse, error) {
+	query := url.Values{}
+	query.Set("filter[app]", appID)
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/betaAppLocalizations", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaAppLocalizationsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetBetaAppLocalization returns a single beta app localization.
+func (c *Client) GetBetaAppLocalization(ctx context.Context, localizationID string) (*BetaAppLocalizationResponse, error) {
+	data, err := c.Get(ctx, "/v1/betaAppLocalizations/"+localizationID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaAppLocalizationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateBetaAppLocalization creates a beta app localization.
+func (c *Client) CreateBetaAppLocalization(ctx context.Context, req *BetaAppLocalizationCreateRequest) (*BetaAppLocalizationResponse, error) {
+	data, err := c.Post(ctx, "/v1/betaAppLocalizations", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaAppLocalizationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateBetaAppLocalization updates a beta app localization.
+func (c *Client) UpdateBetaAppLocalization(ctx context.Context, localizationID string, req *BetaAppLocalizationUpdateRequest) (*BetaAppLocalizationResponse, error) {
+	data, err := c.Patch(ctx, "/v1/betaAppLocalizations/"+localizationID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaAppLocalizationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteBetaAppLocalization deletes a beta app localization.
+func (c *Client) DeleteBetaAppLocalization(ctx context.Context, localizationID string) error {
+	return c.Delete(ctx, "/v1/betaAppLocalizations/"+localizationID)
+}
+
+// Beta Build Localization methods
+
+// ListBetaBuildLocalizations returns beta build localizations.
+func (c *Client) ListBetaBuildLocalizations(ctx context.Context, buildID string, limit int) (*BetaBuildLocalizationsResponse, error) {
+	query := url.Values{}
+	query.Set("filter[build]", buildID)
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/betaBuildLocalizations", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaBuildLocalizationsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetBetaBuildLocalization returns a single beta build localization.
+func (c *Client) GetBetaBuildLocalization(ctx context.Context, localizationID string) (*BetaBuildLocalizationResponse, error) {
+	data, err := c.Get(ctx, "/v1/betaBuildLocalizations/"+localizationID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaBuildLocalizationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateBetaBuildLocalization creates a beta build localization.
+func (c *Client) CreateBetaBuildLocalization(ctx context.Context, req *BetaBuildLocalizationCreateRequest) (*BetaBuildLocalizationResponse, error) {
+	data, err := c.Post(ctx, "/v1/betaBuildLocalizations", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaBuildLocalizationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateBetaBuildLocalization updates a beta build localization.
+func (c *Client) UpdateBetaBuildLocalization(ctx context.Context, localizationID string, req *BetaBuildLocalizationUpdateRequest) (*BetaBuildLocalizationResponse, error) {
+	data, err := c.Patch(ctx, "/v1/betaBuildLocalizations/"+localizationID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BetaBuildLocalizationResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteBetaBuildLocalization deletes a beta build localization.
+func (c *Client) DeleteBetaBuildLocalization(ctx context.Context, localizationID string) error {
+	return c.Delete(ctx, "/v1/betaBuildLocalizations/"+localizationID)
+}
+
+// Build Beta Detail methods
+
+// GetBuildBetaDetail returns build beta detail.
+func (c *Client) GetBuildBetaDetail(ctx context.Context, buildID string) (*BuildBetaDetailResponse, error) {
+	data, err := c.Get(ctx, "/v1/builds/"+buildID+"/buildBetaDetail", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BuildBetaDetailResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateBuildBetaDetail updates build beta detail.
+func (c *Client) UpdateBuildBetaDetail(ctx context.Context, detailID string, req *BuildBetaDetailUpdateRequest) (*BuildBetaDetailResponse, error) {
+	data, err := c.Patch(ctx, "/v1/buildBetaDetails/"+detailID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp BuildBetaDetailResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// Alternative Distribution methods
+
+// ListAlternativeDistributionKeys returns alternative distribution keys.
+func (c *Client) ListAlternativeDistributionKeys(ctx context.Context, limit int) (*AlternativeDistributionKeysResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/alternativeDistributionKeys", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AlternativeDistributionKeysResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetAlternativeDistributionKey returns a single alternative distribution key.
+func (c *Client) GetAlternativeDistributionKey(ctx context.Context, keyID string) (*AlternativeDistributionKeyResponse, error) {
+	data, err := c.Get(ctx, "/v1/alternativeDistributionKeys/"+keyID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AlternativeDistributionKeyResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateAlternativeDistributionKey creates an alternative distribution key.
+func (c *Client) CreateAlternativeDistributionKey(ctx context.Context, req *AlternativeDistributionKeyCreateRequest) (*AlternativeDistributionKeyResponse, error) {
+	data, err := c.Post(ctx, "/v1/alternativeDistributionKeys", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AlternativeDistributionKeyResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteAlternativeDistributionKey deletes an alternative distribution key.
+func (c *Client) DeleteAlternativeDistributionKey(ctx context.Context, keyID string) error {
+	return c.Delete(ctx, "/v1/alternativeDistributionKeys/"+keyID)
+}
+
+// ListAlternativeDistributionPackages returns alternative distribution packages.
+func (c *Client) ListAlternativeDistributionPackages(ctx context.Context, appID string, limit int) (*AlternativeDistributionPackagesResponse, error) {
+	query := url.Values{}
+	query.Set("limit", fmt.Sprintf("%d", limit))
+	data, err := c.Get(ctx, "/v1/apps/"+appID+"/alternativeDistributionPackages", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AlternativeDistributionPackagesResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// Marketplace Search Detail methods
+
+// GetMarketplaceSearchDetail returns marketplace search details.
+func (c *Client) GetMarketplaceSearchDetail(ctx context.Context, appID string) (*MarketplaceSearchDetailResponse, error) {
+	data, err := c.Get(ctx, "/v1/apps/"+appID+"/marketplaceSearchDetail", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp MarketplaceSearchDetailResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// CreateMarketplaceSearchDetail creates marketplace search details.
+func (c *Client) CreateMarketplaceSearchDetail(ctx context.Context, req *MarketplaceSearchDetailCreateRequest) (*MarketplaceSearchDetailResponse, error) {
+	data, err := c.Post(ctx, "/v1/marketplaceSearchDetails", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp MarketplaceSearchDetailResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// UpdateMarketplaceSearchDetail updates marketplace search details.
+func (c *Client) UpdateMarketplaceSearchDetail(ctx context.Context, detailID string, req *MarketplaceSearchDetailUpdateRequest) (*MarketplaceSearchDetailResponse, error) {
+	data, err := c.Patch(ctx, "/v1/marketplaceSearchDetails/"+detailID, req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp MarketplaceSearchDetailResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// DeleteMarketplaceSearchDetail deletes marketplace search details.
+func (c *Client) DeleteMarketplaceSearchDetail(ctx context.Context, detailID string) error {
+	return c.Delete(ctx, "/v1/marketplaceSearchDetails/"+detailID)
+}
