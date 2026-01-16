@@ -75,6 +75,36 @@ func NewRegistry(client *api.Client) *Registry {
 	// Encryption
 	r.registerEncryptionTools()
 
+	// Users and roles
+	r.registerUserTools()
+
+	// Pricing
+	r.registerPricingTools()
+
+	// Availability
+	r.registerAvailabilityTools()
+
+	// Age rating and IDFA
+	r.registerAgeRatingTools()
+
+	// Beta review and agreements
+	r.registerBetaReviewTools()
+
+	// Sandbox testers
+	r.registerSandboxTools()
+
+	// Promoted purchases and offer codes
+	r.registerPromotedPurchasesTools()
+
+	// Product pages and experiments
+	r.registerProductPagesTools()
+
+	// Diagnostics and metrics
+	r.registerDiagnosticsTools()
+
+	// Misc tools (EULA, categories, alternative distribution)
+	r.registerMiscTools()
+
 	return r
 }
 
