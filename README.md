@@ -4,7 +4,9 @@ An MCP (Model Context Protocol) server for Apple App Store Connect.
 
 ## Features
 
-**200 MCP tools** covering the complete App Store Connect API:
+**203 MCP tools** covering the complete App Store Connect API, including the
+three-step asset upload flow for screenshots, previews, and review
+attachments:
 
 - **App Management**: List apps, get app details, view app versions
 - **Build Management**: List and inspect builds, view processing status
@@ -502,6 +504,22 @@ runtime dependencies are required.
 
 The server speaks MCP protocol version `2025-06-18` and negotiates down to
 `2025-03-26` or `2024-11-05` for older clients.
+
+Two transports are supported, sharing the same dispatcher and tool registry:
+
+- `asc-mcp serve` — stdio. JSON-RPC messages on stdin/stdout. Use this when
+  the server is spawned by a desktop client such as Claude Desktop.
+- `asc-mcp serve-http --addr :8080 [--allowed-origins ...]` — Streamable
+  HTTP per the 2025-06-18 spec. `POST /mcp` for JSON-RPC submissions,
+  `DELETE /mcp` to end a session, `GET /healthz` for the K8s probe. The
+  server assigns an `Mcp-Session-Id` on initialize and clients echo it on
+  every subsequent request.
+
+Asset uploads (screenshots, previews, review attachments) use the
+three-step App Store Connect handshake (reserve → chunked upload →
+commit) under the hood. Tools accept either a local `file_path` or a
+base64-encoded `file_data_base64` so they work both from stdio and over
+the HTTP transport.
 
 ```
 asc-mcp/

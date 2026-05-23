@@ -18,7 +18,19 @@ We need to implement an MCP server that exposes App Store Connect functionality 
 
 We will implement MCP using:
 
-1. **Transport**: stdio (stdin/stdout) as the primary and only transport.
+1. **Transports**: two transports share a single `server.Dispatcher`
+   and the same tool registry.
+   - **stdio** (`asc-mcp serve`) — JSON-RPC messages on stdin/stdout,
+     one session per process. This is the primary transport for desktop
+     clients that spawn the server as a subprocess.
+   - **Streamable HTTP** (`asc-mcp serve-http`) — the 2025-06-18 spec's
+     single-endpoint HTTP shape. `POST /mcp` for JSON-RPC; `DELETE /mcp`
+     to end a session; `GET /mcp` reserved for server-initiated SSE
+     (currently returns 405 because we have no pushed messages).
+     Sessions are identified by an `Mcp-Session-Id` header the server
+     assigns on initialize. Defenses include a request-body size cap, an
+     optional Origin allowlist (against DNS rebinding), validation of
+     the `MCP-Protocol-Version` header, and idle session reaping.
 2. **Protocol**: JSON-RPC 2.0 with proper request/response handling.
 3. **Protocol version**: The server prefers `2025-06-18` and negotiates
    down to `2025-03-26` or `2024-11-05` for older clients via the
@@ -48,20 +60,28 @@ Claude Desktop).
 
 ### Positive
 
-- Simple deployment model (single binary)
-- No network configuration required
-- Secure by default (no exposed ports)
-- Easy testing via command line
-- Compatible with Claude Desktop and other MCP clients
+- Single binary supports both stdio (for desktop clients) and HTTP
+  (for hosted deployments), without duplicating the dispatcher logic.
+- HTTP transport is compatible with the existing Kubernetes manifests
+  (`/healthz` probe, `--allowed-origins` for DNS-rebinding defense).
+- Stdio is secure by default (no ports), trivial to test from a shell.
+- Tools that accept files support both `file_path` (stdio-friendly)
+  and base64 `file_data_base64` (HTTP-friendly).
 
 ### Negative
 
-- Cannot be shared across multiple clients simultaneously
-- No remote access without additional tooling
-- Debugging requires capturing stdio
+- HTTP session storage is in-memory and per-process: running multiple
+  replicas requires sticky sessions or an external session store.
+- HTTP transport does not yet implement the optional GET-for-SSE
+  channel, so server-initiated messages (sampling, elicitation) are
+  not supported in either transport.
+- Stdio still cannot serve multiple clients from a single process.
 
 ### Mitigations
 
-- Logging to stderr (separate from protocol stdout)
-- CLI commands for testing tools without full MCP session
-- Future HTTP transport could be added if needed
+- Logging goes to stderr in both transports so stdout stays clean for
+  the JSON-RPC stream when using stdio.
+- The HTTP server reaps idle sessions after 30 minutes to bound
+  memory growth.
+- The CLI's `tools` subcommand lets operators inspect the catalog
+  without a live MCP session.
