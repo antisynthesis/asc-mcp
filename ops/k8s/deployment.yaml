@@ -56,6 +56,27 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
+          # asc-mcp speaks MCP over stdio, so there is no listening
+          # network port to probe. The validate subcommand exits 0 when
+          # credentials are present and the private key is readable,
+          # which is what we want to verify before the pod is
+          # considered ready or live.
+          startupProbe:
+            exec:
+              command: ["/asc-mcp", "validate"]
+            failureThreshold: 6
+            periodSeconds: 5
+          readinessProbe:
+            exec:
+              command: ["/asc-mcp", "validate"]
+            periodSeconds: 30
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["/asc-mcp", "validate"]
+            periodSeconds: 60
+            timeoutSeconds: 5
+            failureThreshold: 3
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
