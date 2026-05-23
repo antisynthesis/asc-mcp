@@ -26,6 +26,11 @@ func (r *Registry) registerAvailabilityTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Availability",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleGetAppAvailability)
 
 	// Create app availability
@@ -51,6 +56,13 @@ func (r *Registry) registerAvailabilityTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create App Availability",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateAppAvailability)
 
 	// List territory availabilities
@@ -74,6 +86,11 @@ func (r *Registry) registerAvailabilityTools() {
 				},
 			},
 			Required: []string{"availability_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Territory Availabilities",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleListTerritoryAvailabilities)
 }

@@ -31,6 +31,11 @@ func (r *Registry) registerProvisioningTools() {
 					},
 				},
 			},
+			Annotations: &mcp.ToolAnnotations{
+				Title:         "List Bundle Ids",
+				ReadOnlyHint:  mcp.BoolPtr(true),
+				OpenWorldHint: mcp.BoolPtr(true),
+			},
 		},
 		r.handleListBundleIDs,
 	)
@@ -48,6 +53,11 @@ func (r *Registry) registerProvisioningTools() {
 					},
 				},
 				Required: []string{"bundle_id_id"},
+			},
+			Annotations: &mcp.ToolAnnotations{
+				Title:         "Get Bundle Id",
+				ReadOnlyHint:  mcp.BoolPtr(true),
+				OpenWorldHint: mcp.BoolPtr(true),
 			},
 		},
 		r.handleGetBundleID,
@@ -71,6 +81,11 @@ func (r *Registry) registerProvisioningTools() {
 					},
 				},
 			},
+			Annotations: &mcp.ToolAnnotations{
+				Title:         "List Certificates",
+				ReadOnlyHint:  mcp.BoolPtr(true),
+				OpenWorldHint: mcp.BoolPtr(true),
+			},
 		},
 		r.handleListCertificates,
 	)
@@ -93,6 +108,11 @@ func (r *Registry) registerProvisioningTools() {
 					},
 				},
 			},
+			Annotations: &mcp.ToolAnnotations{
+				Title:         "List Profiles",
+				ReadOnlyHint:  mcp.BoolPtr(true),
+				OpenWorldHint: mcp.BoolPtr(true),
+			},
 		},
 		r.handleListProfiles,
 	)
@@ -114,6 +134,11 @@ func (r *Registry) registerProvisioningTools() {
 						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 					},
 				},
+			},
+			Annotations: &mcp.ToolAnnotations{
+				Title:         "List Devices",
+				ReadOnlyHint:  mcp.BoolPtr(true),
+				OpenWorldHint: mcp.BoolPtr(true),
 			},
 		},
 		r.handleListDevices,
@@ -141,6 +166,13 @@ func (r *Registry) registerProvisioningTools() {
 					},
 				},
 				Required: []string{"name", "udid", "platform"},
+			},
+			Annotations: &mcp.ToolAnnotations{
+				Title:           "Register Device",
+				ReadOnlyHint:    mcp.BoolPtr(false),
+				DestructiveHint: mcp.BoolPtr(false),
+				IdempotentHint:  mcp.BoolPtr(false),
+				OpenWorldHint:   mcp.BoolPtr(true),
 			},
 		},
 		r.handleRegisterDevice,

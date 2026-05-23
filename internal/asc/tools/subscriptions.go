@@ -34,6 +34,11 @@ func (r *Registry) registerSubscriptionTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Subscription Groups",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListSubscriptionGroups)
 
 	// Get subscription group
@@ -49,6 +54,11 @@ func (r *Registry) registerSubscriptionTools() {
 				},
 			},
 			Required: []string{"group_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Subscription Group",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetSubscriptionGroup)
 
@@ -74,6 +84,11 @@ func (r *Registry) registerSubscriptionTools() {
 			},
 			Required: []string{"group_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Subscriptions",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListSubscriptions)
 
 	// Get subscription
@@ -89,6 +104,11 @@ func (r *Registry) registerSubscriptionTools() {
 				},
 			},
 			Required: []string{"subscription_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Subscription",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetSubscription)
 }

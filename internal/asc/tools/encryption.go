@@ -33,6 +33,11 @@ func (r *Registry) registerEncryptionTools() {
 				},
 			},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Encryption Declarations",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListEncryptionDeclarations)
 
 	// Get encryption declaration
@@ -48,6 +53,11 @@ func (r *Registry) registerEncryptionTools() {
 				},
 			},
 			Required: []string{"declaration_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Encryption Declaration",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetEncryptionDeclaration)
 
@@ -93,6 +103,13 @@ func (r *Registry) registerEncryptionTools() {
 			},
 			Required: []string{"app_id", "uses_encryption"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Encryption Declaration",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateEncryptionDeclaration)
 
 	// Assign build to encryption declaration
@@ -112,6 +129,13 @@ func (r *Registry) registerEncryptionTools() {
 				},
 			},
 			Required: []string{"declaration_id", "build_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Assign Build To Encryption Declaration",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleAssignBuildToEncryptionDeclaration)
 }

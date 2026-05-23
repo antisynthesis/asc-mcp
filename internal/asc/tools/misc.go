@@ -26,6 +26,11 @@ func (r *Registry) registerMiscTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get End User License Agreement",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleGetEndUserLicenseAgreement)
 
 	r.register(mcp.Tool{
@@ -50,6 +55,13 @@ func (r *Registry) registerMiscTools() {
 			},
 			Required: []string{"app_id", "agreement_text"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create End User License Agreement",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateEndUserLicenseAgreement)
 
 	r.register(mcp.Tool{
@@ -69,6 +81,13 @@ func (r *Registry) registerMiscTools() {
 			},
 			Required: []string{"eula_id", "agreement_text"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update End User License Agreement",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateEndUserLicenseAgreement)
 
 	r.register(mcp.Tool{
@@ -83,6 +102,13 @@ func (r *Registry) registerMiscTools() {
 				},
 			},
 			Required: []string{"eula_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete End User License Agreement",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteEndUserLicenseAgreement)
 
@@ -103,6 +129,11 @@ func (r *Registry) registerMiscTools() {
 				},
 			},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List App Categories",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAppCategories)
 
 	r.register(mcp.Tool{
@@ -117,6 +148,11 @@ func (r *Registry) registerMiscTools() {
 				},
 			},
 			Required: []string{"category_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Category",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAppCategory)
 
@@ -137,6 +173,11 @@ func (r *Registry) registerMiscTools() {
 				},
 			},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Alternative Distribution Keys",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAlternativeDistributionKeys)
 
 	r.register(mcp.Tool{
@@ -151,6 +192,11 @@ func (r *Registry) registerMiscTools() {
 				},
 			},
 			Required: []string{"key_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Alternative Distribution Key",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAlternativeDistributionKey)
 
@@ -167,6 +213,13 @@ func (r *Registry) registerMiscTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Alternative Distribution Key",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateAlternativeDistributionKey)
 
 	r.register(mcp.Tool{
@@ -181,6 +234,13 @@ func (r *Registry) registerMiscTools() {
 				},
 			},
 			Required: []string{"key_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Alternative Distribution Key",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteAlternativeDistributionKey)
 
@@ -197,6 +257,11 @@ func (r *Registry) registerMiscTools() {
 				},
 			},
 			Required: []string{"app_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Marketplace Search Detail",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetMarketplaceSearchDetail)
 
@@ -217,6 +282,13 @@ func (r *Registry) registerMiscTools() {
 			},
 			Required: []string{"app_id", "catalog_url"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Marketplace Search Detail",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateMarketplaceSearchDetail)
 
 	r.register(mcp.Tool{
@@ -236,6 +308,13 @@ func (r *Registry) registerMiscTools() {
 			},
 			Required: []string{"detail_id", "catalog_url"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Marketplace Search Detail",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateMarketplaceSearchDetail)
 
 	r.register(mcp.Tool{
@@ -250,6 +329,13 @@ func (r *Registry) registerMiscTools() {
 				},
 			},
 			Required: []string{"detail_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Marketplace Search Detail",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteMarketplaceSearchDetail)
 }

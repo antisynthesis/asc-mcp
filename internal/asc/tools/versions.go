@@ -34,6 +34,11 @@ func (r *Registry) registerVersionSubmissionTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List App Store Versions",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAppStoreVersions)
 
 	// Get app store version
@@ -49,6 +54,11 @@ func (r *Registry) registerVersionSubmissionTools() {
 				},
 			},
 			Required: []string{"version_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Store Version",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAppStoreVersion)
 
@@ -82,6 +92,13 @@ func (r *Registry) registerVersionSubmissionTools() {
 			},
 			Required: []string{"app_id", "version_string", "platform"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create App Store Version",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateAppStoreVersion)
 
 	// Update app store version
@@ -110,6 +127,13 @@ func (r *Registry) registerVersionSubmissionTools() {
 			},
 			Required: []string{"version_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update App Store Version",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateAppStoreVersion)
 
 	// Delete app store version
@@ -125,6 +149,13 @@ func (r *Registry) registerVersionSubmissionTools() {
 				},
 			},
 			Required: []string{"version_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete App Store Version",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteAppStoreVersion)
 
@@ -142,6 +173,13 @@ func (r *Registry) registerVersionSubmissionTools() {
 			},
 			Required: []string{"version_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Submit App For Review",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleSubmitAppForReview)
 
 	// Get review detail
@@ -157,6 +195,11 @@ func (r *Registry) registerVersionSubmissionTools() {
 				},
 			},
 			Required: []string{"version_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Store Review Detail",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAppStoreReviewDetail)
 
@@ -206,6 +249,13 @@ func (r *Registry) registerVersionSubmissionTools() {
 			},
 			Required: []string{"version_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create App Store Review Detail",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateAppStoreReviewDetail)
 
 	// Update review detail
@@ -253,6 +303,13 @@ func (r *Registry) registerVersionSubmissionTools() {
 				},
 			},
 			Required: []string{"detail_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update App Store Review Detail",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleUpdateAppStoreReviewDetail)
 }

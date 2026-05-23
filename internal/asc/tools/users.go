@@ -29,6 +29,11 @@ func (r *Registry) registerUserTools() {
 				},
 			},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Users",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListUsers)
 
 	// Get user
@@ -44,6 +49,11 @@ func (r *Registry) registerUserTools() {
 				},
 			},
 			Required: []string{"user_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get User",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetUser)
 
@@ -70,6 +80,13 @@ func (r *Registry) registerUserTools() {
 			},
 			Required: []string{"user_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update User",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateUser)
 
 	// Delete user
@@ -85,6 +102,13 @@ func (r *Registry) registerUserTools() {
 				},
 			},
 			Required: []string{"user_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete User",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteUser)
 
@@ -105,6 +129,11 @@ func (r *Registry) registerUserTools() {
 				},
 			},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List User Invitations",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListUserInvitations)
 
 	// Get user invitation
@@ -120,6 +149,11 @@ func (r *Registry) registerUserTools() {
 				},
 			},
 			Required: []string{"invitation_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get User Invitation",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetUserInvitation)
 
@@ -154,6 +188,13 @@ func (r *Registry) registerUserTools() {
 			},
 			Required: []string{"email", "first_name", "last_name", "roles"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create User Invitation",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateUserInvitation)
 
 	// Delete user invitation (cancel pending invitation)
@@ -169,6 +210,13 @@ func (r *Registry) registerUserTools() {
 				},
 			},
 			Required: []string{"invitation_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete User Invitation",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteUserInvitation)
 }

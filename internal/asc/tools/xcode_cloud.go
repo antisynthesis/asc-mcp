@@ -33,6 +33,11 @@ func (r *Registry) registerXcodeCloudTools() {
 				},
 			},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Ci Products",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListCiProducts)
 
 	// Get CI product
@@ -48,6 +53,11 @@ func (r *Registry) registerXcodeCloudTools() {
 				},
 			},
 			Required: []string{"product_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Ci Product",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetCiProduct)
 
@@ -73,6 +83,11 @@ func (r *Registry) registerXcodeCloudTools() {
 			},
 			Required: []string{"product_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Ci Workflows",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListCiWorkflows)
 
 	// Get CI workflow
@@ -88,6 +103,11 @@ func (r *Registry) registerXcodeCloudTools() {
 				},
 			},
 			Required: []string{"workflow_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Ci Workflow",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetCiWorkflow)
 
@@ -113,6 +133,11 @@ func (r *Registry) registerXcodeCloudTools() {
 			},
 			Required: []string{"workflow_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Ci Build Runs",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListCiBuildRuns)
 
 	// Get CI build run
@@ -128,6 +153,11 @@ func (r *Registry) registerXcodeCloudTools() {
 				},
 			},
 			Required: []string{"build_run_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Ci Build Run",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetCiBuildRun)
 
@@ -145,6 +175,13 @@ func (r *Registry) registerXcodeCloudTools() {
 			},
 			Required: []string{"workflow_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Start Ci Build Run",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleStartCiBuildRun)
 
 	// Cancel CI build run
@@ -160,6 +197,13 @@ func (r *Registry) registerXcodeCloudTools() {
 				},
 			},
 			Required: []string{"build_run_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Cancel Ci Build Run",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleCancelCiBuildRun)
 }

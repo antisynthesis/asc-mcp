@@ -34,6 +34,11 @@ func (r *Registry) registerAnalyticsTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Analytics Report Requests",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAnalyticsReportRequests)
 
 	// Get analytics report request
@@ -49,6 +54,11 @@ func (r *Registry) registerAnalyticsTools() {
 				},
 			},
 			Required: []string{"request_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Analytics Report Request",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAnalyticsReportRequest)
 
@@ -70,6 +80,13 @@ func (r *Registry) registerAnalyticsTools() {
 			},
 			Required: []string{"app_id", "access_type"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Analytics Report Request",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateAnalyticsReportRequest)
 
 	// Delete analytics report request
@@ -85,6 +102,13 @@ func (r *Registry) registerAnalyticsTools() {
 				},
 			},
 			Required: []string{"request_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Analytics Report Request",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteAnalyticsReportRequest)
 
@@ -110,6 +134,11 @@ func (r *Registry) registerAnalyticsTools() {
 			},
 			Required: []string{"request_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Analytics Reports",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAnalyticsReports)
 
 	// List analytics report instances
@@ -134,6 +163,11 @@ func (r *Registry) registerAnalyticsTools() {
 			},
 			Required: []string{"report_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Analytics Report Instances",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAnalyticsReportInstances)
 
 	// List analytics report segments
@@ -157,6 +191,11 @@ func (r *Registry) registerAnalyticsTools() {
 				},
 			},
 			Required: []string{"instance_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Analytics Report Segments",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleListAnalyticsReportSegments)
 }

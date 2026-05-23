@@ -25,6 +25,11 @@ func (r *Registry) registerPreOrderTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Pre Order",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleGetPreOrder)
 
 	// Create pre-order
@@ -44,6 +49,13 @@ func (r *Registry) registerPreOrderTools() {
 				},
 			},
 			Required: []string{"app_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Pre Order",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleCreatePreOrder)
 
@@ -65,6 +77,13 @@ func (r *Registry) registerPreOrderTools() {
 			},
 			Required: []string{"pre_order_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Pre Order",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdatePreOrder)
 
 	// Delete pre-order
@@ -80,6 +99,13 @@ func (r *Registry) registerPreOrderTools() {
 				},
 			},
 			Required: []string{"pre_order_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Pre Order",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeletePreOrder)
 }

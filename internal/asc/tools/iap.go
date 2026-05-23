@@ -34,6 +34,11 @@ func (r *Registry) registerInAppPurchaseTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List In App Purchases",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListInAppPurchases)
 
 	// Get in-app purchase
@@ -49,6 +54,11 @@ func (r *Registry) registerInAppPurchaseTools() {
 				},
 			},
 			Required: []string{"iap_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get In App Purchase",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetInAppPurchase)
 
@@ -86,6 +96,13 @@ func (r *Registry) registerInAppPurchaseTools() {
 			},
 			Required: []string{"app_id", "name", "product_id", "iap_type"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create In App Purchase",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateInAppPurchase)
 
 	// Update in-app purchase
@@ -114,6 +131,13 @@ func (r *Registry) registerInAppPurchaseTools() {
 			},
 			Required: []string{"iap_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update In App Purchase",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateInAppPurchase)
 
 	// Delete in-app purchase
@@ -129,6 +153,13 @@ func (r *Registry) registerInAppPurchaseTools() {
 				},
 			},
 			Required: []string{"iap_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete In App Purchase",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteInAppPurchase)
 }

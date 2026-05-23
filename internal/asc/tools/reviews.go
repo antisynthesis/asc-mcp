@@ -34,6 +34,11 @@ func (r *Registry) registerCustomerReviewTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Customer Reviews",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListCustomerReviews)
 
 	// Get customer review
@@ -49,6 +54,11 @@ func (r *Registry) registerCustomerReviewTools() {
 				},
 			},
 			Required: []string{"review_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Customer Review",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetCustomerReview)
 
@@ -70,6 +80,13 @@ func (r *Registry) registerCustomerReviewTools() {
 			},
 			Required: []string{"review_id", "response_body"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Customer Review Response",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateCustomerReviewResponse)
 
 	// Delete customer review response
@@ -85,6 +102,13 @@ func (r *Registry) registerCustomerReviewTools() {
 				},
 			},
 			Required: []string{"response_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Customer Review Response",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteCustomerReviewResponse)
 }

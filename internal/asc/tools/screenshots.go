@@ -34,6 +34,11 @@ func (r *Registry) registerScreenshotTools() {
 			},
 			Required: []string{"localization_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Screenshot Sets",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListScreenshotSets)
 
 	// List screenshots
@@ -58,6 +63,11 @@ func (r *Registry) registerScreenshotTools() {
 			},
 			Required: []string{"screenshot_set_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Screenshots",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListScreenshots)
 
 	// Get screenshot
@@ -74,6 +84,11 @@ func (r *Registry) registerScreenshotTools() {
 			},
 			Required: []string{"screenshot_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Screenshot",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleGetScreenshot)
 
 	// Delete screenshot
@@ -89,6 +104,13 @@ func (r *Registry) registerScreenshotTools() {
 				},
 			},
 			Required: []string{"screenshot_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Screenshot",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteScreenshot)
 
@@ -114,6 +136,11 @@ func (r *Registry) registerScreenshotTools() {
 			},
 			Required: []string{"localization_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Preview Sets",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListPreviewSets)
 
 	// List previews
@@ -138,6 +165,11 @@ func (r *Registry) registerScreenshotTools() {
 			},
 			Required: []string{"preview_set_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Previews",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListPreviews)
 
 	// Get preview
@@ -154,6 +186,11 @@ func (r *Registry) registerScreenshotTools() {
 			},
 			Required: []string{"preview_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Preview",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleGetPreview)
 
 	// Delete preview
@@ -169,6 +206,13 @@ func (r *Registry) registerScreenshotTools() {
 				},
 			},
 			Required: []string{"preview_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Preview",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeletePreview)
 }

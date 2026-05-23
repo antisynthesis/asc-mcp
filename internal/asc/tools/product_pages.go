@@ -34,6 +34,11 @@ func (r *Registry) registerProductPagesTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List App Custom Product Pages",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAppCustomProductPages)
 
 	// Get app custom product page
@@ -49,6 +54,11 @@ func (r *Registry) registerProductPagesTools() {
 				},
 			},
 			Required: []string{"page_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Custom Product Page",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAppCustomProductPage)
 
@@ -69,6 +79,13 @@ func (r *Registry) registerProductPagesTools() {
 				},
 			},
 			Required: []string{"app_id", "name"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create App Custom Product Page",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleCreateAppCustomProductPage)
 
@@ -94,6 +111,13 @@ func (r *Registry) registerProductPagesTools() {
 			},
 			Required: []string{"page_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update App Custom Product Page",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateAppCustomProductPage)
 
 	// Delete app custom product page
@@ -109,6 +133,13 @@ func (r *Registry) registerProductPagesTools() {
 				},
 			},
 			Required: []string{"page_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete App Custom Product Page",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteAppCustomProductPage)
 
@@ -134,6 +165,11 @@ func (r *Registry) registerProductPagesTools() {
 			},
 			Required: []string{"version_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List App Store Version Experiments",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAppStoreVersionExperiments)
 
 	// Get app store version experiment
@@ -149,6 +185,11 @@ func (r *Registry) registerProductPagesTools() {
 				},
 			},
 			Required: []string{"experiment_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Store Version Experiment",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAppStoreVersionExperiment)
 
@@ -173,6 +214,13 @@ func (r *Registry) registerProductPagesTools() {
 				},
 			},
 			Required: []string{"version_id", "name"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create App Store Version Experiment",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleCreateAppStoreVersionExperiment)
 
@@ -202,6 +250,13 @@ func (r *Registry) registerProductPagesTools() {
 			},
 			Required: []string{"experiment_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update App Store Version Experiment",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateAppStoreVersionExperiment)
 
 	// Delete app store version experiment
@@ -217,6 +272,13 @@ func (r *Registry) registerProductPagesTools() {
 				},
 			},
 			Required: []string{"experiment_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete App Store Version Experiment",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteAppStoreVersionExperiment)
 }

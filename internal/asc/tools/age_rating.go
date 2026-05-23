@@ -26,6 +26,11 @@ func (r *Registry) registerAgeRatingTools() {
 			},
 			Required: []string{"app_info_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Age Rating Declaration",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleGetAgeRatingDeclaration)
 
 	// Update age rating declaration
@@ -102,6 +107,13 @@ func (r *Registry) registerAgeRatingTools() {
 			},
 			Required: []string{"declaration_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Age Rating Declaration",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateAgeRatingDeclaration)
 
 	// Get IDFA declaration
@@ -117,6 +129,11 @@ func (r *Registry) registerAgeRatingTools() {
 				},
 			},
 			Required: []string{"version_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Idfa Declaration",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetIdfaDeclaration)
 
@@ -150,6 +167,13 @@ func (r *Registry) registerAgeRatingTools() {
 			},
 			Required: []string{"version_id", "serves_ads", "attributes_app_installation_to_previous_ad", "attributes_action_with_previous_ad", "honors_limited_ad_tracking"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Idfa Declaration",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateIdfaDeclaration)
 
 	// Update IDFA declaration
@@ -182,6 +206,13 @@ func (r *Registry) registerAgeRatingTools() {
 			},
 			Required: []string{"declaration_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Idfa Declaration",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateIdfaDeclaration)
 
 	// Delete IDFA declaration
@@ -197,6 +228,13 @@ func (r *Registry) registerAgeRatingTools() {
 				},
 			},
 			Required: []string{"declaration_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Idfa Declaration",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteIdfaDeclaration)
 }

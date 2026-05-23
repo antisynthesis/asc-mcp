@@ -34,6 +34,11 @@ func (r *Registry) registerAppEventTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List App Events",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAppEvents)
 
 	// Get app event
@@ -49,6 +54,11 @@ func (r *Registry) registerAppEventTools() {
 				},
 			},
 			Required: []string{"event_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Event",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAppEvent)
 
@@ -94,6 +104,13 @@ func (r *Registry) registerAppEventTools() {
 			},
 			Required: []string{"app_id", "reference_name"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create App Event",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateAppEvent)
 
 	// Update app event
@@ -134,6 +151,13 @@ func (r *Registry) registerAppEventTools() {
 			},
 			Required: []string{"event_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update App Event",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateAppEvent)
 
 	// Delete app event
@@ -149,6 +173,13 @@ func (r *Registry) registerAppEventTools() {
 				},
 			},
 			Required: []string{"event_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete App Event",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteAppEvent)
 }

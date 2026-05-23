@@ -29,6 +29,11 @@ func (r *Registry) registerSandboxTools() {
 				},
 			},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Sandbox Testers",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListSandboxTesters)
 
 	// Create sandbox tester
@@ -73,6 +78,13 @@ func (r *Registry) registerSandboxTools() {
 			},
 			Required: []string{"email", "password", "first_name", "last_name", "secret_question", "secret_answer", "birth_date", "app_store_territory"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Sandbox Tester",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateSandboxTester)
 
 	// Update sandbox tester
@@ -101,6 +113,13 @@ func (r *Registry) registerSandboxTools() {
 			},
 			Required: []string{"tester_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Sandbox Tester",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateSandboxTester)
 
 	// Delete sandbox tester
@@ -116,6 +135,13 @@ func (r *Registry) registerSandboxTools() {
 				},
 			},
 			Required: []string{"tester_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Sandbox Tester",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteSandboxTester)
 }

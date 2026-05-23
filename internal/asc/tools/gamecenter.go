@@ -26,6 +26,11 @@ func (r *Registry) registerGameCenterTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Game Center Detail",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleGetGameCenterDetail)
 
 	// List Game Center achievements
@@ -50,6 +55,11 @@ func (r *Registry) registerGameCenterTools() {
 			},
 			Required: []string{"game_center_detail_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Game Center Achievements",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListGameCenterAchievements)
 
 	// Get Game Center achievement
@@ -65,6 +75,11 @@ func (r *Registry) registerGameCenterTools() {
 				},
 			},
 			Required: []string{"achievement_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Game Center Achievement",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetGameCenterAchievement)
 
@@ -102,6 +117,13 @@ func (r *Registry) registerGameCenterTools() {
 			},
 			Required: []string{"game_center_detail_id", "reference_name", "vendor_identifier", "points"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Game Center Achievement",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateGameCenterAchievement)
 
 	// Update Game Center achievement
@@ -138,6 +160,13 @@ func (r *Registry) registerGameCenterTools() {
 			},
 			Required: []string{"achievement_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Game Center Achievement",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateGameCenterAchievement)
 
 	// Delete Game Center achievement
@@ -153,6 +182,13 @@ func (r *Registry) registerGameCenterTools() {
 				},
 			},
 			Required: []string{"achievement_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Game Center Achievement",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteGameCenterAchievement)
 
@@ -178,6 +214,11 @@ func (r *Registry) registerGameCenterTools() {
 			},
 			Required: []string{"game_center_detail_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Game Center Leaderboards",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListGameCenterLeaderboards)
 
 	// Get Game Center leaderboard
@@ -193,6 +234,11 @@ func (r *Registry) registerGameCenterTools() {
 				},
 			},
 			Required: []string{"leaderboard_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Game Center Leaderboard",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetGameCenterLeaderboard)
 
@@ -234,6 +280,13 @@ func (r *Registry) registerGameCenterTools() {
 			},
 			Required: []string{"game_center_detail_id", "reference_name", "vendor_identifier", "submission_type", "score_sort_type"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Game Center Leaderboard",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateGameCenterLeaderboard)
 
 	// Update Game Center leaderboard
@@ -266,6 +319,13 @@ func (r *Registry) registerGameCenterTools() {
 			},
 			Required: []string{"leaderboard_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Game Center Leaderboard",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateGameCenterLeaderboard)
 
 	// Delete Game Center leaderboard
@@ -281,6 +341,13 @@ func (r *Registry) registerGameCenterTools() {
 				},
 			},
 			Required: []string{"leaderboard_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Game Center Leaderboard",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteGameCenterLeaderboard)
 }

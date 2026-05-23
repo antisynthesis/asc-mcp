@@ -31,6 +31,11 @@ func (r *Registry) registerAppTools() {
 					},
 				},
 			},
+			Annotations: &mcp.ToolAnnotations{
+				Title:         "List Apps",
+				ReadOnlyHint:  mcp.BoolPtr(true),
+				OpenWorldHint: mcp.BoolPtr(true),
+			},
 		},
 		r.handleListApps,
 	)
@@ -48,6 +53,11 @@ func (r *Registry) registerAppTools() {
 					},
 				},
 				Required: []string{"app_id"},
+			},
+			Annotations: &mcp.ToolAnnotations{
+				Title:         "Get App",
+				ReadOnlyHint:  mcp.BoolPtr(true),
+				OpenWorldHint: mcp.BoolPtr(true),
 			},
 		},
 		r.handleGetApp,
@@ -71,6 +81,11 @@ func (r *Registry) registerAppTools() {
 					},
 				},
 				Required: []string{"app_id"},
+			},
+			Annotations: &mcp.ToolAnnotations{
+				Title:         "Get App Versions",
+				ReadOnlyHint:  mcp.BoolPtr(true),
+				OpenWorldHint: mcp.BoolPtr(true),
 			},
 		},
 		r.handleGetAppVersions,

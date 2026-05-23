@@ -35,6 +35,11 @@ func (r *Registry) registerBuildTools() {
 					},
 				},
 			},
+			Annotations: &mcp.ToolAnnotations{
+				Title:         "List Builds",
+				ReadOnlyHint:  mcp.BoolPtr(true),
+				OpenWorldHint: mcp.BoolPtr(true),
+			},
 		},
 		r.handleListBuilds,
 	)
@@ -52,6 +57,11 @@ func (r *Registry) registerBuildTools() {
 					},
 				},
 				Required: []string{"build_id"},
+			},
+			Annotations: &mcp.ToolAnnotations{
+				Title:         "Get Build",
+				ReadOnlyHint:  mcp.BoolPtr(true),
+				OpenWorldHint: mcp.BoolPtr(true),
 			},
 		},
 		r.handleGetBuild,

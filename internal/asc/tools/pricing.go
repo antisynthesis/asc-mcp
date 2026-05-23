@@ -26,6 +26,11 @@ func (r *Registry) registerPricingTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Price Schedule",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleGetAppPriceSchedule)
 
 	// List app price points
@@ -50,6 +55,11 @@ func (r *Registry) registerPricingTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List App Price Points",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAppPricePoints)
 
 	// List territories
@@ -68,6 +78,11 @@ func (r *Registry) registerPricingTools() {
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Territories",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleListTerritories)
 
@@ -92,6 +107,11 @@ func (r *Registry) registerPricingTools() {
 				},
 			},
 			Required: []string{"subscription_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Subscription Price Points",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleListSubscriptionPricePoints)
 }

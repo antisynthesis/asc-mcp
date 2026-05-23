@@ -29,6 +29,11 @@ func (r *Registry) registerAppInfoLocalizationTools() {
 			},
 			Required: []string{"app_info_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List App Info Localizations",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAppInfoLocalizations)
 
 	r.register(mcp.Tool{
@@ -43,6 +48,11 @@ func (r *Registry) registerAppInfoLocalizationTools() {
 				},
 			},
 			Required: []string{"localization_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Info Localization",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAppInfoLocalization)
 
@@ -83,6 +93,13 @@ func (r *Registry) registerAppInfoLocalizationTools() {
 			},
 			Required: []string{"app_info_id", "locale", "name"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create App Info Localization",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateAppInfoLocalization)
 
 	r.register(mcp.Tool{
@@ -118,6 +135,13 @@ func (r *Registry) registerAppInfoLocalizationTools() {
 			},
 			Required: []string{"localization_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update App Info Localization",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateAppInfoLocalization)
 
 	r.register(mcp.Tool{
@@ -133,6 +157,13 @@ func (r *Registry) registerAppInfoLocalizationTools() {
 			},
 			Required: []string{"localization_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete App Info Localization",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleDeleteAppInfoLocalization)
 
 	r.register(mcp.Tool{
@@ -147,6 +178,11 @@ func (r *Registry) registerAppInfoLocalizationTools() {
 				},
 			},
 			Required: []string{"app_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Infos",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAppInfos)
 }
@@ -170,6 +206,11 @@ func (r *Registry) registerVersionLocalizationTools() {
 			},
 			Required: []string{"version_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Version Localizations",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListVersionLocalizations)
 
 	r.register(mcp.Tool{
@@ -184,6 +225,11 @@ func (r *Registry) registerVersionLocalizationTools() {
 				},
 			},
 			Required: []string{"localization_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Version Localization",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetVersionLocalization)
 
@@ -228,6 +274,13 @@ func (r *Registry) registerVersionLocalizationTools() {
 			},
 			Required: []string{"version_id", "locale"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Version Localization",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateVersionLocalization)
 
 	r.register(mcp.Tool{
@@ -267,6 +320,13 @@ func (r *Registry) registerVersionLocalizationTools() {
 			},
 			Required: []string{"localization_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Version Localization",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateVersionLocalization)
 
 	r.register(mcp.Tool{
@@ -281,6 +341,13 @@ func (r *Registry) registerVersionLocalizationTools() {
 				},
 			},
 			Required: []string{"localization_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Version Localization",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteVersionLocalization)
 }

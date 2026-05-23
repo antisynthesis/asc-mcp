@@ -40,6 +40,11 @@ func (r *Registry) registerReportsTools() {
 			},
 			Required: []string{"vendor_number", "report_type", "report_sub_type", "frequency", "report_date"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Sales Report",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleGetSalesReport)
 
 	// Get finance report
@@ -67,6 +72,11 @@ func (r *Registry) registerReportsTools() {
 				},
 			},
 			Required: []string{"vendor_number", "region_code", "report_type", "report_date"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Finance Report",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetFinanceReport)
 }

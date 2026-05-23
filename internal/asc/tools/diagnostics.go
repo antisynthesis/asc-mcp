@@ -34,6 +34,11 @@ func (r *Registry) registerDiagnosticsTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Perf Power Metrics",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListPerfPowerMetrics)
 
 	// List diagnostic signatures
@@ -57,6 +62,11 @@ func (r *Registry) registerDiagnosticsTools() {
 				},
 			},
 			Required: []string{"build_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Diagnostic Signatures",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleListDiagnosticSignatures)
 
@@ -82,6 +92,11 @@ func (r *Registry) registerDiagnosticsTools() {
 			},
 			Required: []string{"signature_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Diagnostic Logs",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListDiagnosticLogs)
 
 	// List app store review attachments
@@ -106,6 +121,11 @@ func (r *Registry) registerDiagnosticsTools() {
 			},
 			Required: []string{"version_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List App Store Review Attachments",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAppStoreReviewAttachments)
 
 	// Get app store review attachment
@@ -121,6 +141,11 @@ func (r *Registry) registerDiagnosticsTools() {
 				},
 			},
 			Required: []string{"attachment_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Store Review Attachment",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAppStoreReviewAttachment)
 
@@ -146,6 +171,13 @@ func (r *Registry) registerDiagnosticsTools() {
 			},
 			Required: []string{"review_detail_id", "file_name", "file_size"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create App Store Review Attachment",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateAppStoreReviewAttachment)
 
 	// Delete app store review attachment
@@ -162,6 +194,13 @@ func (r *Registry) registerDiagnosticsTools() {
 			},
 			Required: []string{"attachment_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete App Store Review Attachment",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleDeleteAppStoreReviewAttachment)
 
 	// Get routing app coverage
@@ -177,6 +216,11 @@ func (r *Registry) registerDiagnosticsTools() {
 				},
 			},
 			Required: []string{"version_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Routing App Coverage",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetRoutingAppCoverage)
 
@@ -202,6 +246,13 @@ func (r *Registry) registerDiagnosticsTools() {
 			},
 			Required: []string{"version_id", "file_name", "file_size"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Routing App Coverage",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateRoutingAppCoverage)
 
 	// Delete routing app coverage
@@ -217,6 +268,13 @@ func (r *Registry) registerDiagnosticsTools() {
 				},
 			},
 			Required: []string{"coverage_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Routing App Coverage",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteRoutingAppCoverage)
 }

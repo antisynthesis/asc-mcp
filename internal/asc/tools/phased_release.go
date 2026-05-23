@@ -25,6 +25,11 @@ func (r *Registry) registerPhasedReleaseTools() {
 			},
 			Required: []string{"version_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Phased Release",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleGetPhasedRelease)
 
 	// Create phased release
@@ -44,6 +49,13 @@ func (r *Registry) registerPhasedReleaseTools() {
 				},
 			},
 			Required: []string{"version_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Phased Release",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleCreatePhasedRelease)
 
@@ -65,6 +77,13 @@ func (r *Registry) registerPhasedReleaseTools() {
 			},
 			Required: []string{"phased_release_id", "state"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Phased Release",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdatePhasedRelease)
 
 	// Delete phased release
@@ -80,6 +99,13 @@ func (r *Registry) registerPhasedReleaseTools() {
 				},
 			},
 			Required: []string{"phased_release_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Phased Release",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeletePhasedRelease)
 }

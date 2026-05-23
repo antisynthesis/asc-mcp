@@ -34,6 +34,11 @@ func (r *Registry) registerAppClipTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List App Clips",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAppClips)
 
 	// Get app clip
@@ -49,6 +54,11 @@ func (r *Registry) registerAppClipTools() {
 				},
 			},
 			Required: []string{"app_clip_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Clip",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAppClip)
 
@@ -74,6 +84,11 @@ func (r *Registry) registerAppClipTools() {
 			},
 			Required: []string{"app_clip_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List App Clip Default Experiences",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAppClipDefaultExperiences)
 
 	// Get app clip default experience
@@ -89,6 +104,11 @@ func (r *Registry) registerAppClipTools() {
 				},
 			},
 			Required: []string{"experience_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Clip Default Experience",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAppClipDefaultExperience)
 
@@ -114,6 +134,11 @@ func (r *Registry) registerAppClipTools() {
 			},
 			Required: []string{"app_clip_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List App Clip Advanced Experiences",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListAppClipAdvancedExperiences)
 
 	// Get app clip advanced experience
@@ -129,6 +154,11 @@ func (r *Registry) registerAppClipTools() {
 				},
 			},
 			Required: []string{"experience_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get App Clip Advanced Experience",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetAppClipAdvancedExperience)
 }

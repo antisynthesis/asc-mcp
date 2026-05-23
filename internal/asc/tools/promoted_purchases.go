@@ -34,6 +34,11 @@ func (r *Registry) registerPromotedPurchasesTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Promoted Purchases",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListPromotedPurchases)
 
 	// Get promoted purchase
@@ -49,6 +54,11 @@ func (r *Registry) registerPromotedPurchasesTools() {
 				},
 			},
 			Required: []string{"promoted_purchase_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Promoted Purchase",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetPromotedPurchase)
 
@@ -78,6 +88,13 @@ func (r *Registry) registerPromotedPurchasesTools() {
 			},
 			Required: []string{"app_id", "in_app_purchase_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Promoted Purchase",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreatePromotedPurchase)
 
 	// Update promoted purchase
@@ -102,6 +119,13 @@ func (r *Registry) registerPromotedPurchasesTools() {
 			},
 			Required: []string{"promoted_purchase_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Promoted Purchase",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdatePromotedPurchase)
 
 	// Delete promoted purchase
@@ -117,6 +141,13 @@ func (r *Registry) registerPromotedPurchasesTools() {
 				},
 			},
 			Required: []string{"promoted_purchase_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Promoted Purchase",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeletePromotedPurchase)
 
@@ -142,6 +173,11 @@ func (r *Registry) registerPromotedPurchasesTools() {
 			},
 			Required: []string{"subscription_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Subscription Offer Codes",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListSubscriptionOfferCodes)
 
 	// Get subscription offer code
@@ -157,6 +193,11 @@ func (r *Registry) registerPromotedPurchasesTools() {
 				},
 			},
 			Required: []string{"offer_code_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Subscription Offer Code",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetSubscriptionOfferCode)
 
@@ -206,6 +247,13 @@ func (r *Registry) registerPromotedPurchasesTools() {
 			},
 			Required: []string{"subscription_id", "name", "customer_eligibility"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Subscription Offer Code",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateSubscriptionOfferCode)
 
 	// Update subscription offer code
@@ -225,6 +273,13 @@ func (r *Registry) registerPromotedPurchasesTools() {
 				},
 			},
 			Required: []string{"offer_code_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Subscription Offer Code",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleUpdateSubscriptionOfferCode)
 
@@ -250,6 +305,11 @@ func (r *Registry) registerPromotedPurchasesTools() {
 			},
 			Required: []string{"subscription_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Win Back Offers",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListWinBackOffers)
 
 	// Get win-back offer
@@ -265,6 +325,11 @@ func (r *Registry) registerPromotedPurchasesTools() {
 				},
 			},
 			Required: []string{"offer_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Win Back Offer",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetWinBackOffer)
 
@@ -310,6 +375,13 @@ func (r *Registry) registerPromotedPurchasesTools() {
 			},
 			Required: []string{"subscription_id", "reference_name", "offer_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Win Back Offer",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateWinBackOffer)
 
 	// Update win-back offer
@@ -334,6 +406,13 @@ func (r *Registry) registerPromotedPurchasesTools() {
 			},
 			Required: []string{"offer_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Win Back Offer",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateWinBackOffer)
 
 	// Delete win-back offer
@@ -349,6 +428,13 @@ func (r *Registry) registerPromotedPurchasesTools() {
 				},
 			},
 			Required: []string{"offer_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Win Back Offer",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteWinBackOffer)
 }

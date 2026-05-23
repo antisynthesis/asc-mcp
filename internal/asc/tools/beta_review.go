@@ -29,6 +29,11 @@ func (r *Registry) registerBetaReviewTools() {
 				},
 			},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Beta App Review Submissions",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListBetaAppReviewSubmissions)
 
 	// Get beta app review submission
@@ -44,6 +49,11 @@ func (r *Registry) registerBetaReviewTools() {
 				},
 			},
 			Required: []string{"submission_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Beta App Review Submission",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetBetaAppReviewSubmission)
 
@@ -61,6 +71,13 @@ func (r *Registry) registerBetaReviewTools() {
 			},
 			Required: []string{"build_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Beta App Review Submission",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateBetaAppReviewSubmission)
 
 	// Get beta license agreement
@@ -76,6 +93,11 @@ func (r *Registry) registerBetaReviewTools() {
 				},
 			},
 			Required: []string{"app_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Beta License Agreement",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetBetaLicenseAgreement)
 
@@ -96,6 +118,13 @@ func (r *Registry) registerBetaReviewTools() {
 				},
 			},
 			Required: []string{"agreement_id", "agreement_text"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Beta License Agreement",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleUpdateBetaLicenseAgreement)
 
@@ -121,6 +150,11 @@ func (r *Registry) registerBetaReviewTools() {
 			},
 			Required: []string{"app_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Beta App Localizations",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListBetaAppLocalizations)
 
 	// Get beta app localization
@@ -136,6 +170,11 @@ func (r *Registry) registerBetaReviewTools() {
 				},
 			},
 			Required: []string{"localization_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Beta App Localization",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetBetaAppLocalization)
 
@@ -173,6 +212,13 @@ func (r *Registry) registerBetaReviewTools() {
 			},
 			Required: []string{"app_id", "locale"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Beta App Localization",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateBetaAppLocalization)
 
 	// Update beta app localization
@@ -205,6 +251,13 @@ func (r *Registry) registerBetaReviewTools() {
 			},
 			Required: []string{"localization_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Beta App Localization",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateBetaAppLocalization)
 
 	// Delete beta app localization
@@ -220,6 +273,13 @@ func (r *Registry) registerBetaReviewTools() {
 				},
 			},
 			Required: []string{"localization_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Beta App Localization",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteBetaAppLocalization)
 
@@ -245,6 +305,11 @@ func (r *Registry) registerBetaReviewTools() {
 			},
 			Required: []string{"build_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Beta Build Localizations",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
 	}, r.handleListBetaBuildLocalizations)
 
 	// Get beta build localization
@@ -260,6 +325,11 @@ func (r *Registry) registerBetaReviewTools() {
 				},
 			},
 			Required: []string{"localization_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Beta Build Localization",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetBetaBuildLocalization)
 
@@ -285,6 +355,13 @@ func (r *Registry) registerBetaReviewTools() {
 			},
 			Required: []string{"build_id", "locale"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Create Beta Build Localization",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(false),
+			IdempotentHint:  mcp.BoolPtr(false),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleCreateBetaBuildLocalization)
 
 	// Update beta build localization
@@ -305,6 +382,13 @@ func (r *Registry) registerBetaReviewTools() {
 			},
 			Required: []string{"localization_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Beta Build Localization",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleUpdateBetaBuildLocalization)
 
 	// Delete beta build localization
@@ -321,6 +405,13 @@ func (r *Registry) registerBetaReviewTools() {
 			},
 			Required: []string{"localization_id"},
 		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Delete Beta Build Localization",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
+		},
 	}, r.handleDeleteBetaBuildLocalization)
 
 	// Get build beta detail
@@ -336,6 +427,11 @@ func (r *Registry) registerBetaReviewTools() {
 				},
 			},
 			Required: []string{"build_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Build Beta Detail",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
 		},
 	}, r.handleGetBuildBetaDetail)
 
@@ -356,6 +452,13 @@ func (r *Registry) registerBetaReviewTools() {
 				},
 			},
 			Required: []string{"detail_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:           "Update Build Beta Detail",
+			ReadOnlyHint:    mcp.BoolPtr(false),
+			DestructiveHint: mcp.BoolPtr(true),
+			IdempotentHint:  mcp.BoolPtr(true),
+			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleUpdateBuildBetaDetail)
 }
