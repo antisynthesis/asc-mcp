@@ -43,6 +43,10 @@ func (r *Registry) registerGameCenterTools() {
 					Type:        "integer",
 					Description: "Maximum number of achievements to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"game_center_detail_id"},
 		},
@@ -167,6 +171,10 @@ func (r *Registry) registerGameCenterTools() {
 					Type:        "integer",
 					Description: "Maximum number of leaderboards to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"game_center_detail_id"},
 		},
@@ -277,7 +285,7 @@ func (r *Registry) registerGameCenterTools() {
 	}, r.handleDeleteGameCenterLeaderboard)
 }
 
-func (r *Registry) handleGetGameCenterDetail(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetGameCenterDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 	}
@@ -289,7 +297,7 @@ func (r *Registry) handleGetGameCenterDetail(args json.RawMessage) (*mcp.ToolsCa
 		return nil, fmt.Errorf("app_id is required")
 	}
 
-	resp, err := r.client.GetGameCenterDetail(context.Background(), params.AppID)
+	resp, err := r.client.GetGameCenterDetail(ctx, params.AppID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get Game Center detail: %v", err)), nil
 	}
@@ -297,10 +305,11 @@ func (r *Registry) handleGetGameCenterDetail(args json.RawMessage) (*mcp.ToolsCa
 	return mcp.NewSuccessResult(formatGameCenterDetail(resp.Data)), nil
 }
 
-func (r *Registry) handleListGameCenterAchievements(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListGameCenterAchievements(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		GameCenterDetailID string `json:"game_center_detail_id"`
 		Limit              int    `json:"limit"`
+		Cursor             string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -314,16 +323,21 @@ func (r *Registry) handleListGameCenterAchievements(args json.RawMessage) (*mcp.
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListGameCenterAchievements(context.Background(), params.GameCenterDetailID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.GameCenterAchievementsResponse, error) {
+		return r.client.ListGameCenterAchievements(ctx, params.GameCenterDetailID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list achievements: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatGameCenterAchievements(resp.Data)), nil
+	return newListResult(formatGameCenterAchievements(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetGameCenterAchievement(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetGameCenterAchievement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AchievementID string `json:"achievement_id"`
 	}
@@ -335,7 +349,7 @@ func (r *Registry) handleGetGameCenterAchievement(args json.RawMessage) (*mcp.To
 		return nil, fmt.Errorf("achievement_id is required")
 	}
 
-	resp, err := r.client.GetGameCenterAchievement(context.Background(), params.AchievementID)
+	resp, err := r.client.GetGameCenterAchievement(ctx, params.AchievementID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get achievement: %v", err)), nil
 	}
@@ -343,7 +357,7 @@ func (r *Registry) handleGetGameCenterAchievement(args json.RawMessage) (*mcp.To
 	return mcp.NewSuccessResult(formatGameCenterAchievement(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateGameCenterAchievement(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateGameCenterAchievement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		GameCenterDetailID string `json:"game_center_detail_id"`
 		ReferenceName      string `json:"reference_name"`
@@ -387,7 +401,7 @@ func (r *Registry) handleCreateGameCenterAchievement(args json.RawMessage) (*mcp
 		},
 	}
 
-	resp, err := r.client.CreateGameCenterAchievement(context.Background(), req)
+	resp, err := r.client.CreateGameCenterAchievement(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create achievement: %v", err)), nil
 	}
@@ -395,7 +409,7 @@ func (r *Registry) handleCreateGameCenterAchievement(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult(fmt.Sprintf("Created achievement: %s (ID: %s)", resp.Data.Attributes.ReferenceName, resp.Data.ID)), nil
 }
 
-func (r *Registry) handleUpdateGameCenterAchievement(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateGameCenterAchievement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AchievementID    string `json:"achievement_id"`
 		ReferenceName    string `json:"reference_name"`
@@ -426,7 +440,7 @@ func (r *Registry) handleUpdateGameCenterAchievement(args json.RawMessage) (*mcp
 		},
 	}
 
-	resp, err := r.client.UpdateGameCenterAchievement(context.Background(), params.AchievementID, req)
+	resp, err := r.client.UpdateGameCenterAchievement(ctx, params.AchievementID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update achievement: %v", err)), nil
 	}
@@ -434,7 +448,7 @@ func (r *Registry) handleUpdateGameCenterAchievement(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult(fmt.Sprintf("Updated achievement: %s", resp.Data.ID)), nil
 }
 
-func (r *Registry) handleDeleteGameCenterAchievement(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteGameCenterAchievement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AchievementID string `json:"achievement_id"`
 	}
@@ -446,7 +460,7 @@ func (r *Registry) handleDeleteGameCenterAchievement(args json.RawMessage) (*mcp
 		return nil, fmt.Errorf("achievement_id is required")
 	}
 
-	err := r.client.DeleteGameCenterAchievement(context.Background(), params.AchievementID)
+	err := r.client.DeleteGameCenterAchievement(ctx, params.AchievementID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete achievement: %v", err)), nil
 	}
@@ -454,10 +468,11 @@ func (r *Registry) handleDeleteGameCenterAchievement(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult("Achievement deleted successfully"), nil
 }
 
-func (r *Registry) handleListGameCenterLeaderboards(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListGameCenterLeaderboards(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		GameCenterDetailID string `json:"game_center_detail_id"`
 		Limit              int    `json:"limit"`
+		Cursor             string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -471,16 +486,21 @@ func (r *Registry) handleListGameCenterLeaderboards(args json.RawMessage) (*mcp.
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListGameCenterLeaderboards(context.Background(), params.GameCenterDetailID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.GameCenterLeaderboardsResponse, error) {
+		return r.client.ListGameCenterLeaderboards(ctx, params.GameCenterDetailID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list leaderboards: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatGameCenterLeaderboards(resp.Data)), nil
+	return newListResult(formatGameCenterLeaderboards(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetGameCenterLeaderboard(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetGameCenterLeaderboard(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LeaderboardID string `json:"leaderboard_id"`
 	}
@@ -492,7 +512,7 @@ func (r *Registry) handleGetGameCenterLeaderboard(args json.RawMessage) (*mcp.To
 		return nil, fmt.Errorf("leaderboard_id is required")
 	}
 
-	resp, err := r.client.GetGameCenterLeaderboard(context.Background(), params.LeaderboardID)
+	resp, err := r.client.GetGameCenterLeaderboard(ctx, params.LeaderboardID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get leaderboard: %v", err)), nil
 	}
@@ -500,7 +520,7 @@ func (r *Registry) handleGetGameCenterLeaderboard(args json.RawMessage) (*mcp.To
 	return mcp.NewSuccessResult(formatGameCenterLeaderboard(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateGameCenterLeaderboard(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateGameCenterLeaderboard(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		GameCenterDetailID string `json:"game_center_detail_id"`
 		ReferenceName      string `json:"reference_name"`
@@ -552,7 +572,7 @@ func (r *Registry) handleCreateGameCenterLeaderboard(args json.RawMessage) (*mcp
 		},
 	}
 
-	resp, err := r.client.CreateGameCenterLeaderboard(context.Background(), req)
+	resp, err := r.client.CreateGameCenterLeaderboard(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create leaderboard: %v", err)), nil
 	}
@@ -560,7 +580,7 @@ func (r *Registry) handleCreateGameCenterLeaderboard(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult(fmt.Sprintf("Created leaderboard: %s (ID: %s)", resp.Data.Attributes.ReferenceName, resp.Data.ID)), nil
 }
 
-func (r *Registry) handleUpdateGameCenterLeaderboard(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateGameCenterLeaderboard(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LeaderboardID  string `json:"leaderboard_id"`
 		ReferenceName  string `json:"reference_name"`
@@ -589,7 +609,7 @@ func (r *Registry) handleUpdateGameCenterLeaderboard(args json.RawMessage) (*mcp
 		},
 	}
 
-	resp, err := r.client.UpdateGameCenterLeaderboard(context.Background(), params.LeaderboardID, req)
+	resp, err := r.client.UpdateGameCenterLeaderboard(ctx, params.LeaderboardID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update leaderboard: %v", err)), nil
 	}
@@ -597,7 +617,7 @@ func (r *Registry) handleUpdateGameCenterLeaderboard(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult(fmt.Sprintf("Updated leaderboard: %s", resp.Data.ID)), nil
 }
 
-func (r *Registry) handleDeleteGameCenterLeaderboard(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteGameCenterLeaderboard(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LeaderboardID string `json:"leaderboard_id"`
 	}
@@ -609,7 +629,7 @@ func (r *Registry) handleDeleteGameCenterLeaderboard(args json.RawMessage) (*mcp
 		return nil, fmt.Errorf("leaderboard_id is required")
 	}
 
-	err := r.client.DeleteGameCenterLeaderboard(context.Background(), params.LeaderboardID)
+	err := r.client.DeleteGameCenterLeaderboard(ctx, params.LeaderboardID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete leaderboard: %v", err)), nil
 	}

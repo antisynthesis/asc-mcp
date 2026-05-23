@@ -27,6 +27,10 @@ func (r *Registry) registerDiagnosticsTools() {
 					Type:        "integer",
 					Description: "Maximum number of metrics to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -46,6 +50,10 @@ func (r *Registry) registerDiagnosticsTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of signatures to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"build_id"},
@@ -67,6 +75,10 @@ func (r *Registry) registerDiagnosticsTools() {
 					Type:        "integer",
 					Description: "Maximum number of logs to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"signature_id"},
 		},
@@ -86,6 +98,10 @@ func (r *Registry) registerDiagnosticsTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of attachments to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"version_id"},
@@ -205,10 +221,11 @@ func (r *Registry) registerDiagnosticsTools() {
 	}, r.handleDeleteRoutingAppCoverage)
 }
 
-func (r *Registry) handleListPerfPowerMetrics(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListPerfPowerMetrics(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -222,19 +239,25 @@ func (r *Registry) handleListPerfPowerMetrics(args json.RawMessage) (*mcp.ToolsC
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListPerfPowerMetrics(context.Background(), params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.PerfPowerMetricsResponse, error) {
+		return r.client.ListPerfPowerMetrics(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list performance metrics: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatPerfPowerMetrics(resp.Data)), nil
+	return newListResult(formatPerfPowerMetrics(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleListDiagnosticSignatures(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListDiagnosticSignatures(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BuildID string `json:"build_id"`
 		Limit   int    `json:"limit"`
+		Cursor  string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -248,19 +271,25 @@ func (r *Registry) handleListDiagnosticSignatures(args json.RawMessage) (*mcp.To
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListDiagnosticSignatures(context.Background(), params.BuildID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.DiagnosticSignaturesResponse, error) {
+		return r.client.ListDiagnosticSignatures(ctx, params.BuildID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list diagnostic signatures: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatDiagnosticSignatures(resp.Data)), nil
+	return newListResult(formatDiagnosticSignatures(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleListDiagnosticLogs(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListDiagnosticLogs(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		SignatureID string `json:"signature_id"`
 		Limit       int    `json:"limit"`
+		Cursor      string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -274,19 +303,25 @@ func (r *Registry) handleListDiagnosticLogs(args json.RawMessage) (*mcp.ToolsCal
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListDiagnosticLogs(context.Background(), params.SignatureID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.DiagnosticLogsResponse, error) {
+		return r.client.ListDiagnosticLogs(ctx, params.SignatureID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list diagnostic logs: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatDiagnosticLogs(resp.Data)), nil
+	return newListResult(formatDiagnosticLogs(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleListAppStoreReviewAttachments(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAppStoreReviewAttachments(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
 		Limit     int    `json:"limit"`
+		Cursor    string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -300,16 +335,21 @@ func (r *Registry) handleListAppStoreReviewAttachments(args json.RawMessage) (*m
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppStoreReviewAttachments(context.Background(), params.VersionID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppStoreReviewAttachmentsResponse, error) {
+		return r.client.ListAppStoreReviewAttachments(ctx, params.VersionID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list review attachments: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppStoreReviewAttachments(resp.Data)), nil
+	return newListResult(formatAppStoreReviewAttachments(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetAppStoreReviewAttachment(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppStoreReviewAttachment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AttachmentID string `json:"attachment_id"`
 	}
@@ -321,7 +361,7 @@ func (r *Registry) handleGetAppStoreReviewAttachment(args json.RawMessage) (*mcp
 		return nil, fmt.Errorf("attachment_id is required")
 	}
 
-	resp, err := r.client.GetAppStoreReviewAttachment(context.Background(), params.AttachmentID)
+	resp, err := r.client.GetAppStoreReviewAttachment(ctx, params.AttachmentID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get review attachment: %v", err)), nil
 	}
@@ -329,7 +369,7 @@ func (r *Registry) handleGetAppStoreReviewAttachment(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult(formatAppStoreReviewAttachment(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateAppStoreReviewAttachment(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateAppStoreReviewAttachment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ReviewDetailID string `json:"review_detail_id"`
 		FileName       string `json:"file_name"`
@@ -358,7 +398,7 @@ func (r *Registry) handleCreateAppStoreReviewAttachment(args json.RawMessage) (*
 		},
 	}
 
-	resp, err := r.client.CreateAppStoreReviewAttachment(context.Background(), req)
+	resp, err := r.client.CreateAppStoreReviewAttachment(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create review attachment: %v", err)), nil
 	}
@@ -366,7 +406,7 @@ func (r *Registry) handleCreateAppStoreReviewAttachment(args json.RawMessage) (*
 	return mcp.NewSuccessResult(fmt.Sprintf("Review attachment reservation created:\n%s", formatAppStoreReviewAttachment(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteAppStoreReviewAttachment(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteAppStoreReviewAttachment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AttachmentID string `json:"attachment_id"`
 	}
@@ -378,7 +418,7 @@ func (r *Registry) handleDeleteAppStoreReviewAttachment(args json.RawMessage) (*
 		return nil, fmt.Errorf("attachment_id is required")
 	}
 
-	err := r.client.DeleteAppStoreReviewAttachment(context.Background(), params.AttachmentID)
+	err := r.client.DeleteAppStoreReviewAttachment(ctx, params.AttachmentID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete review attachment: %v", err)), nil
 	}
@@ -386,7 +426,7 @@ func (r *Registry) handleDeleteAppStoreReviewAttachment(args json.RawMessage) (*
 	return mcp.NewSuccessResult("Review attachment deleted"), nil
 }
 
-func (r *Registry) handleGetRoutingAppCoverage(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetRoutingAppCoverage(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
 	}
@@ -398,7 +438,7 @@ func (r *Registry) handleGetRoutingAppCoverage(args json.RawMessage) (*mcp.Tools
 		return nil, fmt.Errorf("version_id is required")
 	}
 
-	resp, err := r.client.GetRoutingAppCoverage(context.Background(), params.VersionID)
+	resp, err := r.client.GetRoutingAppCoverage(ctx, params.VersionID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get routing app coverage: %v", err)), nil
 	}
@@ -406,7 +446,7 @@ func (r *Registry) handleGetRoutingAppCoverage(args json.RawMessage) (*mcp.Tools
 	return mcp.NewSuccessResult(formatRoutingAppCoverage(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateRoutingAppCoverage(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateRoutingAppCoverage(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
 		FileName  string `json:"file_name"`
@@ -435,7 +475,7 @@ func (r *Registry) handleCreateRoutingAppCoverage(args json.RawMessage) (*mcp.To
 		},
 	}
 
-	resp, err := r.client.CreateRoutingAppCoverage(context.Background(), req)
+	resp, err := r.client.CreateRoutingAppCoverage(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create routing app coverage: %v", err)), nil
 	}
@@ -443,7 +483,7 @@ func (r *Registry) handleCreateRoutingAppCoverage(args json.RawMessage) (*mcp.To
 	return mcp.NewSuccessResult(fmt.Sprintf("Routing app coverage reservation created:\n%s", formatRoutingAppCoverage(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteRoutingAppCoverage(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteRoutingAppCoverage(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		CoverageID string `json:"coverage_id"`
 	}
@@ -455,7 +495,7 @@ func (r *Registry) handleDeleteRoutingAppCoverage(args json.RawMessage) (*mcp.To
 		return nil, fmt.Errorf("coverage_id is required")
 	}
 
-	err := r.client.DeleteRoutingAppCoverage(context.Background(), params.CoverageID)
+	err := r.client.DeleteRoutingAppCoverage(ctx, params.CoverageID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete routing app coverage: %v", err)), nil
 	}

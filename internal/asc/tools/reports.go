@@ -71,7 +71,7 @@ func (r *Registry) registerReportsTools() {
 	}, r.handleGetFinanceReport)
 }
 
-func (r *Registry) handleGetSalesReport(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetSalesReport(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VendorNumber  string `json:"vendor_number"`
 		ReportType    string `json:"report_type"`
@@ -99,7 +99,7 @@ func (r *Registry) handleGetSalesReport(args json.RawMessage) (*mcp.ToolsCallRes
 		return nil, fmt.Errorf("report_date is required")
 	}
 
-	data, err := r.client.GetSalesReport(context.Background(), params.VendorNumber, params.ReportType, params.ReportSubType, params.Frequency, params.ReportDate)
+	data, err := r.client.GetSalesReport(ctx, params.VendorNumber, params.ReportType, params.ReportSubType, params.Frequency, params.ReportDate)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get sales report: %v", err)), nil
 	}
@@ -108,7 +108,7 @@ func (r *Registry) handleGetSalesReport(args json.RawMessage) (*mcp.ToolsCallRes
 	return mcp.NewSuccessResult(fmt.Sprintf("Sales report downloaded (%d bytes). Data is gzip-compressed TSV format.\n\nFirst 1000 bytes:\n%s", len(data), truncateString(string(data), 1000))), nil
 }
 
-func (r *Registry) handleGetFinanceReport(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetFinanceReport(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VendorNumber string `json:"vendor_number"`
 		RegionCode   string `json:"region_code"`
@@ -132,7 +132,7 @@ func (r *Registry) handleGetFinanceReport(args json.RawMessage) (*mcp.ToolsCallR
 		return nil, fmt.Errorf("report_date is required")
 	}
 
-	data, err := r.client.GetFinanceReport(context.Background(), params.VendorNumber, params.RegionCode, params.ReportType, params.ReportDate)
+	data, err := r.client.GetFinanceReport(ctx, params.VendorNumber, params.RegionCode, params.ReportType, params.ReportDate)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get finance report: %v", err)), nil
 	}

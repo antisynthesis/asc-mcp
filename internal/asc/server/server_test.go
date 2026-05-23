@@ -162,12 +162,80 @@ func TestServer_HandleInitialize(t *testing.T) {
 		t.Fatalf("failed to unmarshal result: %v", err)
 	}
 
-	if result.ProtocolVersion != mcp.ProtocolVersion {
-		t.Errorf("ProtocolVersion = %q, want %q", result.ProtocolVersion, mcp.ProtocolVersion)
+	// Client requested 2024-11-05; server should echo that back since it is
+	// in SupportedProtocolVersions.
+	if result.ProtocolVersion != "2024-11-05" {
+		t.Errorf("ProtocolVersion = %q, want 2024-11-05", result.ProtocolVersion)
 	}
 
 	if result.ServerInfo.Name != serverName {
 		t.Errorf("ServerInfo.Name = %q, want %q", result.ServerInfo.Name, serverName)
+	}
+
+	if result.Instructions == "" {
+		t.Error("expected Instructions to be set in initialize result")
+	}
+}
+
+func TestServer_HandleInitialize_NegotiatesLatest(t *testing.T) {
+	cfg := testSetup(t)
+
+	output := &bytes.Buffer{}
+	server, err := New(cfg, &bytes.Buffer{}, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+
+	req := mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "initialize",
+		Params: json.RawMessage(`{
+			"protocolVersion": "2099-01-01",
+			"capabilities": {},
+			"clientInfo": {"name": "test-client", "version": "1.0.0"}
+		}`),
+	}
+	server.handleRequest(&req)
+
+	var resp mcp.Response
+	if err := json.NewDecoder(output).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	resultJSON, _ := json.Marshal(resp.Result)
+	var result mcp.InitializeResult
+	if err := json.Unmarshal(resultJSON, &result); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+	if result.ProtocolVersion != mcp.ProtocolVersion {
+		t.Errorf("unknown version should fall back to latest %q, got %q", mcp.ProtocolVersion, result.ProtocolVersion)
+	}
+}
+
+func TestServer_HandlePing(t *testing.T) {
+	cfg := testSetup(t)
+	output := &bytes.Buffer{}
+	server, err := New(cfg, &bytes.Buffer{}, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+
+	req := mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`42`),
+		Method:  "ping",
+	}
+	server.handleRequest(&req)
+
+	var resp mcp.Response
+	if err := json.NewDecoder(output).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("unexpected error: %v", resp.Error)
+	}
+	if resp.Result == nil {
+		t.Fatal("expected empty result object for ping")
 	}
 }
 

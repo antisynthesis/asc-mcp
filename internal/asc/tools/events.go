@@ -27,6 +27,10 @@ func (r *Registry) registerAppEventTools() {
 					Type:        "integer",
 					Description: "Maximum number of events to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -149,10 +153,11 @@ func (r *Registry) registerAppEventTools() {
 	}, r.handleDeleteAppEvent)
 }
 
-func (r *Registry) handleListAppEvents(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAppEvents(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -166,16 +171,21 @@ func (r *Registry) handleListAppEvents(args json.RawMessage) (*mcp.ToolsCallResu
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppEvents(context.Background(), params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppEventsResponse, error) {
+		return r.client.ListAppEvents(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app events: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppEvents(resp.Data)), nil
+	return newListResult(formatAppEvents(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetAppEvent(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppEvent(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		EventID string `json:"event_id"`
 	}
@@ -187,7 +197,7 @@ func (r *Registry) handleGetAppEvent(args json.RawMessage) (*mcp.ToolsCallResult
 		return nil, fmt.Errorf("event_id is required")
 	}
 
-	resp, err := r.client.GetAppEvent(context.Background(), params.EventID)
+	resp, err := r.client.GetAppEvent(ctx, params.EventID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app event: %v", err)), nil
 	}
@@ -195,7 +205,7 @@ func (r *Registry) handleGetAppEvent(args json.RawMessage) (*mcp.ToolsCallResult
 	return mcp.NewSuccessResult(formatAppEvent(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateAppEvent(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateAppEvent(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID               string `json:"app_id"`
 		ReferenceName       string `json:"reference_name"`
@@ -240,7 +250,7 @@ func (r *Registry) handleCreateAppEvent(args json.RawMessage) (*mcp.ToolsCallRes
 		},
 	}
 
-	resp, err := r.client.CreateAppEvent(context.Background(), req)
+	resp, err := r.client.CreateAppEvent(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create app event: %v", err)), nil
 	}
@@ -248,7 +258,7 @@ func (r *Registry) handleCreateAppEvent(args json.RawMessage) (*mcp.ToolsCallRes
 	return mcp.NewSuccessResult(fmt.Sprintf("Created app event: %s (ID: %s)", resp.Data.Attributes.ReferenceName, resp.Data.ID)), nil
 }
 
-func (r *Registry) handleUpdateAppEvent(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateAppEvent(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		EventID             string `json:"event_id"`
 		ReferenceName       string `json:"reference_name"`
@@ -281,7 +291,7 @@ func (r *Registry) handleUpdateAppEvent(args json.RawMessage) (*mcp.ToolsCallRes
 		},
 	}
 
-	resp, err := r.client.UpdateAppEvent(context.Background(), params.EventID, req)
+	resp, err := r.client.UpdateAppEvent(ctx, params.EventID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update app event: %v", err)), nil
 	}
@@ -289,7 +299,7 @@ func (r *Registry) handleUpdateAppEvent(args json.RawMessage) (*mcp.ToolsCallRes
 	return mcp.NewSuccessResult(fmt.Sprintf("Updated app event: %s", resp.Data.ID)), nil
 }
 
-func (r *Registry) handleDeleteAppEvent(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteAppEvent(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		EventID string `json:"event_id"`
 	}
@@ -301,7 +311,7 @@ func (r *Registry) handleDeleteAppEvent(args json.RawMessage) (*mcp.ToolsCallRes
 		return nil, fmt.Errorf("event_id is required")
 	}
 
-	err := r.client.DeleteAppEvent(context.Background(), params.EventID)
+	err := r.client.DeleteAppEvent(ctx, params.EventID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete app event: %v", err)), nil
 	}

@@ -23,6 +23,10 @@ func (r *Registry) registerBetaReviewTools() {
 					Type:        "integer",
 					Description: "Maximum number of submissions to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 		},
 	}, r.handleListBetaAppReviewSubmissions)
@@ -109,6 +113,10 @@ func (r *Registry) registerBetaReviewTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of localizations to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"app_id"},
@@ -230,6 +238,10 @@ func (r *Registry) registerBetaReviewTools() {
 					Type:        "integer",
 					Description: "Maximum number of localizations to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"build_id"},
 		},
@@ -348,9 +360,10 @@ func (r *Registry) registerBetaReviewTools() {
 	}, r.handleUpdateBuildBetaDetail)
 }
 
-func (r *Registry) handleListBetaAppReviewSubmissions(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListBetaAppReviewSubmissions(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -360,16 +373,21 @@ func (r *Registry) handleListBetaAppReviewSubmissions(args json.RawMessage) (*mc
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListBetaAppReviewSubmissions(context.Background(), limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BetaAppReviewSubmissionsResponse, error) {
+		return r.client.ListBetaAppReviewSubmissions(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list beta app review submissions: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatBetaAppReviewSubmissions(resp.Data)), nil
+	return newListResult(formatBetaAppReviewSubmissions(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetBetaAppReviewSubmission(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetBetaAppReviewSubmission(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		SubmissionID string `json:"submission_id"`
 	}
@@ -381,7 +399,7 @@ func (r *Registry) handleGetBetaAppReviewSubmission(args json.RawMessage) (*mcp.
 		return nil, fmt.Errorf("submission_id is required")
 	}
 
-	resp, err := r.client.GetBetaAppReviewSubmission(context.Background(), params.SubmissionID)
+	resp, err := r.client.GetBetaAppReviewSubmission(ctx, params.SubmissionID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get beta app review submission: %v", err)), nil
 	}
@@ -389,7 +407,7 @@ func (r *Registry) handleGetBetaAppReviewSubmission(args json.RawMessage) (*mcp.
 	return mcp.NewSuccessResult(formatBetaAppReviewSubmission(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateBetaAppReviewSubmission(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateBetaAppReviewSubmission(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BuildID string `json:"build_id"`
 	}
@@ -412,7 +430,7 @@ func (r *Registry) handleCreateBetaAppReviewSubmission(args json.RawMessage) (*m
 		},
 	}
 
-	resp, err := r.client.CreateBetaAppReviewSubmission(context.Background(), req)
+	resp, err := r.client.CreateBetaAppReviewSubmission(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create beta app review submission: %v", err)), nil
 	}
@@ -420,7 +438,7 @@ func (r *Registry) handleCreateBetaAppReviewSubmission(args json.RawMessage) (*m
 	return mcp.NewSuccessResult(fmt.Sprintf("Beta app review submission created:\n%s", formatBetaAppReviewSubmission(resp.Data))), nil
 }
 
-func (r *Registry) handleGetBetaLicenseAgreement(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetBetaLicenseAgreement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 	}
@@ -432,7 +450,7 @@ func (r *Registry) handleGetBetaLicenseAgreement(args json.RawMessage) (*mcp.Too
 		return nil, fmt.Errorf("app_id is required")
 	}
 
-	resp, err := r.client.GetBetaLicenseAgreement(context.Background(), params.AppID)
+	resp, err := r.client.GetBetaLicenseAgreement(ctx, params.AppID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get beta license agreement: %v", err)), nil
 	}
@@ -440,7 +458,7 @@ func (r *Registry) handleGetBetaLicenseAgreement(args json.RawMessage) (*mcp.Too
 	return mcp.NewSuccessResult(formatBetaLicenseAgreement(resp.Data)), nil
 }
 
-func (r *Registry) handleUpdateBetaLicenseAgreement(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateBetaLicenseAgreement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AgreementID   string `json:"agreement_id"`
 		AgreementText string `json:"agreement_text"`
@@ -463,7 +481,7 @@ func (r *Registry) handleUpdateBetaLicenseAgreement(args json.RawMessage) (*mcp.
 		},
 	}
 
-	resp, err := r.client.UpdateBetaLicenseAgreement(context.Background(), params.AgreementID, req)
+	resp, err := r.client.UpdateBetaLicenseAgreement(ctx, params.AgreementID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update beta license agreement: %v", err)), nil
 	}
@@ -471,10 +489,11 @@ func (r *Registry) handleUpdateBetaLicenseAgreement(args json.RawMessage) (*mcp.
 	return mcp.NewSuccessResult(fmt.Sprintf("Beta license agreement updated:\n%s", formatBetaLicenseAgreement(resp.Data))), nil
 }
 
-func (r *Registry) handleListBetaAppLocalizations(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListBetaAppLocalizations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -488,16 +507,21 @@ func (r *Registry) handleListBetaAppLocalizations(args json.RawMessage) (*mcp.To
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListBetaAppLocalizations(context.Background(), params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BetaAppLocalizationsResponse, error) {
+		return r.client.ListBetaAppLocalizations(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list beta app localizations: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatBetaAppLocalizations(resp.Data)), nil
+	return newListResult(formatBetaAppLocalizations(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetBetaAppLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetBetaAppLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 	}
@@ -509,7 +533,7 @@ func (r *Registry) handleGetBetaAppLocalization(args json.RawMessage) (*mcp.Tool
 		return nil, fmt.Errorf("localization_id is required")
 	}
 
-	resp, err := r.client.GetBetaAppLocalization(context.Background(), params.LocalizationID)
+	resp, err := r.client.GetBetaAppLocalization(ctx, params.LocalizationID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get beta app localization: %v", err)), nil
 	}
@@ -517,7 +541,7 @@ func (r *Registry) handleGetBetaAppLocalization(args json.RawMessage) (*mcp.Tool
 	return mcp.NewSuccessResult(formatBetaAppLocalization(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateBetaAppLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateBetaAppLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID            string `json:"app_id"`
 		Locale           string `json:"locale"`
@@ -552,7 +576,7 @@ func (r *Registry) handleCreateBetaAppLocalization(args json.RawMessage) (*mcp.T
 		},
 	}
 
-	resp, err := r.client.CreateBetaAppLocalization(context.Background(), req)
+	resp, err := r.client.CreateBetaAppLocalization(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create beta app localization: %v", err)), nil
 	}
@@ -560,7 +584,7 @@ func (r *Registry) handleCreateBetaAppLocalization(args json.RawMessage) (*mcp.T
 	return mcp.NewSuccessResult(fmt.Sprintf("Beta app localization created:\n%s", formatBetaAppLocalization(resp.Data))), nil
 }
 
-func (r *Registry) handleUpdateBetaAppLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateBetaAppLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID   string `json:"localization_id"`
 		Description      string `json:"description"`
@@ -589,7 +613,7 @@ func (r *Registry) handleUpdateBetaAppLocalization(args json.RawMessage) (*mcp.T
 		},
 	}
 
-	resp, err := r.client.UpdateBetaAppLocalization(context.Background(), params.LocalizationID, req)
+	resp, err := r.client.UpdateBetaAppLocalization(ctx, params.LocalizationID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update beta app localization: %v", err)), nil
 	}
@@ -597,7 +621,7 @@ func (r *Registry) handleUpdateBetaAppLocalization(args json.RawMessage) (*mcp.T
 	return mcp.NewSuccessResult(fmt.Sprintf("Beta app localization updated:\n%s", formatBetaAppLocalization(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteBetaAppLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteBetaAppLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 	}
@@ -609,7 +633,7 @@ func (r *Registry) handleDeleteBetaAppLocalization(args json.RawMessage) (*mcp.T
 		return nil, fmt.Errorf("localization_id is required")
 	}
 
-	err := r.client.DeleteBetaAppLocalization(context.Background(), params.LocalizationID)
+	err := r.client.DeleteBetaAppLocalization(ctx, params.LocalizationID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete beta app localization: %v", err)), nil
 	}
@@ -617,10 +641,11 @@ func (r *Registry) handleDeleteBetaAppLocalization(args json.RawMessage) (*mcp.T
 	return mcp.NewSuccessResult("Beta app localization deleted"), nil
 }
 
-func (r *Registry) handleListBetaBuildLocalizations(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListBetaBuildLocalizations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BuildID string `json:"build_id"`
 		Limit   int    `json:"limit"`
+		Cursor  string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -634,16 +659,21 @@ func (r *Registry) handleListBetaBuildLocalizations(args json.RawMessage) (*mcp.
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListBetaBuildLocalizations(context.Background(), params.BuildID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BetaBuildLocalizationsResponse, error) {
+		return r.client.ListBetaBuildLocalizations(ctx, params.BuildID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list beta build localizations: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatBetaBuildLocalizations(resp.Data)), nil
+	return newListResult(formatBetaBuildLocalizations(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetBetaBuildLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetBetaBuildLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 	}
@@ -655,7 +685,7 @@ func (r *Registry) handleGetBetaBuildLocalization(args json.RawMessage) (*mcp.To
 		return nil, fmt.Errorf("localization_id is required")
 	}
 
-	resp, err := r.client.GetBetaBuildLocalization(context.Background(), params.LocalizationID)
+	resp, err := r.client.GetBetaBuildLocalization(ctx, params.LocalizationID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get beta build localization: %v", err)), nil
 	}
@@ -663,7 +693,7 @@ func (r *Registry) handleGetBetaBuildLocalization(args json.RawMessage) (*mcp.To
 	return mcp.NewSuccessResult(formatBetaBuildLocalization(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateBetaBuildLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateBetaBuildLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BuildID  string `json:"build_id"`
 		Locale   string `json:"locale"`
@@ -692,7 +722,7 @@ func (r *Registry) handleCreateBetaBuildLocalization(args json.RawMessage) (*mcp
 		},
 	}
 
-	resp, err := r.client.CreateBetaBuildLocalization(context.Background(), req)
+	resp, err := r.client.CreateBetaBuildLocalization(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create beta build localization: %v", err)), nil
 	}
@@ -700,7 +730,7 @@ func (r *Registry) handleCreateBetaBuildLocalization(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult(fmt.Sprintf("Beta build localization created:\n%s", formatBetaBuildLocalization(resp.Data))), nil
 }
 
-func (r *Registry) handleUpdateBetaBuildLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateBetaBuildLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 		WhatsNew       string `json:"whats_new"`
@@ -723,7 +753,7 @@ func (r *Registry) handleUpdateBetaBuildLocalization(args json.RawMessage) (*mcp
 		},
 	}
 
-	resp, err := r.client.UpdateBetaBuildLocalization(context.Background(), params.LocalizationID, req)
+	resp, err := r.client.UpdateBetaBuildLocalization(ctx, params.LocalizationID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update beta build localization: %v", err)), nil
 	}
@@ -731,7 +761,7 @@ func (r *Registry) handleUpdateBetaBuildLocalization(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult(fmt.Sprintf("Beta build localization updated:\n%s", formatBetaBuildLocalization(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteBetaBuildLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteBetaBuildLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 	}
@@ -743,7 +773,7 @@ func (r *Registry) handleDeleteBetaBuildLocalization(args json.RawMessage) (*mcp
 		return nil, fmt.Errorf("localization_id is required")
 	}
 
-	err := r.client.DeleteBetaBuildLocalization(context.Background(), params.LocalizationID)
+	err := r.client.DeleteBetaBuildLocalization(ctx, params.LocalizationID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete beta build localization: %v", err)), nil
 	}
@@ -751,7 +781,7 @@ func (r *Registry) handleDeleteBetaBuildLocalization(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult("Beta build localization deleted"), nil
 }
 
-func (r *Registry) handleGetBuildBetaDetail(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetBuildBetaDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BuildID string `json:"build_id"`
 	}
@@ -763,7 +793,7 @@ func (r *Registry) handleGetBuildBetaDetail(args json.RawMessage) (*mcp.ToolsCal
 		return nil, fmt.Errorf("build_id is required")
 	}
 
-	resp, err := r.client.GetBuildBetaDetail(context.Background(), params.BuildID)
+	resp, err := r.client.GetBuildBetaDetail(ctx, params.BuildID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get build beta detail: %v", err)), nil
 	}
@@ -771,7 +801,7 @@ func (r *Registry) handleGetBuildBetaDetail(args json.RawMessage) (*mcp.ToolsCal
 	return mcp.NewSuccessResult(formatBuildBetaDetail(resp.Data)), nil
 }
 
-func (r *Registry) handleUpdateBuildBetaDetail(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateBuildBetaDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		DetailID          string `json:"detail_id"`
 		AutoNotifyEnabled *bool  `json:"auto_notify_enabled"`
@@ -794,7 +824,7 @@ func (r *Registry) handleUpdateBuildBetaDetail(args json.RawMessage) (*mcp.Tools
 		},
 	}
 
-	resp, err := r.client.UpdateBuildBetaDetail(context.Background(), params.DetailID, req)
+	resp, err := r.client.UpdateBuildBetaDetail(ctx, params.DetailID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update build beta detail: %v", err)), nil
 	}

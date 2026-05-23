@@ -27,6 +27,10 @@ func (r *Registry) registerScreenshotTools() {
 					Type:        "integer",
 					Description: "Maximum number of sets to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"localization_id"},
 		},
@@ -46,6 +50,10 @@ func (r *Registry) registerScreenshotTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of screenshots to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"screenshot_set_id"},
@@ -99,6 +107,10 @@ func (r *Registry) registerScreenshotTools() {
 					Type:        "integer",
 					Description: "Maximum number of sets to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"localization_id"},
 		},
@@ -118,6 +130,10 @@ func (r *Registry) registerScreenshotTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of previews to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"preview_set_id"},
@@ -157,10 +173,11 @@ func (r *Registry) registerScreenshotTools() {
 	}, r.handleDeletePreview)
 }
 
-func (r *Registry) handleListScreenshotSets(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListScreenshotSets(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 		Limit          int    `json:"limit"`
+		Cursor         string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -174,19 +191,25 @@ func (r *Registry) handleListScreenshotSets(args json.RawMessage) (*mcp.ToolsCal
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppScreenshotSets(context.Background(), params.LocalizationID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppScreenshotSetsResponse, error) {
+		return r.client.ListAppScreenshotSets(ctx, params.LocalizationID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list screenshot sets: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatScreenshotSets(resp.Data)), nil
+	return newListResult(formatScreenshotSets(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleListScreenshots(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListScreenshots(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ScreenshotSetID string `json:"screenshot_set_id"`
 		Limit           int    `json:"limit"`
+		Cursor          string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -200,16 +223,21 @@ func (r *Registry) handleListScreenshots(args json.RawMessage) (*mcp.ToolsCallRe
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppScreenshots(context.Background(), params.ScreenshotSetID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppScreenshotsResponse, error) {
+		return r.client.ListAppScreenshots(ctx, params.ScreenshotSetID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list screenshots: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatScreenshots(resp.Data)), nil
+	return newListResult(formatScreenshots(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetScreenshot(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetScreenshot(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ScreenshotID string `json:"screenshot_id"`
 	}
@@ -221,7 +249,7 @@ func (r *Registry) handleGetScreenshot(args json.RawMessage) (*mcp.ToolsCallResu
 		return nil, fmt.Errorf("screenshot_id is required")
 	}
 
-	resp, err := r.client.GetAppScreenshot(context.Background(), params.ScreenshotID)
+	resp, err := r.client.GetAppScreenshot(ctx, params.ScreenshotID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get screenshot: %v", err)), nil
 	}
@@ -229,7 +257,7 @@ func (r *Registry) handleGetScreenshot(args json.RawMessage) (*mcp.ToolsCallResu
 	return mcp.NewSuccessResult(formatScreenshot(resp.Data)), nil
 }
 
-func (r *Registry) handleDeleteScreenshot(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteScreenshot(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ScreenshotID string `json:"screenshot_id"`
 	}
@@ -241,7 +269,7 @@ func (r *Registry) handleDeleteScreenshot(args json.RawMessage) (*mcp.ToolsCallR
 		return nil, fmt.Errorf("screenshot_id is required")
 	}
 
-	err := r.client.DeleteAppScreenshot(context.Background(), params.ScreenshotID)
+	err := r.client.DeleteAppScreenshot(ctx, params.ScreenshotID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete screenshot: %v", err)), nil
 	}
@@ -249,10 +277,11 @@ func (r *Registry) handleDeleteScreenshot(args json.RawMessage) (*mcp.ToolsCallR
 	return mcp.NewSuccessResult("Screenshot deleted successfully"), nil
 }
 
-func (r *Registry) handleListPreviewSets(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListPreviewSets(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 		Limit          int    `json:"limit"`
+		Cursor         string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -266,19 +295,25 @@ func (r *Registry) handleListPreviewSets(args json.RawMessage) (*mcp.ToolsCallRe
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppPreviewSets(context.Background(), params.LocalizationID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppPreviewSetsResponse, error) {
+		return r.client.ListAppPreviewSets(ctx, params.LocalizationID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list preview sets: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatPreviewSets(resp.Data)), nil
+	return newListResult(formatPreviewSets(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleListPreviews(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListPreviews(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PreviewSetID string `json:"preview_set_id"`
 		Limit        int    `json:"limit"`
+		Cursor       string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -292,16 +327,21 @@ func (r *Registry) handleListPreviews(args json.RawMessage) (*mcp.ToolsCallResul
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppPreviews(context.Background(), params.PreviewSetID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppPreviewsResponse, error) {
+		return r.client.ListAppPreviews(ctx, params.PreviewSetID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list previews: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatPreviews(resp.Data)), nil
+	return newListResult(formatPreviews(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetPreview(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetPreview(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PreviewID string `json:"preview_id"`
 	}
@@ -313,7 +353,7 @@ func (r *Registry) handleGetPreview(args json.RawMessage) (*mcp.ToolsCallResult,
 		return nil, fmt.Errorf("preview_id is required")
 	}
 
-	resp, err := r.client.GetAppPreview(context.Background(), params.PreviewID)
+	resp, err := r.client.GetAppPreview(ctx, params.PreviewID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get preview: %v", err)), nil
 	}
@@ -321,7 +361,7 @@ func (r *Registry) handleGetPreview(args json.RawMessage) (*mcp.ToolsCallResult,
 	return mcp.NewSuccessResult(formatPreview(resp.Data)), nil
 }
 
-func (r *Registry) handleDeletePreview(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeletePreview(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PreviewID string `json:"preview_id"`
 	}
@@ -333,7 +373,7 @@ func (r *Registry) handleDeletePreview(args json.RawMessage) (*mcp.ToolsCallResu
 		return nil, fmt.Errorf("preview_id is required")
 	}
 
-	err := r.client.DeleteAppPreview(context.Background(), params.PreviewID)
+	err := r.client.DeleteAppPreview(ctx, params.PreviewID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete preview: %v", err)), nil
 	}

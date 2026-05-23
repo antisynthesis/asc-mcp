@@ -84,7 +84,7 @@ func (r *Registry) registerPhasedReleaseTools() {
 	}, r.handleDeletePhasedRelease)
 }
 
-func (r *Registry) handleGetPhasedRelease(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetPhasedRelease(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
 	}
@@ -96,7 +96,7 @@ func (r *Registry) handleGetPhasedRelease(args json.RawMessage) (*mcp.ToolsCallR
 		return nil, fmt.Errorf("version_id is required")
 	}
 
-	resp, err := r.client.GetAppStoreVersionPhasedRelease(context.Background(), params.VersionID)
+	resp, err := r.client.GetAppStoreVersionPhasedRelease(ctx, params.VersionID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get phased release: %v", err)), nil
 	}
@@ -104,7 +104,7 @@ func (r *Registry) handleGetPhasedRelease(args json.RawMessage) (*mcp.ToolsCallR
 	return mcp.NewSuccessResult(formatPhasedRelease(resp.Data)), nil
 }
 
-func (r *Registry) handleCreatePhasedRelease(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreatePhasedRelease(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
 		State     string `json:"state"`
@@ -134,7 +134,7 @@ func (r *Registry) handleCreatePhasedRelease(args json.RawMessage) (*mcp.ToolsCa
 		},
 	}
 
-	resp, err := r.client.CreateAppStoreVersionPhasedRelease(context.Background(), req)
+	resp, err := r.client.CreateAppStoreVersionPhasedRelease(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create phased release: %v", err)), nil
 	}
@@ -142,7 +142,7 @@ func (r *Registry) handleCreatePhasedRelease(args json.RawMessage) (*mcp.ToolsCa
 	return mcp.NewSuccessResult(fmt.Sprintf("Created phased release: %s (state: %s)", resp.Data.ID, resp.Data.Attributes.PhasedReleaseState)), nil
 }
 
-func (r *Registry) handleUpdatePhasedRelease(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdatePhasedRelease(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PhasedReleaseID string `json:"phased_release_id"`
 		State           string `json:"state"`
@@ -168,7 +168,7 @@ func (r *Registry) handleUpdatePhasedRelease(args json.RawMessage) (*mcp.ToolsCa
 		},
 	}
 
-	resp, err := r.client.UpdateAppStoreVersionPhasedRelease(context.Background(), params.PhasedReleaseID, req)
+	resp, err := r.client.UpdateAppStoreVersionPhasedRelease(ctx, params.PhasedReleaseID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update phased release: %v", err)), nil
 	}
@@ -176,7 +176,7 @@ func (r *Registry) handleUpdatePhasedRelease(args json.RawMessage) (*mcp.ToolsCa
 	return mcp.NewSuccessResult(fmt.Sprintf("Updated phased release: %s (state: %s)", resp.Data.ID, resp.Data.Attributes.PhasedReleaseState)), nil
 }
 
-func (r *Registry) handleDeletePhasedRelease(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeletePhasedRelease(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PhasedReleaseID string `json:"phased_release_id"`
 	}
@@ -188,7 +188,7 @@ func (r *Registry) handleDeletePhasedRelease(args json.RawMessage) (*mcp.ToolsCa
 		return nil, fmt.Errorf("phased_release_id is required")
 	}
 
-	err := r.client.DeleteAppStoreVersionPhasedRelease(context.Background(), params.PhasedReleaseID)
+	err := r.client.DeleteAppStoreVersionPhasedRelease(ctx, params.PhasedReleaseID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete phased release: %v", err)), nil
 	}

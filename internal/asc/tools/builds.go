@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/antisynthesis/asc-mcp/internal/asc/api"
 	"github.com/antisynthesis/asc-mcp/internal/asc/mcp"
 )
 
@@ -27,6 +28,10 @@ func (r *Registry) registerBuildTools() {
 						Type:        "integer",
 						Description: "Maximum number of builds to return (default: 20, max: 200)",
 						Default:     20,
+					},
+					"cursor": {
+						Type:        "string",
+						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 					},
 				},
 			},
@@ -54,10 +59,11 @@ func (r *Registry) registerBuildTools() {
 }
 
 // handleListBuilds handles the list_builds tool.
-func (r *Registry) handleListBuilds(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListBuilds(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	params.Limit = 20
 
@@ -74,14 +80,15 @@ func (r *Registry) handleListBuilds(args json.RawMessage) (*mcp.ToolsCallResult,
 		params.Limit = 200
 	}
 
-	ctx := context.Background()
-	resp, err := r.client.ListBuilds(ctx, params.AppID, params.Limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BuildsResponse, error) {
+		return r.client.ListBuilds(ctx, params.AppID, params.Limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list builds: %v", err)), nil
 	}
 
 	if len(resp.Data) == 0 {
-		return mcp.NewSuccessResult("No builds found."), nil
+		return newListResult("No builds found.", resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -102,11 +109,11 @@ func (r *Registry) handleListBuilds(args json.RawMessage) (*mcp.ToolsCallResult,
 		sb.WriteString("\n")
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newListResult(sb.String(), resp.Links), nil
 }
 
 // handleGetBuild handles the get_build tool.
-func (r *Registry) handleGetBuild(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetBuild(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BuildID string `json:"build_id"`
 	}
@@ -119,7 +126,6 @@ func (r *Registry) handleGetBuild(args json.RawMessage) (*mcp.ToolsCallResult, e
 		return mcp.NewErrorResult("build_id is required"), nil
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.GetBuild(ctx, params.BuildID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get build: %v", err)), nil

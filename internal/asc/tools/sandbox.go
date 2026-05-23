@@ -23,6 +23,10 @@ func (r *Registry) registerSandboxTools() {
 					Type:        "integer",
 					Description: "Maximum number of testers to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 		},
 	}, r.handleListSandboxTesters)
@@ -116,9 +120,10 @@ func (r *Registry) registerSandboxTools() {
 	}, r.handleDeleteSandboxTester)
 }
 
-func (r *Registry) handleListSandboxTesters(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListSandboxTesters(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -128,16 +133,21 @@ func (r *Registry) handleListSandboxTesters(args json.RawMessage) (*mcp.ToolsCal
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListSandboxTesters(context.Background(), limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.SandboxTestersResponse, error) {
+		return r.client.ListSandboxTesters(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list sandbox testers: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatSandboxTesters(resp.Data)), nil
+	return newListResult(formatSandboxTesters(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleCreateSandboxTester(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateSandboxTester(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		Email             string `json:"email"`
 		Password          string `json:"password"`
@@ -172,7 +182,7 @@ func (r *Registry) handleCreateSandboxTester(args json.RawMessage) (*mcp.ToolsCa
 		},
 	}
 
-	resp, err := r.client.CreateSandboxTester(context.Background(), req)
+	resp, err := r.client.CreateSandboxTester(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create sandbox tester: %v", err)), nil
 	}
@@ -180,7 +190,7 @@ func (r *Registry) handleCreateSandboxTester(args json.RawMessage) (*mcp.ToolsCa
 	return mcp.NewSuccessResult(fmt.Sprintf("Sandbox tester created:\n%s", formatSandboxTester(resp.Data))), nil
 }
 
-func (r *Registry) handleUpdateSandboxTester(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateSandboxTester(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		TesterID                string `json:"tester_id"`
 		Territory               string `json:"territory"`
@@ -207,7 +217,7 @@ func (r *Registry) handleUpdateSandboxTester(args json.RawMessage) (*mcp.ToolsCa
 		},
 	}
 
-	resp, err := r.client.UpdateSandboxTester(context.Background(), params.TesterID, req)
+	resp, err := r.client.UpdateSandboxTester(ctx, params.TesterID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update sandbox tester: %v", err)), nil
 	}
@@ -215,7 +225,7 @@ func (r *Registry) handleUpdateSandboxTester(args json.RawMessage) (*mcp.ToolsCa
 	return mcp.NewSuccessResult(fmt.Sprintf("Sandbox tester updated:\n%s", formatSandboxTester(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteSandboxTester(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteSandboxTester(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		TesterID string `json:"tester_id"`
 	}
@@ -227,7 +237,7 @@ func (r *Registry) handleDeleteSandboxTester(args json.RawMessage) (*mcp.ToolsCa
 		return nil, fmt.Errorf("tester_id is required")
 	}
 
-	err := r.client.DeleteSandboxTester(context.Background(), params.TesterID)
+	err := r.client.DeleteSandboxTester(ctx, params.TesterID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete sandbox tester: %v", err)), nil
 	}

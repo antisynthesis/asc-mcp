@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -268,9 +269,9 @@ func TestRegistry_ListTools(t *testing.T) {
 		"create_user_invitation": false,
 		"delete_user_invitation": false,
 		// Pricing tools
-		"get_app_price_schedule":        false,
-		"list_app_price_points":         false,
-		"list_territories":              false,
+		"get_app_price_schedule":         false,
+		"list_app_price_points":          false,
+		"list_territories":               false,
 		"list_subscription_price_points": false,
 		// Availability tools
 		"get_app_availability":          false,
@@ -302,36 +303,36 @@ func TestRegistry_ListTools(t *testing.T) {
 		"get_build_beta_detail":             false,
 		"update_build_beta_detail":          false,
 		// Sandbox Testers tools
-		"list_sandbox_testers":   false,
-		"create_sandbox_tester":  false,
-		"update_sandbox_tester":  false,
-		"delete_sandbox_tester":  false,
+		"list_sandbox_testers":  false,
+		"create_sandbox_tester": false,
+		"update_sandbox_tester": false,
+		"delete_sandbox_tester": false,
 		// Promoted Purchases tools
-		"list_promoted_purchases":      false,
-		"get_promoted_purchase":        false,
-		"create_promoted_purchase":     false,
-		"update_promoted_purchase":     false,
-		"delete_promoted_purchase":     false,
-		"list_subscription_offer_codes": false,
-		"get_subscription_offer_code":  false,
+		"list_promoted_purchases":        false,
+		"get_promoted_purchase":          false,
+		"create_promoted_purchase":       false,
+		"update_promoted_purchase":       false,
+		"delete_promoted_purchase":       false,
+		"list_subscription_offer_codes":  false,
+		"get_subscription_offer_code":    false,
 		"create_subscription_offer_code": false,
 		"update_subscription_offer_code": false,
-		"list_win_back_offers":         false,
-		"get_win_back_offer":           false,
-		"create_win_back_offer":        false,
-		"update_win_back_offer":        false,
-		"delete_win_back_offer":        false,
+		"list_win_back_offers":           false,
+		"get_win_back_offer":             false,
+		"create_win_back_offer":          false,
+		"update_win_back_offer":          false,
+		"delete_win_back_offer":          false,
 		// Product Pages tools
-		"list_app_custom_product_pages":        false,
-		"get_app_custom_product_page":          false,
-		"create_app_custom_product_page":       false,
-		"update_app_custom_product_page":       false,
-		"delete_app_custom_product_page":       false,
-		"list_app_store_version_experiments":   false,
-		"get_app_store_version_experiment":     false,
-		"create_app_store_version_experiment":  false,
-		"update_app_store_version_experiment":  false,
-		"delete_app_store_version_experiment":  false,
+		"list_app_custom_product_pages":       false,
+		"get_app_custom_product_page":         false,
+		"create_app_custom_product_page":      false,
+		"update_app_custom_product_page":      false,
+		"delete_app_custom_product_page":      false,
+		"list_app_store_version_experiments":  false,
+		"get_app_store_version_experiment":    false,
+		"create_app_store_version_experiment": false,
+		"update_app_store_version_experiment": false,
+		"delete_app_store_version_experiment": false,
 		// Diagnostics and Metrics tools
 		"list_perf_power_metrics":            false,
 		"list_diagnostic_signatures":         false,
@@ -352,10 +353,10 @@ func TestRegistry_ListTools(t *testing.T) {
 		"list_app_categories": false,
 		"get_app_category":    false,
 		// Alternative Distribution tools
-		"list_alternative_distribution_keys":   false,
-		"get_alternative_distribution_key":     false,
-		"create_alternative_distribution_key":  false,
-		"delete_alternative_distribution_key":  false,
+		"list_alternative_distribution_keys":  false,
+		"get_alternative_distribution_key":    false,
+		"create_alternative_distribution_key": false,
+		"delete_alternative_distribution_key": false,
 		// Marketplace Search tools
 		"get_marketplace_search_detail":    false,
 		"create_marketplace_search_detail": false,
@@ -402,10 +403,14 @@ func TestRegistry_CallTool_UnknownTool(t *testing.T) {
 	client, _ := api.NewClient("test-issuer", "TESTKEY123", keyPath)
 	registry := NewRegistry(client)
 
-	_, err := registry.CallTool("unknown_tool", json.RawMessage(`{}`))
+	_, err := registry.CallTool(context.Background(), "unknown_tool", json.RawMessage(`{}`))
 
 	if err == nil {
 		t.Fatal("expected error for unknown tool")
+	}
+
+	if !errors.Is(err, ErrUnknownTool) {
+		t.Errorf("expected ErrUnknownTool, got %v", err)
 	}
 
 	if !strings.Contains(err.Error(), "unknown tool") {
@@ -436,7 +441,7 @@ func TestRegistry_Register(t *testing.T) {
 		InputSchema: mcp.JSONSchema{Type: "object"},
 	}
 
-	handler := func(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+	handler := func(_ context.Context, _ json.RawMessage) (*mcp.ToolsCallResult, error) {
 		return mcp.NewSuccessResult("custom result"), nil
 	}
 
@@ -455,7 +460,7 @@ func TestRegistry_Register(t *testing.T) {
 	}
 
 	// Call the custom tool
-	result, err := registry.CallTool("custom_tool", json.RawMessage(`{}`))
+	result, err := registry.CallTool(context.Background(), "custom_tool", json.RawMessage(`{}`))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

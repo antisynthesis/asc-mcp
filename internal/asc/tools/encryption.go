@@ -27,6 +27,10 @@ func (r *Registry) registerEncryptionTools() {
 					Type:        "integer",
 					Description: "Maximum number of declarations to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 		},
 	}, r.handleListEncryptionDeclarations)
@@ -112,10 +116,11 @@ func (r *Registry) registerEncryptionTools() {
 	}, r.handleAssignBuildToEncryptionDeclaration)
 }
 
-func (r *Registry) handleListEncryptionDeclarations(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListEncryptionDeclarations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -125,16 +130,21 @@ func (r *Registry) handleListEncryptionDeclarations(args json.RawMessage) (*mcp.
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppEncryptionDeclarations(context.Background(), params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppEncryptionDeclarationsResponse, error) {
+		return r.client.ListAppEncryptionDeclarations(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list encryption declarations: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatEncryptionDeclarations(resp.Data)), nil
+	return newListResult(formatEncryptionDeclarations(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetEncryptionDeclaration(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetEncryptionDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		DeclarationID string `json:"declaration_id"`
 	}
@@ -146,7 +156,7 @@ func (r *Registry) handleGetEncryptionDeclaration(args json.RawMessage) (*mcp.To
 		return nil, fmt.Errorf("declaration_id is required")
 	}
 
-	resp, err := r.client.GetAppEncryptionDeclaration(context.Background(), params.DeclarationID)
+	resp, err := r.client.GetAppEncryptionDeclaration(ctx, params.DeclarationID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get encryption declaration: %v", err)), nil
 	}
@@ -154,7 +164,7 @@ func (r *Registry) handleGetEncryptionDeclaration(args json.RawMessage) (*mcp.To
 	return mcp.NewSuccessResult(formatEncryptionDeclaration(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateEncryptionDeclaration(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateEncryptionDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID                           string `json:"app_id"`
 		UsesEncryption                  bool   `json:"uses_encryption"`
@@ -196,7 +206,7 @@ func (r *Registry) handleCreateEncryptionDeclaration(args json.RawMessage) (*mcp
 		},
 	}
 
-	resp, err := r.client.CreateAppEncryptionDeclaration(context.Background(), req)
+	resp, err := r.client.CreateAppEncryptionDeclaration(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create encryption declaration: %v", err)), nil
 	}
@@ -204,7 +214,7 @@ func (r *Registry) handleCreateEncryptionDeclaration(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult(fmt.Sprintf("Created encryption declaration: %s", resp.Data.ID)), nil
 }
 
-func (r *Registry) handleAssignBuildToEncryptionDeclaration(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleAssignBuildToEncryptionDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		DeclarationID string `json:"declaration_id"`
 		BuildID       string `json:"build_id"`
@@ -220,7 +230,7 @@ func (r *Registry) handleAssignBuildToEncryptionDeclaration(args json.RawMessage
 		return nil, fmt.Errorf("build_id is required")
 	}
 
-	err := r.client.AssignBuildToEncryptionDeclaration(context.Background(), params.DeclarationID, params.BuildID)
+	err := r.client.AssignBuildToEncryptionDeclaration(ctx, params.DeclarationID, params.BuildID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to assign build to encryption declaration: %v", err)), nil
 	}

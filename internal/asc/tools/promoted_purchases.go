@@ -27,6 +27,10 @@ func (r *Registry) registerPromotedPurchasesTools() {
 					Type:        "integer",
 					Description: "Maximum number of promoted purchases to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -131,6 +135,10 @@ func (r *Registry) registerPromotedPurchasesTools() {
 					Type:        "integer",
 					Description: "Maximum number of offer codes to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"subscription_id"},
 		},
@@ -234,6 +242,10 @@ func (r *Registry) registerPromotedPurchasesTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of offers to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"subscription_id"},
@@ -341,10 +353,11 @@ func (r *Registry) registerPromotedPurchasesTools() {
 	}, r.handleDeleteWinBackOffer)
 }
 
-func (r *Registry) handleListPromotedPurchases(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListPromotedPurchases(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -358,16 +371,21 @@ func (r *Registry) handleListPromotedPurchases(args json.RawMessage) (*mcp.Tools
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListPromotedPurchases(context.Background(), params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.PromotedPurchasesResponse, error) {
+		return r.client.ListPromotedPurchases(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list promoted purchases: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatPromotedPurchases(resp.Data)), nil
+	return newListResult(formatPromotedPurchases(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetPromotedPurchase(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetPromotedPurchase(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PromotedPurchaseID string `json:"promoted_purchase_id"`
 	}
@@ -379,7 +397,7 @@ func (r *Registry) handleGetPromotedPurchase(args json.RawMessage) (*mcp.ToolsCa
 		return nil, fmt.Errorf("promoted_purchase_id is required")
 	}
 
-	resp, err := r.client.GetPromotedPurchase(context.Background(), params.PromotedPurchaseID)
+	resp, err := r.client.GetPromotedPurchase(ctx, params.PromotedPurchaseID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get promoted purchase: %v", err)), nil
 	}
@@ -387,7 +405,7 @@ func (r *Registry) handleGetPromotedPurchase(args json.RawMessage) (*mcp.ToolsCa
 	return mcp.NewSuccessResult(formatPromotedPurchase(resp.Data)), nil
 }
 
-func (r *Registry) handleCreatePromotedPurchase(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreatePromotedPurchase(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID              string `json:"app_id"`
 		InAppPurchaseID    string `json:"in_app_purchase_id"`
@@ -430,7 +448,7 @@ func (r *Registry) handleCreatePromotedPurchase(args json.RawMessage) (*mcp.Tool
 		},
 	}
 
-	resp, err := r.client.CreatePromotedPurchase(context.Background(), req)
+	resp, err := r.client.CreatePromotedPurchase(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create promoted purchase: %v", err)), nil
 	}
@@ -438,7 +456,7 @@ func (r *Registry) handleCreatePromotedPurchase(args json.RawMessage) (*mcp.Tool
 	return mcp.NewSuccessResult(fmt.Sprintf("Promoted purchase created:\n%s", formatPromotedPurchase(resp.Data))), nil
 }
 
-func (r *Registry) handleUpdatePromotedPurchase(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdatePromotedPurchase(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PromotedPurchaseID string `json:"promoted_purchase_id"`
 		Enabled            *bool  `json:"enabled"`
@@ -463,7 +481,7 @@ func (r *Registry) handleUpdatePromotedPurchase(args json.RawMessage) (*mcp.Tool
 		},
 	}
 
-	resp, err := r.client.UpdatePromotedPurchase(context.Background(), params.PromotedPurchaseID, req)
+	resp, err := r.client.UpdatePromotedPurchase(ctx, params.PromotedPurchaseID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update promoted purchase: %v", err)), nil
 	}
@@ -471,7 +489,7 @@ func (r *Registry) handleUpdatePromotedPurchase(args json.RawMessage) (*mcp.Tool
 	return mcp.NewSuccessResult(fmt.Sprintf("Promoted purchase updated:\n%s", formatPromotedPurchase(resp.Data))), nil
 }
 
-func (r *Registry) handleDeletePromotedPurchase(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeletePromotedPurchase(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PromotedPurchaseID string `json:"promoted_purchase_id"`
 	}
@@ -483,7 +501,7 @@ func (r *Registry) handleDeletePromotedPurchase(args json.RawMessage) (*mcp.Tool
 		return nil, fmt.Errorf("promoted_purchase_id is required")
 	}
 
-	err := r.client.DeletePromotedPurchase(context.Background(), params.PromotedPurchaseID)
+	err := r.client.DeletePromotedPurchase(ctx, params.PromotedPurchaseID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete promoted purchase: %v", err)), nil
 	}
@@ -491,10 +509,11 @@ func (r *Registry) handleDeletePromotedPurchase(args json.RawMessage) (*mcp.Tool
 	return mcp.NewSuccessResult("Promoted purchase deleted"), nil
 }
 
-func (r *Registry) handleListSubscriptionOfferCodes(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListSubscriptionOfferCodes(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		SubscriptionID string `json:"subscription_id"`
 		Limit          int    `json:"limit"`
+		Cursor         string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -508,16 +527,21 @@ func (r *Registry) handleListSubscriptionOfferCodes(args json.RawMessage) (*mcp.
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListSubscriptionOfferCodes(context.Background(), params.SubscriptionID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.SubscriptionOfferCodesResponse, error) {
+		return r.client.ListSubscriptionOfferCodes(ctx, params.SubscriptionID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list subscription offer codes: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatSubscriptionOfferCodes(resp.Data)), nil
+	return newListResult(formatSubscriptionOfferCodes(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetSubscriptionOfferCode(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetSubscriptionOfferCode(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		OfferCodeID string `json:"offer_code_id"`
 	}
@@ -529,7 +553,7 @@ func (r *Registry) handleGetSubscriptionOfferCode(args json.RawMessage) (*mcp.To
 		return nil, fmt.Errorf("offer_code_id is required")
 	}
 
-	resp, err := r.client.GetSubscriptionOfferCode(context.Background(), params.OfferCodeID)
+	resp, err := r.client.GetSubscriptionOfferCode(ctx, params.OfferCodeID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get subscription offer code: %v", err)), nil
 	}
@@ -537,15 +561,15 @@ func (r *Registry) handleGetSubscriptionOfferCode(args json.RawMessage) (*mcp.To
 	return mcp.NewSuccessResult(formatSubscriptionOfferCode(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateSubscriptionOfferCode(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateSubscriptionOfferCode(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		SubscriptionID          string   `json:"subscription_id"`
-		Name                    string   `json:"name"`
-		CustomerEligibilities   []string `json:"customer_eligibilities"`
-		OfferEligibility        string   `json:"offer_eligibility"`
-		Duration                string   `json:"duration"`
-		OfferMode               string   `json:"offer_mode"`
-		NumberOfPeriods         int      `json:"number_of_periods"`
+		SubscriptionID        string   `json:"subscription_id"`
+		Name                  string   `json:"name"`
+		CustomerEligibilities []string `json:"customer_eligibilities"`
+		OfferEligibility      string   `json:"offer_eligibility"`
+		Duration              string   `json:"duration"`
+		OfferMode             string   `json:"offer_mode"`
+		NumberOfPeriods       int      `json:"number_of_periods"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -574,7 +598,7 @@ func (r *Registry) handleCreateSubscriptionOfferCode(args json.RawMessage) (*mcp
 		},
 	}
 
-	resp, err := r.client.CreateSubscriptionOfferCode(context.Background(), req)
+	resp, err := r.client.CreateSubscriptionOfferCode(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create subscription offer code: %v", err)), nil
 	}
@@ -582,7 +606,7 @@ func (r *Registry) handleCreateSubscriptionOfferCode(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult(fmt.Sprintf("Subscription offer code created:\n%s", formatSubscriptionOfferCode(resp.Data))), nil
 }
 
-func (r *Registry) handleUpdateSubscriptionOfferCode(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateSubscriptionOfferCode(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		OfferCodeID string `json:"offer_code_id"`
 		Active      *bool  `json:"active"`
@@ -605,7 +629,7 @@ func (r *Registry) handleUpdateSubscriptionOfferCode(args json.RawMessage) (*mcp
 		},
 	}
 
-	resp, err := r.client.UpdateSubscriptionOfferCode(context.Background(), params.OfferCodeID, req)
+	resp, err := r.client.UpdateSubscriptionOfferCode(ctx, params.OfferCodeID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update subscription offer code: %v", err)), nil
 	}
@@ -613,10 +637,11 @@ func (r *Registry) handleUpdateSubscriptionOfferCode(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult(fmt.Sprintf("Subscription offer code updated:\n%s", formatSubscriptionOfferCode(resp.Data))), nil
 }
 
-func (r *Registry) handleListWinBackOffers(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListWinBackOffers(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		SubscriptionID string `json:"subscription_id"`
 		Limit          int    `json:"limit"`
+		Cursor         string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -630,16 +655,21 @@ func (r *Registry) handleListWinBackOffers(args json.RawMessage) (*mcp.ToolsCall
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListWinBackOffers(context.Background(), params.SubscriptionID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.WinBackOffersResponse, error) {
+		return r.client.ListWinBackOffers(ctx, params.SubscriptionID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list win-back offers: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatWinBackOffers(resp.Data)), nil
+	return newListResult(formatWinBackOffers(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetWinBackOffer(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetWinBackOffer(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		OfferID string `json:"offer_id"`
 	}
@@ -651,7 +681,7 @@ func (r *Registry) handleGetWinBackOffer(args json.RawMessage) (*mcp.ToolsCallRe
 		return nil, fmt.Errorf("offer_id is required")
 	}
 
-	resp, err := r.client.GetWinBackOffer(context.Background(), params.OfferID)
+	resp, err := r.client.GetWinBackOffer(ctx, params.OfferID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get win-back offer: %v", err)), nil
 	}
@@ -659,7 +689,7 @@ func (r *Registry) handleGetWinBackOffer(args json.RawMessage) (*mcp.ToolsCallRe
 	return mcp.NewSuccessResult(formatWinBackOffer(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateWinBackOffer(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateWinBackOffer(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		SubscriptionID  string   `json:"subscription_id"`
 		ReferenceName   string   `json:"reference_name"`
@@ -707,7 +737,7 @@ func (r *Registry) handleCreateWinBackOffer(args json.RawMessage) (*mcp.ToolsCal
 		},
 	}
 
-	resp, err := r.client.CreateWinBackOffer(context.Background(), req)
+	resp, err := r.client.CreateWinBackOffer(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create win-back offer: %v", err)), nil
 	}
@@ -715,7 +745,7 @@ func (r *Registry) handleCreateWinBackOffer(args json.RawMessage) (*mcp.ToolsCal
 	return mcp.NewSuccessResult(fmt.Sprintf("Win-back offer created:\n%s", formatWinBackOffer(resp.Data))), nil
 }
 
-func (r *Registry) handleUpdateWinBackOffer(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateWinBackOffer(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		OfferID         string `json:"offer_id"`
 		Priority        string `json:"priority"`
@@ -740,7 +770,7 @@ func (r *Registry) handleUpdateWinBackOffer(args json.RawMessage) (*mcp.ToolsCal
 		},
 	}
 
-	resp, err := r.client.UpdateWinBackOffer(context.Background(), params.OfferID, req)
+	resp, err := r.client.UpdateWinBackOffer(ctx, params.OfferID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update win-back offer: %v", err)), nil
 	}
@@ -748,7 +778,7 @@ func (r *Registry) handleUpdateWinBackOffer(args json.RawMessage) (*mcp.ToolsCal
 	return mcp.NewSuccessResult(fmt.Sprintf("Win-back offer updated:\n%s", formatWinBackOffer(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteWinBackOffer(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteWinBackOffer(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		OfferID string `json:"offer_id"`
 	}
@@ -760,7 +790,7 @@ func (r *Registry) handleDeleteWinBackOffer(args json.RawMessage) (*mcp.ToolsCal
 		return nil, fmt.Errorf("offer_id is required")
 	}
 
-	err := r.client.DeleteWinBackOffer(context.Background(), params.OfferID)
+	err := r.client.DeleteWinBackOffer(ctx, params.OfferID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete win-back offer: %v", err)), nil
 	}

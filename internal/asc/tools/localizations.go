@@ -18,6 +18,10 @@ func (r *Registry) registerAppInfoLocalizationTools() {
 		InputSchema: mcp.JSONSchema{
 			Type: "object",
 			Properties: map[string]mcp.Property{
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 				"app_info_id": {
 					Type:        "string",
 					Description: "The app info ID",
@@ -155,6 +159,10 @@ func (r *Registry) registerVersionLocalizationTools() {
 		InputSchema: mcp.JSONSchema{
 			Type: "object",
 			Properties: map[string]mcp.Property{
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 				"version_id": {
 					Type:        "string",
 					Description: "The app store version ID",
@@ -279,7 +287,7 @@ func (r *Registry) registerVersionLocalizationTools() {
 
 // App Info Localization handlers
 
-func (r *Registry) handleGetAppInfos(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppInfos(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 	}
@@ -291,7 +299,6 @@ func (r *Registry) handleGetAppInfos(args json.RawMessage) (*mcp.ToolsCallResult
 		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.GetAppInfos(ctx, params.AppID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app infos: %v", err)), nil
@@ -301,9 +308,10 @@ func (r *Registry) handleGetAppInfos(args json.RawMessage) (*mcp.ToolsCallResult
 	return mcp.NewSuccessResult(result), nil
 }
 
-func (r *Registry) handleListAppInfoLocalizations(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAppInfoLocalizations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppInfoID string `json:"app_info_id"`
+		Cursor    string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -313,17 +321,18 @@ func (r *Registry) handleListAppInfoLocalizations(args json.RawMessage) (*mcp.To
 		return mcp.NewErrorResult("app_info_id is required"), nil
 	}
 
-	ctx := context.Background()
-	resp, err := r.client.ListAppInfoLocalizations(ctx, params.AppInfoID)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppInfoLocalizationsResponse, error) {
+		return r.client.ListAppInfoLocalizations(ctx, params.AppInfoID)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app info localizations: %v", err)), nil
 	}
 
 	result := formatAppInfoLocalizations(resp.Data)
-	return mcp.NewSuccessResult(result), nil
+	return newListResult(result, resp.Links), nil
 }
 
-func (r *Registry) handleGetAppInfoLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppInfoLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 	}
@@ -335,7 +344,6 @@ func (r *Registry) handleGetAppInfoLocalization(args json.RawMessage) (*mcp.Tool
 		return mcp.NewErrorResult("localization_id is required"), nil
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.GetAppInfoLocalization(ctx, params.LocalizationID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app info localization: %v", err)), nil
@@ -345,7 +353,7 @@ func (r *Registry) handleGetAppInfoLocalization(args json.RawMessage) (*mcp.Tool
 	return mcp.NewSuccessResult(result), nil
 }
 
-func (r *Registry) handleCreateAppInfoLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateAppInfoLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppInfoID         string `json:"app_info_id"`
 		Locale            string `json:"locale"`
@@ -385,7 +393,6 @@ func (r *Registry) handleCreateAppInfoLocalization(args json.RawMessage) (*mcp.T
 		},
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.CreateAppInfoLocalization(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create app info localization: %v", err)), nil
@@ -396,7 +403,7 @@ func (r *Registry) handleCreateAppInfoLocalization(args json.RawMessage) (*mcp.T
 	return mcp.NewSuccessResult(result), nil
 }
 
-func (r *Registry) handleUpdateAppInfoLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateAppInfoLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID    string `json:"localization_id"`
 		Name              string `json:"name"`
@@ -427,7 +434,6 @@ func (r *Registry) handleUpdateAppInfoLocalization(args json.RawMessage) (*mcp.T
 		},
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.UpdateAppInfoLocalization(ctx, params.LocalizationID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update app info localization: %v", err)), nil
@@ -437,7 +443,7 @@ func (r *Registry) handleUpdateAppInfoLocalization(args json.RawMessage) (*mcp.T
 	return mcp.NewSuccessResult(result), nil
 }
 
-func (r *Registry) handleDeleteAppInfoLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteAppInfoLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 	}
@@ -449,7 +455,6 @@ func (r *Registry) handleDeleteAppInfoLocalization(args json.RawMessage) (*mcp.T
 		return mcp.NewErrorResult("localization_id is required"), nil
 	}
 
-	ctx := context.Background()
 	err := r.client.DeleteAppInfoLocalization(ctx, params.LocalizationID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete app info localization: %v", err)), nil
@@ -460,9 +465,10 @@ func (r *Registry) handleDeleteAppInfoLocalization(args json.RawMessage) (*mcp.T
 
 // Version Localization handlers
 
-func (r *Registry) handleListVersionLocalizations(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListVersionLocalizations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
+		Cursor    string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -472,17 +478,18 @@ func (r *Registry) handleListVersionLocalizations(args json.RawMessage) (*mcp.To
 		return mcp.NewErrorResult("version_id is required"), nil
 	}
 
-	ctx := context.Background()
-	resp, err := r.client.ListAppStoreVersionLocalizations(ctx, params.VersionID)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppStoreVersionLocalizationsResponse, error) {
+		return r.client.ListAppStoreVersionLocalizations(ctx, params.VersionID)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list version localizations: %v", err)), nil
 	}
 
 	result := formatVersionLocalizations(resp.Data)
-	return mcp.NewSuccessResult(result), nil
+	return newListResult(result, resp.Links), nil
 }
 
-func (r *Registry) handleGetVersionLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetVersionLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 	}
@@ -494,7 +501,6 @@ func (r *Registry) handleGetVersionLocalization(args json.RawMessage) (*mcp.Tool
 		return mcp.NewErrorResult("localization_id is required"), nil
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.GetAppStoreVersionLocalization(ctx, params.LocalizationID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get version localization: %v", err)), nil
@@ -504,7 +510,7 @@ func (r *Registry) handleGetVersionLocalization(args json.RawMessage) (*mcp.Tool
 	return mcp.NewSuccessResult(result), nil
 }
 
-func (r *Registry) handleCreateVersionLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateVersionLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID       string `json:"version_id"`
 		Locale          string `json:"locale"`
@@ -546,7 +552,6 @@ func (r *Registry) handleCreateVersionLocalization(args json.RawMessage) (*mcp.T
 		},
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.CreateAppStoreVersionLocalization(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create version localization: %v", err)), nil
@@ -557,7 +562,7 @@ func (r *Registry) handleCreateVersionLocalization(args json.RawMessage) (*mcp.T
 	return mcp.NewSuccessResult(result), nil
 }
 
-func (r *Registry) handleUpdateVersionLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateVersionLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID  string `json:"localization_id"`
 		Description     string `json:"description"`
@@ -590,7 +595,6 @@ func (r *Registry) handleUpdateVersionLocalization(args json.RawMessage) (*mcp.T
 		},
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.UpdateAppStoreVersionLocalization(ctx, params.LocalizationID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update version localization: %v", err)), nil
@@ -600,7 +604,7 @@ func (r *Registry) handleUpdateVersionLocalization(args json.RawMessage) (*mcp.T
 	return mcp.NewSuccessResult(result), nil
 }
 
-func (r *Registry) handleDeleteVersionLocalization(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteVersionLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 	}
@@ -612,7 +616,6 @@ func (r *Registry) handleDeleteVersionLocalization(args json.RawMessage) (*mcp.T
 		return mcp.NewErrorResult("localization_id is required"), nil
 	}
 
-	ctx := context.Background()
 	err := r.client.DeleteAppStoreVersionLocalization(ctx, params.LocalizationID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete version localization: %v", err)), nil

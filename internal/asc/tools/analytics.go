@@ -27,6 +27,10 @@ func (r *Registry) registerAnalyticsTools() {
 					Type:        "integer",
 					Description: "Maximum number of requests to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -99,6 +103,10 @@ func (r *Registry) registerAnalyticsTools() {
 					Type:        "integer",
 					Description: "Maximum number of reports to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"request_id"},
 		},
@@ -118,6 +126,10 @@ func (r *Registry) registerAnalyticsTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of instances to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"report_id"},
@@ -139,16 +151,21 @@ func (r *Registry) registerAnalyticsTools() {
 					Type:        "integer",
 					Description: "Maximum number of segments to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"instance_id"},
 		},
 	}, r.handleListAnalyticsReportSegments)
 }
 
-func (r *Registry) handleListAnalyticsReportRequests(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAnalyticsReportRequests(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -162,16 +179,21 @@ func (r *Registry) handleListAnalyticsReportRequests(args json.RawMessage) (*mcp
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAnalyticsReportRequests(context.Background(), params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AnalyticsReportRequestsResponse, error) {
+		return r.client.ListAnalyticsReportRequests(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list analytics report requests: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAnalyticsReportRequests(resp.Data)), nil
+	return newListResult(formatAnalyticsReportRequests(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetAnalyticsReportRequest(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAnalyticsReportRequest(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		RequestID string `json:"request_id"`
 	}
@@ -183,7 +205,7 @@ func (r *Registry) handleGetAnalyticsReportRequest(args json.RawMessage) (*mcp.T
 		return nil, fmt.Errorf("request_id is required")
 	}
 
-	resp, err := r.client.GetAnalyticsReportRequest(context.Background(), params.RequestID)
+	resp, err := r.client.GetAnalyticsReportRequest(ctx, params.RequestID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get analytics report request: %v", err)), nil
 	}
@@ -191,7 +213,7 @@ func (r *Registry) handleGetAnalyticsReportRequest(args json.RawMessage) (*mcp.T
 	return mcp.NewSuccessResult(formatAnalyticsReportRequest(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateAnalyticsReportRequest(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateAnalyticsReportRequest(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID      string `json:"app_id"`
 		AccessType string `json:"access_type"`
@@ -224,7 +246,7 @@ func (r *Registry) handleCreateAnalyticsReportRequest(args json.RawMessage) (*mc
 		},
 	}
 
-	resp, err := r.client.CreateAnalyticsReportRequest(context.Background(), req)
+	resp, err := r.client.CreateAnalyticsReportRequest(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create analytics report request: %v", err)), nil
 	}
@@ -232,7 +254,7 @@ func (r *Registry) handleCreateAnalyticsReportRequest(args json.RawMessage) (*mc
 	return mcp.NewSuccessResult(fmt.Sprintf("Created analytics report request: %s", resp.Data.ID)), nil
 }
 
-func (r *Registry) handleDeleteAnalyticsReportRequest(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteAnalyticsReportRequest(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		RequestID string `json:"request_id"`
 	}
@@ -244,7 +266,7 @@ func (r *Registry) handleDeleteAnalyticsReportRequest(args json.RawMessage) (*mc
 		return nil, fmt.Errorf("request_id is required")
 	}
 
-	err := r.client.DeleteAnalyticsReportRequest(context.Background(), params.RequestID)
+	err := r.client.DeleteAnalyticsReportRequest(ctx, params.RequestID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete analytics report request: %v", err)), nil
 	}
@@ -252,10 +274,11 @@ func (r *Registry) handleDeleteAnalyticsReportRequest(args json.RawMessage) (*mc
 	return mcp.NewSuccessResult("Analytics report request deleted successfully"), nil
 }
 
-func (r *Registry) handleListAnalyticsReports(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAnalyticsReports(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		RequestID string `json:"request_id"`
 		Limit     int    `json:"limit"`
+		Cursor    string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -269,19 +292,25 @@ func (r *Registry) handleListAnalyticsReports(args json.RawMessage) (*mcp.ToolsC
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAnalyticsReports(context.Background(), params.RequestID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AnalyticsReportsResponse, error) {
+		return r.client.ListAnalyticsReports(ctx, params.RequestID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list analytics reports: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAnalyticsReports(resp.Data)), nil
+	return newListResult(formatAnalyticsReports(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleListAnalyticsReportInstances(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAnalyticsReportInstances(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ReportID string `json:"report_id"`
 		Limit    int    `json:"limit"`
+		Cursor   string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -295,19 +324,25 @@ func (r *Registry) handleListAnalyticsReportInstances(args json.RawMessage) (*mc
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAnalyticsReportInstances(context.Background(), params.ReportID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AnalyticsReportInstancesResponse, error) {
+		return r.client.ListAnalyticsReportInstances(ctx, params.ReportID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list analytics report instances: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAnalyticsReportInstances(resp.Data)), nil
+	return newListResult(formatAnalyticsReportInstances(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleListAnalyticsReportSegments(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAnalyticsReportSegments(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		InstanceID string `json:"instance_id"`
 		Limit      int    `json:"limit"`
+		Cursor     string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -321,13 +356,18 @@ func (r *Registry) handleListAnalyticsReportSegments(args json.RawMessage) (*mcp
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAnalyticsReportSegments(context.Background(), params.InstanceID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AnalyticsReportSegmentsResponse, error) {
+		return r.client.ListAnalyticsReportSegments(ctx, params.InstanceID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list analytics report segments: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAnalyticsReportSegments(resp.Data)), nil
+	return newListResult(formatAnalyticsReportSegments(resp.Data), resp.Links), nil
 }
 
 func formatAnalyticsReportRequests(requests []api.AnalyticsReportRequest) string {

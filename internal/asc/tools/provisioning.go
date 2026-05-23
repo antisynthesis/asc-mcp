@@ -25,6 +25,10 @@ func (r *Registry) registerProvisioningTools() {
 						Description: "Maximum number of bundle IDs to return (default: 50)",
 						Default:     50,
 					},
+					"cursor": {
+						Type:        "string",
+						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+					},
 				},
 			},
 		},
@@ -61,6 +65,10 @@ func (r *Registry) registerProvisioningTools() {
 						Description: "Maximum number of certificates to return (default: 50)",
 						Default:     50,
 					},
+					"cursor": {
+						Type:        "string",
+						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+					},
 				},
 			},
 		},
@@ -79,6 +87,10 @@ func (r *Registry) registerProvisioningTools() {
 						Description: "Maximum number of profiles to return (default: 50)",
 						Default:     50,
 					},
+					"cursor": {
+						Type:        "string",
+						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+					},
 				},
 			},
 		},
@@ -96,6 +108,10 @@ func (r *Registry) registerProvisioningTools() {
 						Type:        "integer",
 						Description: "Maximum number of devices to return (default: 50)",
 						Default:     50,
+					},
+					"cursor": {
+						Type:        "string",
+						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 					},
 				},
 			},
@@ -132,9 +148,10 @@ func (r *Registry) registerProvisioningTools() {
 }
 
 // handleListBundleIDs handles the list_bundle_ids tool.
-func (r *Registry) handleListBundleIDs(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListBundleIDs(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	params.Limit = 50
 
@@ -144,14 +161,15 @@ func (r *Registry) handleListBundleIDs(args json.RawMessage) (*mcp.ToolsCallResu
 		}
 	}
 
-	ctx := context.Background()
-	resp, err := r.client.ListBundleIDs(ctx, params.Limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BundleIDsResponse, error) {
+		return r.client.ListBundleIDs(ctx, params.Limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list bundle IDs: %v", err)), nil
 	}
 
 	if len(resp.Data) == 0 {
-		return mcp.NewSuccessResult("No bundle IDs found."), nil
+		return newListResult("No bundle IDs found.", resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -168,11 +186,11 @@ func (r *Registry) handleListBundleIDs(args json.RawMessage) (*mcp.ToolsCallResu
 		sb.WriteString("\n")
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newListResult(sb.String(), resp.Links), nil
 }
 
 // handleGetBundleID handles the get_bundle_id tool.
-func (r *Registry) handleGetBundleID(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetBundleID(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BundleIDID string `json:"bundle_id_id"`
 	}
@@ -185,7 +203,6 @@ func (r *Registry) handleGetBundleID(args json.RawMessage) (*mcp.ToolsCallResult
 		return mcp.NewErrorResult("bundle_id_id is required"), nil
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.GetBundleID(ctx, params.BundleIDID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get bundle ID: %v", err)), nil
@@ -205,9 +222,10 @@ func (r *Registry) handleGetBundleID(args json.RawMessage) (*mcp.ToolsCallResult
 }
 
 // handleListCertificates handles the list_certificates tool.
-func (r *Registry) handleListCertificates(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListCertificates(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	params.Limit = 50
 
@@ -217,14 +235,15 @@ func (r *Registry) handleListCertificates(args json.RawMessage) (*mcp.ToolsCallR
 		}
 	}
 
-	ctx := context.Background()
-	resp, err := r.client.ListCertificates(ctx, params.Limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.CertificatesResponse, error) {
+		return r.client.ListCertificates(ctx, params.Limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list certificates: %v", err)), nil
 	}
 
 	if len(resp.Data) == 0 {
-		return mcp.NewSuccessResult("No certificates found."), nil
+		return newListResult("No certificates found.", resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -248,13 +267,14 @@ func (r *Registry) handleListCertificates(args json.RawMessage) (*mcp.ToolsCallR
 		sb.WriteString("\n")
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newListResult(sb.String(), resp.Links), nil
 }
 
 // handleListProfiles handles the list_profiles tool.
-func (r *Registry) handleListProfiles(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListProfiles(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	params.Limit = 50
 
@@ -264,14 +284,15 @@ func (r *Registry) handleListProfiles(args json.RawMessage) (*mcp.ToolsCallResul
 		}
 	}
 
-	ctx := context.Background()
-	resp, err := r.client.ListProfiles(ctx, params.Limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.ProfilesResponse, error) {
+		return r.client.ListProfiles(ctx, params.Limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list profiles: %v", err)), nil
 	}
 
 	if len(resp.Data) == 0 {
-		return mcp.NewSuccessResult("No provisioning profiles found."), nil
+		return newListResult("No provisioning profiles found.", resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -293,13 +314,14 @@ func (r *Registry) handleListProfiles(args json.RawMessage) (*mcp.ToolsCallResul
 		sb.WriteString("\n")
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newListResult(sb.String(), resp.Links), nil
 }
 
 // handleListDevices handles the list_devices tool.
-func (r *Registry) handleListDevices(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListDevices(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	params.Limit = 50
 
@@ -309,14 +331,15 @@ func (r *Registry) handleListDevices(args json.RawMessage) (*mcp.ToolsCallResult
 		}
 	}
 
-	ctx := context.Background()
-	resp, err := r.client.ListDevices(ctx, params.Limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.DevicesResponse, error) {
+		return r.client.ListDevices(ctx, params.Limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list devices: %v", err)), nil
 	}
 
 	if len(resp.Data) == 0 {
-		return mcp.NewSuccessResult("No devices found."), nil
+		return newListResult("No devices found.", resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -336,11 +359,11 @@ func (r *Registry) handleListDevices(args json.RawMessage) (*mcp.ToolsCallResult
 		sb.WriteString("\n")
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newListResult(sb.String(), resp.Links), nil
 }
 
 // handleRegisterDevice handles the register_device tool.
-func (r *Registry) handleRegisterDevice(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleRegisterDevice(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		Name     string `json:"name"`
 		UDID     string `json:"udid"`
@@ -372,7 +395,6 @@ func (r *Registry) handleRegisterDevice(args json.RawMessage) (*mcp.ToolsCallRes
 		},
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.RegisterDevice(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to register device: %v", err)), nil

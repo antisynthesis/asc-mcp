@@ -27,6 +27,10 @@ func (r *Registry) registerCustomerReviewTools() {
 					Type:        "integer",
 					Description: "Maximum number of reviews to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -85,10 +89,11 @@ func (r *Registry) registerCustomerReviewTools() {
 	}, r.handleDeleteCustomerReviewResponse)
 }
 
-func (r *Registry) handleListCustomerReviews(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListCustomerReviews(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -102,16 +107,21 @@ func (r *Registry) handleListCustomerReviews(args json.RawMessage) (*mcp.ToolsCa
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListCustomerReviews(context.Background(), params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.CustomerReviewsResponse, error) {
+		return r.client.ListCustomerReviews(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list customer reviews: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatCustomerReviews(resp.Data)), nil
+	return newListResult(formatCustomerReviews(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetCustomerReview(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetCustomerReview(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ReviewID string `json:"review_id"`
 	}
@@ -123,7 +133,7 @@ func (r *Registry) handleGetCustomerReview(args json.RawMessage) (*mcp.ToolsCall
 		return nil, fmt.Errorf("review_id is required")
 	}
 
-	resp, err := r.client.GetCustomerReview(context.Background(), params.ReviewID)
+	resp, err := r.client.GetCustomerReview(ctx, params.ReviewID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get customer review: %v", err)), nil
 	}
@@ -131,7 +141,7 @@ func (r *Registry) handleGetCustomerReview(args json.RawMessage) (*mcp.ToolsCall
 	return mcp.NewSuccessResult(formatCustomerReview(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateCustomerReviewResponse(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateCustomerReviewResponse(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ReviewID     string `json:"review_id"`
 		ResponseBody string `json:"response_body"`
@@ -164,7 +174,7 @@ func (r *Registry) handleCreateCustomerReviewResponse(args json.RawMessage) (*mc
 		},
 	}
 
-	resp, err := r.client.CreateCustomerReviewResponse(context.Background(), req)
+	resp, err := r.client.CreateCustomerReviewResponse(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create review response: %v", err)), nil
 	}
@@ -172,7 +182,7 @@ func (r *Registry) handleCreateCustomerReviewResponse(args json.RawMessage) (*mc
 	return mcp.NewSuccessResult(fmt.Sprintf("Created review response: %s", resp.Data.ID)), nil
 }
 
-func (r *Registry) handleDeleteCustomerReviewResponse(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteCustomerReviewResponse(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ResponseID string `json:"response_id"`
 	}
@@ -184,7 +194,7 @@ func (r *Registry) handleDeleteCustomerReviewResponse(args json.RawMessage) (*mc
 		return nil, fmt.Errorf("response_id is required")
 	}
 
-	err := r.client.DeleteCustomerReviewResponse(context.Background(), params.ResponseID)
+	err := r.client.DeleteCustomerReviewResponse(ctx, params.ResponseID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete review response: %v", err)), nil
 	}

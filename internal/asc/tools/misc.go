@@ -45,6 +45,7 @@ func (r *Registry) registerMiscTools() {
 				"territory_ids": {
 					Type:        "array",
 					Description: "List of territory IDs where this EULA applies",
+					Items:       &mcp.Property{Type: "string"},
 				},
 			},
 			Required: []string{"app_id", "agreement_text"},
@@ -96,6 +97,10 @@ func (r *Registry) registerMiscTools() {
 					Type:        "integer",
 					Description: "Maximum number of categories to return (default 100)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 		},
 	}, r.handleListAppCategories)
@@ -125,6 +130,10 @@ func (r *Registry) registerMiscTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of keys to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 		},
@@ -246,7 +255,7 @@ func (r *Registry) registerMiscTools() {
 }
 
 // EULA handlers
-func (r *Registry) handleGetEndUserLicenseAgreement(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetEndUserLicenseAgreement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 	}
@@ -258,7 +267,7 @@ func (r *Registry) handleGetEndUserLicenseAgreement(args json.RawMessage) (*mcp.
 		return nil, fmt.Errorf("app_id is required")
 	}
 
-	resp, err := r.client.GetEndUserLicenseAgreement(context.Background(), params.AppID)
+	resp, err := r.client.GetEndUserLicenseAgreement(ctx, params.AppID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get EULA: %v", err)), nil
 	}
@@ -266,7 +275,7 @@ func (r *Registry) handleGetEndUserLicenseAgreement(args json.RawMessage) (*mcp.
 	return mcp.NewSuccessResult(formatEndUserLicenseAgreement(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateEndUserLicenseAgreement(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateEndUserLicenseAgreement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID         string   `json:"app_id"`
 		AgreementText string   `json:"agreement_text"`
@@ -302,7 +311,7 @@ func (r *Registry) handleCreateEndUserLicenseAgreement(args json.RawMessage) (*m
 		},
 	}
 
-	resp, err := r.client.CreateEndUserLicenseAgreement(context.Background(), req)
+	resp, err := r.client.CreateEndUserLicenseAgreement(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create EULA: %v", err)), nil
 	}
@@ -310,7 +319,7 @@ func (r *Registry) handleCreateEndUserLicenseAgreement(args json.RawMessage) (*m
 	return mcp.NewSuccessResult(fmt.Sprintf("EULA created:\n%s", formatEndUserLicenseAgreement(resp.Data))), nil
 }
 
-func (r *Registry) handleUpdateEndUserLicenseAgreement(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateEndUserLicenseAgreement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		EULAID        string `json:"eula_id"`
 		AgreementText string `json:"agreement_text"`
@@ -333,7 +342,7 @@ func (r *Registry) handleUpdateEndUserLicenseAgreement(args json.RawMessage) (*m
 		},
 	}
 
-	resp, err := r.client.UpdateEndUserLicenseAgreement(context.Background(), params.EULAID, req)
+	resp, err := r.client.UpdateEndUserLicenseAgreement(ctx, params.EULAID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update EULA: %v", err)), nil
 	}
@@ -341,7 +350,7 @@ func (r *Registry) handleUpdateEndUserLicenseAgreement(args json.RawMessage) (*m
 	return mcp.NewSuccessResult(fmt.Sprintf("EULA updated:\n%s", formatEndUserLicenseAgreement(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteEndUserLicenseAgreement(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteEndUserLicenseAgreement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		EULAID string `json:"eula_id"`
 	}
@@ -353,7 +362,7 @@ func (r *Registry) handleDeleteEndUserLicenseAgreement(args json.RawMessage) (*m
 		return nil, fmt.Errorf("eula_id is required")
 	}
 
-	err := r.client.DeleteEndUserLicenseAgreement(context.Background(), params.EULAID)
+	err := r.client.DeleteEndUserLicenseAgreement(ctx, params.EULAID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete EULA: %v", err)), nil
 	}
@@ -362,9 +371,10 @@ func (r *Registry) handleDeleteEndUserLicenseAgreement(args json.RawMessage) (*m
 }
 
 // Category handlers
-func (r *Registry) handleListAppCategories(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAppCategories(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -374,16 +384,21 @@ func (r *Registry) handleListAppCategories(args json.RawMessage) (*mcp.ToolsCall
 	if limit <= 0 {
 		limit = 100
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppCategories(context.Background(), limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppCategoriesResponse, error) {
+		return r.client.ListAppCategories(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app categories: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppCategories(resp.Data)), nil
+	return newListResult(formatAppCategories(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetAppCategory(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppCategory(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		CategoryID string `json:"category_id"`
 	}
@@ -395,7 +410,7 @@ func (r *Registry) handleGetAppCategory(args json.RawMessage) (*mcp.ToolsCallRes
 		return nil, fmt.Errorf("category_id is required")
 	}
 
-	resp, err := r.client.GetAppCategory(context.Background(), params.CategoryID)
+	resp, err := r.client.GetAppCategory(ctx, params.CategoryID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app category: %v", err)), nil
 	}
@@ -404,9 +419,10 @@ func (r *Registry) handleGetAppCategory(args json.RawMessage) (*mcp.ToolsCallRes
 }
 
 // Alternative distribution handlers
-func (r *Registry) handleListAlternativeDistributionKeys(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAlternativeDistributionKeys(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -416,16 +432,21 @@ func (r *Registry) handleListAlternativeDistributionKeys(args json.RawMessage) (
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAlternativeDistributionKeys(context.Background(), limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AlternativeDistributionKeysResponse, error) {
+		return r.client.ListAlternativeDistributionKeys(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list alternative distribution keys: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAlternativeDistributionKeys(resp.Data)), nil
+	return newListResult(formatAlternativeDistributionKeys(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetAlternativeDistributionKey(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAlternativeDistributionKey(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		KeyID string `json:"key_id"`
 	}
@@ -437,7 +458,7 @@ func (r *Registry) handleGetAlternativeDistributionKey(args json.RawMessage) (*m
 		return nil, fmt.Errorf("key_id is required")
 	}
 
-	resp, err := r.client.GetAlternativeDistributionKey(context.Background(), params.KeyID)
+	resp, err := r.client.GetAlternativeDistributionKey(ctx, params.KeyID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get alternative distribution key: %v", err)), nil
 	}
@@ -445,7 +466,7 @@ func (r *Registry) handleGetAlternativeDistributionKey(args json.RawMessage) (*m
 	return mcp.NewSuccessResult(formatAlternativeDistributionKey(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateAlternativeDistributionKey(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateAlternativeDistributionKey(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 	}
@@ -468,7 +489,7 @@ func (r *Registry) handleCreateAlternativeDistributionKey(args json.RawMessage) 
 		},
 	}
 
-	resp, err := r.client.CreateAlternativeDistributionKey(context.Background(), req)
+	resp, err := r.client.CreateAlternativeDistributionKey(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create alternative distribution key: %v", err)), nil
 	}
@@ -476,7 +497,7 @@ func (r *Registry) handleCreateAlternativeDistributionKey(args json.RawMessage) 
 	return mcp.NewSuccessResult(fmt.Sprintf("Alternative distribution key created:\n%s", formatAlternativeDistributionKey(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteAlternativeDistributionKey(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteAlternativeDistributionKey(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		KeyID string `json:"key_id"`
 	}
@@ -488,7 +509,7 @@ func (r *Registry) handleDeleteAlternativeDistributionKey(args json.RawMessage) 
 		return nil, fmt.Errorf("key_id is required")
 	}
 
-	err := r.client.DeleteAlternativeDistributionKey(context.Background(), params.KeyID)
+	err := r.client.DeleteAlternativeDistributionKey(ctx, params.KeyID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete alternative distribution key: %v", err)), nil
 	}
@@ -497,7 +518,7 @@ func (r *Registry) handleDeleteAlternativeDistributionKey(args json.RawMessage) 
 }
 
 // Marketplace search detail handlers
-func (r *Registry) handleGetMarketplaceSearchDetail(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetMarketplaceSearchDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 	}
@@ -509,7 +530,7 @@ func (r *Registry) handleGetMarketplaceSearchDetail(args json.RawMessage) (*mcp.
 		return nil, fmt.Errorf("app_id is required")
 	}
 
-	resp, err := r.client.GetMarketplaceSearchDetail(context.Background(), params.AppID)
+	resp, err := r.client.GetMarketplaceSearchDetail(ctx, params.AppID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get marketplace search detail: %v", err)), nil
 	}
@@ -517,7 +538,7 @@ func (r *Registry) handleGetMarketplaceSearchDetail(args json.RawMessage) (*mcp.
 	return mcp.NewSuccessResult(formatMarketplaceSearchDetail(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateMarketplaceSearchDetail(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateMarketplaceSearchDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID      string `json:"app_id"`
 		CatalogURL string `json:"catalog_url"`
@@ -544,7 +565,7 @@ func (r *Registry) handleCreateMarketplaceSearchDetail(args json.RawMessage) (*m
 		},
 	}
 
-	resp, err := r.client.CreateMarketplaceSearchDetail(context.Background(), req)
+	resp, err := r.client.CreateMarketplaceSearchDetail(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create marketplace search detail: %v", err)), nil
 	}
@@ -552,7 +573,7 @@ func (r *Registry) handleCreateMarketplaceSearchDetail(args json.RawMessage) (*m
 	return mcp.NewSuccessResult(fmt.Sprintf("Marketplace search detail created:\n%s", formatMarketplaceSearchDetail(resp.Data))), nil
 }
 
-func (r *Registry) handleUpdateMarketplaceSearchDetail(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateMarketplaceSearchDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		DetailID   string `json:"detail_id"`
 		CatalogURL string `json:"catalog_url"`
@@ -575,7 +596,7 @@ func (r *Registry) handleUpdateMarketplaceSearchDetail(args json.RawMessage) (*m
 		},
 	}
 
-	resp, err := r.client.UpdateMarketplaceSearchDetail(context.Background(), params.DetailID, req)
+	resp, err := r.client.UpdateMarketplaceSearchDetail(ctx, params.DetailID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update marketplace search detail: %v", err)), nil
 	}
@@ -583,7 +604,7 @@ func (r *Registry) handleUpdateMarketplaceSearchDetail(args json.RawMessage) (*m
 	return mcp.NewSuccessResult(fmt.Sprintf("Marketplace search detail updated:\n%s", formatMarketplaceSearchDetail(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteMarketplaceSearchDetail(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteMarketplaceSearchDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		DetailID string `json:"detail_id"`
 	}
@@ -595,7 +616,7 @@ func (r *Registry) handleDeleteMarketplaceSearchDetail(args json.RawMessage) (*m
 		return nil, fmt.Errorf("detail_id is required")
 	}
 
-	err := r.client.DeleteMarketplaceSearchDetail(context.Background(), params.DetailID)
+	err := r.client.DeleteMarketplaceSearchDetail(ctx, params.DetailID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete marketplace search detail: %v", err)), nil
 	}

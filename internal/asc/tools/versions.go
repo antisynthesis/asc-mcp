@@ -27,6 +27,10 @@ func (r *Registry) registerVersionSubmissionTools() {
 					Type:        "integer",
 					Description: "Maximum number of versions to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -253,7 +257,7 @@ func (r *Registry) registerVersionSubmissionTools() {
 	}, r.handleUpdateAppStoreReviewDetail)
 }
 
-func (r *Registry) handleListAppStoreVersions(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAppStoreVersions(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 		Limit int    `json:"limit"`
@@ -270,8 +274,11 @@ func (r *Registry) handleListAppStoreVersions(args json.RawMessage) (*mcp.ToolsC
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.GetAppVersions(context.Background(), params.AppID, limit)
+	resp, err := r.client.GetAppVersions(ctx, params.AppID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app store versions: %v", err)), nil
 	}
@@ -279,7 +286,7 @@ func (r *Registry) handleListAppStoreVersions(args json.RawMessage) (*mcp.ToolsC
 	return mcp.NewSuccessResult(formatAppStoreVersions(resp.Data)), nil
 }
 
-func (r *Registry) handleGetAppStoreVersion(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppStoreVersion(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
 	}
@@ -291,7 +298,7 @@ func (r *Registry) handleGetAppStoreVersion(args json.RawMessage) (*mcp.ToolsCal
 		return nil, fmt.Errorf("version_id is required")
 	}
 
-	resp, err := r.client.GetAppStoreVersion(context.Background(), params.VersionID)
+	resp, err := r.client.GetAppStoreVersion(ctx, params.VersionID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app store version: %v", err)), nil
 	}
@@ -299,7 +306,7 @@ func (r *Registry) handleGetAppStoreVersion(args json.RawMessage) (*mcp.ToolsCal
 	return mcp.NewSuccessResult(formatAppStoreVersion(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateAppStoreVersion(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateAppStoreVersion(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID         string `json:"app_id"`
 		VersionString string `json:"version_string"`
@@ -341,7 +348,7 @@ func (r *Registry) handleCreateAppStoreVersion(args json.RawMessage) (*mcp.Tools
 		},
 	}
 
-	resp, err := r.client.CreateAppStoreVersion(context.Background(), req)
+	resp, err := r.client.CreateAppStoreVersion(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create app store version: %v", err)), nil
 	}
@@ -349,7 +356,7 @@ func (r *Registry) handleCreateAppStoreVersion(args json.RawMessage) (*mcp.Tools
 	return mcp.NewSuccessResult(fmt.Sprintf("Created app store version: %s (ID: %s)", resp.Data.Attributes.VersionString, resp.Data.ID)), nil
 }
 
-func (r *Registry) handleUpdateAppStoreVersion(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateAppStoreVersion(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID     string `json:"version_id"`
 		VersionString string `json:"version_string"`
@@ -376,7 +383,7 @@ func (r *Registry) handleUpdateAppStoreVersion(args json.RawMessage) (*mcp.Tools
 		},
 	}
 
-	resp, err := r.client.UpdateAppStoreVersion(context.Background(), params.VersionID, req)
+	resp, err := r.client.UpdateAppStoreVersion(ctx, params.VersionID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update app store version: %v", err)), nil
 	}
@@ -384,7 +391,7 @@ func (r *Registry) handleUpdateAppStoreVersion(args json.RawMessage) (*mcp.Tools
 	return mcp.NewSuccessResult(fmt.Sprintf("Updated app store version: %s", resp.Data.ID)), nil
 }
 
-func (r *Registry) handleDeleteAppStoreVersion(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteAppStoreVersion(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
 	}
@@ -396,7 +403,7 @@ func (r *Registry) handleDeleteAppStoreVersion(args json.RawMessage) (*mcp.Tools
 		return nil, fmt.Errorf("version_id is required")
 	}
 
-	err := r.client.DeleteAppStoreVersion(context.Background(), params.VersionID)
+	err := r.client.DeleteAppStoreVersion(ctx, params.VersionID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete app store version: %v", err)), nil
 	}
@@ -404,7 +411,7 @@ func (r *Registry) handleDeleteAppStoreVersion(args json.RawMessage) (*mcp.Tools
 	return mcp.NewSuccessResult("App store version deleted successfully"), nil
 }
 
-func (r *Registry) handleSubmitAppForReview(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleSubmitAppForReview(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
 	}
@@ -430,7 +437,7 @@ func (r *Registry) handleSubmitAppForReview(args json.RawMessage) (*mcp.ToolsCal
 		},
 	}
 
-	resp, err := r.client.CreateAppStoreVersionSubmission(context.Background(), req)
+	resp, err := r.client.CreateAppStoreVersionSubmission(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to submit app for review: %v", err)), nil
 	}
@@ -438,7 +445,7 @@ func (r *Registry) handleSubmitAppForReview(args json.RawMessage) (*mcp.ToolsCal
 	return mcp.NewSuccessResult(fmt.Sprintf("App submitted for review (submission ID: %s)", resp.Data.ID)), nil
 }
 
-func (r *Registry) handleGetAppStoreReviewDetail(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppStoreReviewDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
 	}
@@ -450,7 +457,7 @@ func (r *Registry) handleGetAppStoreReviewDetail(args json.RawMessage) (*mcp.Too
 		return nil, fmt.Errorf("version_id is required")
 	}
 
-	resp, err := r.client.GetAppStoreReviewDetail(context.Background(), params.VersionID)
+	resp, err := r.client.GetAppStoreReviewDetail(ctx, params.VersionID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get review detail: %v", err)), nil
 	}
@@ -458,7 +465,7 @@ func (r *Registry) handleGetAppStoreReviewDetail(args json.RawMessage) (*mcp.Too
 	return mcp.NewSuccessResult(formatReviewDetail(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateAppStoreReviewDetail(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateAppStoreReviewDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID           string `json:"version_id"`
 		ContactFirstName    string `json:"contact_first_name"`
@@ -502,7 +509,7 @@ func (r *Registry) handleCreateAppStoreReviewDetail(args json.RawMessage) (*mcp.
 		},
 	}
 
-	resp, err := r.client.CreateAppStoreReviewDetail(context.Background(), req)
+	resp, err := r.client.CreateAppStoreReviewDetail(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create review detail: %v", err)), nil
 	}
@@ -510,7 +517,7 @@ func (r *Registry) handleCreateAppStoreReviewDetail(args json.RawMessage) (*mcp.
 	return mcp.NewSuccessResult(fmt.Sprintf("Created review detail: %s", resp.Data.ID)), nil
 }
 
-func (r *Registry) handleUpdateAppStoreReviewDetail(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateAppStoreReviewDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		DetailID            string `json:"detail_id"`
 		ContactFirstName    string `json:"contact_first_name"`
@@ -547,7 +554,7 @@ func (r *Registry) handleUpdateAppStoreReviewDetail(args json.RawMessage) (*mcp.
 		},
 	}
 
-	resp, err := r.client.UpdateAppStoreReviewDetail(context.Background(), params.DetailID, req)
+	resp, err := r.client.UpdateAppStoreReviewDetail(ctx, params.DetailID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update review detail: %v", err)), nil
 	}

@@ -23,6 +23,10 @@ func (r *Registry) registerUserTools() {
 					Type:        "integer",
 					Description: "Maximum number of users to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 		},
 	}, r.handleListUsers)
@@ -57,6 +61,7 @@ func (r *Registry) registerUserTools() {
 				"roles": {
 					Type:        "array",
 					Description: "List of roles: ADMIN, FINANCE, ACCOUNT_HOLDER, SALES, MARKETING, APP_MANAGER, DEVELOPER, ACCESS_TO_REPORTS, CUSTOMER_SUPPORT, CREATE_APPS, CLOUD_MANAGED_DEVELOPER_ID, CLOUD_MANAGED_APP_DISTRIBUTION",
+					Items:       &mcp.Property{Type: "string"},
 				},
 				"all_apps_visible": {
 					Type:        "boolean",
@@ -93,6 +98,10 @@ func (r *Registry) registerUserTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of invitations to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 		},
@@ -136,6 +145,7 @@ func (r *Registry) registerUserTools() {
 				"roles": {
 					Type:        "array",
 					Description: "List of roles to assign: ADMIN, FINANCE, ACCOUNT_HOLDER, SALES, MARKETING, APP_MANAGER, DEVELOPER, ACCESS_TO_REPORTS, CUSTOMER_SUPPORT, CREATE_APPS, CLOUD_MANAGED_DEVELOPER_ID, CLOUD_MANAGED_APP_DISTRIBUTION",
+					Items:       &mcp.Property{Type: "string"},
 				},
 				"all_apps_visible": {
 					Type:        "boolean",
@@ -163,9 +173,10 @@ func (r *Registry) registerUserTools() {
 	}, r.handleDeleteUserInvitation)
 }
 
-func (r *Registry) handleListUsers(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListUsers(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -175,16 +186,21 @@ func (r *Registry) handleListUsers(args json.RawMessage) (*mcp.ToolsCallResult, 
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListUsers(context.Background(), limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.UsersResponse, error) {
+		return r.client.ListUsers(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list users: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatUsers(resp.Data)), nil
+	return newListResult(formatUsers(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetUser(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetUser(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		UserID string `json:"user_id"`
 	}
@@ -196,7 +212,7 @@ func (r *Registry) handleGetUser(args json.RawMessage) (*mcp.ToolsCallResult, er
 		return nil, fmt.Errorf("user_id is required")
 	}
 
-	resp, err := r.client.GetUser(context.Background(), params.UserID)
+	resp, err := r.client.GetUser(ctx, params.UserID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get user: %v", err)), nil
 	}
@@ -204,7 +220,7 @@ func (r *Registry) handleGetUser(args json.RawMessage) (*mcp.ToolsCallResult, er
 	return mcp.NewSuccessResult(formatUser(resp.Data)), nil
 }
 
-func (r *Registry) handleUpdateUser(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateUser(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		UserID         string   `json:"user_id"`
 		Roles          []string `json:"roles"`
@@ -229,7 +245,7 @@ func (r *Registry) handleUpdateUser(args json.RawMessage) (*mcp.ToolsCallResult,
 		},
 	}
 
-	resp, err := r.client.UpdateUser(context.Background(), params.UserID, req)
+	resp, err := r.client.UpdateUser(ctx, params.UserID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update user: %v", err)), nil
 	}
@@ -237,7 +253,7 @@ func (r *Registry) handleUpdateUser(args json.RawMessage) (*mcp.ToolsCallResult,
 	return mcp.NewSuccessResult(fmt.Sprintf("User updated successfully:\n%s", formatUser(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteUser(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteUser(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		UserID string `json:"user_id"`
 	}
@@ -249,7 +265,7 @@ func (r *Registry) handleDeleteUser(args json.RawMessage) (*mcp.ToolsCallResult,
 		return nil, fmt.Errorf("user_id is required")
 	}
 
-	err := r.client.DeleteUser(context.Background(), params.UserID)
+	err := r.client.DeleteUser(ctx, params.UserID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete user: %v", err)), nil
 	}
@@ -257,9 +273,10 @@ func (r *Registry) handleDeleteUser(args json.RawMessage) (*mcp.ToolsCallResult,
 	return mcp.NewSuccessResult("User removed successfully"), nil
 }
 
-func (r *Registry) handleListUserInvitations(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListUserInvitations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -269,16 +286,21 @@ func (r *Registry) handleListUserInvitations(args json.RawMessage) (*mcp.ToolsCa
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListUserInvitations(context.Background(), limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.UserInvitationsResponse, error) {
+		return r.client.ListUserInvitations(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list user invitations: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatUserInvitations(resp.Data)), nil
+	return newListResult(formatUserInvitations(resp.Data), resp.Links), nil
 }
 
-func (r *Registry) handleGetUserInvitation(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetUserInvitation(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		InvitationID string `json:"invitation_id"`
 	}
@@ -290,7 +312,7 @@ func (r *Registry) handleGetUserInvitation(args json.RawMessage) (*mcp.ToolsCall
 		return nil, fmt.Errorf("invitation_id is required")
 	}
 
-	resp, err := r.client.GetUserInvitation(context.Background(), params.InvitationID)
+	resp, err := r.client.GetUserInvitation(ctx, params.InvitationID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get user invitation: %v", err)), nil
 	}
@@ -298,7 +320,7 @@ func (r *Registry) handleGetUserInvitation(args json.RawMessage) (*mcp.ToolsCall
 	return mcp.NewSuccessResult(formatUserInvitation(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateUserInvitation(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateUserInvitation(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		Email          string   `json:"email"`
 		FirstName      string   `json:"first_name"`
@@ -336,7 +358,7 @@ func (r *Registry) handleCreateUserInvitation(args json.RawMessage) (*mcp.ToolsC
 		},
 	}
 
-	resp, err := r.client.CreateUserInvitation(context.Background(), req)
+	resp, err := r.client.CreateUserInvitation(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create user invitation: %v", err)), nil
 	}
@@ -344,7 +366,7 @@ func (r *Registry) handleCreateUserInvitation(args json.RawMessage) (*mcp.ToolsC
 	return mcp.NewSuccessResult(fmt.Sprintf("User invitation sent:\n%s", formatUserInvitation(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteUserInvitation(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteUserInvitation(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		InvitationID string `json:"invitation_id"`
 	}
@@ -356,7 +378,7 @@ func (r *Registry) handleDeleteUserInvitation(args json.RawMessage) (*mcp.ToolsC
 		return nil, fmt.Errorf("invitation_id is required")
 	}
 
-	err := r.client.DeleteUserInvitation(context.Background(), params.InvitationID)
+	err := r.client.DeleteUserInvitation(ctx, params.InvitationID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete user invitation: %v", err)), nil
 	}

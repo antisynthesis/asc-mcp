@@ -29,6 +29,10 @@ func (r *Registry) registerTestFlightTools() {
 						Description: "Maximum number of beta groups to return (default: 50)",
 						Default:     50,
 					},
+					"cursor": {
+						Type:        "string",
+						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+					},
 				},
 			},
 		},
@@ -99,6 +103,10 @@ func (r *Registry) registerTestFlightTools() {
 						Description: "Maximum number of testers to return (default: 50)",
 						Default:     50,
 					},
+					"cursor": {
+						Type:        "string",
+						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+					},
 				},
 			},
 		},
@@ -127,6 +135,7 @@ func (r *Registry) registerTestFlightTools() {
 					"beta_group_ids": {
 						Type:        "array",
 						Description: "Optional: IDs of beta groups to add the tester to",
+						Items:       &mcp.Property{Type: "string"},
 					},
 				},
 				Required: []string{"email"},
@@ -177,10 +186,11 @@ func (r *Registry) registerTestFlightTools() {
 }
 
 // handleListBetaGroups handles the list_beta_groups tool.
-func (r *Registry) handleListBetaGroups(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListBetaGroups(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	params.Limit = 50
 
@@ -190,14 +200,15 @@ func (r *Registry) handleListBetaGroups(args json.RawMessage) (*mcp.ToolsCallRes
 		}
 	}
 
-	ctx := context.Background()
-	resp, err := r.client.ListBetaGroups(ctx, params.AppID, params.Limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BetaGroupsResponse, error) {
+		return r.client.ListBetaGroups(ctx, params.AppID, params.Limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list beta groups: %v", err)), nil
 	}
 
 	if len(resp.Data) == 0 {
-		return mcp.NewSuccessResult("No beta groups found."), nil
+		return newListResult("No beta groups found.", resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -219,11 +230,11 @@ func (r *Registry) handleListBetaGroups(args json.RawMessage) (*mcp.ToolsCallRes
 		sb.WriteString("\n")
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newListResult(sb.String(), resp.Links), nil
 }
 
 // handleCreateBetaGroup handles the create_beta_group tool.
-func (r *Registry) handleCreateBetaGroup(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateBetaGroup(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID             string `json:"app_id"`
 		Name              string `json:"name"`
@@ -262,7 +273,6 @@ func (r *Registry) handleCreateBetaGroup(args json.RawMessage) (*mcp.ToolsCallRe
 		},
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.CreateBetaGroup(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create beta group: %v", err)), nil
@@ -278,7 +288,7 @@ func (r *Registry) handleCreateBetaGroup(args json.RawMessage) (*mcp.ToolsCallRe
 }
 
 // handleDeleteBetaGroup handles the delete_beta_group tool.
-func (r *Registry) handleDeleteBetaGroup(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteBetaGroup(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BetaGroupID string `json:"beta_group_id"`
 	}
@@ -291,7 +301,6 @@ func (r *Registry) handleDeleteBetaGroup(args json.RawMessage) (*mcp.ToolsCallRe
 		return mcp.NewErrorResult("beta_group_id is required"), nil
 	}
 
-	ctx := context.Background()
 	if err := r.client.DeleteBetaGroup(ctx, params.BetaGroupID); err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete beta group: %v", err)), nil
 	}
@@ -300,10 +309,11 @@ func (r *Registry) handleDeleteBetaGroup(args json.RawMessage) (*mcp.ToolsCallRe
 }
 
 // handleListBetaTesters handles the list_beta_testers tool.
-func (r *Registry) handleListBetaTesters(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListBetaTesters(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BetaGroupID string `json:"beta_group_id"`
 		Limit       int    `json:"limit"`
+		Cursor      string `json:"cursor"`
 	}
 	params.Limit = 50
 
@@ -313,14 +323,15 @@ func (r *Registry) handleListBetaTesters(args json.RawMessage) (*mcp.ToolsCallRe
 		}
 	}
 
-	ctx := context.Background()
-	resp, err := r.client.ListBetaTesters(ctx, params.BetaGroupID, params.Limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BetaTestersResponse, error) {
+		return r.client.ListBetaTesters(ctx, params.BetaGroupID, params.Limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list beta testers: %v", err)), nil
 	}
 
 	if len(resp.Data) == 0 {
-		return mcp.NewSuccessResult("No beta testers found."), nil
+		return newListResult("No beta testers found.", resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -338,11 +349,11 @@ func (r *Registry) handleListBetaTesters(args json.RawMessage) (*mcp.ToolsCallRe
 		sb.WriteString("\n")
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newListResult(sb.String(), resp.Links), nil
 }
 
 // handleInviteBetaTester handles the invite_beta_tester tool.
-func (r *Registry) handleInviteBetaTester(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleInviteBetaTester(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		Email        string   `json:"email"`
 		FirstName    string   `json:"first_name"`
@@ -384,7 +395,6 @@ func (r *Registry) handleInviteBetaTester(args json.RawMessage) (*mcp.ToolsCallR
 		}
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.CreateBetaTester(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to invite beta tester: %v", err)), nil
@@ -399,7 +409,7 @@ func (r *Registry) handleInviteBetaTester(args json.RawMessage) (*mcp.ToolsCallR
 }
 
 // handleRemoveBetaTester handles the remove_beta_tester tool.
-func (r *Registry) handleRemoveBetaTester(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleRemoveBetaTester(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BetaTesterID string `json:"beta_tester_id"`
 	}
@@ -412,7 +422,6 @@ func (r *Registry) handleRemoveBetaTester(args json.RawMessage) (*mcp.ToolsCallR
 		return mcp.NewErrorResult("beta_tester_id is required"), nil
 	}
 
-	ctx := context.Background()
 	if err := r.client.DeleteBetaTester(ctx, params.BetaTesterID); err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to remove beta tester: %v", err)), nil
 	}
@@ -421,7 +430,7 @@ func (r *Registry) handleRemoveBetaTester(args json.RawMessage) (*mcp.ToolsCallR
 }
 
 // handleAddTesterToGroup handles the add_tester_to_group tool.
-func (r *Registry) handleAddTesterToGroup(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleAddTesterToGroup(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BetaGroupID  string `json:"beta_group_id"`
 		BetaTesterID string `json:"beta_tester_id"`
@@ -438,7 +447,6 @@ func (r *Registry) handleAddTesterToGroup(args json.RawMessage) (*mcp.ToolsCallR
 		return mcp.NewErrorResult("beta_tester_id is required"), nil
 	}
 
-	ctx := context.Background()
 	if err := r.client.AddBetaTesterToGroup(ctx, params.BetaGroupID, params.BetaTesterID); err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to add tester to group: %v", err)), nil
 	}

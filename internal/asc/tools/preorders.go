@@ -84,7 +84,7 @@ func (r *Registry) registerPreOrderTools() {
 	}, r.handleDeletePreOrder)
 }
 
-func (r *Registry) handleGetPreOrder(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetPreOrder(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 	}
@@ -96,7 +96,7 @@ func (r *Registry) handleGetPreOrder(args json.RawMessage) (*mcp.ToolsCallResult
 		return nil, fmt.Errorf("app_id is required")
 	}
 
-	resp, err := r.client.GetAppPreOrder(context.Background(), params.AppID)
+	resp, err := r.client.GetAppPreOrder(ctx, params.AppID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get pre-order: %v", err)), nil
 	}
@@ -104,7 +104,7 @@ func (r *Registry) handleGetPreOrder(args json.RawMessage) (*mcp.ToolsCallResult
 	return mcp.NewSuccessResult(formatPreOrder(resp.Data)), nil
 }
 
-func (r *Registry) handleCreatePreOrder(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreatePreOrder(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID          string `json:"app_id"`
 		AppReleaseDate string `json:"app_release_date"`
@@ -134,7 +134,7 @@ func (r *Registry) handleCreatePreOrder(args json.RawMessage) (*mcp.ToolsCallRes
 		},
 	}
 
-	resp, err := r.client.CreateAppPreOrder(context.Background(), req)
+	resp, err := r.client.CreateAppPreOrder(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create pre-order: %v", err)), nil
 	}
@@ -142,7 +142,7 @@ func (r *Registry) handleCreatePreOrder(args json.RawMessage) (*mcp.ToolsCallRes
 	return mcp.NewSuccessResult(fmt.Sprintf("Created pre-order: %s", resp.Data.ID)), nil
 }
 
-func (r *Registry) handleUpdatePreOrder(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdatePreOrder(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PreOrderID     string `json:"pre_order_id"`
 		AppReleaseDate string `json:"app_release_date"`
@@ -165,7 +165,7 @@ func (r *Registry) handleUpdatePreOrder(args json.RawMessage) (*mcp.ToolsCallRes
 		},
 	}
 
-	resp, err := r.client.UpdateAppPreOrder(context.Background(), params.PreOrderID, req)
+	resp, err := r.client.UpdateAppPreOrder(ctx, params.PreOrderID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update pre-order: %v", err)), nil
 	}
@@ -173,7 +173,7 @@ func (r *Registry) handleUpdatePreOrder(args json.RawMessage) (*mcp.ToolsCallRes
 	return mcp.NewSuccessResult(fmt.Sprintf("Updated pre-order: %s", resp.Data.ID)), nil
 }
 
-func (r *Registry) handleDeletePreOrder(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeletePreOrder(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PreOrderID string `json:"pre_order_id"`
 	}
@@ -185,7 +185,7 @@ func (r *Registry) handleDeletePreOrder(args json.RawMessage) (*mcp.ToolsCallRes
 		return nil, fmt.Errorf("pre_order_id is required")
 	}
 
-	err := r.client.DeleteAppPreOrder(context.Background(), params.PreOrderID)
+	err := r.client.DeleteAppPreOrder(ctx, params.PreOrderID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete pre-order: %v", err)), nil
 	}

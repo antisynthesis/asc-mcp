@@ -3,11 +3,14 @@ package server
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/antisynthesis/asc-mcp/internal/asc/api"
 	"github.com/antisynthesis/asc-mcp/internal/asc/config"
@@ -17,7 +20,17 @@ import (
 
 const (
 	serverName    = "asc-mcp"
+	serverTitle   = "App Store Connect"
 	serverVersion = "1.0.0"
+
+	// toolCallTimeout bounds the time a single tool invocation may take.
+	// App Store Connect calls are usually fast; this prevents a stuck
+	// upstream from hanging the MCP session.
+	toolCallTimeout = 60 * time.Second
+
+	// serverInstructions is returned in the initialize result so clients
+	// can give the model an idea of what this server is good at.
+	serverInstructions = `This server provides tools for managing Apple App Store Connect resources, including apps, builds, TestFlight, provisioning, in-app purchases, subscriptions, reviews, screenshots, localizations, analytics, Game Center, Xcode Cloud, and more. Tool names use snake_case and accept JSON arguments. Call tools/list to discover the available tools and their input schemas.`
 )
 
 // Server represents the MCP server for App Store Connect.
@@ -51,12 +64,12 @@ func New(cfg *config.Config, r io.Reader, w io.Writer) (*Server, error) {
 
 // Run starts the MCP server and processes requests.
 func (s *Server) Run() error {
-	log.Printf("MCP server %s v%s starting", serverName, serverVersion)
+	log.Printf("MCP server %s v%s starting (protocol %s)", serverName, serverVersion, mcp.ProtocolVersion)
 
 	for {
 		line, err := s.reader.ReadBytes('\n')
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				log.Printf("client disconnected")
 				return nil
 			}
@@ -80,7 +93,9 @@ func (s *Server) Run() error {
 // handleRequest dispatches a request to the appropriate handler.
 func (s *Server) handleRequest(req *mcp.Request) {
 	if req.JSONRPC != mcp.JSONRPCVersion {
-		s.sendError(req.ID, mcp.ErrCodeInvalidRequest, "Invalid Request", "jsonrpc must be 2.0")
+		if !req.IsNotification() {
+			s.sendError(req.ID, mcp.ErrCodeInvalidRequest, "Invalid Request", "jsonrpc must be 2.0")
+		}
 		return
 	}
 
@@ -88,13 +103,21 @@ func (s *Server) handleRequest(req *mcp.Request) {
 	case "initialize":
 		s.handleInitialize(req)
 	case "notifications/initialized":
-		// Client notification, no response needed
+		// Client notification, no response permitted.
 		log.Printf("client initialized")
+	case "notifications/cancelled":
+		// We do not currently track per-request cancellation tokens, so
+		// just acknowledge the notification by ignoring it.
+	case "ping":
+		s.handlePing(req)
 	case "tools/list":
 		s.handleToolsList(req)
 	case "tools/call":
 		s.handleToolsCall(req)
 	default:
+		if req.IsNotification() {
+			return
+		}
 		s.sendError(req.ID, mcp.ErrCodeMethodNotFound, "Method not found", req.Method)
 	}
 }
@@ -109,10 +132,12 @@ func (s *Server) handleInitialize(req *mcp.Request) {
 		}
 	}
 
-	log.Printf("initializing with client: %s v%s", params.ClientInfo.Name, params.ClientInfo.Version)
+	negotiated := mcp.NegotiateProtocolVersion(params.ProtocolVersion)
+	log.Printf("initializing with client: %s v%s (requested protocol %q, using %q)",
+		params.ClientInfo.Name, params.ClientInfo.Version, params.ProtocolVersion, negotiated)
 
 	result := mcp.InitializeResult{
-		ProtocolVersion: mcp.ProtocolVersion,
+		ProtocolVersion: negotiated,
 		Capabilities: mcp.ServerCapability{
 			Tools: &mcp.ToolsCapability{
 				ListChanged: false,
@@ -120,12 +145,23 @@ func (s *Server) handleInitialize(req *mcp.Request) {
 		},
 		ServerInfo: mcp.ServerInfo{
 			Name:    serverName,
+			Title:   serverTitle,
 			Version: serverVersion,
 		},
+		Instructions: serverInstructions,
 	}
 
 	s.initialized = true
 	s.sendResult(req.ID, result)
+}
+
+// handlePing handles the ping request defined by the MCP spec.
+// Per the spec, the server replies with an empty object.
+func (s *Server) handlePing(req *mcp.Request) {
+	if req.IsNotification() {
+		return
+	}
+	s.sendResult(req.ID, struct{}{})
 }
 
 // handleToolsList handles the tools/list request.
@@ -155,8 +191,18 @@ func (s *Server) handleToolsCall(req *mcp.Request) {
 		return
 	}
 
-	result, err := s.registry.CallTool(params.Name, params.Arguments)
+	ctx, cancel := context.WithTimeout(context.Background(), toolCallTimeout)
+	defer cancel()
+
+	result, err := s.registry.CallTool(ctx, params.Name, params.Arguments)
 	if err != nil {
+		// Per the MCP spec, tool execution failures should be surfaced as
+		// a successful response with isError=true so the model can self-
+		// correct. We only emit a protocol-level error for unknown tools.
+		if errors.Is(err, tools.ErrUnknownTool) {
+			s.sendError(req.ID, mcp.ErrCodeMethodNotFound, "Unknown tool", params.Name)
+			return
+		}
 		s.sendResult(req.ID, mcp.NewErrorResult(err.Error()))
 		return
 	}
