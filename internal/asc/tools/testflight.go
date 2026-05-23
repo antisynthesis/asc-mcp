@@ -29,6 +29,10 @@ func (r *Registry) registerTestFlightTools() {
 						Description: "Maximum number of beta groups to return (default: 50)",
 						Default:     50,
 					},
+					"cursor": {
+						Type:        "string",
+						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+					},
 				},
 			},
 		},
@@ -98,6 +102,10 @@ func (r *Registry) registerTestFlightTools() {
 						Type:        "integer",
 						Description: "Maximum number of testers to return (default: 50)",
 						Default:     50,
+					},
+					"cursor": {
+						Type:        "string",
+						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 					},
 				},
 			},
@@ -180,8 +188,9 @@ func (r *Registry) registerTestFlightTools() {
 // handleListBetaGroups handles the list_beta_groups tool.
 func (r *Registry) handleListBetaGroups(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	params.Limit = 50
 
@@ -191,13 +200,15 @@ func (r *Registry) handleListBetaGroups(ctx context.Context, args json.RawMessag
 		}
 	}
 
-	resp, err := r.client.ListBetaGroups(ctx, params.AppID, params.Limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BetaGroupsResponse, error) {
+		return r.client.ListBetaGroups(ctx, params.AppID, params.Limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list beta groups: %v", err)), nil
 	}
 
 	if len(resp.Data) == 0 {
-		return mcp.NewSuccessResult("No beta groups found."), nil
+		return newListResult("No beta groups found.", resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -219,7 +230,7 @@ func (r *Registry) handleListBetaGroups(ctx context.Context, args json.RawMessag
 		sb.WriteString("\n")
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newListResult(sb.String(), resp.Links), nil
 }
 
 // handleCreateBetaGroup handles the create_beta_group tool.
@@ -302,6 +313,7 @@ func (r *Registry) handleListBetaTesters(ctx context.Context, args json.RawMessa
 	var params struct {
 		BetaGroupID string `json:"beta_group_id"`
 		Limit       int    `json:"limit"`
+		Cursor      string `json:"cursor"`
 	}
 	params.Limit = 50
 
@@ -311,13 +323,15 @@ func (r *Registry) handleListBetaTesters(ctx context.Context, args json.RawMessa
 		}
 	}
 
-	resp, err := r.client.ListBetaTesters(ctx, params.BetaGroupID, params.Limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BetaTestersResponse, error) {
+		return r.client.ListBetaTesters(ctx, params.BetaGroupID, params.Limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list beta testers: %v", err)), nil
 	}
 
 	if len(resp.Data) == 0 {
-		return mcp.NewSuccessResult("No beta testers found."), nil
+		return newListResult("No beta testers found.", resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -335,7 +349,7 @@ func (r *Registry) handleListBetaTesters(ctx context.Context, args json.RawMessa
 		sb.WriteString("\n")
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newListResult(sb.String(), resp.Links), nil
 }
 
 // handleInviteBetaTester handles the invite_beta_tester tool.

@@ -23,6 +23,10 @@ func (r *Registry) registerBetaReviewTools() {
 					Type:        "integer",
 					Description: "Maximum number of submissions to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 		},
 	}, r.handleListBetaAppReviewSubmissions)
@@ -109,6 +113,10 @@ func (r *Registry) registerBetaReviewTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of localizations to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"app_id"},
@@ -230,6 +238,10 @@ func (r *Registry) registerBetaReviewTools() {
 					Type:        "integer",
 					Description: "Maximum number of localizations to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"build_id"},
 		},
@@ -350,7 +362,8 @@ func (r *Registry) registerBetaReviewTools() {
 
 func (r *Registry) handleListBetaAppReviewSubmissions(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -360,13 +373,18 @@ func (r *Registry) handleListBetaAppReviewSubmissions(ctx context.Context, args 
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListBetaAppReviewSubmissions(ctx, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BetaAppReviewSubmissionsResponse, error) {
+		return r.client.ListBetaAppReviewSubmissions(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list beta app review submissions: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatBetaAppReviewSubmissions(resp.Data)), nil
+	return newListResult(formatBetaAppReviewSubmissions(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetBetaAppReviewSubmission(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -473,8 +491,9 @@ func (r *Registry) handleUpdateBetaLicenseAgreement(ctx context.Context, args js
 
 func (r *Registry) handleListBetaAppLocalizations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -488,13 +507,18 @@ func (r *Registry) handleListBetaAppLocalizations(ctx context.Context, args json
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListBetaAppLocalizations(ctx, params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BetaAppLocalizationsResponse, error) {
+		return r.client.ListBetaAppLocalizations(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list beta app localizations: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatBetaAppLocalizations(resp.Data)), nil
+	return newListResult(formatBetaAppLocalizations(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetBetaAppLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -621,6 +645,7 @@ func (r *Registry) handleListBetaBuildLocalizations(ctx context.Context, args js
 	var params struct {
 		BuildID string `json:"build_id"`
 		Limit   int    `json:"limit"`
+		Cursor  string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -634,13 +659,18 @@ func (r *Registry) handleListBetaBuildLocalizations(ctx context.Context, args js
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListBetaBuildLocalizations(ctx, params.BuildID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BetaBuildLocalizationsResponse, error) {
+		return r.client.ListBetaBuildLocalizations(ctx, params.BuildID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list beta build localizations: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatBetaBuildLocalizations(resp.Data)), nil
+	return newListResult(formatBetaBuildLocalizations(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetBetaBuildLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

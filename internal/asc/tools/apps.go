@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/antisynthesis/asc-mcp/internal/asc/api"
 	"github.com/antisynthesis/asc-mcp/internal/asc/mcp"
 )
 
@@ -23,6 +24,10 @@ func (r *Registry) registerAppTools() {
 						Type:        "integer",
 						Description: "Maximum number of apps to return (default: 50, max: 200)",
 						Default:     50,
+					},
+					"cursor": {
+						Type:        "string",
+						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 					},
 				},
 			},
@@ -75,7 +80,8 @@ func (r *Registry) registerAppTools() {
 // handleListApps handles the list_apps tool.
 func (r *Registry) handleListApps(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	params.Limit = 50
 
@@ -92,13 +98,15 @@ func (r *Registry) handleListApps(ctx context.Context, args json.RawMessage) (*m
 		params.Limit = 200
 	}
 
-	resp, err := r.client.ListApps(ctx, params.Limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppsResponse, error) {
+		return r.client.ListApps(ctx, params.Limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list apps: %v", err)), nil
 	}
 
 	if len(resp.Data) == 0 {
-		return mcp.NewSuccessResult("No apps found in your App Store Connect account."), nil
+		return newListResult("No apps found in your App Store Connect account.", resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -113,7 +121,7 @@ func (r *Registry) handleListApps(ctx context.Context, args json.RawMessage) (*m
 		sb.WriteString("\n")
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newListResult(sb.String(), resp.Links), nil
 }
 
 // handleGetApp handles the get_app tool.

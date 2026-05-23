@@ -27,6 +27,10 @@ func (r *Registry) registerEncryptionTools() {
 					Type:        "integer",
 					Description: "Maximum number of declarations to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 		},
 	}, r.handleListEncryptionDeclarations)
@@ -114,8 +118,9 @@ func (r *Registry) registerEncryptionTools() {
 
 func (r *Registry) handleListEncryptionDeclarations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -125,13 +130,18 @@ func (r *Registry) handleListEncryptionDeclarations(ctx context.Context, args js
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppEncryptionDeclarations(ctx, params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppEncryptionDeclarationsResponse, error) {
+		return r.client.ListAppEncryptionDeclarations(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list encryption declarations: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatEncryptionDeclarations(resp.Data)), nil
+	return newListResult(formatEncryptionDeclarations(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetEncryptionDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

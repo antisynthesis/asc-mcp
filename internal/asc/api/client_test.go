@@ -618,3 +618,57 @@ func TestClient_RespectsMaxResponseSize(t *testing.T) {
 		t.Fatal("expected size limit error")
 	}
 }
+
+func TestClient_EscapesPathIDs(t *testing.T) {
+	var gotPath string
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.EscapedPath()
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(AppResponse{Data: App{ID: "x"}})
+	})
+	client, server := newTestClient(t, handler)
+	defer server.Close()
+
+	// Pass a hostile ID that includes path separators and reserved chars.
+	if _, err := client.GetApp(context.Background(), "../../etc/passwd?leak"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := "/v1/apps/..%2F..%2Fetc%2Fpasswd%3Fleak"; gotPath != want {
+		t.Errorf("path = %q, want %q", gotPath, want)
+	}
+}
+
+func TestClient_GetURL_FollowsSameHost(t *testing.T) {
+	var paths []string
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.RequestURI())
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok":true}`))
+	})
+	client, server := newTestClient(t, handler)
+	defer server.Close()
+
+	full := server.URL + "/v1/apps?cursor=ABCXYZ&limit=200"
+	if _, err := client.GetURL(context.Background(), full); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(paths) != 1 {
+		t.Fatalf("expected 1 request, got %d", len(paths))
+	}
+	if paths[0] != "/v1/apps?cursor=ABCXYZ&limit=200" {
+		t.Errorf("path = %q, want /v1/apps?cursor=ABCXYZ&limit=200", paths[0])
+	}
+}
+
+func TestClient_GetURL_RejectsCrossHost(t *testing.T) {
+	client, server := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Errorf("server should not be hit for cross-host cursor")
+	}))
+	defer server.Close()
+
+	// Different host than baseURL — must be rejected.
+	_, err := client.GetURL(context.Background(), "https://evil.example.com/v1/apps?cursor=X")
+	if err == nil {
+		t.Fatal("expected error for cross-host URL")
+	}
+}

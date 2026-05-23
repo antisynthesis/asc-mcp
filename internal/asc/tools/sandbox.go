@@ -23,6 +23,10 @@ func (r *Registry) registerSandboxTools() {
 					Type:        "integer",
 					Description: "Maximum number of testers to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 		},
 	}, r.handleListSandboxTesters)
@@ -118,7 +122,8 @@ func (r *Registry) registerSandboxTools() {
 
 func (r *Registry) handleListSandboxTesters(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -128,13 +133,18 @@ func (r *Registry) handleListSandboxTesters(ctx context.Context, args json.RawMe
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListSandboxTesters(ctx, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.SandboxTestersResponse, error) {
+		return r.client.ListSandboxTesters(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list sandbox testers: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatSandboxTesters(resp.Data)), nil
+	return newListResult(formatSandboxTesters(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleCreateSandboxTester(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

@@ -2212,16 +2212,16 @@ type User struct {
 
 // UserAttributes contains user attributes.
 type UserAttributes struct {
-	Username             string   `json:"username,omitempty"`
-	FirstName            string   `json:"firstName,omitempty"`
-	LastName             string   `json:"lastName,omitempty"`
-	Email                string   `json:"email,omitempty"`
-	PreferredCurrencyTerritory string `json:"preferredCurrencyTerritory,omitempty"`
-	AgreedToTerms        bool     `json:"agreedToTerms,omitempty"`
-	Roles                []string `json:"roles,omitempty"`
-	AllAppsVisible       bool     `json:"allAppsVisible,omitempty"`
-	ProvisioningAllowed  bool     `json:"provisioningAllowed,omitempty"`
-	ExpirationDate       *time.Time `json:"expirationDate,omitempty"`
+	Username                   string     `json:"username,omitempty"`
+	FirstName                  string     `json:"firstName,omitempty"`
+	LastName                   string     `json:"lastName,omitempty"`
+	Email                      string     `json:"email,omitempty"`
+	PreferredCurrencyTerritory string     `json:"preferredCurrencyTerritory,omitempty"`
+	AgreedToTerms              bool       `json:"agreedToTerms,omitempty"`
+	Roles                      []string   `json:"roles,omitempty"`
+	AllAppsVisible             bool       `json:"allAppsVisible,omitempty"`
+	ProvisioningAllowed        bool       `json:"provisioningAllowed,omitempty"`
+	ExpirationDate             *time.Time `json:"expirationDate,omitempty"`
 }
 
 // UserUpdateRequest represents a request to update a user.
@@ -2231,9 +2231,9 @@ type UserUpdateRequest struct {
 
 // UserUpdateData contains the data for updating a user.
 type UserUpdateData struct {
-	Type          string                  `json:"type"`
-	ID            string                  `json:"id"`
-	Attributes    UserUpdateAttributes    `json:"attributes"`
+	Type          string                   `json:"type"`
+	ID            string                   `json:"id"`
+	Attributes    UserUpdateAttributes     `json:"attributes"`
 	Relationships *UserUpdateRelationships `json:"relationships,omitempty"`
 }
 
@@ -2288,8 +2288,8 @@ type UserInvitationCreateRequest struct {
 
 // UserInvitationCreateData contains the data for creating a user invitation.
 type UserInvitationCreateData struct {
-	Type          string                            `json:"type"`
-	Attributes    UserInvitationCreateAttributes    `json:"attributes"`
+	Type          string                             `json:"type"`
+	Attributes    UserInvitationCreateAttributes     `json:"attributes"`
 	Relationships *UserInvitationCreateRelationships `json:"relationships,omitempty"`
 }
 
@@ -2422,8 +2422,8 @@ type AppAvailabilityCreateAttributes struct {
 
 // AppAvailabilityCreateRelationships contains relationships for setting app availability.
 type AppAvailabilityCreateRelationships struct {
-	App                    RelationshipData      `json:"app"`
-	AvailableTerritories   RelationshipDataList  `json:"availableTerritories"`
+	App                  RelationshipData     `json:"app"`
+	AvailableTerritories RelationshipDataList `json:"availableTerritories"`
 }
 
 // TerritoryAvailabilitiesResponse represents territory availabilities.
@@ -2443,9 +2443,9 @@ type TerritoryAvailability struct {
 
 // TerritoryAvailabilityAttributes contains territory availability attributes.
 type TerritoryAvailabilityAttributes struct {
-	Available         bool       `json:"available,omitempty"`
-	ReleaseDate       *time.Time `json:"releaseDate,omitempty"`
-	PreOrderEnabled   bool       `json:"preOrderEnabled,omitempty"`
+	Available           bool       `json:"available,omitempty"`
+	ReleaseDate         *time.Time `json:"releaseDate,omitempty"`
+	PreOrderEnabled     bool       `json:"preOrderEnabled,omitempty"`
 	PreOrderPublishDate *time.Time `json:"preOrderPublishDate,omitempty"`
 }
 
@@ -2466,22 +2466,22 @@ type AgeRatingDeclaration struct {
 
 // AgeRatingDeclarationAttributes contains age rating declaration attributes.
 type AgeRatingDeclarationAttributes struct {
-	AlcoholTobaccoOrDrugUseOrReferences      string `json:"alcoholTobaccoOrDrugUseOrReferences,omitempty"`
-	Contests                                  string `json:"contests,omitempty"`
-	Gambling                                  bool   `json:"gambling,omitempty"`
-	GamblingSimulated                         string `json:"gamblingSimulated,omitempty"`
-	KidsAgeBand                               string `json:"kidsAgeBand,omitempty"`
-	MatureOrSuggestiveThemes                  string `json:"matureOrSuggestiveThemes,omitempty"`
-	MedicalOrTreatmentInformation             string `json:"medicalOrTreatmentInformation,omitempty"`
-	ProfanityOrCrudeHumor                     string `json:"profanityOrCrudeHumor,omitempty"`
-	SexualContentGraphicAndNudity             string `json:"sexualContentGraphicAndNudity,omitempty"`
-	SexualContentOrNudity                     string `json:"sexualContentOrNudity,omitempty"`
-	HorrorOrFearThemes                        string `json:"horrorOrFearThemes,omitempty"`
-	UnrestrictedWebAccess                     bool   `json:"unrestrictedWebAccess,omitempty"`
-	ViolenceCartoonOrFantasy                  string `json:"violenceCartoonOrFantasy,omitempty"`
-	ViolenceRealistic                         string `json:"violenceRealistic,omitempty"`
+	AlcoholTobaccoOrDrugUseOrReferences         string `json:"alcoholTobaccoOrDrugUseOrReferences,omitempty"`
+	Contests                                    string `json:"contests,omitempty"`
+	Gambling                                    bool   `json:"gambling,omitempty"`
+	GamblingSimulated                           string `json:"gamblingSimulated,omitempty"`
+	KidsAgeBand                                 string `json:"kidsAgeBand,omitempty"`
+	MatureOrSuggestiveThemes                    string `json:"matureOrSuggestiveThemes,omitempty"`
+	MedicalOrTreatmentInformation               string `json:"medicalOrTreatmentInformation,omitempty"`
+	ProfanityOrCrudeHumor                       string `json:"profanityOrCrudeHumor,omitempty"`
+	SexualContentGraphicAndNudity               string `json:"sexualContentGraphicAndNudity,omitempty"`
+	SexualContentOrNudity                       string `json:"sexualContentOrNudity,omitempty"`
+	HorrorOrFearThemes                          string `json:"horrorOrFearThemes,omitempty"`
+	UnrestrictedWebAccess                       bool   `json:"unrestrictedWebAccess,omitempty"`
+	ViolenceCartoonOrFantasy                    string `json:"violenceCartoonOrFantasy,omitempty"`
+	ViolenceRealistic                           string `json:"violenceRealistic,omitempty"`
 	ViolenceRealisticProlongedGraphicOrSadistic string `json:"violenceRealisticProlongedGraphicOrSadistic,omitempty"`
-	SeventeenPlus                             bool   `json:"seventeenPlus,omitempty"`
+	SeventeenPlus                               bool   `json:"seventeenPlus,omitempty"`
 }
 
 // AgeRatingDeclarationUpdateRequest represents a request to update an age rating declaration.
@@ -2491,29 +2491,29 @@ type AgeRatingDeclarationUpdateRequest struct {
 
 // AgeRatingDeclarationUpdateData contains the data for updating an age rating declaration.
 type AgeRatingDeclarationUpdateData struct {
-	Type       string                              `json:"type"`
-	ID         string                              `json:"id"`
+	Type       string                               `json:"type"`
+	ID         string                               `json:"id"`
 	Attributes AgeRatingDeclarationUpdateAttributes `json:"attributes"`
 }
 
 // AgeRatingDeclarationUpdateAttributes contains attributes for updating an age rating declaration.
 type AgeRatingDeclarationUpdateAttributes struct {
-	AlcoholTobaccoOrDrugUseOrReferences      string `json:"alcoholTobaccoOrDrugUseOrReferences,omitempty"`
-	Contests                                  string `json:"contests,omitempty"`
-	Gambling                                  *bool  `json:"gambling,omitempty"`
-	GamblingSimulated                         string `json:"gamblingSimulated,omitempty"`
-	KidsAgeBand                               string `json:"kidsAgeBand,omitempty"`
-	MatureOrSuggestiveThemes                  string `json:"matureOrSuggestiveThemes,omitempty"`
-	MedicalOrTreatmentInformation             string `json:"medicalOrTreatmentInformation,omitempty"`
-	ProfanityOrCrudeHumor                     string `json:"profanityOrCrudeHumor,omitempty"`
-	SexualContentGraphicAndNudity             string `json:"sexualContentGraphicAndNudity,omitempty"`
-	SexualContentOrNudity                     string `json:"sexualContentOrNudity,omitempty"`
-	HorrorOrFearThemes                        string `json:"horrorOrFearThemes,omitempty"`
-	UnrestrictedWebAccess                     *bool  `json:"unrestrictedWebAccess,omitempty"`
-	ViolenceCartoonOrFantasy                  string `json:"violenceCartoonOrFantasy,omitempty"`
-	ViolenceRealistic                         string `json:"violenceRealistic,omitempty"`
+	AlcoholTobaccoOrDrugUseOrReferences         string `json:"alcoholTobaccoOrDrugUseOrReferences,omitempty"`
+	Contests                                    string `json:"contests,omitempty"`
+	Gambling                                    *bool  `json:"gambling,omitempty"`
+	GamblingSimulated                           string `json:"gamblingSimulated,omitempty"`
+	KidsAgeBand                                 string `json:"kidsAgeBand,omitempty"`
+	MatureOrSuggestiveThemes                    string `json:"matureOrSuggestiveThemes,omitempty"`
+	MedicalOrTreatmentInformation               string `json:"medicalOrTreatmentInformation,omitempty"`
+	ProfanityOrCrudeHumor                       string `json:"profanityOrCrudeHumor,omitempty"`
+	SexualContentGraphicAndNudity               string `json:"sexualContentGraphicAndNudity,omitempty"`
+	SexualContentOrNudity                       string `json:"sexualContentOrNudity,omitempty"`
+	HorrorOrFearThemes                          string `json:"horrorOrFearThemes,omitempty"`
+	UnrestrictedWebAccess                       *bool  `json:"unrestrictedWebAccess,omitempty"`
+	ViolenceCartoonOrFantasy                    string `json:"violenceCartoonOrFantasy,omitempty"`
+	ViolenceRealistic                           string `json:"violenceRealistic,omitempty"`
 	ViolenceRealisticProlongedGraphicOrSadistic string `json:"violenceRealisticProlongedGraphicOrSadistic,omitempty"`
-	SeventeenPlus                             *bool  `json:"seventeenPlus,omitempty"`
+	SeventeenPlus                               *bool  `json:"seventeenPlus,omitempty"`
 }
 
 // IDFA Declaration types (App Tracking Transparency)
@@ -2533,10 +2533,10 @@ type IdfaDeclaration struct {
 
 // IdfaDeclarationAttributes contains IDFA declaration attributes.
 type IdfaDeclarationAttributes struct {
-	ServesAds                              bool `json:"servesAds,omitempty"`
-	AttributesAppInstallationToPreviousAd  bool `json:"attributesAppInstallationToPreviousAd,omitempty"`
-	AttributesActionWithPreviousAd         bool `json:"attributesActionWithPreviousAd,omitempty"`
-	HonorsLimitedAdTracking                bool `json:"honorsLimitedAdTracking,omitempty"`
+	ServesAds                             bool `json:"servesAds,omitempty"`
+	AttributesAppInstallationToPreviousAd bool `json:"attributesAppInstallationToPreviousAd,omitempty"`
+	AttributesActionWithPreviousAd        bool `json:"attributesActionWithPreviousAd,omitempty"`
+	HonorsLimitedAdTracking               bool `json:"honorsLimitedAdTracking,omitempty"`
 }
 
 // IdfaDeclarationCreateRequest represents a request to create an IDFA declaration.
@@ -2553,10 +2553,10 @@ type IdfaDeclarationCreateData struct {
 
 // IdfaDeclarationCreateAttributes contains attributes for creating an IDFA declaration.
 type IdfaDeclarationCreateAttributes struct {
-	ServesAds                              bool `json:"servesAds"`
-	AttributesAppInstallationToPreviousAd  bool `json:"attributesAppInstallationToPreviousAd"`
-	AttributesActionWithPreviousAd         bool `json:"attributesActionWithPreviousAd"`
-	HonorsLimitedAdTracking                bool `json:"honorsLimitedAdTracking"`
+	ServesAds                             bool `json:"servesAds"`
+	AttributesAppInstallationToPreviousAd bool `json:"attributesAppInstallationToPreviousAd"`
+	AttributesActionWithPreviousAd        bool `json:"attributesActionWithPreviousAd"`
+	HonorsLimitedAdTracking               bool `json:"honorsLimitedAdTracking"`
 }
 
 // IdfaDeclarationCreateRelationships contains relationships for creating an IDFA declaration.
@@ -2578,10 +2578,10 @@ type IdfaDeclarationUpdateData struct {
 
 // IdfaDeclarationUpdateAttributes contains attributes for updating an IDFA declaration.
 type IdfaDeclarationUpdateAttributes struct {
-	ServesAds                              *bool `json:"servesAds,omitempty"`
-	AttributesAppInstallationToPreviousAd  *bool `json:"attributesAppInstallationToPreviousAd,omitempty"`
-	AttributesActionWithPreviousAd         *bool `json:"attributesActionWithPreviousAd,omitempty"`
-	HonorsLimitedAdTracking                *bool `json:"honorsLimitedAdTracking,omitempty"`
+	ServesAds                             *bool `json:"servesAds,omitempty"`
+	AttributesAppInstallationToPreviousAd *bool `json:"attributesAppInstallationToPreviousAd,omitempty"`
+	AttributesActionWithPreviousAd        *bool `json:"attributesActionWithPreviousAd,omitempty"`
+	HonorsLimitedAdTracking               *bool `json:"honorsLimitedAdTracking,omitempty"`
 }
 
 // End User License Agreement types
@@ -2634,9 +2634,9 @@ type EndUserLicenseAgreementUpdateRequest struct {
 
 // EndUserLicenseAgreementUpdateData contains the data for updating an EULA.
 type EndUserLicenseAgreementUpdateData struct {
-	Type          string                                     `json:"type"`
-	ID            string                                     `json:"id"`
-	Attributes    EndUserLicenseAgreementUpdateAttributes    `json:"attributes"`
+	Type          string                                      `json:"type"`
+	ID            string                                      `json:"id"`
+	Attributes    EndUserLicenseAgreementUpdateAttributes     `json:"attributes"`
 	Relationships *EndUserLicenseAgreementUpdateRelationships `json:"relationships,omitempty"`
 }
 
@@ -2730,8 +2730,8 @@ type BetaLicenseAgreementUpdateRequest struct {
 
 // BetaLicenseAgreementUpdateData contains the data for updating a beta license agreement.
 type BetaLicenseAgreementUpdateData struct {
-	Type       string                              `json:"type"`
-	ID         string                              `json:"id"`
+	Type       string                               `json:"type"`
+	ID         string                               `json:"id"`
 	Attributes BetaLicenseAgreementUpdateAttributes `json:"attributes"`
 }
 
@@ -2765,16 +2765,16 @@ type SandboxTester struct {
 
 // SandboxTesterAttributes contains sandbox tester attributes.
 type SandboxTesterAttributes struct {
-	FirstName         string     `json:"firstName,omitempty"`
-	LastName          string     `json:"lastName,omitempty"`
-	Email             string     `json:"email,omitempty"`
-	Password          string     `json:"password,omitempty"`
-	ConfirmPassword   string     `json:"confirmPassword,omitempty"`
-	SecretQuestion    string     `json:"secretQuestion,omitempty"`
-	SecretAnswer      string     `json:"secretAnswer,omitempty"`
-	BirthDate         string     `json:"birthDate,omitempty"`
-	AppStoreTerritory string     `json:"appStoreTerritory,omitempty"`
-	Interruptable     bool       `json:"interruptable,omitempty"`
+	FirstName               string `json:"firstName,omitempty"`
+	LastName                string `json:"lastName,omitempty"`
+	Email                   string `json:"email,omitempty"`
+	Password                string `json:"password,omitempty"`
+	ConfirmPassword         string `json:"confirmPassword,omitempty"`
+	SecretQuestion          string `json:"secretQuestion,omitempty"`
+	SecretAnswer            string `json:"secretAnswer,omitempty"`
+	BirthDate               string `json:"birthDate,omitempty"`
+	AppStoreTerritory       string `json:"appStoreTerritory,omitempty"`
+	Interruptable           bool   `json:"interruptable,omitempty"`
 	SubscriptionRenewalRate string `json:"subscriptionRenewalRate,omitempty"`
 }
 
@@ -2785,7 +2785,7 @@ type SandboxTesterCreateRequest struct {
 
 // SandboxTesterCreateData contains the data for creating a sandbox tester.
 type SandboxTesterCreateData struct {
-	Type       string                       `json:"type"`
+	Type       string                        `json:"type"`
 	Attributes SandboxTesterCreateAttributes `json:"attributes"`
 }
 
@@ -2809,8 +2809,8 @@ type SandboxTesterUpdateRequest struct {
 
 // SandboxTesterUpdateData contains the data for updating a sandbox tester.
 type SandboxTesterUpdateData struct {
-	Type       string                       `json:"type"`
-	ID         string                       `json:"id"`
+	Type       string                        `json:"type"`
+	ID         string                        `json:"id"`
 	Attributes SandboxTesterUpdateAttributes `json:"attributes"`
 }
 
@@ -2918,14 +2918,14 @@ type SubscriptionOfferCode struct {
 
 // SubscriptionOfferCodeAttributes contains subscription offer code attributes.
 type SubscriptionOfferCodeAttributes struct {
-	Name                string `json:"name,omitempty"`
+	Name                  string   `json:"name,omitempty"`
 	CustomerEligibilities []string `json:"customerEligibilities,omitempty"`
-	OfferEligibility    string `json:"offerEligibility,omitempty"`
-	Duration            string `json:"duration,omitempty"`
-	OfferMode           string `json:"offerMode,omitempty"`
-	NumberOfPeriods     int    `json:"numberOfPeriods,omitempty"`
-	TotalNumberOfCodes  int    `json:"totalNumberOfCodes,omitempty"`
-	Active              bool   `json:"active,omitempty"`
+	OfferEligibility      string   `json:"offerEligibility,omitempty"`
+	Duration              string   `json:"duration,omitempty"`
+	OfferMode             string   `json:"offerMode,omitempty"`
+	NumberOfPeriods       int      `json:"numberOfPeriods,omitempty"`
+	TotalNumberOfCodes    int      `json:"totalNumberOfCodes,omitempty"`
+	Active                bool     `json:"active,omitempty"`
 }
 
 // SubscriptionOfferCodeCreateRequest represents a request to create a subscription offer code.
@@ -2942,12 +2942,12 @@ type SubscriptionOfferCodeCreateData struct {
 
 // SubscriptionOfferCodeCreateAttributes contains attributes for creating a subscription offer code.
 type SubscriptionOfferCodeCreateAttributes struct {
-	Name                string   `json:"name"`
+	Name                  string   `json:"name"`
 	CustomerEligibilities []string `json:"customerEligibilities"`
-	OfferEligibility    string   `json:"offerEligibility"`
-	Duration            string   `json:"duration"`
-	OfferMode           string   `json:"offerMode"`
-	NumberOfPeriods     int      `json:"numberOfPeriods"`
+	OfferEligibility      string   `json:"offerEligibility"`
+	Duration              string   `json:"duration"`
+	OfferMode             string   `json:"offerMode"`
+	NumberOfPeriods       int      `json:"numberOfPeriods"`
 }
 
 // SubscriptionOfferCodeCreateRelationships contains relationships for creating a subscription offer code.
@@ -3027,18 +3027,18 @@ type WinBackOffer struct {
 
 // WinBackOfferAttributes contains win-back offer attributes.
 type WinBackOfferAttributes struct {
-	ReferenceName       string     `json:"referenceName,omitempty"`
-	OfferID             string     `json:"offerId,omitempty"`
-	Duration            string     `json:"duration,omitempty"`
-	OfferMode           string     `json:"offerMode,omitempty"`
-	PeriodCount         int        `json:"periodCount,omitempty"`
-	CustomerEligibilityPaidSubscriptionDurationInMonths int `json:"customerEligibilityPaidSubscriptionDurationInMonths,omitempty"`
+	ReferenceName                                       string        `json:"referenceName,omitempty"`
+	OfferID                                             string        `json:"offerId,omitempty"`
+	Duration                                            string        `json:"duration,omitempty"`
+	OfferMode                                           string        `json:"offerMode,omitempty"`
+	PeriodCount                                         int           `json:"periodCount,omitempty"`
+	CustomerEligibilityPaidSubscriptionDurationInMonths int           `json:"customerEligibilityPaidSubscriptionDurationInMonths,omitempty"`
 	CustomerEligibilityTimeSinceLastSubscribedInMonths  *IntegerRange `json:"customerEligibilityTimeSinceLastSubscribedInMonths,omitempty"`
-	CustomerEligibilityWaitBetweenOffersInMonths       int `json:"customerEligibilityWaitBetweenOffersInMonths,omitempty"`
-	StartDate           *time.Time `json:"startDate,omitempty"`
-	EndDate             *time.Time `json:"endDate,omitempty"`
-	Priority            string     `json:"priority,omitempty"`
-	PromotionIntent     string     `json:"promotionIntent,omitempty"`
+	CustomerEligibilityWaitBetweenOffersInMonths        int           `json:"customerEligibilityWaitBetweenOffersInMonths,omitempty"`
+	StartDate                                           *time.Time    `json:"startDate,omitempty"`
+	EndDate                                             *time.Time    `json:"endDate,omitempty"`
+	Priority                                            string        `json:"priority,omitempty"`
+	PromotionIntent                                     string        `json:"promotionIntent,omitempty"`
 }
 
 // IntegerRange represents an integer range.
@@ -3061,24 +3061,24 @@ type WinBackOfferCreateData struct {
 
 // WinBackOfferCreateAttributes contains attributes for creating a win-back offer.
 type WinBackOfferCreateAttributes struct {
-	ReferenceName       string        `json:"referenceName"`
-	OfferID             string        `json:"offerId"`
-	Duration            string        `json:"duration"`
-	OfferMode           string        `json:"offerMode"`
-	PeriodCount         int           `json:"periodCount"`
-	CustomerEligibilityPaidSubscriptionDurationInMonths int `json:"customerEligibilityPaidSubscriptionDurationInMonths"`
+	ReferenceName                                       string        `json:"referenceName"`
+	OfferID                                             string        `json:"offerId"`
+	Duration                                            string        `json:"duration"`
+	OfferMode                                           string        `json:"offerMode"`
+	PeriodCount                                         int           `json:"periodCount"`
+	CustomerEligibilityPaidSubscriptionDurationInMonths int           `json:"customerEligibilityPaidSubscriptionDurationInMonths"`
 	CustomerEligibilityTimeSinceLastSubscribedInMonths  *IntegerRange `json:"customerEligibilityTimeSinceLastSubscribedInMonths,omitempty"`
-	CustomerEligibilityWaitBetweenOffersInMonths       int `json:"customerEligibilityWaitBetweenOffersInMonths,omitempty"`
-	StartDate           *time.Time    `json:"startDate,omitempty"`
-	EndDate             *time.Time    `json:"endDate,omitempty"`
-	Priority            string        `json:"priority"`
-	PromotionIntent     string        `json:"promotionIntent,omitempty"`
+	CustomerEligibilityWaitBetweenOffersInMonths        int           `json:"customerEligibilityWaitBetweenOffersInMonths,omitempty"`
+	StartDate                                           *time.Time    `json:"startDate,omitempty"`
+	EndDate                                             *time.Time    `json:"endDate,omitempty"`
+	Priority                                            string        `json:"priority"`
+	PromotionIntent                                     string        `json:"promotionIntent,omitempty"`
 }
 
 // WinBackOfferCreateRelationships contains relationships for creating a win-back offer.
 type WinBackOfferCreateRelationships struct {
-	Subscription RelationshipData      `json:"subscription"`
-	Prices       RelationshipDataList  `json:"prices"`
+	Subscription RelationshipData     `json:"subscription"`
+	Prices       RelationshipDataList `json:"prices"`
 }
 
 // WinBackOfferUpdateRequest represents a request to update a win-back offer.
@@ -3095,13 +3095,13 @@ type WinBackOfferUpdateData struct {
 
 // WinBackOfferUpdateAttributes contains attributes for updating a win-back offer.
 type WinBackOfferUpdateAttributes struct {
-	CustomerEligibilityPaidSubscriptionDurationInMonths *int `json:"customerEligibilityPaidSubscriptionDurationInMonths,omitempty"`
+	CustomerEligibilityPaidSubscriptionDurationInMonths *int          `json:"customerEligibilityPaidSubscriptionDurationInMonths,omitempty"`
 	CustomerEligibilityTimeSinceLastSubscribedInMonths  *IntegerRange `json:"customerEligibilityTimeSinceLastSubscribedInMonths,omitempty"`
-	CustomerEligibilityWaitBetweenOffersInMonths       *int `json:"customerEligibilityWaitBetweenOffersInMonths,omitempty"`
-	StartDate           *time.Time    `json:"startDate,omitempty"`
-	EndDate             *time.Time    `json:"endDate,omitempty"`
-	Priority            string        `json:"priority,omitempty"`
-	PromotionIntent     string        `json:"promotionIntent,omitempty"`
+	CustomerEligibilityWaitBetweenOffersInMonths        *int          `json:"customerEligibilityWaitBetweenOffersInMonths,omitempty"`
+	StartDate                                           *time.Time    `json:"startDate,omitempty"`
+	EndDate                                             *time.Time    `json:"endDate,omitempty"`
+	Priority                                            string        `json:"priority,omitempty"`
+	PromotionIntent                                     string        `json:"promotionIntent,omitempty"`
 }
 
 // App Store Version Experiment types (Product Page Optimization)
@@ -3206,9 +3206,9 @@ type AppCustomProductPage struct {
 
 // AppCustomProductPageAttributes contains custom product page attributes.
 type AppCustomProductPageAttributes struct {
-	Name      string `json:"name,omitempty"`
-	URL       string `json:"url,omitempty"`
-	Visible   bool   `json:"visible,omitempty"`
+	Name    string `json:"name,omitempty"`
+	URL     string `json:"url,omitempty"`
+	Visible bool   `json:"visible,omitempty"`
 }
 
 // AppCustomProductPageCreateRequest represents a request to create a custom product page.
@@ -3230,7 +3230,7 @@ type AppCustomProductPageCreateAttributes struct {
 
 // AppCustomProductPageCreateRelationships contains relationships for creating a custom product page.
 type AppCustomProductPageCreateRelationships struct {
-	App                    RelationshipData  `json:"app"`
+	App                     RelationshipData  `json:"app"`
 	AppStoreVersionTemplate *RelationshipData `json:"appStoreVersionTemplate,omitempty"`
 }
 
@@ -3378,8 +3378,8 @@ type DiagnosticSignature struct {
 
 // DiagnosticSignatureAttributes contains diagnostic signature attributes.
 type DiagnosticSignatureAttributes struct {
-	DiagnosticType string `json:"diagnosticType,omitempty"`
-	Signature      string `json:"signature,omitempty"`
+	DiagnosticType string  `json:"diagnosticType,omitempty"`
+	Signature      string  `json:"signature,omitempty"`
 	Weight         float64 `json:"weight,omitempty"`
 }
 
@@ -3509,12 +3509,12 @@ type BetaAppLocalization struct {
 
 // BetaAppLocalizationAttributes contains beta app localization attributes.
 type BetaAppLocalizationAttributes struct {
-	FeedbackEmail      string `json:"feedbackEmail,omitempty"`
-	MarketingURL       string `json:"marketingUrl,omitempty"`
-	PrivacyPolicyURL   string `json:"privacyPolicyUrl,omitempty"`
-	TVOSPrivacyPolicy  string `json:"tvOsPrivacyPolicy,omitempty"`
-	Description        string `json:"description,omitempty"`
-	Locale             string `json:"locale,omitempty"`
+	FeedbackEmail     string `json:"feedbackEmail,omitempty"`
+	MarketingURL      string `json:"marketingUrl,omitempty"`
+	PrivacyPolicyURL  string `json:"privacyPolicyUrl,omitempty"`
+	TVOSPrivacyPolicy string `json:"tvOsPrivacyPolicy,omitempty"`
+	Description       string `json:"description,omitempty"`
+	Locale            string `json:"locale,omitempty"`
 }
 
 // BetaAppLocalizationCreateRequest represents a request to create a beta app localization.
@@ -3531,12 +3531,12 @@ type BetaAppLocalizationCreateData struct {
 
 // BetaAppLocalizationCreateAttributes contains attributes for creating a beta app localization.
 type BetaAppLocalizationCreateAttributes struct {
-	FeedbackEmail    string `json:"feedbackEmail,omitempty"`
-	MarketingURL     string `json:"marketingUrl,omitempty"`
-	PrivacyPolicyURL string `json:"privacyPolicyUrl,omitempty"`
+	FeedbackEmail     string `json:"feedbackEmail,omitempty"`
+	MarketingURL      string `json:"marketingUrl,omitempty"`
+	PrivacyPolicyURL  string `json:"privacyPolicyUrl,omitempty"`
 	TVOSPrivacyPolicy string `json:"tvOsPrivacyPolicy,omitempty"`
-	Description      string `json:"description,omitempty"`
-	Locale           string `json:"locale"`
+	Description       string `json:"description,omitempty"`
+	Locale            string `json:"locale"`
 }
 
 // BetaAppLocalizationCreateRelationships contains relationships for creating a beta app localization.
@@ -3558,11 +3558,11 @@ type BetaAppLocalizationUpdateData struct {
 
 // BetaAppLocalizationUpdateAttributes contains attributes for updating a beta app localization.
 type BetaAppLocalizationUpdateAttributes struct {
-	FeedbackEmail    string `json:"feedbackEmail,omitempty"`
-	MarketingURL     string `json:"marketingUrl,omitempty"`
-	PrivacyPolicyURL string `json:"privacyPolicyUrl,omitempty"`
+	FeedbackEmail     string `json:"feedbackEmail,omitempty"`
+	MarketingURL      string `json:"marketingUrl,omitempty"`
+	PrivacyPolicyURL  string `json:"privacyPolicyUrl,omitempty"`
 	TVOSPrivacyPolicy string `json:"tvOsPrivacyPolicy,omitempty"`
-	Description      string `json:"description,omitempty"`
+	Description       string `json:"description,omitempty"`
 }
 
 // Beta Build Localization types
@@ -3671,8 +3671,8 @@ type BuildBetaDetailUpdateRequest struct {
 
 // BuildBetaDetailUpdateData contains the data for updating a build beta detail.
 type BuildBetaDetailUpdateData struct {
-	Type       string                         `json:"type"`
-	ID         string                         `json:"id"`
+	Type       string                          `json:"type"`
+	ID         string                          `json:"id"`
 	Attributes BuildBetaDetailUpdateAttributes `json:"attributes"`
 }
 
@@ -3742,8 +3742,8 @@ type AlternativeDistributionKeyCreateRequest struct {
 
 // AlternativeDistributionKeyCreateData contains the data for creating an alternative distribution key.
 type AlternativeDistributionKeyCreateData struct {
-	Type          string                                    `json:"type"`
-	Attributes    AlternativeDistributionKeyCreateAttributes `json:"attributes"`
+	Type          string                                        `json:"type"`
+	Attributes    AlternativeDistributionKeyCreateAttributes    `json:"attributes"`
 	Relationships AlternativeDistributionKeyCreateRelationships `json:"relationships"`
 }
 

@@ -27,6 +27,10 @@ func (r *Registry) registerProductPagesTools() {
 					Type:        "integer",
 					Description: "Maximum number of pages to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -123,6 +127,10 @@ func (r *Registry) registerProductPagesTools() {
 					Type:        "integer",
 					Description: "Maximum number of experiments to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"version_id"},
 		},
@@ -215,8 +223,9 @@ func (r *Registry) registerProductPagesTools() {
 
 func (r *Registry) handleListAppCustomProductPages(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -230,13 +239,18 @@ func (r *Registry) handleListAppCustomProductPages(ctx context.Context, args jso
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppCustomProductPages(ctx, params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppCustomProductPagesResponse, error) {
+		return r.client.ListAppCustomProductPages(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list custom product pages: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppCustomProductPages(resp.Data)), nil
+	return newListResult(formatAppCustomProductPages(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetAppCustomProductPage(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -351,6 +365,7 @@ func (r *Registry) handleListAppStoreVersionExperiments(ctx context.Context, arg
 	var params struct {
 		VersionID string `json:"version_id"`
 		Limit     int    `json:"limit"`
+		Cursor    string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -364,13 +379,18 @@ func (r *Registry) handleListAppStoreVersionExperiments(ctx context.Context, arg
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppStoreVersionExperiments(ctx, params.VersionID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppStoreVersionExperimentsResponse, error) {
+		return r.client.ListAppStoreVersionExperiments(ctx, params.VersionID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list experiments: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppStoreVersionExperiments(resp.Data)), nil
+	return newListResult(formatAppStoreVersionExperiments(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetAppStoreVersionExperiment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

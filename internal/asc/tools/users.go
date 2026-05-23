@@ -23,6 +23,10 @@ func (r *Registry) registerUserTools() {
 					Type:        "integer",
 					Description: "Maximum number of users to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 		},
 	}, r.handleListUsers)
@@ -94,6 +98,10 @@ func (r *Registry) registerUserTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of invitations to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 		},
@@ -167,7 +175,8 @@ func (r *Registry) registerUserTools() {
 
 func (r *Registry) handleListUsers(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -177,13 +186,18 @@ func (r *Registry) handleListUsers(ctx context.Context, args json.RawMessage) (*
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListUsers(ctx, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.UsersResponse, error) {
+		return r.client.ListUsers(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list users: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatUsers(resp.Data)), nil
+	return newListResult(formatUsers(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetUser(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -261,7 +275,8 @@ func (r *Registry) handleDeleteUser(ctx context.Context, args json.RawMessage) (
 
 func (r *Registry) handleListUserInvitations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -271,13 +286,18 @@ func (r *Registry) handleListUserInvitations(ctx context.Context, args json.RawM
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListUserInvitations(ctx, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.UserInvitationsResponse, error) {
+		return r.client.ListUserInvitations(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list user invitations: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatUserInvitations(resp.Data)), nil
+	return newListResult(formatUserInvitations(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetUserInvitation(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

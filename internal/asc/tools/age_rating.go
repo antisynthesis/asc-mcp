@@ -223,22 +223,22 @@ func (r *Registry) handleGetAgeRatingDeclaration(ctx context.Context, args json.
 
 func (r *Registry) handleUpdateAgeRatingDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		DeclarationID                                  string  `json:"declaration_id"`
-		AlcoholTobaccoOrDrugUseOrReferences            *string `json:"alcohol_tobacco_or_drug_use_or_references"`
-		Contests                                       *string `json:"contests"`
-		GamblingSimulated                              *string `json:"gambling_simulated"`
-		HorrorOrFearThemes                             *string `json:"horror_or_fear_themes"`
-		MatureOrSuggestiveThemes                       *string `json:"mature_or_suggestive_themes"`
-		MedicalOrTreatmentInformation                  *string `json:"medical_or_treatment_information"`
-		ProfanityOrCrudeHumor                          *string `json:"profanity_or_crude_humor"`
-		SexualContentGraphicAndNudity                  *string `json:"sexual_content_graphic_and_nudity"`
-		SexualContentOrNudity                          *string `json:"sexual_content_or_nudity"`
-		ViolenceCartoonOrFantasy                       *string `json:"violence_cartoon_or_fantasy"`
-		ViolenceRealistic                              *string `json:"violence_realistic"`
-		ViolenceRealisticProlongedGraphicOrSadistic    *string `json:"violence_realistic_prolonged_graphic_or_sadistic"`
-		Gambling                                       *bool   `json:"gambling"`
-		UnrestrictedWebAccess                          *bool   `json:"unrestricted_web_access"`
-		SeventeenPlus                                  *bool   `json:"seventeen_plus"`
+		DeclarationID                               string  `json:"declaration_id"`
+		AlcoholTobaccoOrDrugUseOrReferences         *string `json:"alcohol_tobacco_or_drug_use_or_references"`
+		Contests                                    *string `json:"contests"`
+		GamblingSimulated                           *string `json:"gambling_simulated"`
+		HorrorOrFearThemes                          *string `json:"horror_or_fear_themes"`
+		MatureOrSuggestiveThemes                    *string `json:"mature_or_suggestive_themes"`
+		MedicalOrTreatmentInformation               *string `json:"medical_or_treatment_information"`
+		ProfanityOrCrudeHumor                       *string `json:"profanity_or_crude_humor"`
+		SexualContentGraphicAndNudity               *string `json:"sexual_content_graphic_and_nudity"`
+		SexualContentOrNudity                       *string `json:"sexual_content_or_nudity"`
+		ViolenceCartoonOrFantasy                    *string `json:"violence_cartoon_or_fantasy"`
+		ViolenceRealistic                           *string `json:"violence_realistic"`
+		ViolenceRealisticProlongedGraphicOrSadistic *string `json:"violence_realistic_prolonged_graphic_or_sadistic"`
+		Gambling                                    *bool   `json:"gambling"`
+		UnrestrictedWebAccess                       *bool   `json:"unrestricted_web_access"`
+		SeventeenPlus                               *bool   `json:"seventeen_plus"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -253,16 +253,16 @@ func (r *Registry) handleUpdateAgeRatingDeclaration(ctx context.Context, args js
 			Type: "ageRatingDeclarations",
 			ID:   params.DeclarationID,
 			Attributes: api.AgeRatingDeclarationUpdateAttributes{
-				AlcoholTobaccoOrDrugUseOrReferences: stringValue(params.AlcoholTobaccoOrDrugUseOrReferences),
-				Contests:                            stringValue(params.Contests),
-				GamblingSimulated:                   stringValue(params.GamblingSimulated),
-				MatureOrSuggestiveThemes:            stringValue(params.MatureOrSuggestiveThemes),
-				MedicalOrTreatmentInformation:       stringValue(params.MedicalOrTreatmentInformation),
-				ProfanityOrCrudeHumor:               stringValue(params.ProfanityOrCrudeHumor),
-				SexualContentGraphicAndNudity:       stringValue(params.SexualContentGraphicAndNudity),
-				SexualContentOrNudity:               stringValue(params.SexualContentOrNudity),
-				ViolenceCartoonOrFantasy:            stringValue(params.ViolenceCartoonOrFantasy),
-				ViolenceRealistic:                   stringValue(params.ViolenceRealistic),
+				AlcoholTobaccoOrDrugUseOrReferences:         stringValue(params.AlcoholTobaccoOrDrugUseOrReferences),
+				Contests:                                    stringValue(params.Contests),
+				GamblingSimulated:                           stringValue(params.GamblingSimulated),
+				MatureOrSuggestiveThemes:                    stringValue(params.MatureOrSuggestiveThemes),
+				MedicalOrTreatmentInformation:               stringValue(params.MedicalOrTreatmentInformation),
+				ProfanityOrCrudeHumor:                       stringValue(params.ProfanityOrCrudeHumor),
+				SexualContentGraphicAndNudity:               stringValue(params.SexualContentGraphicAndNudity),
+				SexualContentOrNudity:                       stringValue(params.SexualContentOrNudity),
+				ViolenceCartoonOrFantasy:                    stringValue(params.ViolenceCartoonOrFantasy),
+				ViolenceRealistic:                           stringValue(params.ViolenceRealistic),
 				ViolenceRealisticProlongedGraphicOrSadistic: stringValue(params.ViolenceRealisticProlongedGraphicOrSadistic),
 				Gambling:              params.Gambling,
 				UnrestrictedWebAccess: params.UnrestrictedWebAccess,
@@ -301,11 +301,11 @@ func (r *Registry) handleGetIdfaDeclaration(ctx context.Context, args json.RawMe
 
 func (r *Registry) handleCreateIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		VersionID                            string `json:"version_id"`
-		ServesAds                            bool   `json:"serves_ads"`
+		VersionID                             string `json:"version_id"`
+		ServesAds                             bool   `json:"serves_ads"`
 		AttributesAppInstallationToPreviousAd bool   `json:"attributes_app_installation_to_previous_ad"`
-		AttributesActionWithPreviousAd       bool   `json:"attributes_action_with_previous_ad"`
-		HonorsLimitedAdTracking              bool   `json:"honors_limited_ad_tracking"`
+		AttributesActionWithPreviousAd        bool   `json:"attributes_action_with_previous_ad"`
+		HonorsLimitedAdTracking               bool   `json:"honors_limited_ad_tracking"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -342,11 +342,11 @@ func (r *Registry) handleCreateIdfaDeclaration(ctx context.Context, args json.Ra
 
 func (r *Registry) handleUpdateIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		DeclarationID                        string `json:"declaration_id"`
-		ServesAds                            *bool  `json:"serves_ads"`
+		DeclarationID                         string `json:"declaration_id"`
+		ServesAds                             *bool  `json:"serves_ads"`
 		AttributesAppInstallationToPreviousAd *bool  `json:"attributes_app_installation_to_previous_ad"`
-		AttributesActionWithPreviousAd       *bool  `json:"attributes_action_with_previous_ad"`
-		HonorsLimitedAdTracking              *bool  `json:"honors_limited_ad_tracking"`
+		AttributesActionWithPreviousAd        *bool  `json:"attributes_action_with_previous_ad"`
+		HonorsLimitedAdTracking               *bool  `json:"honors_limited_ad_tracking"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)

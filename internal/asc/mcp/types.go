@@ -105,12 +105,12 @@ type InitializeResult struct {
 
 // ServerCapability represents server capabilities.
 type ServerCapability struct {
-	Tools        *ToolsCapability   `json:"tools,omitempty"`
-	Logging      *EmptyCapability   `json:"logging,omitempty"`
-	Resources    *ResourcesCap      `json:"resources,omitempty"`
-	Prompts      *PromptsCap        `json:"prompts,omitempty"`
-	Completions  *EmptyCapability   `json:"completions,omitempty"`
-	Experimental map[string]any     `json:"experimental,omitempty"`
+	Tools        *ToolsCapability `json:"tools,omitempty"`
+	Logging      *EmptyCapability `json:"logging,omitempty"`
+	Resources    *ResourcesCap    `json:"resources,omitempty"`
+	Prompts      *PromptsCap      `json:"prompts,omitempty"`
+	Completions  *EmptyCapability `json:"completions,omitempty"`
+	Experimental map[string]any   `json:"experimental,omitempty"`
 }
 
 // ToolsCapability represents tools capability.

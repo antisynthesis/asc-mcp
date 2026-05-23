@@ -289,6 +289,40 @@ func (c *Client) Delete(ctx context.Context, path string) error {
 	return err
 }
 
+// GetURL performs a GET against a fully-qualified URL returned by the API
+// (typically a pagination `links.next`). The URL must point at the same
+// host as the client's base URL — this prevents a malicious or
+// misconfigured response from redirecting the client to an arbitrary
+// endpoint and leaking the bearer token.
+func (c *Client) GetURL(ctx context.Context, fullURL string) ([]byte, error) {
+	if fullURL == "" {
+		return nil, fmt.Errorf("empty URL")
+	}
+	parsed, err := url.Parse(fullURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid cursor URL: %w", err)
+	}
+	base, err := url.Parse(c.baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid client base URL: %w", err)
+	}
+	if parsed.Scheme != base.Scheme || parsed.Host != base.Host {
+		return nil, fmt.Errorf("cursor URL host mismatch: got %q, want %q", parsed.Host, base.Host)
+	}
+	// Reconstruct path+query under our base URL so the retry/header
+	// machinery inside doRequest applies. We split the query out so
+	// doRequest can re-encode it consistently.
+	path := parsed.RequestURI()
+	if i := strings.Index(path, "?"); i >= 0 {
+		query, qerr := url.ParseQuery(path[i+1:])
+		if qerr != nil {
+			return nil, fmt.Errorf("invalid cursor query: %w", qerr)
+		}
+		return c.doRequest(ctx, http.MethodGet, path[:i], query, nil)
+	}
+	return c.doRequest(ctx, http.MethodGet, path, nil, nil)
+}
+
 // Apps API methods
 
 // ListApps returns a list of apps.
@@ -313,7 +347,7 @@ func (c *Client) ListApps(ctx context.Context, limit int) (*AppsResponse, error)
 
 // GetApp returns a single app by ID.
 func (c *Client) GetApp(ctx context.Context, appID string) (*AppResponse, error) {
-	data, err := c.Get(ctx, "/v1/apps/"+appID, nil)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +367,7 @@ func (c *Client) GetAppVersions(ctx context.Context, appID string, limit int) (*
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/appStoreVersions", query)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appStoreVersions", query)
 	if err != nil {
 		return nil, err
 	}
@@ -373,7 +407,7 @@ func (c *Client) ListBuilds(ctx context.Context, appID string, limit int) (*Buil
 
 // GetBuild returns a single build by ID.
 func (c *Client) GetBuild(ctx context.Context, buildID string) (*BuildResponse, error) {
-	data, err := c.Get(ctx, "/v1/builds/"+buildID, nil)
+	data, err := c.Get(ctx, "/v1/builds/"+url.PathEscape(buildID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -428,7 +462,7 @@ func (c *Client) CreateBetaGroup(ctx context.Context, req *BetaGroupCreateReques
 
 // DeleteBetaGroup deletes a beta group.
 func (c *Client) DeleteBetaGroup(ctx context.Context, betaGroupID string) error {
-	return c.Delete(ctx, "/v1/betaGroups/"+betaGroupID)
+	return c.Delete(ctx, "/v1/betaGroups/"+url.PathEscape(betaGroupID))
 }
 
 // Beta Testers API methods
@@ -473,7 +507,7 @@ func (c *Client) CreateBetaTester(ctx context.Context, req *BetaTesterCreateRequ
 
 // DeleteBetaTester removes a beta tester.
 func (c *Client) DeleteBetaTester(ctx context.Context, betaTesterID string) error {
-	return c.Delete(ctx, "/v1/betaTesters/"+betaTesterID)
+	return c.Delete(ctx, "/v1/betaTesters/"+url.PathEscape(betaTesterID))
 }
 
 // AddBetaTesterToGroup adds a beta tester to a group.
@@ -487,7 +521,7 @@ func (c *Client) AddBetaTesterToGroup(ctx context.Context, betaGroupID, betaTest
 		},
 	}
 
-	_, err := c.Post(ctx, "/v1/betaGroups/"+betaGroupID+"/relationships/betaTesters", body)
+	_, err := c.Post(ctx, "/v1/betaGroups/"+url.PathEscape(betaGroupID)+"/relationships/betaTesters", body)
 	return err
 }
 
@@ -495,7 +529,7 @@ func (c *Client) AddBetaTesterToGroup(ctx context.Context, betaGroupID, betaTest
 func (c *Client) RemoveBetaTesterFromGroup(ctx context.Context, betaGroupID, betaTesterID string) error {
 	// This requires a DELETE with a body, which is non-standard
 	// For now, we use the delete beta tester endpoint
-	return c.Delete(ctx, "/v1/betaGroups/"+betaGroupID+"/relationships/betaTesters")
+	return c.Delete(ctx, "/v1/betaGroups/"+url.PathEscape(betaGroupID)+"/relationships/betaTesters")
 }
 
 // Bundle IDs API methods
@@ -522,7 +556,7 @@ func (c *Client) ListBundleIDs(ctx context.Context, limit int) (*BundleIDsRespon
 
 // GetBundleID returns a single bundle ID by ID.
 func (c *Client) GetBundleID(ctx context.Context, bundleIDID string) (*BundleIDResponse, error) {
-	data, err := c.Get(ctx, "/v1/bundleIds/"+bundleIDID, nil)
+	data, err := c.Get(ctx, "/v1/bundleIds/"+url.PathEscape(bundleIDID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -618,7 +652,7 @@ func (c *Client) ListProfiles(ctx context.Context, limit int) (*ProfilesResponse
 
 // GetProfile returns a single profile by ID.
 func (c *Client) GetProfile(ctx context.Context, profileID string) (*ProfileResponse, error) {
-	data, err := c.Get(ctx, "/v1/profiles/"+profileID, nil)
+	data, err := c.Get(ctx, "/v1/profiles/"+url.PathEscape(profileID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -635,7 +669,7 @@ func (c *Client) GetProfile(ctx context.Context, profileID string) (*ProfileResp
 
 // GetAppInfos returns app infos for an app.
 func (c *Client) GetAppInfos(ctx context.Context, appID string) (*AppInfosResponse, error) {
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/appInfos", nil)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appInfos", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -652,7 +686,7 @@ func (c *Client) GetAppInfos(ctx context.Context, appID string) (*AppInfosRespon
 
 // ListAppInfoLocalizations returns localizations for an app info.
 func (c *Client) ListAppInfoLocalizations(ctx context.Context, appInfoID string) (*AppInfoLocalizationsResponse, error) {
-	data, err := c.Get(ctx, "/v1/appInfos/"+appInfoID+"/appInfoLocalizations", nil)
+	data, err := c.Get(ctx, "/v1/appInfos/"+url.PathEscape(appInfoID)+"/appInfoLocalizations", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -667,7 +701,7 @@ func (c *Client) ListAppInfoLocalizations(ctx context.Context, appInfoID string)
 
 // GetAppInfoLocalization returns a single app info localization by ID.
 func (c *Client) GetAppInfoLocalization(ctx context.Context, localizationID string) (*AppInfoLocalizationResponse, error) {
-	data, err := c.Get(ctx, "/v1/appInfoLocalizations/"+localizationID, nil)
+	data, err := c.Get(ctx, "/v1/appInfoLocalizations/"+url.PathEscape(localizationID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -697,7 +731,7 @@ func (c *Client) CreateAppInfoLocalization(ctx context.Context, req *AppInfoLoca
 
 // UpdateAppInfoLocalization updates an app info localization.
 func (c *Client) UpdateAppInfoLocalization(ctx context.Context, localizationID string, req *AppInfoLocalizationUpdateRequest) (*AppInfoLocalizationResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appInfoLocalizations/"+localizationID, req)
+	data, err := c.Patch(ctx, "/v1/appInfoLocalizations/"+url.PathEscape(localizationID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -712,14 +746,14 @@ func (c *Client) UpdateAppInfoLocalization(ctx context.Context, localizationID s
 
 // DeleteAppInfoLocalization deletes an app info localization.
 func (c *Client) DeleteAppInfoLocalization(ctx context.Context, localizationID string) error {
-	return c.Delete(ctx, "/v1/appInfoLocalizations/"+localizationID)
+	return c.Delete(ctx, "/v1/appInfoLocalizations/"+url.PathEscape(localizationID))
 }
 
 // App Store Version Localization API methods
 
 // ListAppStoreVersionLocalizations returns localizations for a version.
 func (c *Client) ListAppStoreVersionLocalizations(ctx context.Context, versionID string) (*AppStoreVersionLocalizationsResponse, error) {
-	data, err := c.Get(ctx, "/v1/appStoreVersions/"+versionID+"/appStoreVersionLocalizations", nil)
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/appStoreVersionLocalizations", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -734,7 +768,7 @@ func (c *Client) ListAppStoreVersionLocalizations(ctx context.Context, versionID
 
 // GetAppStoreVersionLocalization returns a single version localization by ID.
 func (c *Client) GetAppStoreVersionLocalization(ctx context.Context, localizationID string) (*AppStoreVersionLocalizationResponse, error) {
-	data, err := c.Get(ctx, "/v1/appStoreVersionLocalizations/"+localizationID, nil)
+	data, err := c.Get(ctx, "/v1/appStoreVersionLocalizations/"+url.PathEscape(localizationID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -764,7 +798,7 @@ func (c *Client) CreateAppStoreVersionLocalization(ctx context.Context, req *App
 
 // UpdateAppStoreVersionLocalization updates a version localization.
 func (c *Client) UpdateAppStoreVersionLocalization(ctx context.Context, localizationID string, req *AppStoreVersionLocalizationUpdateRequest) (*AppStoreVersionLocalizationResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appStoreVersionLocalizations/"+localizationID, req)
+	data, err := c.Patch(ctx, "/v1/appStoreVersionLocalizations/"+url.PathEscape(localizationID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -779,7 +813,7 @@ func (c *Client) UpdateAppStoreVersionLocalization(ctx context.Context, localiza
 
 // DeleteAppStoreVersionLocalization deletes a version localization.
 func (c *Client) DeleteAppStoreVersionLocalization(ctx context.Context, localizationID string) error {
-	return c.Delete(ctx, "/v1/appStoreVersionLocalizations/"+localizationID)
+	return c.Delete(ctx, "/v1/appStoreVersionLocalizations/"+url.PathEscape(localizationID))
 }
 
 // Customer Reviews API methods
@@ -791,7 +825,7 @@ func (c *Client) ListCustomerReviews(ctx context.Context, appID string, limit in
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/customerReviews", query)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/customerReviews", query)
 	if err != nil {
 		return nil, err
 	}
@@ -806,7 +840,7 @@ func (c *Client) ListCustomerReviews(ctx context.Context, appID string, limit in
 
 // GetCustomerReview returns a single customer review by ID.
 func (c *Client) GetCustomerReview(ctx context.Context, reviewID string) (*CustomerReviewResponse, error) {
-	data, err := c.Get(ctx, "/v1/customerReviews/"+reviewID, nil)
+	data, err := c.Get(ctx, "/v1/customerReviews/"+url.PathEscape(reviewID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -836,7 +870,7 @@ func (c *Client) CreateCustomerReviewResponse(ctx context.Context, req *Customer
 
 // DeleteCustomerReviewResponse deletes a customer review response.
 func (c *Client) DeleteCustomerReviewResponse(ctx context.Context, responseID string) error {
-	return c.Delete(ctx, "/v1/customerReviewResponses/"+responseID)
+	return c.Delete(ctx, "/v1/customerReviewResponses/"+url.PathEscape(responseID))
 }
 
 // In-App Purchases API methods
@@ -848,7 +882,7 @@ func (c *Client) ListInAppPurchases(ctx context.Context, appID string, limit int
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v2/apps/"+appID+"/inAppPurchasesV2", query)
+	data, err := c.Get(ctx, "/v2/apps/"+url.PathEscape(appID)+"/inAppPurchasesV2", query)
 	if err != nil {
 		return nil, err
 	}
@@ -863,7 +897,7 @@ func (c *Client) ListInAppPurchases(ctx context.Context, appID string, limit int
 
 // GetInAppPurchase returns a single in-app purchase by ID.
 func (c *Client) GetInAppPurchase(ctx context.Context, iapID string) (*InAppPurchaseResponse, error) {
-	data, err := c.Get(ctx, "/v2/inAppPurchases/"+iapID, nil)
+	data, err := c.Get(ctx, "/v2/inAppPurchases/"+url.PathEscape(iapID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -893,7 +927,7 @@ func (c *Client) CreateInAppPurchase(ctx context.Context, req *InAppPurchaseCrea
 
 // UpdateInAppPurchase updates an in-app purchase.
 func (c *Client) UpdateInAppPurchase(ctx context.Context, iapID string, req *InAppPurchaseUpdateRequest) (*InAppPurchaseResponse, error) {
-	data, err := c.Patch(ctx, "/v2/inAppPurchases/"+iapID, req)
+	data, err := c.Patch(ctx, "/v2/inAppPurchases/"+url.PathEscape(iapID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -908,7 +942,7 @@ func (c *Client) UpdateInAppPurchase(ctx context.Context, iapID string, req *InA
 
 // DeleteInAppPurchase deletes an in-app purchase.
 func (c *Client) DeleteInAppPurchase(ctx context.Context, iapID string) error {
-	return c.Delete(ctx, "/v2/inAppPurchases/"+iapID)
+	return c.Delete(ctx, "/v2/inAppPurchases/"+url.PathEscape(iapID))
 }
 
 // Subscriptions API methods
@@ -920,7 +954,7 @@ func (c *Client) ListSubscriptionGroups(ctx context.Context, appID string, limit
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/subscriptionGroups", query)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/subscriptionGroups", query)
 	if err != nil {
 		return nil, err
 	}
@@ -935,7 +969,7 @@ func (c *Client) ListSubscriptionGroups(ctx context.Context, appID string, limit
 
 // GetSubscriptionGroup returns a single subscription group by ID.
 func (c *Client) GetSubscriptionGroup(ctx context.Context, groupID string) (*SubscriptionGroupResponse, error) {
-	data, err := c.Get(ctx, "/v1/subscriptionGroups/"+groupID, nil)
+	data, err := c.Get(ctx, "/v1/subscriptionGroups/"+url.PathEscape(groupID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -955,7 +989,7 @@ func (c *Client) ListSubscriptions(ctx context.Context, groupID string, limit in
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/subscriptionGroups/"+groupID+"/subscriptions", query)
+	data, err := c.Get(ctx, "/v1/subscriptionGroups/"+url.PathEscape(groupID)+"/subscriptions", query)
 	if err != nil {
 		return nil, err
 	}
@@ -970,7 +1004,7 @@ func (c *Client) ListSubscriptions(ctx context.Context, groupID string, limit in
 
 // GetSubscription returns a single subscription by ID.
 func (c *Client) GetSubscription(ctx context.Context, subscriptionID string) (*SubscriptionResponse, error) {
-	data, err := c.Get(ctx, "/v1/subscriptions/"+subscriptionID, nil)
+	data, err := c.Get(ctx, "/v1/subscriptions/"+url.PathEscape(subscriptionID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -987,7 +1021,7 @@ func (c *Client) GetSubscription(ctx context.Context, subscriptionID string) (*S
 
 // GetAppStoreVersion returns a single app store version by ID.
 func (c *Client) GetAppStoreVersion(ctx context.Context, versionID string) (*AppStoreVersionResponse, error) {
-	data, err := c.Get(ctx, "/v1/appStoreVersions/"+versionID, nil)
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1017,7 +1051,7 @@ func (c *Client) CreateAppStoreVersion(ctx context.Context, req *AppStoreVersion
 
 // UpdateAppStoreVersion updates an app store version.
 func (c *Client) UpdateAppStoreVersion(ctx context.Context, versionID string, req *AppStoreVersionUpdateRequest) (*AppStoreVersionResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appStoreVersions/"+versionID, req)
+	data, err := c.Patch(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -1032,7 +1066,7 @@ func (c *Client) UpdateAppStoreVersion(ctx context.Context, versionID string, re
 
 // DeleteAppStoreVersion deletes an app store version.
 func (c *Client) DeleteAppStoreVersion(ctx context.Context, versionID string) error {
-	return c.Delete(ctx, "/v1/appStoreVersions/"+versionID)
+	return c.Delete(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID))
 }
 
 // App Store Version Submission API methods
@@ -1056,7 +1090,7 @@ func (c *Client) CreateAppStoreVersionSubmission(ctx context.Context, req *AppSt
 
 // GetAppStoreReviewDetail returns review details for a version.
 func (c *Client) GetAppStoreReviewDetail(ctx context.Context, versionID string) (*AppStoreReviewDetailResponse, error) {
-	data, err := c.Get(ctx, "/v1/appStoreVersions/"+versionID+"/appStoreReviewDetail", nil)
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/appStoreReviewDetail", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1086,7 +1120,7 @@ func (c *Client) CreateAppStoreReviewDetail(ctx context.Context, req *AppStoreRe
 
 // UpdateAppStoreReviewDetail updates review details.
 func (c *Client) UpdateAppStoreReviewDetail(ctx context.Context, detailID string, req *AppStoreReviewDetailUpdateRequest) (*AppStoreReviewDetailResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appStoreReviewDetails/"+detailID, req)
+	data, err := c.Patch(ctx, "/v1/appStoreReviewDetails/"+url.PathEscape(detailID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -1103,7 +1137,7 @@ func (c *Client) UpdateAppStoreReviewDetail(ctx context.Context, detailID string
 
 // GetAppStoreVersionPhasedRelease returns phased release for a version.
 func (c *Client) GetAppStoreVersionPhasedRelease(ctx context.Context, versionID string) (*AppStoreVersionPhasedReleaseResponse, error) {
-	data, err := c.Get(ctx, "/v1/appStoreVersions/"+versionID+"/appStoreVersionPhasedRelease", nil)
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/appStoreVersionPhasedRelease", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1133,7 +1167,7 @@ func (c *Client) CreateAppStoreVersionPhasedRelease(ctx context.Context, req *Ap
 
 // UpdateAppStoreVersionPhasedRelease updates a phased release.
 func (c *Client) UpdateAppStoreVersionPhasedRelease(ctx context.Context, phasedReleaseID string, req *AppStoreVersionPhasedReleaseUpdateRequest) (*AppStoreVersionPhasedReleaseResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appStoreVersionPhasedReleases/"+phasedReleaseID, req)
+	data, err := c.Patch(ctx, "/v1/appStoreVersionPhasedReleases/"+url.PathEscape(phasedReleaseID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -1148,7 +1182,7 @@ func (c *Client) UpdateAppStoreVersionPhasedRelease(ctx context.Context, phasedR
 
 // DeleteAppStoreVersionPhasedRelease deletes a phased release.
 func (c *Client) DeleteAppStoreVersionPhasedRelease(ctx context.Context, phasedReleaseID string) error {
-	return c.Delete(ctx, "/v1/appStoreVersionPhasedReleases/"+phasedReleaseID)
+	return c.Delete(ctx, "/v1/appStoreVersionPhasedReleases/"+url.PathEscape(phasedReleaseID))
 }
 
 // App Screenshot API methods
@@ -1160,7 +1194,7 @@ func (c *Client) ListAppScreenshotSets(ctx context.Context, localizationID strin
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/appStoreVersionLocalizations/"+localizationID+"/appScreenshotSets", query)
+	data, err := c.Get(ctx, "/v1/appStoreVersionLocalizations/"+url.PathEscape(localizationID)+"/appScreenshotSets", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1180,7 +1214,7 @@ func (c *Client) ListAppScreenshots(ctx context.Context, screenshotSetID string,
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/appScreenshotSets/"+screenshotSetID+"/appScreenshots", query)
+	data, err := c.Get(ctx, "/v1/appScreenshotSets/"+url.PathEscape(screenshotSetID)+"/appScreenshots", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1195,7 +1229,7 @@ func (c *Client) ListAppScreenshots(ctx context.Context, screenshotSetID string,
 
 // GetAppScreenshot returns a single screenshot by ID.
 func (c *Client) GetAppScreenshot(ctx context.Context, screenshotID string) (*AppScreenshotResponse, error) {
-	data, err := c.Get(ctx, "/v1/appScreenshots/"+screenshotID, nil)
+	data, err := c.Get(ctx, "/v1/appScreenshots/"+url.PathEscape(screenshotID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1225,7 +1259,7 @@ func (c *Client) CreateAppScreenshot(ctx context.Context, req *AppScreenshotCrea
 
 // UpdateAppScreenshot updates a screenshot.
 func (c *Client) UpdateAppScreenshot(ctx context.Context, screenshotID string, req *AppScreenshotUpdateRequest) (*AppScreenshotResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appScreenshots/"+screenshotID, req)
+	data, err := c.Patch(ctx, "/v1/appScreenshots/"+url.PathEscape(screenshotID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -1240,7 +1274,7 @@ func (c *Client) UpdateAppScreenshot(ctx context.Context, screenshotID string, r
 
 // DeleteAppScreenshot deletes a screenshot.
 func (c *Client) DeleteAppScreenshot(ctx context.Context, screenshotID string) error {
-	return c.Delete(ctx, "/v1/appScreenshots/"+screenshotID)
+	return c.Delete(ctx, "/v1/appScreenshots/"+url.PathEscape(screenshotID))
 }
 
 // App Preview API methods
@@ -1252,7 +1286,7 @@ func (c *Client) ListAppPreviewSets(ctx context.Context, localizationID string, 
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/appStoreVersionLocalizations/"+localizationID+"/appPreviewSets", query)
+	data, err := c.Get(ctx, "/v1/appStoreVersionLocalizations/"+url.PathEscape(localizationID)+"/appPreviewSets", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1272,7 +1306,7 @@ func (c *Client) ListAppPreviews(ctx context.Context, previewSetID string, limit
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/appPreviewSets/"+previewSetID+"/appPreviews", query)
+	data, err := c.Get(ctx, "/v1/appPreviewSets/"+url.PathEscape(previewSetID)+"/appPreviews", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1287,7 +1321,7 @@ func (c *Client) ListAppPreviews(ctx context.Context, previewSetID string, limit
 
 // GetAppPreview returns a single preview by ID.
 func (c *Client) GetAppPreview(ctx context.Context, previewID string) (*AppPreviewResponse, error) {
-	data, err := c.Get(ctx, "/v1/appPreviews/"+previewID, nil)
+	data, err := c.Get(ctx, "/v1/appPreviews/"+url.PathEscape(previewID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1317,14 +1351,14 @@ func (c *Client) CreateAppPreview(ctx context.Context, req *AppPreviewCreateRequ
 
 // DeleteAppPreview deletes a preview.
 func (c *Client) DeleteAppPreview(ctx context.Context, previewID string) error {
-	return c.Delete(ctx, "/v1/appPreviews/"+previewID)
+	return c.Delete(ctx, "/v1/appPreviews/"+url.PathEscape(previewID))
 }
 
 // App Pre-Order API methods
 
 // GetAppPreOrder returns pre-order info for an app.
 func (c *Client) GetAppPreOrder(ctx context.Context, appID string) (*AppPreOrderResponse, error) {
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/preOrder", nil)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/preOrder", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1354,7 +1388,7 @@ func (c *Client) CreateAppPreOrder(ctx context.Context, req *AppPreOrderCreateRe
 
 // UpdateAppPreOrder updates a pre-order.
 func (c *Client) UpdateAppPreOrder(ctx context.Context, preOrderID string, req *AppPreOrderUpdateRequest) (*AppPreOrderResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appPreOrders/"+preOrderID, req)
+	data, err := c.Patch(ctx, "/v1/appPreOrders/"+url.PathEscape(preOrderID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -1369,7 +1403,7 @@ func (c *Client) UpdateAppPreOrder(ctx context.Context, preOrderID string, req *
 
 // DeleteAppPreOrder deletes a pre-order.
 func (c *Client) DeleteAppPreOrder(ctx context.Context, preOrderID string) error {
-	return c.Delete(ctx, "/v1/appPreOrders/"+preOrderID)
+	return c.Delete(ctx, "/v1/appPreOrders/"+url.PathEscape(preOrderID))
 }
 
 // App Event API methods
@@ -1381,7 +1415,7 @@ func (c *Client) ListAppEvents(ctx context.Context, appID string, limit int) (*A
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/appEvents", query)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appEvents", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1396,7 +1430,7 @@ func (c *Client) ListAppEvents(ctx context.Context, appID string, limit int) (*A
 
 // GetAppEvent returns a single app event by ID.
 func (c *Client) GetAppEvent(ctx context.Context, eventID string) (*AppEventResponse, error) {
-	data, err := c.Get(ctx, "/v1/appEvents/"+eventID, nil)
+	data, err := c.Get(ctx, "/v1/appEvents/"+url.PathEscape(eventID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1426,7 +1460,7 @@ func (c *Client) CreateAppEvent(ctx context.Context, req *AppEventCreateRequest)
 
 // UpdateAppEvent updates an app event.
 func (c *Client) UpdateAppEvent(ctx context.Context, eventID string, req *AppEventUpdateRequest) (*AppEventResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appEvents/"+eventID, req)
+	data, err := c.Patch(ctx, "/v1/appEvents/"+url.PathEscape(eventID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -1441,7 +1475,7 @@ func (c *Client) UpdateAppEvent(ctx context.Context, eventID string, req *AppEve
 
 // DeleteAppEvent deletes an app event.
 func (c *Client) DeleteAppEvent(ctx context.Context, eventID string) error {
-	return c.Delete(ctx, "/v1/appEvents/"+eventID)
+	return c.Delete(ctx, "/v1/appEvents/"+url.PathEscape(eventID))
 }
 
 // Analytics API methods
@@ -1453,7 +1487,7 @@ func (c *Client) ListAnalyticsReportRequests(ctx context.Context, appID string, 
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/analyticsReportRequests", query)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/analyticsReportRequests", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1468,7 +1502,7 @@ func (c *Client) ListAnalyticsReportRequests(ctx context.Context, appID string, 
 
 // GetAnalyticsReportRequest returns a single analytics report request.
 func (c *Client) GetAnalyticsReportRequest(ctx context.Context, requestID string) (*AnalyticsReportRequestResponse, error) {
-	data, err := c.Get(ctx, "/v1/analyticsReportRequests/"+requestID, nil)
+	data, err := c.Get(ctx, "/v1/analyticsReportRequests/"+url.PathEscape(requestID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1498,7 +1532,7 @@ func (c *Client) CreateAnalyticsReportRequest(ctx context.Context, req *Analytic
 
 // DeleteAnalyticsReportRequest deletes an analytics report request.
 func (c *Client) DeleteAnalyticsReportRequest(ctx context.Context, requestID string) error {
-	return c.Delete(ctx, "/v1/analyticsReportRequests/"+requestID)
+	return c.Delete(ctx, "/v1/analyticsReportRequests/"+url.PathEscape(requestID))
 }
 
 // ListAnalyticsReports returns analytics reports for a request.
@@ -1508,7 +1542,7 @@ func (c *Client) ListAnalyticsReports(ctx context.Context, requestID string, lim
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/analyticsReportRequests/"+requestID+"/reports", query)
+	data, err := c.Get(ctx, "/v1/analyticsReportRequests/"+url.PathEscape(requestID)+"/reports", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1528,7 +1562,7 @@ func (c *Client) ListAnalyticsReportInstances(ctx context.Context, reportID stri
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/analyticsReports/"+reportID+"/instances", query)
+	data, err := c.Get(ctx, "/v1/analyticsReports/"+url.PathEscape(reportID)+"/instances", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1548,7 +1582,7 @@ func (c *Client) ListAnalyticsReportSegments(ctx context.Context, instanceID str
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/analyticsReportInstances/"+instanceID+"/segments", query)
+	data, err := c.Get(ctx, "/v1/analyticsReportInstances/"+url.PathEscape(instanceID)+"/segments", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1570,7 +1604,7 @@ func (c *Client) ListAppClips(ctx context.Context, appID string, limit int) (*Ap
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/appClips", query)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appClips", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1585,7 +1619,7 @@ func (c *Client) ListAppClips(ctx context.Context, appID string, limit int) (*Ap
 
 // GetAppClip returns a single app clip by ID.
 func (c *Client) GetAppClip(ctx context.Context, appClipID string) (*AppClipResponse, error) {
-	data, err := c.Get(ctx, "/v1/appClips/"+appClipID, nil)
+	data, err := c.Get(ctx, "/v1/appClips/"+url.PathEscape(appClipID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1605,7 +1639,7 @@ func (c *Client) ListAppClipDefaultExperiences(ctx context.Context, appClipID st
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/appClips/"+appClipID+"/appClipDefaultExperiences", query)
+	data, err := c.Get(ctx, "/v1/appClips/"+url.PathEscape(appClipID)+"/appClipDefaultExperiences", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1620,7 +1654,7 @@ func (c *Client) ListAppClipDefaultExperiences(ctx context.Context, appClipID st
 
 // GetAppClipDefaultExperience returns a single default experience.
 func (c *Client) GetAppClipDefaultExperience(ctx context.Context, experienceID string) (*AppClipDefaultExperienceResponse, error) {
-	data, err := c.Get(ctx, "/v1/appClipDefaultExperiences/"+experienceID, nil)
+	data, err := c.Get(ctx, "/v1/appClipDefaultExperiences/"+url.PathEscape(experienceID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1640,7 +1674,7 @@ func (c *Client) ListAppClipAdvancedExperiences(ctx context.Context, appClipID s
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/appClips/"+appClipID+"/appClipAdvancedExperiences", query)
+	data, err := c.Get(ctx, "/v1/appClips/"+url.PathEscape(appClipID)+"/appClipAdvancedExperiences", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1655,7 +1689,7 @@ func (c *Client) ListAppClipAdvancedExperiences(ctx context.Context, appClipID s
 
 // GetAppClipAdvancedExperience returns a single advanced experience.
 func (c *Client) GetAppClipAdvancedExperience(ctx context.Context, experienceID string) (*AppClipAdvancedExperienceResponse, error) {
-	data, err := c.Get(ctx, "/v1/appClipAdvancedExperiences/"+experienceID, nil)
+	data, err := c.Get(ctx, "/v1/appClipAdvancedExperiences/"+url.PathEscape(experienceID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1672,7 +1706,7 @@ func (c *Client) GetAppClipAdvancedExperience(ctx context.Context, experienceID 
 
 // GetGameCenterDetail returns game center details for an app.
 func (c *Client) GetGameCenterDetail(ctx context.Context, appID string) (*GameCenterDetailResponse, error) {
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/gameCenterDetail", nil)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/gameCenterDetail", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1692,7 +1726,7 @@ func (c *Client) ListGameCenterAchievements(ctx context.Context, gameCenterDetai
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/gameCenterDetails/"+gameCenterDetailID+"/gameCenterAchievements", query)
+	data, err := c.Get(ctx, "/v1/gameCenterDetails/"+url.PathEscape(gameCenterDetailID)+"/gameCenterAchievements", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1707,7 +1741,7 @@ func (c *Client) ListGameCenterAchievements(ctx context.Context, gameCenterDetai
 
 // GetGameCenterAchievement returns a single achievement.
 func (c *Client) GetGameCenterAchievement(ctx context.Context, achievementID string) (*GameCenterAchievementResponse, error) {
-	data, err := c.Get(ctx, "/v1/gameCenterAchievements/"+achievementID, nil)
+	data, err := c.Get(ctx, "/v1/gameCenterAchievements/"+url.PathEscape(achievementID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1737,7 +1771,7 @@ func (c *Client) CreateGameCenterAchievement(ctx context.Context, req *GameCente
 
 // UpdateGameCenterAchievement updates an achievement.
 func (c *Client) UpdateGameCenterAchievement(ctx context.Context, achievementID string, req *GameCenterAchievementUpdateRequest) (*GameCenterAchievementResponse, error) {
-	data, err := c.Patch(ctx, "/v1/gameCenterAchievements/"+achievementID, req)
+	data, err := c.Patch(ctx, "/v1/gameCenterAchievements/"+url.PathEscape(achievementID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -1752,7 +1786,7 @@ func (c *Client) UpdateGameCenterAchievement(ctx context.Context, achievementID 
 
 // DeleteGameCenterAchievement deletes an achievement.
 func (c *Client) DeleteGameCenterAchievement(ctx context.Context, achievementID string) error {
-	return c.Delete(ctx, "/v1/gameCenterAchievements/"+achievementID)
+	return c.Delete(ctx, "/v1/gameCenterAchievements/"+url.PathEscape(achievementID))
 }
 
 // ListGameCenterLeaderboards returns leaderboards for a game center detail.
@@ -1762,7 +1796,7 @@ func (c *Client) ListGameCenterLeaderboards(ctx context.Context, gameCenterDetai
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/gameCenterDetails/"+gameCenterDetailID+"/gameCenterLeaderboards", query)
+	data, err := c.Get(ctx, "/v1/gameCenterDetails/"+url.PathEscape(gameCenterDetailID)+"/gameCenterLeaderboards", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1777,7 +1811,7 @@ func (c *Client) ListGameCenterLeaderboards(ctx context.Context, gameCenterDetai
 
 // GetGameCenterLeaderboard returns a single leaderboard.
 func (c *Client) GetGameCenterLeaderboard(ctx context.Context, leaderboardID string) (*GameCenterLeaderboardResponse, error) {
-	data, err := c.Get(ctx, "/v1/gameCenterLeaderboards/"+leaderboardID, nil)
+	data, err := c.Get(ctx, "/v1/gameCenterLeaderboards/"+url.PathEscape(leaderboardID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1807,7 +1841,7 @@ func (c *Client) CreateGameCenterLeaderboard(ctx context.Context, req *GameCente
 
 // UpdateGameCenterLeaderboard updates a leaderboard.
 func (c *Client) UpdateGameCenterLeaderboard(ctx context.Context, leaderboardID string, req *GameCenterLeaderboardUpdateRequest) (*GameCenterLeaderboardResponse, error) {
-	data, err := c.Patch(ctx, "/v1/gameCenterLeaderboards/"+leaderboardID, req)
+	data, err := c.Patch(ctx, "/v1/gameCenterLeaderboards/"+url.PathEscape(leaderboardID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -1822,7 +1856,7 @@ func (c *Client) UpdateGameCenterLeaderboard(ctx context.Context, leaderboardID 
 
 // DeleteGameCenterLeaderboard deletes a leaderboard.
 func (c *Client) DeleteGameCenterLeaderboard(ctx context.Context, leaderboardID string) error {
-	return c.Delete(ctx, "/v1/gameCenterLeaderboards/"+leaderboardID)
+	return c.Delete(ctx, "/v1/gameCenterLeaderboards/"+url.PathEscape(leaderboardID))
 }
 
 // Xcode Cloud API methods
@@ -1852,7 +1886,7 @@ func (c *Client) ListCiProducts(ctx context.Context, appID string, limit int) (*
 
 // GetCiProduct returns a single Xcode Cloud product.
 func (c *Client) GetCiProduct(ctx context.Context, productID string) (*CiProductResponse, error) {
-	data, err := c.Get(ctx, "/v1/ciProducts/"+productID, nil)
+	data, err := c.Get(ctx, "/v1/ciProducts/"+url.PathEscape(productID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1872,7 +1906,7 @@ func (c *Client) ListCiWorkflows(ctx context.Context, productID string, limit in
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/ciProducts/"+productID+"/workflows", query)
+	data, err := c.Get(ctx, "/v1/ciProducts/"+url.PathEscape(productID)+"/workflows", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1887,7 +1921,7 @@ func (c *Client) ListCiWorkflows(ctx context.Context, productID string, limit in
 
 // GetCiWorkflow returns a single workflow.
 func (c *Client) GetCiWorkflow(ctx context.Context, workflowID string) (*CiWorkflowResponse, error) {
-	data, err := c.Get(ctx, "/v1/ciWorkflows/"+workflowID, nil)
+	data, err := c.Get(ctx, "/v1/ciWorkflows/"+url.PathEscape(workflowID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1907,7 +1941,7 @@ func (c *Client) ListCiBuildRuns(ctx context.Context, workflowID string, limit i
 		query.Set("limit", fmt.Sprintf("%d", limit))
 	}
 
-	data, err := c.Get(ctx, "/v1/ciWorkflows/"+workflowID+"/buildRuns", query)
+	data, err := c.Get(ctx, "/v1/ciWorkflows/"+url.PathEscape(workflowID)+"/buildRuns", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1922,7 +1956,7 @@ func (c *Client) ListCiBuildRuns(ctx context.Context, workflowID string, limit i
 
 // GetCiBuildRun returns a single build run.
 func (c *Client) GetCiBuildRun(ctx context.Context, buildRunID string) (*CiBuildRunResponse, error) {
-	data, err := c.Get(ctx, "/v1/ciBuildRuns/"+buildRunID, nil)
+	data, err := c.Get(ctx, "/v1/ciBuildRuns/"+url.PathEscape(buildRunID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1966,7 +2000,7 @@ func (c *Client) StartCiBuildRun(ctx context.Context, workflowID string) (*CiBui
 
 // CancelCiBuildRun cancels a build run.
 func (c *Client) CancelCiBuildRun(ctx context.Context, buildRunID string) error {
-	return c.Delete(ctx, "/v1/ciBuildRuns/"+buildRunID)
+	return c.Delete(ctx, "/v1/ciBuildRuns/"+url.PathEscape(buildRunID))
 }
 
 // Sales and Finance API methods
@@ -2031,7 +2065,7 @@ func (c *Client) ListAppEncryptionDeclarations(ctx context.Context, appID string
 
 // GetAppEncryptionDeclaration returns a single encryption declaration.
 func (c *Client) GetAppEncryptionDeclaration(ctx context.Context, declarationID string) (*AppEncryptionDeclarationResponse, error) {
-	data, err := c.Get(ctx, "/v1/appEncryptionDeclarations/"+declarationID, nil)
+	data, err := c.Get(ctx, "/v1/appEncryptionDeclarations/"+url.PathEscape(declarationID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2070,7 +2104,7 @@ func (c *Client) AssignBuildToEncryptionDeclaration(ctx context.Context, declara
 		},
 	}
 
-	_, err := c.Post(ctx, "/v1/appEncryptionDeclarations/"+declarationID+"/relationships/builds", body)
+	_, err := c.Post(ctx, "/v1/appEncryptionDeclarations/"+url.PathEscape(declarationID)+"/relationships/builds", body)
 	return err
 }
 
@@ -2095,7 +2129,7 @@ func (c *Client) ListUsers(ctx context.Context, limit int) (*UsersResponse, erro
 
 // GetUser returns a single user.
 func (c *Client) GetUser(ctx context.Context, userID string) (*UserResponse, error) {
-	data, err := c.Get(ctx, "/v1/users/"+userID, nil)
+	data, err := c.Get(ctx, "/v1/users/"+url.PathEscape(userID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2110,7 +2144,7 @@ func (c *Client) GetUser(ctx context.Context, userID string) (*UserResponse, err
 
 // UpdateUser updates a user.
 func (c *Client) UpdateUser(ctx context.Context, userID string, req *UserUpdateRequest) (*UserResponse, error) {
-	data, err := c.Patch(ctx, "/v1/users/"+userID, req)
+	data, err := c.Patch(ctx, "/v1/users/"+url.PathEscape(userID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2125,7 +2159,7 @@ func (c *Client) UpdateUser(ctx context.Context, userID string, req *UserUpdateR
 
 // DeleteUser removes a user from the team.
 func (c *Client) DeleteUser(ctx context.Context, userID string) error {
-	return c.Delete(ctx, "/v1/users/"+userID)
+	return c.Delete(ctx, "/v1/users/"+url.PathEscape(userID))
 }
 
 // ListUserInvitations returns a list of user invitations.
@@ -2147,7 +2181,7 @@ func (c *Client) ListUserInvitations(ctx context.Context, limit int) (*UserInvit
 
 // GetUserInvitation returns a single user invitation.
 func (c *Client) GetUserInvitation(ctx context.Context, invitationID string) (*UserInvitationResponse, error) {
-	data, err := c.Get(ctx, "/v1/userInvitations/"+invitationID, nil)
+	data, err := c.Get(ctx, "/v1/userInvitations/"+url.PathEscape(invitationID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2177,14 +2211,14 @@ func (c *Client) CreateUserInvitation(ctx context.Context, req *UserInvitationCr
 
 // DeleteUserInvitation cancels a user invitation.
 func (c *Client) DeleteUserInvitation(ctx context.Context, invitationID string) error {
-	return c.Delete(ctx, "/v1/userInvitations/"+invitationID)
+	return c.Delete(ctx, "/v1/userInvitations/"+url.PathEscape(invitationID))
 }
 
 // App Pricing methods
 
 // GetAppPriceSchedule returns the price schedule for an app.
 func (c *Client) GetAppPriceSchedule(ctx context.Context, appID string) (*AppPriceScheduleResponse, error) {
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/appPriceSchedule", nil)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appPriceSchedule", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2201,7 +2235,7 @@ func (c *Client) GetAppPriceSchedule(ctx context.Context, appID string) (*AppPri
 func (c *Client) ListAppPricePoints(ctx context.Context, appID string, limit int) (*AppPricePointsResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/appPricePoints", query)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appPricePoints", query)
 	if err != nil {
 		return nil, err
 	}
@@ -2235,7 +2269,7 @@ func (c *Client) ListTerritories(ctx context.Context, limit int) (*TerritoriesRe
 
 // GetAppAvailability returns app availability.
 func (c *Client) GetAppAvailability(ctx context.Context, appID string) (*AppAvailabilityResponse, error) {
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/appAvailability", nil)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appAvailability", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2267,7 +2301,7 @@ func (c *Client) CreateAppAvailability(ctx context.Context, req *AppAvailability
 func (c *Client) ListTerritoryAvailabilities(ctx context.Context, appAvailabilityID string, limit int) (*TerritoryAvailabilitiesResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/appAvailabilities/"+appAvailabilityID+"/territoryAvailabilities", query)
+	data, err := c.Get(ctx, "/v1/appAvailabilities/"+url.PathEscape(appAvailabilityID)+"/territoryAvailabilities", query)
 	if err != nil {
 		return nil, err
 	}
@@ -2284,7 +2318,7 @@ func (c *Client) ListTerritoryAvailabilities(ctx context.Context, appAvailabilit
 
 // GetAgeRatingDeclaration returns an age rating declaration.
 func (c *Client) GetAgeRatingDeclaration(ctx context.Context, appInfoID string) (*AgeRatingDeclarationResponse, error) {
-	data, err := c.Get(ctx, "/v1/appInfos/"+appInfoID+"/ageRatingDeclaration", nil)
+	data, err := c.Get(ctx, "/v1/appInfos/"+url.PathEscape(appInfoID)+"/ageRatingDeclaration", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2299,7 +2333,7 @@ func (c *Client) GetAgeRatingDeclaration(ctx context.Context, appInfoID string) 
 
 // UpdateAgeRatingDeclaration updates an age rating declaration.
 func (c *Client) UpdateAgeRatingDeclaration(ctx context.Context, declarationID string, req *AgeRatingDeclarationUpdateRequest) (*AgeRatingDeclarationResponse, error) {
-	data, err := c.Patch(ctx, "/v1/ageRatingDeclarations/"+declarationID, req)
+	data, err := c.Patch(ctx, "/v1/ageRatingDeclarations/"+url.PathEscape(declarationID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2316,7 +2350,7 @@ func (c *Client) UpdateAgeRatingDeclaration(ctx context.Context, declarationID s
 
 // GetIdfaDeclaration returns an IDFA declaration.
 func (c *Client) GetIdfaDeclaration(ctx context.Context, versionID string) (*IdfaDeclarationResponse, error) {
-	data, err := c.Get(ctx, "/v1/appStoreVersions/"+versionID+"/idfaDeclaration", nil)
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/idfaDeclaration", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2346,7 +2380,7 @@ func (c *Client) CreateIdfaDeclaration(ctx context.Context, req *IdfaDeclaration
 
 // UpdateIdfaDeclaration updates an IDFA declaration.
 func (c *Client) UpdateIdfaDeclaration(ctx context.Context, declarationID string, req *IdfaDeclarationUpdateRequest) (*IdfaDeclarationResponse, error) {
-	data, err := c.Patch(ctx, "/v1/idfaDeclarations/"+declarationID, req)
+	data, err := c.Patch(ctx, "/v1/idfaDeclarations/"+url.PathEscape(declarationID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2361,14 +2395,14 @@ func (c *Client) UpdateIdfaDeclaration(ctx context.Context, declarationID string
 
 // DeleteIdfaDeclaration deletes an IDFA declaration.
 func (c *Client) DeleteIdfaDeclaration(ctx context.Context, declarationID string) error {
-	return c.Delete(ctx, "/v1/idfaDeclarations/"+declarationID)
+	return c.Delete(ctx, "/v1/idfaDeclarations/"+url.PathEscape(declarationID))
 }
 
 // End User License Agreement methods
 
 // GetEndUserLicenseAgreement returns an EULA.
 func (c *Client) GetEndUserLicenseAgreement(ctx context.Context, appID string) (*EndUserLicenseAgreementResponse, error) {
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/endUserLicenseAgreement", nil)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/endUserLicenseAgreement", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2398,7 +2432,7 @@ func (c *Client) CreateEndUserLicenseAgreement(ctx context.Context, req *EndUser
 
 // UpdateEndUserLicenseAgreement updates an EULA.
 func (c *Client) UpdateEndUserLicenseAgreement(ctx context.Context, agreementID string, req *EndUserLicenseAgreementUpdateRequest) (*EndUserLicenseAgreementResponse, error) {
-	data, err := c.Patch(ctx, "/v1/endUserLicenseAgreements/"+agreementID, req)
+	data, err := c.Patch(ctx, "/v1/endUserLicenseAgreements/"+url.PathEscape(agreementID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2413,7 +2447,7 @@ func (c *Client) UpdateEndUserLicenseAgreement(ctx context.Context, agreementID 
 
 // DeleteEndUserLicenseAgreement deletes an EULA.
 func (c *Client) DeleteEndUserLicenseAgreement(ctx context.Context, agreementID string) error {
-	return c.Delete(ctx, "/v1/endUserLicenseAgreements/"+agreementID)
+	return c.Delete(ctx, "/v1/endUserLicenseAgreements/"+url.PathEscape(agreementID))
 }
 
 // Beta App Review Submission methods
@@ -2437,7 +2471,7 @@ func (c *Client) ListBetaAppReviewSubmissions(ctx context.Context, limit int) (*
 
 // GetBetaAppReviewSubmission returns a single beta app review submission.
 func (c *Client) GetBetaAppReviewSubmission(ctx context.Context, submissionID string) (*BetaAppReviewSubmissionResponse, error) {
-	data, err := c.Get(ctx, "/v1/betaAppReviewSubmissions/"+submissionID, nil)
+	data, err := c.Get(ctx, "/v1/betaAppReviewSubmissions/"+url.PathEscape(submissionID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2486,7 +2520,7 @@ func (c *Client) ListBetaLicenseAgreements(ctx context.Context, limit int) (*Bet
 
 // GetBetaLicenseAgreement returns a single beta license agreement.
 func (c *Client) GetBetaLicenseAgreement(ctx context.Context, agreementID string) (*BetaLicenseAgreementResponse, error) {
-	data, err := c.Get(ctx, "/v1/betaLicenseAgreements/"+agreementID, nil)
+	data, err := c.Get(ctx, "/v1/betaLicenseAgreements/"+url.PathEscape(agreementID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2501,7 +2535,7 @@ func (c *Client) GetBetaLicenseAgreement(ctx context.Context, agreementID string
 
 // UpdateBetaLicenseAgreement updates a beta license agreement.
 func (c *Client) UpdateBetaLicenseAgreement(ctx context.Context, agreementID string, req *BetaLicenseAgreementUpdateRequest) (*BetaLicenseAgreementResponse, error) {
-	data, err := c.Patch(ctx, "/v1/betaLicenseAgreements/"+agreementID, req)
+	data, err := c.Patch(ctx, "/v1/betaLicenseAgreements/"+url.PathEscape(agreementID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2550,7 +2584,7 @@ func (c *Client) CreateSandboxTester(ctx context.Context, req *SandboxTesterCrea
 
 // UpdateSandboxTester updates a sandbox tester.
 func (c *Client) UpdateSandboxTester(ctx context.Context, testerID string, req *SandboxTesterUpdateRequest) (*SandboxTesterResponse, error) {
-	data, err := c.Patch(ctx, "/v2/sandboxTesters/"+testerID, req)
+	data, err := c.Patch(ctx, "/v2/sandboxTesters/"+url.PathEscape(testerID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2565,7 +2599,7 @@ func (c *Client) UpdateSandboxTester(ctx context.Context, testerID string, req *
 
 // DeleteSandboxTester deletes a sandbox tester.
 func (c *Client) DeleteSandboxTester(ctx context.Context, testerID string) error {
-	return c.Delete(ctx, "/v2/sandboxTesters/"+testerID)
+	return c.Delete(ctx, "/v2/sandboxTesters/"+url.PathEscape(testerID))
 }
 
 // Promoted Purchase methods
@@ -2574,7 +2608,7 @@ func (c *Client) DeleteSandboxTester(ctx context.Context, testerID string) error
 func (c *Client) ListPromotedPurchases(ctx context.Context, appID string, limit int) (*PromotedPurchasesResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/promotedPurchases", query)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/promotedPurchases", query)
 	if err != nil {
 		return nil, err
 	}
@@ -2589,7 +2623,7 @@ func (c *Client) ListPromotedPurchases(ctx context.Context, appID string, limit 
 
 // GetPromotedPurchase returns a single promoted purchase.
 func (c *Client) GetPromotedPurchase(ctx context.Context, promotedPurchaseID string) (*PromotedPurchaseResponse, error) {
-	data, err := c.Get(ctx, "/v1/promotedPurchases/"+promotedPurchaseID, nil)
+	data, err := c.Get(ctx, "/v1/promotedPurchases/"+url.PathEscape(promotedPurchaseID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2619,7 +2653,7 @@ func (c *Client) CreatePromotedPurchase(ctx context.Context, req *PromotedPurcha
 
 // UpdatePromotedPurchase updates a promoted purchase.
 func (c *Client) UpdatePromotedPurchase(ctx context.Context, promotedPurchaseID string, req *PromotedPurchaseUpdateRequest) (*PromotedPurchaseResponse, error) {
-	data, err := c.Patch(ctx, "/v1/promotedPurchases/"+promotedPurchaseID, req)
+	data, err := c.Patch(ctx, "/v1/promotedPurchases/"+url.PathEscape(promotedPurchaseID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2634,7 +2668,7 @@ func (c *Client) UpdatePromotedPurchase(ctx context.Context, promotedPurchaseID 
 
 // DeletePromotedPurchase deletes a promoted purchase.
 func (c *Client) DeletePromotedPurchase(ctx context.Context, promotedPurchaseID string) error {
-	return c.Delete(ctx, "/v1/promotedPurchases/"+promotedPurchaseID)
+	return c.Delete(ctx, "/v1/promotedPurchases/"+url.PathEscape(promotedPurchaseID))
 }
 
 // Subscription Offer Code methods
@@ -2643,7 +2677,7 @@ func (c *Client) DeletePromotedPurchase(ctx context.Context, promotedPurchaseID 
 func (c *Client) ListSubscriptionOfferCodes(ctx context.Context, subscriptionID string, limit int) (*SubscriptionOfferCodesResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/subscriptions/"+subscriptionID+"/offerCodes", query)
+	data, err := c.Get(ctx, "/v1/subscriptions/"+url.PathEscape(subscriptionID)+"/offerCodes", query)
 	if err != nil {
 		return nil, err
 	}
@@ -2658,7 +2692,7 @@ func (c *Client) ListSubscriptionOfferCodes(ctx context.Context, subscriptionID 
 
 // GetSubscriptionOfferCode returns a single offer code.
 func (c *Client) GetSubscriptionOfferCode(ctx context.Context, offerCodeID string) (*SubscriptionOfferCodeResponse, error) {
-	data, err := c.Get(ctx, "/v1/subscriptionOfferCodes/"+offerCodeID, nil)
+	data, err := c.Get(ctx, "/v1/subscriptionOfferCodes/"+url.PathEscape(offerCodeID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2688,7 +2722,7 @@ func (c *Client) CreateSubscriptionOfferCode(ctx context.Context, req *Subscript
 
 // UpdateSubscriptionOfferCode updates an offer code.
 func (c *Client) UpdateSubscriptionOfferCode(ctx context.Context, offerCodeID string, req *SubscriptionOfferCodeUpdateRequest) (*SubscriptionOfferCodeResponse, error) {
-	data, err := c.Patch(ctx, "/v1/subscriptionOfferCodes/"+offerCodeID, req)
+	data, err := c.Patch(ctx, "/v1/subscriptionOfferCodes/"+url.PathEscape(offerCodeID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2707,7 +2741,7 @@ func (c *Client) UpdateSubscriptionOfferCode(ctx context.Context, offerCodeID st
 func (c *Client) ListSubscriptionPricePoints(ctx context.Context, subscriptionID string, limit int) (*SubscriptionPricePointsResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/subscriptions/"+subscriptionID+"/pricePoints", query)
+	data, err := c.Get(ctx, "/v1/subscriptions/"+url.PathEscape(subscriptionID)+"/pricePoints", query)
 	if err != nil {
 		return nil, err
 	}
@@ -2726,7 +2760,7 @@ func (c *Client) ListSubscriptionPricePoints(ctx context.Context, subscriptionID
 func (c *Client) ListWinBackOffers(ctx context.Context, subscriptionID string, limit int) (*WinBackOffersResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/subscriptions/"+subscriptionID+"/winBackOffers", query)
+	data, err := c.Get(ctx, "/v1/subscriptions/"+url.PathEscape(subscriptionID)+"/winBackOffers", query)
 	if err != nil {
 		return nil, err
 	}
@@ -2741,7 +2775,7 @@ func (c *Client) ListWinBackOffers(ctx context.Context, subscriptionID string, l
 
 // GetWinBackOffer returns a single win-back offer.
 func (c *Client) GetWinBackOffer(ctx context.Context, offerID string) (*WinBackOfferResponse, error) {
-	data, err := c.Get(ctx, "/v1/winBackOffers/"+offerID, nil)
+	data, err := c.Get(ctx, "/v1/winBackOffers/"+url.PathEscape(offerID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2771,7 +2805,7 @@ func (c *Client) CreateWinBackOffer(ctx context.Context, req *WinBackOfferCreate
 
 // UpdateWinBackOffer updates a win-back offer.
 func (c *Client) UpdateWinBackOffer(ctx context.Context, offerID string, req *WinBackOfferUpdateRequest) (*WinBackOfferResponse, error) {
-	data, err := c.Patch(ctx, "/v1/winBackOffers/"+offerID, req)
+	data, err := c.Patch(ctx, "/v1/winBackOffers/"+url.PathEscape(offerID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2786,7 +2820,7 @@ func (c *Client) UpdateWinBackOffer(ctx context.Context, offerID string, req *Wi
 
 // DeleteWinBackOffer deletes a win-back offer.
 func (c *Client) DeleteWinBackOffer(ctx context.Context, offerID string) error {
-	return c.Delete(ctx, "/v1/winBackOffers/"+offerID)
+	return c.Delete(ctx, "/v1/winBackOffers/"+url.PathEscape(offerID))
 }
 
 // App Store Version Experiment methods
@@ -2795,7 +2829,7 @@ func (c *Client) DeleteWinBackOffer(ctx context.Context, offerID string) error {
 func (c *Client) ListAppStoreVersionExperiments(ctx context.Context, versionID string, limit int) (*AppStoreVersionExperimentsResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/appStoreVersions/"+versionID+"/appStoreVersionExperiments", query)
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/appStoreVersionExperiments", query)
 	if err != nil {
 		return nil, err
 	}
@@ -2810,7 +2844,7 @@ func (c *Client) ListAppStoreVersionExperiments(ctx context.Context, versionID s
 
 // GetAppStoreVersionExperiment returns a single experiment.
 func (c *Client) GetAppStoreVersionExperiment(ctx context.Context, experimentID string) (*AppStoreVersionExperimentResponse, error) {
-	data, err := c.Get(ctx, "/v1/appStoreVersionExperiments/"+experimentID, nil)
+	data, err := c.Get(ctx, "/v1/appStoreVersionExperiments/"+url.PathEscape(experimentID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2840,7 +2874,7 @@ func (c *Client) CreateAppStoreVersionExperiment(ctx context.Context, req *AppSt
 
 // UpdateAppStoreVersionExperiment updates an experiment.
 func (c *Client) UpdateAppStoreVersionExperiment(ctx context.Context, experimentID string, req *AppStoreVersionExperimentUpdateRequest) (*AppStoreVersionExperimentResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appStoreVersionExperiments/"+experimentID, req)
+	data, err := c.Patch(ctx, "/v1/appStoreVersionExperiments/"+url.PathEscape(experimentID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2855,7 +2889,7 @@ func (c *Client) UpdateAppStoreVersionExperiment(ctx context.Context, experiment
 
 // DeleteAppStoreVersionExperiment deletes an experiment.
 func (c *Client) DeleteAppStoreVersionExperiment(ctx context.Context, experimentID string) error {
-	return c.Delete(ctx, "/v1/appStoreVersionExperiments/"+experimentID)
+	return c.Delete(ctx, "/v1/appStoreVersionExperiments/"+url.PathEscape(experimentID))
 }
 
 // Custom Product Page methods
@@ -2864,7 +2898,7 @@ func (c *Client) DeleteAppStoreVersionExperiment(ctx context.Context, experiment
 func (c *Client) ListAppCustomProductPages(ctx context.Context, appID string, limit int) (*AppCustomProductPagesResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/appCustomProductPages", query)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appCustomProductPages", query)
 	if err != nil {
 		return nil, err
 	}
@@ -2879,7 +2913,7 @@ func (c *Client) ListAppCustomProductPages(ctx context.Context, appID string, li
 
 // GetAppCustomProductPage returns a single custom product page.
 func (c *Client) GetAppCustomProductPage(ctx context.Context, pageID string) (*AppCustomProductPageResponse, error) {
-	data, err := c.Get(ctx, "/v1/appCustomProductPages/"+pageID, nil)
+	data, err := c.Get(ctx, "/v1/appCustomProductPages/"+url.PathEscape(pageID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2909,7 +2943,7 @@ func (c *Client) CreateAppCustomProductPage(ctx context.Context, req *AppCustomP
 
 // UpdateAppCustomProductPage updates a custom product page.
 func (c *Client) UpdateAppCustomProductPage(ctx context.Context, pageID string, req *AppCustomProductPageUpdateRequest) (*AppCustomProductPageResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appCustomProductPages/"+pageID, req)
+	data, err := c.Patch(ctx, "/v1/appCustomProductPages/"+url.PathEscape(pageID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2924,14 +2958,14 @@ func (c *Client) UpdateAppCustomProductPage(ctx context.Context, pageID string, 
 
 // DeleteAppCustomProductPage deletes a custom product page.
 func (c *Client) DeleteAppCustomProductPage(ctx context.Context, pageID string) error {
-	return c.Delete(ctx, "/v1/appCustomProductPages/"+pageID)
+	return c.Delete(ctx, "/v1/appCustomProductPages/"+url.PathEscape(pageID))
 }
 
 // Routing App Coverage methods
 
 // GetRoutingAppCoverage returns routing app coverage.
 func (c *Client) GetRoutingAppCoverage(ctx context.Context, versionID string) (*RoutingAppCoverageResponse, error) {
-	data, err := c.Get(ctx, "/v1/appStoreVersions/"+versionID+"/routingAppCoverage", nil)
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/routingAppCoverage", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2961,7 +2995,7 @@ func (c *Client) CreateRoutingAppCoverage(ctx context.Context, req *RoutingAppCo
 
 // UpdateRoutingAppCoverage updates routing app coverage.
 func (c *Client) UpdateRoutingAppCoverage(ctx context.Context, coverageID string, req *RoutingAppCoverageUpdateRequest) (*RoutingAppCoverageResponse, error) {
-	data, err := c.Patch(ctx, "/v1/routingAppCoverages/"+coverageID, req)
+	data, err := c.Patch(ctx, "/v1/routingAppCoverages/"+url.PathEscape(coverageID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2976,7 +3010,7 @@ func (c *Client) UpdateRoutingAppCoverage(ctx context.Context, coverageID string
 
 // DeleteRoutingAppCoverage deletes routing app coverage.
 func (c *Client) DeleteRoutingAppCoverage(ctx context.Context, coverageID string) error {
-	return c.Delete(ctx, "/v1/routingAppCoverages/"+coverageID)
+	return c.Delete(ctx, "/v1/routingAppCoverages/"+url.PathEscape(coverageID))
 }
 
 // Performance Metrics methods
@@ -2985,7 +3019,7 @@ func (c *Client) DeleteRoutingAppCoverage(ctx context.Context, coverageID string
 func (c *Client) ListPerfPowerMetrics(ctx context.Context, appID string, limit int) (*PerfPowerMetricsResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/perfPowerMetrics", query)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/perfPowerMetrics", query)
 	if err != nil {
 		return nil, err
 	}
@@ -3002,7 +3036,7 @@ func (c *Client) ListPerfPowerMetrics(ctx context.Context, appID string, limit i
 func (c *Client) ListBuildPerfPowerMetrics(ctx context.Context, buildID string, limit int) (*PerfPowerMetricsResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/builds/"+buildID+"/perfPowerMetrics", query)
+	data, err := c.Get(ctx, "/v1/builds/"+url.PathEscape(buildID)+"/perfPowerMetrics", query)
 	if err != nil {
 		return nil, err
 	}
@@ -3021,7 +3055,7 @@ func (c *Client) ListBuildPerfPowerMetrics(ctx context.Context, buildID string, 
 func (c *Client) ListDiagnosticSignatures(ctx context.Context, buildID string, limit int) (*DiagnosticSignaturesResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/builds/"+buildID+"/diagnosticSignatures", query)
+	data, err := c.Get(ctx, "/v1/builds/"+url.PathEscape(buildID)+"/diagnosticSignatures", query)
 	if err != nil {
 		return nil, err
 	}
@@ -3038,7 +3072,7 @@ func (c *Client) ListDiagnosticSignatures(ctx context.Context, buildID string, l
 func (c *Client) ListDiagnosticLogs(ctx context.Context, signatureID string, limit int) (*DiagnosticLogsResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/diagnosticSignatures/"+signatureID+"/logs", query)
+	data, err := c.Get(ctx, "/v1/diagnosticSignatures/"+url.PathEscape(signatureID)+"/logs", query)
 	if err != nil {
 		return nil, err
 	}
@@ -3057,7 +3091,7 @@ func (c *Client) ListDiagnosticLogs(ctx context.Context, signatureID string, lim
 func (c *Client) ListAppStoreReviewAttachments(ctx context.Context, reviewDetailID string, limit int) (*AppStoreReviewAttachmentsResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/appStoreReviewDetails/"+reviewDetailID+"/appStoreReviewAttachments", query)
+	data, err := c.Get(ctx, "/v1/appStoreReviewDetails/"+url.PathEscape(reviewDetailID)+"/appStoreReviewAttachments", query)
 	if err != nil {
 		return nil, err
 	}
@@ -3072,7 +3106,7 @@ func (c *Client) ListAppStoreReviewAttachments(ctx context.Context, reviewDetail
 
 // GetAppStoreReviewAttachment returns a single review attachment.
 func (c *Client) GetAppStoreReviewAttachment(ctx context.Context, attachmentID string) (*AppStoreReviewAttachmentResponse, error) {
-	data, err := c.Get(ctx, "/v1/appStoreReviewAttachments/"+attachmentID, nil)
+	data, err := c.Get(ctx, "/v1/appStoreReviewAttachments/"+url.PathEscape(attachmentID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3102,7 +3136,7 @@ func (c *Client) CreateAppStoreReviewAttachment(ctx context.Context, req *AppSto
 
 // UpdateAppStoreReviewAttachment updates a review attachment.
 func (c *Client) UpdateAppStoreReviewAttachment(ctx context.Context, attachmentID string, req *AppStoreReviewAttachmentUpdateRequest) (*AppStoreReviewAttachmentResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appStoreReviewAttachments/"+attachmentID, req)
+	data, err := c.Patch(ctx, "/v1/appStoreReviewAttachments/"+url.PathEscape(attachmentID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -3117,7 +3151,7 @@ func (c *Client) UpdateAppStoreReviewAttachment(ctx context.Context, attachmentI
 
 // DeleteAppStoreReviewAttachment deletes a review attachment.
 func (c *Client) DeleteAppStoreReviewAttachment(ctx context.Context, attachmentID string) error {
-	return c.Delete(ctx, "/v1/appStoreReviewAttachments/"+attachmentID)
+	return c.Delete(ctx, "/v1/appStoreReviewAttachments/"+url.PathEscape(attachmentID))
 }
 
 // App Category methods
@@ -3141,7 +3175,7 @@ func (c *Client) ListAppCategories(ctx context.Context, limit int) (*AppCategori
 
 // GetAppCategory returns a single app category.
 func (c *Client) GetAppCategory(ctx context.Context, categoryID string) (*AppCategoryResponse, error) {
-	data, err := c.Get(ctx, "/v1/appCategories/"+categoryID, nil)
+	data, err := c.Get(ctx, "/v1/appCategories/"+url.PathEscape(categoryID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3176,7 +3210,7 @@ func (c *Client) ListBetaAppLocalizations(ctx context.Context, appID string, lim
 
 // GetBetaAppLocalization returns a single beta app localization.
 func (c *Client) GetBetaAppLocalization(ctx context.Context, localizationID string) (*BetaAppLocalizationResponse, error) {
-	data, err := c.Get(ctx, "/v1/betaAppLocalizations/"+localizationID, nil)
+	data, err := c.Get(ctx, "/v1/betaAppLocalizations/"+url.PathEscape(localizationID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3206,7 +3240,7 @@ func (c *Client) CreateBetaAppLocalization(ctx context.Context, req *BetaAppLoca
 
 // UpdateBetaAppLocalization updates a beta app localization.
 func (c *Client) UpdateBetaAppLocalization(ctx context.Context, localizationID string, req *BetaAppLocalizationUpdateRequest) (*BetaAppLocalizationResponse, error) {
-	data, err := c.Patch(ctx, "/v1/betaAppLocalizations/"+localizationID, req)
+	data, err := c.Patch(ctx, "/v1/betaAppLocalizations/"+url.PathEscape(localizationID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -3221,7 +3255,7 @@ func (c *Client) UpdateBetaAppLocalization(ctx context.Context, localizationID s
 
 // DeleteBetaAppLocalization deletes a beta app localization.
 func (c *Client) DeleteBetaAppLocalization(ctx context.Context, localizationID string) error {
-	return c.Delete(ctx, "/v1/betaAppLocalizations/"+localizationID)
+	return c.Delete(ctx, "/v1/betaAppLocalizations/"+url.PathEscape(localizationID))
 }
 
 // Beta Build Localization methods
@@ -3246,7 +3280,7 @@ func (c *Client) ListBetaBuildLocalizations(ctx context.Context, buildID string,
 
 // GetBetaBuildLocalization returns a single beta build localization.
 func (c *Client) GetBetaBuildLocalization(ctx context.Context, localizationID string) (*BetaBuildLocalizationResponse, error) {
-	data, err := c.Get(ctx, "/v1/betaBuildLocalizations/"+localizationID, nil)
+	data, err := c.Get(ctx, "/v1/betaBuildLocalizations/"+url.PathEscape(localizationID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3276,7 +3310,7 @@ func (c *Client) CreateBetaBuildLocalization(ctx context.Context, req *BetaBuild
 
 // UpdateBetaBuildLocalization updates a beta build localization.
 func (c *Client) UpdateBetaBuildLocalization(ctx context.Context, localizationID string, req *BetaBuildLocalizationUpdateRequest) (*BetaBuildLocalizationResponse, error) {
-	data, err := c.Patch(ctx, "/v1/betaBuildLocalizations/"+localizationID, req)
+	data, err := c.Patch(ctx, "/v1/betaBuildLocalizations/"+url.PathEscape(localizationID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -3291,14 +3325,14 @@ func (c *Client) UpdateBetaBuildLocalization(ctx context.Context, localizationID
 
 // DeleteBetaBuildLocalization deletes a beta build localization.
 func (c *Client) DeleteBetaBuildLocalization(ctx context.Context, localizationID string) error {
-	return c.Delete(ctx, "/v1/betaBuildLocalizations/"+localizationID)
+	return c.Delete(ctx, "/v1/betaBuildLocalizations/"+url.PathEscape(localizationID))
 }
 
 // Build Beta Detail methods
 
 // GetBuildBetaDetail returns build beta detail.
 func (c *Client) GetBuildBetaDetail(ctx context.Context, buildID string) (*BuildBetaDetailResponse, error) {
-	data, err := c.Get(ctx, "/v1/builds/"+buildID+"/buildBetaDetail", nil)
+	data, err := c.Get(ctx, "/v1/builds/"+url.PathEscape(buildID)+"/buildBetaDetail", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3313,7 +3347,7 @@ func (c *Client) GetBuildBetaDetail(ctx context.Context, buildID string) (*Build
 
 // UpdateBuildBetaDetail updates build beta detail.
 func (c *Client) UpdateBuildBetaDetail(ctx context.Context, detailID string, req *BuildBetaDetailUpdateRequest) (*BuildBetaDetailResponse, error) {
-	data, err := c.Patch(ctx, "/v1/buildBetaDetails/"+detailID, req)
+	data, err := c.Patch(ctx, "/v1/buildBetaDetails/"+url.PathEscape(detailID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -3347,7 +3381,7 @@ func (c *Client) ListAlternativeDistributionKeys(ctx context.Context, limit int)
 
 // GetAlternativeDistributionKey returns a single alternative distribution key.
 func (c *Client) GetAlternativeDistributionKey(ctx context.Context, keyID string) (*AlternativeDistributionKeyResponse, error) {
-	data, err := c.Get(ctx, "/v1/alternativeDistributionKeys/"+keyID, nil)
+	data, err := c.Get(ctx, "/v1/alternativeDistributionKeys/"+url.PathEscape(keyID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3377,14 +3411,14 @@ func (c *Client) CreateAlternativeDistributionKey(ctx context.Context, req *Alte
 
 // DeleteAlternativeDistributionKey deletes an alternative distribution key.
 func (c *Client) DeleteAlternativeDistributionKey(ctx context.Context, keyID string) error {
-	return c.Delete(ctx, "/v1/alternativeDistributionKeys/"+keyID)
+	return c.Delete(ctx, "/v1/alternativeDistributionKeys/"+url.PathEscape(keyID))
 }
 
 // ListAlternativeDistributionPackages returns alternative distribution packages.
 func (c *Client) ListAlternativeDistributionPackages(ctx context.Context, appID string, limit int) (*AlternativeDistributionPackagesResponse, error) {
 	query := url.Values{}
 	query.Set("limit", fmt.Sprintf("%d", limit))
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/alternativeDistributionPackages", query)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/alternativeDistributionPackages", query)
 	if err != nil {
 		return nil, err
 	}
@@ -3401,7 +3435,7 @@ func (c *Client) ListAlternativeDistributionPackages(ctx context.Context, appID 
 
 // GetMarketplaceSearchDetail returns marketplace search details.
 func (c *Client) GetMarketplaceSearchDetail(ctx context.Context, appID string) (*MarketplaceSearchDetailResponse, error) {
-	data, err := c.Get(ctx, "/v1/apps/"+appID+"/marketplaceSearchDetail", nil)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/marketplaceSearchDetail", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3431,7 +3465,7 @@ func (c *Client) CreateMarketplaceSearchDetail(ctx context.Context, req *Marketp
 
 // UpdateMarketplaceSearchDetail updates marketplace search details.
 func (c *Client) UpdateMarketplaceSearchDetail(ctx context.Context, detailID string, req *MarketplaceSearchDetailUpdateRequest) (*MarketplaceSearchDetailResponse, error) {
-	data, err := c.Patch(ctx, "/v1/marketplaceSearchDetails/"+detailID, req)
+	data, err := c.Patch(ctx, "/v1/marketplaceSearchDetails/"+url.PathEscape(detailID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -3446,5 +3480,5 @@ func (c *Client) UpdateMarketplaceSearchDetail(ctx context.Context, detailID str
 
 // DeleteMarketplaceSearchDetail deletes marketplace search details.
 func (c *Client) DeleteMarketplaceSearchDetail(ctx context.Context, detailID string) error {
-	return c.Delete(ctx, "/v1/marketplaceSearchDetails/"+detailID)
+	return c.Delete(ctx, "/v1/marketplaceSearchDetails/"+url.PathEscape(detailID))
 }

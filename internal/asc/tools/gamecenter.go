@@ -43,6 +43,10 @@ func (r *Registry) registerGameCenterTools() {
 					Type:        "integer",
 					Description: "Maximum number of achievements to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"game_center_detail_id"},
 		},
@@ -166,6 +170,10 @@ func (r *Registry) registerGameCenterTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of leaderboards to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"game_center_detail_id"},
@@ -301,6 +309,7 @@ func (r *Registry) handleListGameCenterAchievements(ctx context.Context, args js
 	var params struct {
 		GameCenterDetailID string `json:"game_center_detail_id"`
 		Limit              int    `json:"limit"`
+		Cursor             string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -314,13 +323,18 @@ func (r *Registry) handleListGameCenterAchievements(ctx context.Context, args js
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListGameCenterAchievements(ctx, params.GameCenterDetailID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.GameCenterAchievementsResponse, error) {
+		return r.client.ListGameCenterAchievements(ctx, params.GameCenterDetailID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list achievements: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatGameCenterAchievements(resp.Data)), nil
+	return newListResult(formatGameCenterAchievements(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetGameCenterAchievement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -458,6 +472,7 @@ func (r *Registry) handleListGameCenterLeaderboards(ctx context.Context, args js
 	var params struct {
 		GameCenterDetailID string `json:"game_center_detail_id"`
 		Limit              int    `json:"limit"`
+		Cursor             string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -471,13 +486,18 @@ func (r *Registry) handleListGameCenterLeaderboards(ctx context.Context, args js
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListGameCenterLeaderboards(ctx, params.GameCenterDetailID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.GameCenterLeaderboardsResponse, error) {
+		return r.client.ListGameCenterLeaderboards(ctx, params.GameCenterDetailID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list leaderboards: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatGameCenterLeaderboards(resp.Data)), nil
+	return newListResult(formatGameCenterLeaderboards(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetGameCenterLeaderboard(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

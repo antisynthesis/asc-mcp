@@ -27,6 +27,10 @@ func (r *Registry) registerDiagnosticsTools() {
 					Type:        "integer",
 					Description: "Maximum number of metrics to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -46,6 +50,10 @@ func (r *Registry) registerDiagnosticsTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of signatures to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"build_id"},
@@ -67,6 +75,10 @@ func (r *Registry) registerDiagnosticsTools() {
 					Type:        "integer",
 					Description: "Maximum number of logs to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"signature_id"},
 		},
@@ -86,6 +98,10 @@ func (r *Registry) registerDiagnosticsTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of attachments to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"version_id"},
@@ -207,8 +223,9 @@ func (r *Registry) registerDiagnosticsTools() {
 
 func (r *Registry) handleListPerfPowerMetrics(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -222,19 +239,25 @@ func (r *Registry) handleListPerfPowerMetrics(ctx context.Context, args json.Raw
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListPerfPowerMetrics(ctx, params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.PerfPowerMetricsResponse, error) {
+		return r.client.ListPerfPowerMetrics(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list performance metrics: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatPerfPowerMetrics(resp.Data)), nil
+	return newListResult(formatPerfPowerMetrics(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleListDiagnosticSignatures(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BuildID string `json:"build_id"`
 		Limit   int    `json:"limit"`
+		Cursor  string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -248,19 +271,25 @@ func (r *Registry) handleListDiagnosticSignatures(ctx context.Context, args json
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListDiagnosticSignatures(ctx, params.BuildID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.DiagnosticSignaturesResponse, error) {
+		return r.client.ListDiagnosticSignatures(ctx, params.BuildID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list diagnostic signatures: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatDiagnosticSignatures(resp.Data)), nil
+	return newListResult(formatDiagnosticSignatures(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleListDiagnosticLogs(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		SignatureID string `json:"signature_id"`
 		Limit       int    `json:"limit"`
+		Cursor      string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -274,19 +303,25 @@ func (r *Registry) handleListDiagnosticLogs(ctx context.Context, args json.RawMe
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListDiagnosticLogs(ctx, params.SignatureID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.DiagnosticLogsResponse, error) {
+		return r.client.ListDiagnosticLogs(ctx, params.SignatureID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list diagnostic logs: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatDiagnosticLogs(resp.Data)), nil
+	return newListResult(formatDiagnosticLogs(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleListAppStoreReviewAttachments(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
 		Limit     int    `json:"limit"`
+		Cursor    string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -300,13 +335,18 @@ func (r *Registry) handleListAppStoreReviewAttachments(ctx context.Context, args
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppStoreReviewAttachments(ctx, params.VersionID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppStoreReviewAttachmentsResponse, error) {
+		return r.client.ListAppStoreReviewAttachments(ctx, params.VersionID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list review attachments: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppStoreReviewAttachments(resp.Data)), nil
+	return newListResult(formatAppStoreReviewAttachments(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetAppStoreReviewAttachment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

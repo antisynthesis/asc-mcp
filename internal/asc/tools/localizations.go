@@ -18,6 +18,10 @@ func (r *Registry) registerAppInfoLocalizationTools() {
 		InputSchema: mcp.JSONSchema{
 			Type: "object",
 			Properties: map[string]mcp.Property{
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 				"app_info_id": {
 					Type:        "string",
 					Description: "The app info ID",
@@ -155,6 +159,10 @@ func (r *Registry) registerVersionLocalizationTools() {
 		InputSchema: mcp.JSONSchema{
 			Type: "object",
 			Properties: map[string]mcp.Property{
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 				"version_id": {
 					Type:        "string",
 					Description: "The app store version ID",
@@ -303,6 +311,7 @@ func (r *Registry) handleGetAppInfos(ctx context.Context, args json.RawMessage) 
 func (r *Registry) handleListAppInfoLocalizations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppInfoID string `json:"app_info_id"`
+		Cursor    string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -312,13 +321,15 @@ func (r *Registry) handleListAppInfoLocalizations(ctx context.Context, args json
 		return mcp.NewErrorResult("app_info_id is required"), nil
 	}
 
-	resp, err := r.client.ListAppInfoLocalizations(ctx, params.AppInfoID)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppInfoLocalizationsResponse, error) {
+		return r.client.ListAppInfoLocalizations(ctx, params.AppInfoID)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app info localizations: %v", err)), nil
 	}
 
 	result := formatAppInfoLocalizations(resp.Data)
-	return mcp.NewSuccessResult(result), nil
+	return newListResult(result, resp.Links), nil
 }
 
 func (r *Registry) handleGetAppInfoLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -457,6 +468,7 @@ func (r *Registry) handleDeleteAppInfoLocalization(ctx context.Context, args jso
 func (r *Registry) handleListVersionLocalizations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
+		Cursor    string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -466,13 +478,15 @@ func (r *Registry) handleListVersionLocalizations(ctx context.Context, args json
 		return mcp.NewErrorResult("version_id is required"), nil
 	}
 
-	resp, err := r.client.ListAppStoreVersionLocalizations(ctx, params.VersionID)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppStoreVersionLocalizationsResponse, error) {
+		return r.client.ListAppStoreVersionLocalizations(ctx, params.VersionID)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list version localizations: %v", err)), nil
 	}
 
 	result := formatVersionLocalizations(resp.Data)
-	return mcp.NewSuccessResult(result), nil
+	return newListResult(result, resp.Links), nil
 }
 
 func (r *Registry) handleGetVersionLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

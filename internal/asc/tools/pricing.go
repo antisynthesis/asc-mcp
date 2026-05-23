@@ -43,6 +43,10 @@ func (r *Registry) registerPricingTools() {
 					Type:        "integer",
 					Description: "Maximum number of price points to return (default 100)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -58,6 +62,10 @@ func (r *Registry) registerPricingTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of territories to return (default 200)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 		},
@@ -77,6 +85,10 @@ func (r *Registry) registerPricingTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of price points to return (default 100)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"subscription_id"},
@@ -106,8 +118,9 @@ func (r *Registry) handleGetAppPriceSchedule(ctx context.Context, args json.RawM
 
 func (r *Registry) handleListAppPricePoints(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -121,18 +134,24 @@ func (r *Registry) handleListAppPricePoints(ctx context.Context, args json.RawMe
 	if limit <= 0 {
 		limit = 100
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppPricePoints(ctx, params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppPricePointsResponse, error) {
+		return r.client.ListAppPricePoints(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app price points: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppPricePoints(resp.Data)), nil
+	return newListResult(formatAppPricePoints(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleListTerritories(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -142,19 +161,25 @@ func (r *Registry) handleListTerritories(ctx context.Context, args json.RawMessa
 	if limit <= 0 {
 		limit = 200
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListTerritories(ctx, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.TerritoriesResponse, error) {
+		return r.client.ListTerritories(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list territories: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatTerritories(resp.Data)), nil
+	return newListResult(formatTerritories(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleListSubscriptionPricePoints(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		SubscriptionID string `json:"subscription_id"`
 		Limit          int    `json:"limit"`
+		Cursor         string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -168,13 +193,18 @@ func (r *Registry) handleListSubscriptionPricePoints(ctx context.Context, args j
 	if limit <= 0 {
 		limit = 100
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListSubscriptionPricePoints(ctx, params.SubscriptionID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.SubscriptionPricePointsResponse, error) {
+		return r.client.ListSubscriptionPricePoints(ctx, params.SubscriptionID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list subscription price points: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatSubscriptionPricePoints(resp.Data)), nil
+	return newListResult(formatSubscriptionPricePoints(resp.Data), resp.Links), nil
 }
 
 func formatAppPriceSchedule(schedule api.AppPriceSchedule) string {

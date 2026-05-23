@@ -97,6 +97,10 @@ func (r *Registry) registerMiscTools() {
 					Type:        "integer",
 					Description: "Maximum number of categories to return (default 100)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 		},
 	}, r.handleListAppCategories)
@@ -126,6 +130,10 @@ func (r *Registry) registerMiscTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of keys to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 		},
@@ -365,7 +373,8 @@ func (r *Registry) handleDeleteEndUserLicenseAgreement(ctx context.Context, args
 // Category handlers
 func (r *Registry) handleListAppCategories(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -375,13 +384,18 @@ func (r *Registry) handleListAppCategories(ctx context.Context, args json.RawMes
 	if limit <= 0 {
 		limit = 100
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAppCategories(ctx, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppCategoriesResponse, error) {
+		return r.client.ListAppCategories(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app categories: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppCategories(resp.Data)), nil
+	return newListResult(formatAppCategories(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetAppCategory(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -407,7 +421,8 @@ func (r *Registry) handleGetAppCategory(ctx context.Context, args json.RawMessag
 // Alternative distribution handlers
 func (r *Registry) handleListAlternativeDistributionKeys(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit int `json:"limit"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -417,13 +432,18 @@ func (r *Registry) handleListAlternativeDistributionKeys(ctx context.Context, ar
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListAlternativeDistributionKeys(ctx, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AlternativeDistributionKeysResponse, error) {
+		return r.client.ListAlternativeDistributionKeys(ctx, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list alternative distribution keys: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAlternativeDistributionKeys(resp.Data)), nil
+	return newListResult(formatAlternativeDistributionKeys(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetAlternativeDistributionKey(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

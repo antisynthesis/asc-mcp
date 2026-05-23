@@ -27,6 +27,10 @@ func (r *Registry) registerXcodeCloudTools() {
 					Type:        "integer",
 					Description: "Maximum number of products to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 		},
 	}, r.handleListCiProducts)
@@ -61,6 +65,10 @@ func (r *Registry) registerXcodeCloudTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of workflows to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"product_id"},
@@ -97,6 +105,10 @@ func (r *Registry) registerXcodeCloudTools() {
 				"limit": {
 					Type:        "integer",
 					Description: "Maximum number of build runs to return (default 50)",
+				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
 			},
 			Required: []string{"workflow_id"},
@@ -154,8 +166,9 @@ func (r *Registry) registerXcodeCloudTools() {
 
 func (r *Registry) handleListCiProducts(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -165,13 +178,18 @@ func (r *Registry) handleListCiProducts(ctx context.Context, args json.RawMessag
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListCiProducts(ctx, params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.CiProductsResponse, error) {
+		return r.client.ListCiProducts(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list CI products: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatCiProducts(resp.Data)), nil
+	return newListResult(formatCiProducts(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetCiProduct(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -198,6 +216,7 @@ func (r *Registry) handleListCiWorkflows(ctx context.Context, args json.RawMessa
 	var params struct {
 		ProductID string `json:"product_id"`
 		Limit     int    `json:"limit"`
+		Cursor    string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -211,13 +230,18 @@ func (r *Registry) handleListCiWorkflows(ctx context.Context, args json.RawMessa
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListCiWorkflows(ctx, params.ProductID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.CiWorkflowsResponse, error) {
+		return r.client.ListCiWorkflows(ctx, params.ProductID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list CI workflows: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatCiWorkflows(resp.Data)), nil
+	return newListResult(formatCiWorkflows(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetCiWorkflow(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -244,6 +268,7 @@ func (r *Registry) handleListCiBuildRuns(ctx context.Context, args json.RawMessa
 	var params struct {
 		WorkflowID string `json:"workflow_id"`
 		Limit      int    `json:"limit"`
+		Cursor     string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -257,13 +282,18 @@ func (r *Registry) handleListCiBuildRuns(ctx context.Context, args json.RawMessa
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListCiBuildRuns(ctx, params.WorkflowID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.CiBuildRunsResponse, error) {
+		return r.client.ListCiBuildRuns(ctx, params.WorkflowID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list CI build runs: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatCiBuildRuns(resp.Data)), nil
+	return newListResult(formatCiBuildRuns(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetCiBuildRun(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

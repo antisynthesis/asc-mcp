@@ -27,6 +27,10 @@ func (r *Registry) registerVersionSubmissionTools() {
 					Type:        "integer",
 					Description: "Maximum number of versions to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -269,6 +273,9 @@ func (r *Registry) handleListAppStoreVersions(ctx context.Context, args json.Raw
 	limit := params.Limit
 	if limit <= 0 {
 		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
 	}
 
 	resp, err := r.client.GetAppVersions(ctx, params.AppID, limit)

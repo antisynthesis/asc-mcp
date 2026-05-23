@@ -27,6 +27,10 @@ func (r *Registry) registerCustomerReviewTools() {
 					Type:        "integer",
 					Description: "Maximum number of reviews to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -87,8 +91,9 @@ func (r *Registry) registerCustomerReviewTools() {
 
 func (r *Registry) handleListCustomerReviews(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -102,13 +107,18 @@ func (r *Registry) handleListCustomerReviews(ctx context.Context, args json.RawM
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListCustomerReviews(ctx, params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.CustomerReviewsResponse, error) {
+		return r.client.ListCustomerReviews(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list customer reviews: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatCustomerReviews(resp.Data)), nil
+	return newListResult(formatCustomerReviews(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetCustomerReview(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

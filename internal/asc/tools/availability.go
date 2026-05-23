@@ -68,6 +68,10 @@ func (r *Registry) registerAvailabilityTools() {
 					Type:        "integer",
 					Description: "Maximum number of results to return (default 100)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"availability_id"},
 		},
@@ -147,6 +151,7 @@ func (r *Registry) handleListTerritoryAvailabilities(ctx context.Context, args j
 	var params struct {
 		AvailabilityID string `json:"availability_id"`
 		Limit          int    `json:"limit"`
+		Cursor         string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -160,13 +165,18 @@ func (r *Registry) handleListTerritoryAvailabilities(ctx context.Context, args j
 	if limit <= 0 {
 		limit = 100
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListTerritoryAvailabilities(ctx, params.AvailabilityID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.TerritoryAvailabilitiesResponse, error) {
+		return r.client.ListTerritoryAvailabilities(ctx, params.AvailabilityID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list territory availabilities: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatTerritoryAvailabilities(resp.Data)), nil
+	return newListResult(formatTerritoryAvailabilities(resp.Data), resp.Links), nil
 }
 
 func formatAppAvailability(avail api.AppAvailability) string {

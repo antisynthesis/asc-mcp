@@ -27,6 +27,10 @@ func (r *Registry) registerSubscriptionTools() {
 					Type:        "integer",
 					Description: "Maximum number of groups to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -63,6 +67,10 @@ func (r *Registry) registerSubscriptionTools() {
 					Type:        "integer",
 					Description: "Maximum number of subscriptions to return (default 50)",
 				},
+				"cursor": {
+					Type:        "string",
+					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
 			},
 			Required: []string{"group_id"},
 		},
@@ -87,8 +95,9 @@ func (r *Registry) registerSubscriptionTools() {
 
 func (r *Registry) handleListSubscriptionGroups(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID string `json:"app_id"`
-		Limit int    `json:"limit"`
+		AppID  string `json:"app_id"`
+		Limit  int    `json:"limit"`
+		Cursor string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -102,13 +111,18 @@ func (r *Registry) handleListSubscriptionGroups(ctx context.Context, args json.R
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListSubscriptionGroups(ctx, params.AppID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.SubscriptionGroupsResponse, error) {
+		return r.client.ListSubscriptionGroups(ctx, params.AppID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list subscription groups: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatSubscriptionGroups(resp.Data)), nil
+	return newListResult(formatSubscriptionGroups(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetSubscriptionGroup(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -135,6 +149,7 @@ func (r *Registry) handleListSubscriptions(ctx context.Context, args json.RawMes
 	var params struct {
 		GroupID string `json:"group_id"`
 		Limit   int    `json:"limit"`
+		Cursor  string `json:"cursor"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -148,13 +163,18 @@ func (r *Registry) handleListSubscriptions(ctx context.Context, args json.RawMes
 	if limit <= 0 {
 		limit = 50
 	}
+	if limit > 200 {
+		limit = 200
+	}
 
-	resp, err := r.client.ListSubscriptions(ctx, params.GroupID, limit)
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.SubscriptionsResponse, error) {
+		return r.client.ListSubscriptions(ctx, params.GroupID, limit)
+	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list subscriptions: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatSubscriptions(resp.Data)), nil
+	return newListResult(formatSubscriptions(resp.Data), resp.Links), nil
 }
 
 func (r *Registry) handleGetSubscription(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
