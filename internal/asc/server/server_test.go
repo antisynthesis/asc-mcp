@@ -112,7 +112,7 @@ func TestNew(t *testing.T) {
 		t.Error("registry not initialized")
 	}
 
-	if server.initialized {
+	if server.initialized() {
 		t.Error("server should not be initialized")
 	}
 }
@@ -151,7 +151,7 @@ func TestServer_HandleInitialize(t *testing.T) {
 		t.Fatalf("unexpected error: %v", resp.Error)
 	}
 
-	if !server.initialized {
+	if !server.initialized() {
 		t.Error("server should be initialized after initialize request")
 	}
 
@@ -251,7 +251,7 @@ func TestServer_HandleToolsList(t *testing.T) {
 	}
 
 	// First initialize the server
-	server.initialized = true
+	server.session.initialized.Store(true)
 
 	req := mcp.Request{
 		JSONRPC: mcp.JSONRPCVersion,
@@ -635,7 +635,7 @@ func BenchmarkServer_HandleToolsList(b *testing.B) {
 
 	output := &bytes.Buffer{}
 	server, _ := New(cfg, &bytes.Buffer{}, output)
-	server.initialized = true
+	server.session.initialized.Store(true)
 
 	req := mcp.Request{
 		JSONRPC: mcp.JSONRPCVersion,

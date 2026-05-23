@@ -33,36 +33,37 @@ const (
 	serverInstructions = `This server provides tools for managing Apple App Store Connect resources, including apps, builds, TestFlight, provisioning, in-app purchases, subscriptions, reviews, screenshots, localizations, analytics, Game Center, Xcode Cloud, and more. Tool names use snake_case and accept JSON arguments. Call tools/list to discover the available tools and their input schemas.`
 )
 
-// Server represents the MCP server for App Store Connect.
+// Server represents the stdio MCP server. It owns one Dispatcher and
+// one Session for the lifetime of the stdin/stdout connection.
 type Server struct {
-	cfg         *config.Config
-	client      *api.Client
-	reader      *bufio.Reader
-	writer      io.Writer
-	writeMu     sync.Mutex
-	initialized bool
-	registry    *tools.Registry
+	cfg        *config.Config
+	client     *api.Client
+	reader     *bufio.Reader
+	writer     io.Writer
+	writeMu    sync.Mutex
+	dispatcher *Dispatcher
+	session    *Session
+	registry   *tools.Registry
 }
 
-// New creates a new MCP server instance.
+// New creates a new MCP server bound to the given streams.
 func New(cfg *config.Config, r io.Reader, w io.Writer) (*Server, error) {
-	client, err := api.NewClient(cfg.IssuerID, cfg.KeyID, cfg.PrivateKeyPath)
+	d, err := NewDispatcher(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create API client: %w", err)
+		return nil, fmt.Errorf("failed to create dispatcher: %w", err)
 	}
-
-	registry := tools.NewRegistry(client)
-
 	return &Server{
-		cfg:      cfg,
-		client:   client,
-		reader:   bufio.NewReader(r),
-		writer:   w,
-		registry: registry,
+		cfg:        cfg,
+		client:     d.client,
+		reader:     bufio.NewReader(r),
+		writer:     w,
+		dispatcher: d,
+		session:    NewSession(),
+		registry:   d.registry,
 	}, nil
 }
 
-// Run starts the MCP server and processes requests.
+// Run starts the MCP server and processes requests on stdin until EOF.
 func (s *Server) Run() error {
 	log.Printf("MCP server %s v%s starting (protocol %s)", serverName, serverVersion, mcp.ProtocolVersion)
 
@@ -90,148 +91,29 @@ func (s *Server) Run() error {
 	}
 }
 
-// handleRequest dispatches a request to the appropriate handler.
+// handleRequest dispatches a request and writes the response (if any)
+// to the output stream. It is a thin wrapper that adapts the pure
+// Dispatcher API to the stdio transport.
 func (s *Server) handleRequest(req *mcp.Request) {
-	if req.JSONRPC != mcp.JSONRPCVersion {
-		if !req.IsNotification() {
-			s.sendError(req.ID, mcp.ErrCodeInvalidRequest, "Invalid Request", "jsonrpc must be 2.0")
-		}
+	resp := s.dispatcher.Dispatch(context.Background(), req, s.session)
+	if resp == nil {
 		return
 	}
-
-	switch req.Method {
-	case "initialize":
-		s.handleInitialize(req)
-	case "notifications/initialized":
-		// Client notification, no response permitted.
-		log.Printf("client initialized")
-	case "notifications/cancelled":
-		// We do not currently track per-request cancellation tokens, so
-		// just acknowledge the notification by ignoring it.
-	case "ping":
-		s.handlePing(req)
-	case "tools/list":
-		s.handleToolsList(req)
-	case "tools/call":
-		s.handleToolsCall(req)
-	default:
-		if req.IsNotification() {
-			return
-		}
-		s.sendError(req.ID, mcp.ErrCodeMethodNotFound, "Method not found", req.Method)
-	}
+	s.send(*resp)
 }
 
-// handleInitialize handles the initialize request.
-func (s *Server) handleInitialize(req *mcp.Request) {
-	var params mcp.InitializeParams
-	if req.Params != nil {
-		if err := json.Unmarshal(req.Params, &params); err != nil {
-			s.sendError(req.ID, mcp.ErrCodeInvalidParams, "Invalid params", err.Error())
-			return
-		}
-	}
+// initialized reports whether the underlying session has completed the
+// initialize handshake. Retained for the test surface.
+func (s *Server) initialized() bool { return s.session.IsInitialized() }
 
-	negotiated := mcp.NegotiateProtocolVersion(params.ProtocolVersion)
-	log.Printf("initializing with client: %s v%s (requested protocol %q, using %q)",
-		params.ClientInfo.Name, params.ClientInfo.Version, params.ProtocolVersion, negotiated)
-
-	result := mcp.InitializeResult{
-		ProtocolVersion: negotiated,
-		Capabilities: mcp.ServerCapability{
-			Tools: &mcp.ToolsCapability{
-				ListChanged: false,
-			},
-		},
-		ServerInfo: mcp.ServerInfo{
-			Name:    serverName,
-			Title:   serverTitle,
-			Version: serverVersion,
-		},
-		Instructions: serverInstructions,
-	}
-
-	s.initialized = true
-	s.sendResult(req.ID, result)
-}
-
-// handlePing handles the ping request defined by the MCP spec.
-// Per the spec, the server replies with an empty object.
-func (s *Server) handlePing(req *mcp.Request) {
-	if req.IsNotification() {
-		return
-	}
-	s.sendResult(req.ID, struct{}{})
-}
-
-// handleToolsList handles the tools/list request.
-func (s *Server) handleToolsList(req *mcp.Request) {
-	if !s.initialized {
-		s.sendError(req.ID, mcp.ErrCodeInvalidRequest, "Not initialized", "initialize must be called first")
-		return
-	}
-
-	result := mcp.ToolsListResult{
-		Tools: s.registry.ListTools(),
-	}
-
-	s.sendResult(req.ID, result)
-}
-
-// handleToolsCall handles the tools/call request.
-func (s *Server) handleToolsCall(req *mcp.Request) {
-	if !s.initialized {
-		s.sendError(req.ID, mcp.ErrCodeInvalidRequest, "Not initialized", "initialize must be called first")
-		return
-	}
-
-	var params mcp.ToolsCallParams
-	if err := json.Unmarshal(req.Params, &params); err != nil {
-		s.sendError(req.ID, mcp.ErrCodeInvalidParams, "Invalid params", err.Error())
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), toolCallTimeout)
-	defer cancel()
-
-	result, err := s.registry.CallTool(ctx, params.Name, params.Arguments)
-	if err != nil {
-		// Per the MCP spec, tool execution failures should be surfaced as
-		// a successful response with isError=true so the model can self-
-		// correct. We only emit a protocol-level error for unknown tools.
-		if errors.Is(err, tools.ErrUnknownTool) {
-			s.sendError(req.ID, mcp.ErrCodeMethodNotFound, "Unknown tool", params.Name)
-			return
-		}
-		s.sendResult(req.ID, mcp.NewErrorResult(err.Error()))
-		return
-	}
-
-	s.sendResult(req.ID, result)
-}
-
-// sendResult sends a successful response.
+// sendResult sends a successful response. Used by tests.
 func (s *Server) sendResult(id json.RawMessage, result any) {
-	resp := mcp.Response{
-		JSONRPC: mcp.JSONRPCVersion,
-		ID:      id,
-		Result:  result,
-	}
-	s.send(resp)
+	s.send(*resultResp(id, result))
 }
 
-// sendError sends an error response.
+// sendError sends an error response. Used by tests.
 func (s *Server) sendError(id json.RawMessage, code int, message, data string) {
-	resp := mcp.Response{
-		JSONRPC: mcp.JSONRPCVersion,
-		ID:      id,
-		Error: &mcp.RPCError{
-			Code:    code,
-			Message: message,
-			Data:    data,
-		},
-	}
-	s.send(resp)
+	s.send(*errorResp(id, code, message, data))
 }
 
 // send writes a response to the output.
