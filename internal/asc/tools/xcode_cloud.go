@@ -233,7 +233,7 @@ func (r *Registry) handleListCiProducts(ctx context.Context, args json.RawMessag
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list CI products: %v", err)), nil
 	}
 
-	return newListResult(formatCiProducts(resp.Data), resp.Links), nil
+	return newListResult(formatCiProducts(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetCiProduct(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -253,7 +253,7 @@ func (r *Registry) handleGetCiProduct(ctx context.Context, args json.RawMessage)
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get CI product: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatCiProduct(resp.Data)), nil
+	return newDataResult(formatCiProduct(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleListCiWorkflows(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -285,7 +285,7 @@ func (r *Registry) handleListCiWorkflows(ctx context.Context, args json.RawMessa
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list CI workflows: %v", err)), nil
 	}
 
-	return newListResult(formatCiWorkflows(resp.Data), resp.Links), nil
+	return newListResult(formatCiWorkflows(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetCiWorkflow(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -305,7 +305,7 @@ func (r *Registry) handleGetCiWorkflow(ctx context.Context, args json.RawMessage
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get CI workflow: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatCiWorkflow(resp.Data)), nil
+	return newDataResult(formatCiWorkflow(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleListCiBuildRuns(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -337,7 +337,7 @@ func (r *Registry) handleListCiBuildRuns(ctx context.Context, args json.RawMessa
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list CI build runs: %v", err)), nil
 	}
 
-	return newListResult(formatCiBuildRuns(resp.Data), resp.Links), nil
+	return newListResult(formatCiBuildRuns(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetCiBuildRun(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -357,7 +357,7 @@ func (r *Registry) handleGetCiBuildRun(ctx context.Context, args json.RawMessage
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get CI build run: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatCiBuildRun(resp.Data)), nil
+	return newDataResult(formatCiBuildRun(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleStartCiBuildRun(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -377,7 +377,7 @@ func (r *Registry) handleStartCiBuildRun(ctx context.Context, args json.RawMessa
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to start CI build run: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Started build run: %s (build #%d)", resp.Data.ID, resp.Data.Attributes.Number)), nil
+	return newDataResult(fmt.Sprintf("Started build run: %s (build #%d)", resp.Data.ID, resp.Data.Attributes.Number), resp.Data), nil
 }
 
 func (r *Registry) handleCancelCiBuildRun(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

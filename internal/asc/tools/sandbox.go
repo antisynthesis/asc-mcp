@@ -170,7 +170,7 @@ func (r *Registry) handleListSandboxTesters(ctx context.Context, args json.RawMe
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list sandbox testers: %v", err)), nil
 	}
 
-	return newListResult(formatSandboxTesters(resp.Data), resp.Links), nil
+	return newListResult(formatSandboxTesters(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleCreateSandboxTester(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -213,7 +213,7 @@ func (r *Registry) handleCreateSandboxTester(ctx context.Context, args json.RawM
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create sandbox tester: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Sandbox tester created:\n%s", formatSandboxTester(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Sandbox tester created:\n%s", formatSandboxTester(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateSandboxTester(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -248,7 +248,7 @@ func (r *Registry) handleUpdateSandboxTester(ctx context.Context, args json.RawM
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update sandbox tester: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Sandbox tester updated:\n%s", formatSandboxTester(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Sandbox tester updated:\n%s", formatSandboxTester(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteSandboxTester(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

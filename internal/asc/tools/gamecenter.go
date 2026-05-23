@@ -369,7 +369,7 @@ func (r *Registry) handleGetGameCenterDetail(ctx context.Context, args json.RawM
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get Game Center detail: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatGameCenterDetail(resp.Data)), nil
+	return newDataResult(formatGameCenterDetail(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleListGameCenterAchievements(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -401,7 +401,7 @@ func (r *Registry) handleListGameCenterAchievements(ctx context.Context, args js
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list achievements: %v", err)), nil
 	}
 
-	return newListResult(formatGameCenterAchievements(resp.Data), resp.Links), nil
+	return newListResult(formatGameCenterAchievements(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetGameCenterAchievement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -421,7 +421,7 @@ func (r *Registry) handleGetGameCenterAchievement(ctx context.Context, args json
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get achievement: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatGameCenterAchievement(resp.Data)), nil
+	return newDataResult(formatGameCenterAchievement(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateGameCenterAchievement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -473,7 +473,7 @@ func (r *Registry) handleCreateGameCenterAchievement(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create achievement: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Created achievement: %s (ID: %s)", resp.Data.Attributes.ReferenceName, resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Created achievement: %s (ID: %s)", resp.Data.Attributes.ReferenceName, resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateGameCenterAchievement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -512,7 +512,7 @@ func (r *Registry) handleUpdateGameCenterAchievement(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update achievement: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Updated achievement: %s", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Updated achievement: %s", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteGameCenterAchievement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -564,7 +564,7 @@ func (r *Registry) handleListGameCenterLeaderboards(ctx context.Context, args js
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list leaderboards: %v", err)), nil
 	}
 
-	return newListResult(formatGameCenterLeaderboards(resp.Data), resp.Links), nil
+	return newListResult(formatGameCenterLeaderboards(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetGameCenterLeaderboard(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -584,7 +584,7 @@ func (r *Registry) handleGetGameCenterLeaderboard(ctx context.Context, args json
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get leaderboard: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatGameCenterLeaderboard(resp.Data)), nil
+	return newDataResult(formatGameCenterLeaderboard(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateGameCenterLeaderboard(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -644,7 +644,7 @@ func (r *Registry) handleCreateGameCenterLeaderboard(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create leaderboard: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Created leaderboard: %s (ID: %s)", resp.Data.Attributes.ReferenceName, resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Created leaderboard: %s (ID: %s)", resp.Data.Attributes.ReferenceName, resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateGameCenterLeaderboard(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -681,7 +681,7 @@ func (r *Registry) handleUpdateGameCenterLeaderboard(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update leaderboard: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Updated leaderboard: %s", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Updated leaderboard: %s", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteGameCenterLeaderboard(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

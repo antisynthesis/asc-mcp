@@ -142,7 +142,7 @@ func (r *Registry) handleListCustomerReviews(ctx context.Context, args json.RawM
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list customer reviews: %v", err)), nil
 	}
 
-	return newListResult(formatCustomerReviews(resp.Data), resp.Links), nil
+	return newListResult(formatCustomerReviews(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetCustomerReview(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -162,7 +162,7 @@ func (r *Registry) handleGetCustomerReview(ctx context.Context, args json.RawMes
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get customer review: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatCustomerReview(resp.Data)), nil
+	return newDataResult(formatCustomerReview(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateCustomerReviewResponse(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -203,7 +203,7 @@ func (r *Registry) handleCreateCustomerReviewResponse(ctx context.Context, args 
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create review response: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Created review response: %s", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Created review response: %s", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteCustomerReviewResponse(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

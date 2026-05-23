@@ -468,7 +468,7 @@ func (r *Registry) handleListPromotedPurchases(ctx context.Context, args json.Ra
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list promoted purchases: %v", err)), nil
 	}
 
-	return newListResult(formatPromotedPurchases(resp.Data), resp.Links), nil
+	return newListResult(formatPromotedPurchases(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetPromotedPurchase(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -488,7 +488,7 @@ func (r *Registry) handleGetPromotedPurchase(ctx context.Context, args json.RawM
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get promoted purchase: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatPromotedPurchase(resp.Data)), nil
+	return newDataResult(formatPromotedPurchase(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreatePromotedPurchase(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -539,7 +539,7 @@ func (r *Registry) handleCreatePromotedPurchase(ctx context.Context, args json.R
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create promoted purchase: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Promoted purchase created:\n%s", formatPromotedPurchase(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Promoted purchase created:\n%s", formatPromotedPurchase(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleUpdatePromotedPurchase(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -572,7 +572,7 @@ func (r *Registry) handleUpdatePromotedPurchase(ctx context.Context, args json.R
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update promoted purchase: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Promoted purchase updated:\n%s", formatPromotedPurchase(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Promoted purchase updated:\n%s", formatPromotedPurchase(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleDeletePromotedPurchase(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -624,7 +624,7 @@ func (r *Registry) handleListSubscriptionOfferCodes(ctx context.Context, args js
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list subscription offer codes: %v", err)), nil
 	}
 
-	return newListResult(formatSubscriptionOfferCodes(resp.Data), resp.Links), nil
+	return newListResult(formatSubscriptionOfferCodes(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetSubscriptionOfferCode(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -644,7 +644,7 @@ func (r *Registry) handleGetSubscriptionOfferCode(ctx context.Context, args json
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get subscription offer code: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatSubscriptionOfferCode(resp.Data)), nil
+	return newDataResult(formatSubscriptionOfferCode(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateSubscriptionOfferCode(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -689,7 +689,7 @@ func (r *Registry) handleCreateSubscriptionOfferCode(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create subscription offer code: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Subscription offer code created:\n%s", formatSubscriptionOfferCode(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Subscription offer code created:\n%s", formatSubscriptionOfferCode(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateSubscriptionOfferCode(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -720,7 +720,7 @@ func (r *Registry) handleUpdateSubscriptionOfferCode(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update subscription offer code: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Subscription offer code updated:\n%s", formatSubscriptionOfferCode(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Subscription offer code updated:\n%s", formatSubscriptionOfferCode(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleListWinBackOffers(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -752,7 +752,7 @@ func (r *Registry) handleListWinBackOffers(ctx context.Context, args json.RawMes
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list win-back offers: %v", err)), nil
 	}
 
-	return newListResult(formatWinBackOffers(resp.Data), resp.Links), nil
+	return newListResult(formatWinBackOffers(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetWinBackOffer(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -772,7 +772,7 @@ func (r *Registry) handleGetWinBackOffer(ctx context.Context, args json.RawMessa
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get win-back offer: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatWinBackOffer(resp.Data)), nil
+	return newDataResult(formatWinBackOffer(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateWinBackOffer(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -828,7 +828,7 @@ func (r *Registry) handleCreateWinBackOffer(ctx context.Context, args json.RawMe
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create win-back offer: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Win-back offer created:\n%s", formatWinBackOffer(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Win-back offer created:\n%s", formatWinBackOffer(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateWinBackOffer(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -861,7 +861,7 @@ func (r *Registry) handleUpdateWinBackOffer(ctx context.Context, args json.RawMe
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update win-back offer: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Win-back offer updated:\n%s", formatWinBackOffer(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Win-back offer updated:\n%s", formatWinBackOffer(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteWinBackOffer(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

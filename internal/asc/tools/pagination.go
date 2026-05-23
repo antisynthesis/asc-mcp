@@ -58,7 +58,32 @@ func paginationFooter(nextURL string) string {
 
 // newListResult builds a successful tool result for a list endpoint,
 // appending the next-page footer when the response carries a
-// `links.next`.
-func newListResult(content string, links api.PagedDocumentLinks) *mcp.ToolsCallResult {
-	return mcp.NewSuccessResult(content + paginationFooter(links.Next))
+// `links.next` and attaching the raw response payload as structured
+// content so MCP clients can render tables or chain tool calls.
+func newListResult(content string, data any, links api.PagedDocumentLinks) *mcp.ToolsCallResult {
+	footer := paginationFooter(links.Next)
+	res := &mcp.ToolsCallResult{
+		Content: []mcp.ContentBlock{mcp.NewTextContent(content + footer)},
+	}
+	if data != nil {
+		res.StructuredContent = map[string]any{
+			"data":     data,
+			"links":    links,
+			"hasMore":  links.Next != "",
+			"nextPage": links.Next,
+		}
+	}
+	return res
+}
+
+// newDataResult builds a successful tool result for a non-list endpoint,
+// returning the formatted text alongside the raw response data as
+// structured content. Pass nil for `data` when there is nothing
+// structured to attach (e.g. delete operations).
+func newDataResult(content string, data any) *mcp.ToolsCallResult {
+	res := mcp.NewSuccessResult(content)
+	if data != nil {
+		res.StructuredContent = data
+	}
+	return res
 }

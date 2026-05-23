@@ -133,7 +133,7 @@ func (r *Registry) handleGetAppPriceSchedule(ctx context.Context, args json.RawM
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app price schedule: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppPriceSchedule(resp.Data)), nil
+	return newDataResult(formatAppPriceSchedule(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleListAppPricePoints(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -165,7 +165,7 @@ func (r *Registry) handleListAppPricePoints(ctx context.Context, args json.RawMe
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app price points: %v", err)), nil
 	}
 
-	return newListResult(formatAppPricePoints(resp.Data), resp.Links), nil
+	return newListResult(formatAppPricePoints(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleListTerritories(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -192,7 +192,7 @@ func (r *Registry) handleListTerritories(ctx context.Context, args json.RawMessa
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list territories: %v", err)), nil
 	}
 
-	return newListResult(formatTerritories(resp.Data), resp.Links), nil
+	return newListResult(formatTerritories(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleListSubscriptionPricePoints(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -224,7 +224,7 @@ func (r *Registry) handleListSubscriptionPricePoints(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list subscription price points: %v", err)), nil
 	}
 
-	return newListResult(formatSubscriptionPricePoints(resp.Data), resp.Links), nil
+	return newListResult(formatSubscriptionPricePoints(resp.Data), resp.Data, resp.Links), nil
 }
 
 func formatAppPriceSchedule(schedule api.AppPriceSchedule) string {

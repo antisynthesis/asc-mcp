@@ -229,7 +229,7 @@ func (r *Registry) handleListAnalyticsReportRequests(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list analytics report requests: %v", err)), nil
 	}
 
-	return newListResult(formatAnalyticsReportRequests(resp.Data), resp.Links), nil
+	return newListResult(formatAnalyticsReportRequests(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetAnalyticsReportRequest(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -249,7 +249,7 @@ func (r *Registry) handleGetAnalyticsReportRequest(ctx context.Context, args jso
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get analytics report request: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAnalyticsReportRequest(resp.Data)), nil
+	return newDataResult(formatAnalyticsReportRequest(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateAnalyticsReportRequest(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -290,7 +290,7 @@ func (r *Registry) handleCreateAnalyticsReportRequest(ctx context.Context, args 
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create analytics report request: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Created analytics report request: %s", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Created analytics report request: %s", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteAnalyticsReportRequest(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -342,7 +342,7 @@ func (r *Registry) handleListAnalyticsReports(ctx context.Context, args json.Raw
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list analytics reports: %v", err)), nil
 	}
 
-	return newListResult(formatAnalyticsReports(resp.Data), resp.Links), nil
+	return newListResult(formatAnalyticsReports(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleListAnalyticsReportInstances(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -374,7 +374,7 @@ func (r *Registry) handleListAnalyticsReportInstances(ctx context.Context, args 
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list analytics report instances: %v", err)), nil
 	}
 
-	return newListResult(formatAnalyticsReportInstances(resp.Data), resp.Links), nil
+	return newListResult(formatAnalyticsReportInstances(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleListAnalyticsReportSegments(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -406,7 +406,7 @@ func (r *Registry) handleListAnalyticsReportSegments(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list analytics report segments: %v", err)), nil
 	}
 
-	return newListResult(formatAnalyticsReportSegments(resp.Data), resp.Links), nil
+	return newListResult(formatAnalyticsReportSegments(resp.Data), resp.Data, resp.Links), nil
 }
 
 func formatAnalyticsReportRequests(requests []api.AnalyticsReportRequest) string {

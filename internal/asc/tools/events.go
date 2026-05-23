@@ -213,7 +213,7 @@ func (r *Registry) handleListAppEvents(ctx context.Context, args json.RawMessage
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app events: %v", err)), nil
 	}
 
-	return newListResult(formatAppEvents(resp.Data), resp.Links), nil
+	return newListResult(formatAppEvents(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetAppEvent(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -233,7 +233,7 @@ func (r *Registry) handleGetAppEvent(ctx context.Context, args json.RawMessage) 
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app event: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppEvent(resp.Data)), nil
+	return newDataResult(formatAppEvent(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateAppEvent(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -286,7 +286,7 @@ func (r *Registry) handleCreateAppEvent(ctx context.Context, args json.RawMessag
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create app event: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Created app event: %s (ID: %s)", resp.Data.Attributes.ReferenceName, resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Created app event: %s (ID: %s)", resp.Data.Attributes.ReferenceName, resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateAppEvent(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -327,7 +327,7 @@ func (r *Registry) handleUpdateAppEvent(ctx context.Context, args json.RawMessag
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update app event: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Updated app event: %s", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Updated app event: %s", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteAppEvent(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

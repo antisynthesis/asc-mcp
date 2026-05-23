@@ -245,7 +245,7 @@ func (r *Registry) handleListUsers(ctx context.Context, args json.RawMessage) (*
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list users: %v", err)), nil
 	}
 
-	return newListResult(formatUsers(resp.Data), resp.Links), nil
+	return newListResult(formatUsers(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetUser(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -265,7 +265,7 @@ func (r *Registry) handleGetUser(ctx context.Context, args json.RawMessage) (*mc
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get user: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatUser(resp.Data)), nil
+	return newDataResult(formatUser(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateUser(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -298,7 +298,7 @@ func (r *Registry) handleUpdateUser(ctx context.Context, args json.RawMessage) (
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update user: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("User updated successfully:\n%s", formatUser(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("User updated successfully:\n%s", formatUser(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteUser(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -345,7 +345,7 @@ func (r *Registry) handleListUserInvitations(ctx context.Context, args json.RawM
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list user invitations: %v", err)), nil
 	}
 
-	return newListResult(formatUserInvitations(resp.Data), resp.Links), nil
+	return newListResult(formatUserInvitations(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetUserInvitation(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -365,7 +365,7 @@ func (r *Registry) handleGetUserInvitation(ctx context.Context, args json.RawMes
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get user invitation: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatUserInvitation(resp.Data)), nil
+	return newDataResult(formatUserInvitation(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateUserInvitation(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -411,7 +411,7 @@ func (r *Registry) handleCreateUserInvitation(ctx context.Context, args json.Raw
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create user invitation: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("User invitation sent:\n%s", formatUserInvitation(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("User invitation sent:\n%s", formatUserInvitation(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteUserInvitation(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

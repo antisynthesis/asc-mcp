@@ -256,7 +256,7 @@ func (r *Registry) handleGetAgeRatingDeclaration(ctx context.Context, args json.
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get age rating declaration: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAgeRatingDeclaration(resp.Data)), nil
+	return newDataResult(formatAgeRatingDeclaration(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateAgeRatingDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -314,7 +314,7 @@ func (r *Registry) handleUpdateAgeRatingDeclaration(ctx context.Context, args js
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update age rating declaration: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Age rating declaration updated:\n%s", formatAgeRatingDeclaration(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Age rating declaration updated:\n%s", formatAgeRatingDeclaration(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleGetIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -334,7 +334,7 @@ func (r *Registry) handleGetIdfaDeclaration(ctx context.Context, args json.RawMe
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get IDFA declaration: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatIdfaDeclaration(resp.Data)), nil
+	return newDataResult(formatIdfaDeclaration(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -375,7 +375,7 @@ func (r *Registry) handleCreateIdfaDeclaration(ctx context.Context, args json.Ra
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create IDFA declaration: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("IDFA declaration created:\n%s", formatIdfaDeclaration(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("IDFA declaration created:\n%s", formatIdfaDeclaration(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -412,7 +412,7 @@ func (r *Registry) handleUpdateIdfaDeclaration(ctx context.Context, args json.Ra
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update IDFA declaration: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("IDFA declaration updated:\n%s", formatIdfaDeclaration(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("IDFA declaration updated:\n%s", formatIdfaDeclaration(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

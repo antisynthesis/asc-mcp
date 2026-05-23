@@ -192,7 +192,7 @@ func (r *Registry) handleListAppClips(ctx context.Context, args json.RawMessage)
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app clips: %v", err)), nil
 	}
 
-	return newListResult(formatAppClips(resp.Data), resp.Links), nil
+	return newListResult(formatAppClips(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetAppClip(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -212,7 +212,7 @@ func (r *Registry) handleGetAppClip(ctx context.Context, args json.RawMessage) (
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app clip: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppClip(resp.Data)), nil
+	return newDataResult(formatAppClip(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleListAppClipDefaultExperiences(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -244,7 +244,7 @@ func (r *Registry) handleListAppClipDefaultExperiences(ctx context.Context, args
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app clip default experiences: %v", err)), nil
 	}
 
-	return newListResult(formatAppClipDefaultExperiences(resp.Data), resp.Links), nil
+	return newListResult(formatAppClipDefaultExperiences(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetAppClipDefaultExperience(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -264,7 +264,7 @@ func (r *Registry) handleGetAppClipDefaultExperience(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app clip default experience: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppClipDefaultExperience(resp.Data)), nil
+	return newDataResult(formatAppClipDefaultExperience(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleListAppClipAdvancedExperiences(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -296,7 +296,7 @@ func (r *Registry) handleListAppClipAdvancedExperiences(ctx context.Context, arg
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app clip advanced experiences: %v", err)), nil
 	}
 
-	return newListResult(formatAppClipAdvancedExperiences(resp.Data), resp.Links), nil
+	return newListResult(formatAppClipAdvancedExperiences(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetAppClipAdvancedExperience(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -316,7 +316,7 @@ func (r *Registry) handleGetAppClipAdvancedExperience(ctx context.Context, args 
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app clip advanced experience: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppClipAdvancedExperience(resp.Data)), nil
+	return newDataResult(formatAppClipAdvancedExperience(resp.Data), resp.Data), nil
 }
 
 func formatAppClips(clips []api.AppClip) string {

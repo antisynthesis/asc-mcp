@@ -358,7 +358,7 @@ func (r *Registry) handleGetEndUserLicenseAgreement(ctx context.Context, args js
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get EULA: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatEndUserLicenseAgreement(resp.Data)), nil
+	return newDataResult(formatEndUserLicenseAgreement(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateEndUserLicenseAgreement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -402,7 +402,7 @@ func (r *Registry) handleCreateEndUserLicenseAgreement(ctx context.Context, args
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create EULA: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("EULA created:\n%s", formatEndUserLicenseAgreement(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("EULA created:\n%s", formatEndUserLicenseAgreement(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateEndUserLicenseAgreement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -433,7 +433,7 @@ func (r *Registry) handleUpdateEndUserLicenseAgreement(ctx context.Context, args
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update EULA: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("EULA updated:\n%s", formatEndUserLicenseAgreement(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("EULA updated:\n%s", formatEndUserLicenseAgreement(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteEndUserLicenseAgreement(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -481,7 +481,7 @@ func (r *Registry) handleListAppCategories(ctx context.Context, args json.RawMes
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app categories: %v", err)), nil
 	}
 
-	return newListResult(formatAppCategories(resp.Data), resp.Links), nil
+	return newListResult(formatAppCategories(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetAppCategory(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -501,7 +501,7 @@ func (r *Registry) handleGetAppCategory(ctx context.Context, args json.RawMessag
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app category: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppCategory(resp.Data)), nil
+	return newDataResult(formatAppCategory(resp.Data), resp.Data), nil
 }
 
 // Alternative distribution handlers
@@ -529,7 +529,7 @@ func (r *Registry) handleListAlternativeDistributionKeys(ctx context.Context, ar
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list alternative distribution keys: %v", err)), nil
 	}
 
-	return newListResult(formatAlternativeDistributionKeys(resp.Data), resp.Links), nil
+	return newListResult(formatAlternativeDistributionKeys(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetAlternativeDistributionKey(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -549,7 +549,7 @@ func (r *Registry) handleGetAlternativeDistributionKey(ctx context.Context, args
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get alternative distribution key: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAlternativeDistributionKey(resp.Data)), nil
+	return newDataResult(formatAlternativeDistributionKey(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateAlternativeDistributionKey(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -580,7 +580,7 @@ func (r *Registry) handleCreateAlternativeDistributionKey(ctx context.Context, a
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create alternative distribution key: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Alternative distribution key created:\n%s", formatAlternativeDistributionKey(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Alternative distribution key created:\n%s", formatAlternativeDistributionKey(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteAlternativeDistributionKey(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -621,7 +621,7 @@ func (r *Registry) handleGetMarketplaceSearchDetail(ctx context.Context, args js
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get marketplace search detail: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatMarketplaceSearchDetail(resp.Data)), nil
+	return newDataResult(formatMarketplaceSearchDetail(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateMarketplaceSearchDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -656,7 +656,7 @@ func (r *Registry) handleCreateMarketplaceSearchDetail(ctx context.Context, args
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create marketplace search detail: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Marketplace search detail created:\n%s", formatMarketplaceSearchDetail(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Marketplace search detail created:\n%s", formatMarketplaceSearchDetail(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateMarketplaceSearchDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -687,7 +687,7 @@ func (r *Registry) handleUpdateMarketplaceSearchDetail(ctx context.Context, args
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update marketplace search detail: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Marketplace search detail updated:\n%s", formatMarketplaceSearchDetail(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Marketplace search detail updated:\n%s", formatMarketplaceSearchDetail(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteMarketplaceSearchDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

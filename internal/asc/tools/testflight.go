@@ -253,7 +253,7 @@ func (r *Registry) handleListBetaGroups(ctx context.Context, args json.RawMessag
 	}
 
 	if len(resp.Data) == 0 {
-		return newListResult("No beta groups found.", resp.Links), nil
+		return newListResult("No beta groups found.", resp.Data, resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -275,7 +275,7 @@ func (r *Registry) handleListBetaGroups(ctx context.Context, args json.RawMessag
 		sb.WriteString("\n")
 	}
 
-	return newListResult(sb.String(), resp.Links), nil
+	return newListResult(sb.String(), resp.Data, resp.Links), nil
 }
 
 // handleCreateBetaGroup handles the create_beta_group tool.
@@ -329,7 +329,7 @@ func (r *Registry) handleCreateBetaGroup(ctx context.Context, args json.RawMessa
 	sb.WriteString(fmt.Sprintf("- Public Link Enabled: %v\n", resp.Data.Attributes.PublicLinkEnabled))
 	sb.WriteString(fmt.Sprintf("- Feedback Enabled: %v\n", resp.Data.Attributes.FeedbackEnabled))
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newDataResult(sb.String(), resp.Data), nil
 }
 
 // handleDeleteBetaGroup handles the delete_beta_group tool.
@@ -376,7 +376,7 @@ func (r *Registry) handleListBetaTesters(ctx context.Context, args json.RawMessa
 	}
 
 	if len(resp.Data) == 0 {
-		return newListResult("No beta testers found.", resp.Links), nil
+		return newListResult("No beta testers found.", resp.Data, resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -394,7 +394,7 @@ func (r *Registry) handleListBetaTesters(ctx context.Context, args json.RawMessa
 		sb.WriteString("\n")
 	}
 
-	return newListResult(sb.String(), resp.Links), nil
+	return newListResult(sb.String(), resp.Data, resp.Links), nil
 }
 
 // handleInviteBetaTester handles the invite_beta_tester tool.
@@ -450,7 +450,7 @@ func (r *Registry) handleInviteBetaTester(ctx context.Context, args json.RawMess
 	sb.WriteString(fmt.Sprintf("- ID: %s\n", resp.Data.ID))
 	sb.WriteString(fmt.Sprintf("- State: %s\n", resp.Data.Attributes.State))
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newDataResult(sb.String(), resp.Data), nil
 }
 
 // handleRemoveBetaTester handles the remove_beta_tester tool.

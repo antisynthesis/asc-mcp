@@ -308,7 +308,7 @@ func (r *Registry) handleListPerfPowerMetrics(ctx context.Context, args json.Raw
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list performance metrics: %v", err)), nil
 	}
 
-	return newListResult(formatPerfPowerMetrics(resp.Data), resp.Links), nil
+	return newListResult(formatPerfPowerMetrics(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleListDiagnosticSignatures(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -340,7 +340,7 @@ func (r *Registry) handleListDiagnosticSignatures(ctx context.Context, args json
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list diagnostic signatures: %v", err)), nil
 	}
 
-	return newListResult(formatDiagnosticSignatures(resp.Data), resp.Links), nil
+	return newListResult(formatDiagnosticSignatures(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleListDiagnosticLogs(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -372,7 +372,7 @@ func (r *Registry) handleListDiagnosticLogs(ctx context.Context, args json.RawMe
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list diagnostic logs: %v", err)), nil
 	}
 
-	return newListResult(formatDiagnosticLogs(resp.Data), resp.Links), nil
+	return newListResult(formatDiagnosticLogs(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleListAppStoreReviewAttachments(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -404,7 +404,7 @@ func (r *Registry) handleListAppStoreReviewAttachments(ctx context.Context, args
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list review attachments: %v", err)), nil
 	}
 
-	return newListResult(formatAppStoreReviewAttachments(resp.Data), resp.Links), nil
+	return newListResult(formatAppStoreReviewAttachments(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetAppStoreReviewAttachment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -424,7 +424,7 @@ func (r *Registry) handleGetAppStoreReviewAttachment(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get review attachment: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppStoreReviewAttachment(resp.Data)), nil
+	return newDataResult(formatAppStoreReviewAttachment(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateAppStoreReviewAttachment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -461,7 +461,7 @@ func (r *Registry) handleCreateAppStoreReviewAttachment(ctx context.Context, arg
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create review attachment: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Review attachment reservation created:\n%s", formatAppStoreReviewAttachment(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Review attachment reservation created:\n%s", formatAppStoreReviewAttachment(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteAppStoreReviewAttachment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -501,7 +501,7 @@ func (r *Registry) handleGetRoutingAppCoverage(ctx context.Context, args json.Ra
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get routing app coverage: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatRoutingAppCoverage(resp.Data)), nil
+	return newDataResult(formatRoutingAppCoverage(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateRoutingAppCoverage(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -538,7 +538,7 @@ func (r *Registry) handleCreateRoutingAppCoverage(ctx context.Context, args json
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create routing app coverage: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Routing app coverage reservation created:\n%s", formatRoutingAppCoverage(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("Routing app coverage reservation created:\n%s", formatRoutingAppCoverage(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteRoutingAppCoverage(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

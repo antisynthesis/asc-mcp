@@ -127,7 +127,7 @@ func (r *Registry) handleGetPhasedRelease(ctx context.Context, args json.RawMess
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get phased release: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatPhasedRelease(resp.Data)), nil
+	return newDataResult(formatPhasedRelease(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreatePhasedRelease(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -165,7 +165,7 @@ func (r *Registry) handleCreatePhasedRelease(ctx context.Context, args json.RawM
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create phased release: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Created phased release: %s (state: %s)", resp.Data.ID, resp.Data.Attributes.PhasedReleaseState)), nil
+	return newDataResult(fmt.Sprintf("Created phased release: %s (state: %s)", resp.Data.ID, resp.Data.Attributes.PhasedReleaseState), resp.Data), nil
 }
 
 func (r *Registry) handleUpdatePhasedRelease(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -199,7 +199,7 @@ func (r *Registry) handleUpdatePhasedRelease(ctx context.Context, args json.RawM
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update phased release: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Updated phased release: %s (state: %s)", resp.Data.ID, resp.Data.Attributes.PhasedReleaseState)), nil
+	return newDataResult(fmt.Sprintf("Updated phased release: %s (state: %s)", resp.Data.ID, resp.Data.Attributes.PhasedReleaseState), resp.Data), nil
 }
 
 func (r *Registry) handleDeletePhasedRelease(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

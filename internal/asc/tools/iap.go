@@ -193,7 +193,7 @@ func (r *Registry) handleListInAppPurchases(ctx context.Context, args json.RawMe
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list in-app purchases: %v", err)), nil
 	}
 
-	return newListResult(formatInAppPurchases(resp.Data), resp.Links), nil
+	return newListResult(formatInAppPurchases(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetInAppPurchase(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -213,7 +213,7 @@ func (r *Registry) handleGetInAppPurchase(ctx context.Context, args json.RawMess
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get in-app purchase: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatInAppPurchase(resp.Data)), nil
+	return newDataResult(formatInAppPurchase(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateInAppPurchase(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -268,7 +268,7 @@ func (r *Registry) handleCreateInAppPurchase(ctx context.Context, args json.RawM
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create in-app purchase: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Created in-app purchase: %s (ID: %s)", resp.Data.Attributes.Name, resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Created in-app purchase: %s (ID: %s)", resp.Data.Attributes.Name, resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateInAppPurchase(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -303,7 +303,7 @@ func (r *Registry) handleUpdateInAppPurchase(ctx context.Context, args json.RawM
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update in-app purchase: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Updated in-app purchase: %s", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Updated in-app purchase: %s", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteInAppPurchase(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

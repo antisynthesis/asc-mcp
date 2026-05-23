@@ -340,7 +340,7 @@ func (r *Registry) handleListAppStoreVersions(ctx context.Context, args json.Raw
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app store versions: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppStoreVersions(resp.Data)), nil
+	return newDataResult(formatAppStoreVersions(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleGetAppStoreVersion(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -360,7 +360,7 @@ func (r *Registry) handleGetAppStoreVersion(ctx context.Context, args json.RawMe
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app store version: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppStoreVersion(resp.Data)), nil
+	return newDataResult(formatAppStoreVersion(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateAppStoreVersion(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -410,7 +410,7 @@ func (r *Registry) handleCreateAppStoreVersion(ctx context.Context, args json.Ra
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create app store version: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Created app store version: %s (ID: %s)", resp.Data.Attributes.VersionString, resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Created app store version: %s (ID: %s)", resp.Data.Attributes.VersionString, resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateAppStoreVersion(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -445,7 +445,7 @@ func (r *Registry) handleUpdateAppStoreVersion(ctx context.Context, args json.Ra
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update app store version: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Updated app store version: %s", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Updated app store version: %s", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteAppStoreVersion(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -499,7 +499,7 @@ func (r *Registry) handleSubmitAppForReview(ctx context.Context, args json.RawMe
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to submit app for review: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("App submitted for review (submission ID: %s)", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("App submitted for review (submission ID: %s)", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleGetAppStoreReviewDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -519,7 +519,7 @@ func (r *Registry) handleGetAppStoreReviewDetail(ctx context.Context, args json.
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get review detail: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatReviewDetail(resp.Data)), nil
+	return newDataResult(formatReviewDetail(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateAppStoreReviewDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -571,7 +571,7 @@ func (r *Registry) handleCreateAppStoreReviewDetail(ctx context.Context, args js
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create review detail: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Created review detail: %s", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Created review detail: %s", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleUpdateAppStoreReviewDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -616,7 +616,7 @@ func (r *Registry) handleUpdateAppStoreReviewDetail(ctx context.Context, args js
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update review detail: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Updated review detail: %s", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Updated review detail: %s", resp.Data.ID), resp.Data), nil
 }
 
 func formatAppStoreVersions(versions []api.AppStoreVersion) string {

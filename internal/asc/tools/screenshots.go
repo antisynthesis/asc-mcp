@@ -246,7 +246,7 @@ func (r *Registry) handleListScreenshotSets(ctx context.Context, args json.RawMe
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list screenshot sets: %v", err)), nil
 	}
 
-	return newListResult(formatScreenshotSets(resp.Data), resp.Links), nil
+	return newListResult(formatScreenshotSets(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleListScreenshots(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -278,7 +278,7 @@ func (r *Registry) handleListScreenshots(ctx context.Context, args json.RawMessa
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list screenshots: %v", err)), nil
 	}
 
-	return newListResult(formatScreenshots(resp.Data), resp.Links), nil
+	return newListResult(formatScreenshots(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetScreenshot(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -298,7 +298,7 @@ func (r *Registry) handleGetScreenshot(ctx context.Context, args json.RawMessage
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get screenshot: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatScreenshot(resp.Data)), nil
+	return newDataResult(formatScreenshot(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleDeleteScreenshot(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -350,7 +350,7 @@ func (r *Registry) handleListPreviewSets(ctx context.Context, args json.RawMessa
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list preview sets: %v", err)), nil
 	}
 
-	return newListResult(formatPreviewSets(resp.Data), resp.Links), nil
+	return newListResult(formatPreviewSets(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleListPreviews(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -382,7 +382,7 @@ func (r *Registry) handleListPreviews(ctx context.Context, args json.RawMessage)
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list previews: %v", err)), nil
 	}
 
-	return newListResult(formatPreviews(resp.Data), resp.Links), nil
+	return newListResult(formatPreviews(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetPreview(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -402,7 +402,7 @@ func (r *Registry) handleGetPreview(ctx context.Context, args json.RawMessage) (
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get preview: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatPreview(resp.Data)), nil
+	return newDataResult(formatPreview(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleDeletePreview(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

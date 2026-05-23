@@ -121,7 +121,7 @@ func (r *Registry) handleListApps(ctx context.Context, args json.RawMessage) (*m
 	}
 
 	if len(resp.Data) == 0 {
-		return newListResult("No apps found in your App Store Connect account.", resp.Links), nil
+		return newListResult("No apps found in your App Store Connect account.", resp.Data, resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -136,7 +136,7 @@ func (r *Registry) handleListApps(ctx context.Context, args json.RawMessage) (*m
 		sb.WriteString("\n")
 	}
 
-	return newListResult(sb.String(), resp.Links), nil
+	return newListResult(sb.String(), resp.Data, resp.Links), nil
 }
 
 // handleGetApp handles the get_app tool.
@@ -171,7 +171,7 @@ func (r *Registry) handleGetApp(ctx context.Context, args json.RawMessage) (*mcp
 		sb.WriteString(fmt.Sprintf("- Content Rights: %s\n", app.Attributes.ContentRightsDeclaration))
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newDataResult(sb.String(), resp.Data), nil
 }
 
 // handleGetAppVersions handles the get_app_versions tool.
@@ -196,7 +196,7 @@ func (r *Registry) handleGetAppVersions(ctx context.Context, args json.RawMessag
 	}
 
 	if len(resp.Data) == 0 {
-		return mcp.NewSuccessResult("No versions found for this app."), nil
+		return newDataResult("No versions found for this app.", resp.Data), nil
 	}
 
 	var sb strings.Builder
@@ -214,5 +214,5 @@ func (r *Registry) handleGetAppVersions(ctx context.Context, args json.RawMessag
 		sb.WriteString("\n")
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newDataResult(sb.String(), resp.Data), nil
 }

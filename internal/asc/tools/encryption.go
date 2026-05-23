@@ -165,7 +165,7 @@ func (r *Registry) handleListEncryptionDeclarations(ctx context.Context, args js
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list encryption declarations: %v", err)), nil
 	}
 
-	return newListResult(formatEncryptionDeclarations(resp.Data), resp.Links), nil
+	return newListResult(formatEncryptionDeclarations(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetEncryptionDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -185,7 +185,7 @@ func (r *Registry) handleGetEncryptionDeclaration(ctx context.Context, args json
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get encryption declaration: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatEncryptionDeclaration(resp.Data)), nil
+	return newDataResult(formatEncryptionDeclaration(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateEncryptionDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -235,7 +235,7 @@ func (r *Registry) handleCreateEncryptionDeclaration(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create encryption declaration: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Created encryption declaration: %s", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Created encryption declaration: %s", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleAssignBuildToEncryptionDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

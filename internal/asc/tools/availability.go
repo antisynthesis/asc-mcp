@@ -112,7 +112,7 @@ func (r *Registry) handleGetAppAvailability(ctx context.Context, args json.RawMe
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app availability: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatAppAvailability(resp.Data)), nil
+	return newDataResult(formatAppAvailability(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreateAppAvailability(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -161,7 +161,7 @@ func (r *Registry) handleCreateAppAvailability(ctx context.Context, args json.Ra
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create app availability: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("App availability created:\n%s", formatAppAvailability(resp.Data))), nil
+	return newDataResult(fmt.Sprintf("App availability created:\n%s", formatAppAvailability(resp.Data)), resp.Data), nil
 }
 
 func (r *Registry) handleListTerritoryAvailabilities(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -193,7 +193,7 @@ func (r *Registry) handleListTerritoryAvailabilities(ctx context.Context, args j
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list territory availabilities: %v", err)), nil
 	}
 
-	return newListResult(formatTerritoryAvailabilities(resp.Data), resp.Links), nil
+	return newListResult(formatTerritoryAvailabilities(resp.Data), resp.Data, resp.Links), nil
 }
 
 func formatAppAvailability(avail api.AppAvailability) string {

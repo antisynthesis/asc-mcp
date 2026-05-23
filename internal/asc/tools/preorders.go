@@ -127,7 +127,7 @@ func (r *Registry) handleGetPreOrder(ctx context.Context, args json.RawMessage) 
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get pre-order: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatPreOrder(resp.Data)), nil
+	return newDataResult(formatPreOrder(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleCreatePreOrder(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -165,7 +165,7 @@ func (r *Registry) handleCreatePreOrder(ctx context.Context, args json.RawMessag
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create pre-order: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Created pre-order: %s", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Created pre-order: %s", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleUpdatePreOrder(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -196,7 +196,7 @@ func (r *Registry) handleUpdatePreOrder(ctx context.Context, args json.RawMessag
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update pre-order: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(fmt.Sprintf("Updated pre-order: %s", resp.Data.ID)), nil
+	return newDataResult(fmt.Sprintf("Updated pre-order: %s", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleDeletePreOrder(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {

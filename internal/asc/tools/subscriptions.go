@@ -142,7 +142,7 @@ func (r *Registry) handleListSubscriptionGroups(ctx context.Context, args json.R
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list subscription groups: %v", err)), nil
 	}
 
-	return newListResult(formatSubscriptionGroups(resp.Data), resp.Links), nil
+	return newListResult(formatSubscriptionGroups(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetSubscriptionGroup(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -162,7 +162,7 @@ func (r *Registry) handleGetSubscriptionGroup(ctx context.Context, args json.Raw
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get subscription group: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatSubscriptionGroup(resp.Data)), nil
+	return newDataResult(formatSubscriptionGroup(resp.Data), resp.Data), nil
 }
 
 func (r *Registry) handleListSubscriptions(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -194,7 +194,7 @@ func (r *Registry) handleListSubscriptions(ctx context.Context, args json.RawMes
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list subscriptions: %v", err)), nil
 	}
 
-	return newListResult(formatSubscriptions(resp.Data), resp.Links), nil
+	return newListResult(formatSubscriptions(resp.Data), resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetSubscription(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -214,7 +214,7 @@ func (r *Registry) handleGetSubscription(ctx context.Context, args json.RawMessa
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get subscription: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult(formatSubscription(resp.Data)), nil
+	return newDataResult(formatSubscription(resp.Data), resp.Data), nil
 }
 
 func formatSubscriptionGroups(groups []api.SubscriptionGroup) string {

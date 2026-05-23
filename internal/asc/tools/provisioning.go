@@ -201,7 +201,7 @@ func (r *Registry) handleListBundleIDs(ctx context.Context, args json.RawMessage
 	}
 
 	if len(resp.Data) == 0 {
-		return newListResult("No bundle IDs found.", resp.Links), nil
+		return newListResult("No bundle IDs found.", resp.Data, resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -218,7 +218,7 @@ func (r *Registry) handleListBundleIDs(ctx context.Context, args json.RawMessage
 		sb.WriteString("\n")
 	}
 
-	return newListResult(sb.String(), resp.Links), nil
+	return newListResult(sb.String(), resp.Data, resp.Links), nil
 }
 
 // handleGetBundleID handles the get_bundle_id tool.
@@ -250,7 +250,7 @@ func (r *Registry) handleGetBundleID(ctx context.Context, args json.RawMessage) 
 		sb.WriteString(fmt.Sprintf("- Seed ID: %s\n", bundleID.Attributes.SeedID))
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newDataResult(sb.String(), resp.Data), nil
 }
 
 // handleListCertificates handles the list_certificates tool.
@@ -275,7 +275,7 @@ func (r *Registry) handleListCertificates(ctx context.Context, args json.RawMess
 	}
 
 	if len(resp.Data) == 0 {
-		return newListResult("No certificates found.", resp.Links), nil
+		return newListResult("No certificates found.", resp.Data, resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -299,7 +299,7 @@ func (r *Registry) handleListCertificates(ctx context.Context, args json.RawMess
 		sb.WriteString("\n")
 	}
 
-	return newListResult(sb.String(), resp.Links), nil
+	return newListResult(sb.String(), resp.Data, resp.Links), nil
 }
 
 // handleListProfiles handles the list_profiles tool.
@@ -324,7 +324,7 @@ func (r *Registry) handleListProfiles(ctx context.Context, args json.RawMessage)
 	}
 
 	if len(resp.Data) == 0 {
-		return newListResult("No provisioning profiles found.", resp.Links), nil
+		return newListResult("No provisioning profiles found.", resp.Data, resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -346,7 +346,7 @@ func (r *Registry) handleListProfiles(ctx context.Context, args json.RawMessage)
 		sb.WriteString("\n")
 	}
 
-	return newListResult(sb.String(), resp.Links), nil
+	return newListResult(sb.String(), resp.Data, resp.Links), nil
 }
 
 // handleListDevices handles the list_devices tool.
@@ -371,7 +371,7 @@ func (r *Registry) handleListDevices(ctx context.Context, args json.RawMessage) 
 	}
 
 	if len(resp.Data) == 0 {
-		return newListResult("No devices found.", resp.Links), nil
+		return newListResult("No devices found.", resp.Data, resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -391,7 +391,7 @@ func (r *Registry) handleListDevices(ctx context.Context, args json.RawMessage) 
 		sb.WriteString("\n")
 	}
 
-	return newListResult(sb.String(), resp.Links), nil
+	return newListResult(sb.String(), resp.Data, resp.Links), nil
 }
 
 // handleRegisterDevice handles the register_device tool.
@@ -440,5 +440,5 @@ func (r *Registry) handleRegisterDevice(ctx context.Context, args json.RawMessag
 	sb.WriteString(fmt.Sprintf("- Platform: %s\n", resp.Data.Attributes.Platform))
 	sb.WriteString(fmt.Sprintf("- Status: %s\n", resp.Data.Attributes.Status))
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newDataResult(sb.String(), resp.Data), nil
 }

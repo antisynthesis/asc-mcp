@@ -98,7 +98,7 @@ func (r *Registry) handleListBuilds(ctx context.Context, args json.RawMessage) (
 	}
 
 	if len(resp.Data) == 0 {
-		return newListResult("No builds found.", resp.Links), nil
+		return newListResult("No builds found.", resp.Data, resp.Links), nil
 	}
 
 	var sb strings.Builder
@@ -119,7 +119,7 @@ func (r *Registry) handleListBuilds(ctx context.Context, args json.RawMessage) (
 		sb.WriteString("\n")
 	}
 
-	return newListResult(sb.String(), resp.Links), nil
+	return newListResult(sb.String(), resp.Data, resp.Links), nil
 }
 
 // handleGetBuild handles the get_build tool.
@@ -158,5 +158,5 @@ func (r *Registry) handleGetBuild(ctx context.Context, args json.RawMessage) (*m
 		sb.WriteString(fmt.Sprintf("- Expires: %s\n", build.Attributes.ExpirationDate.Format("2006-01-02")))
 	}
 
-	return mcp.NewSuccessResult(sb.String()), nil
+	return newDataResult(sb.String(), resp.Data), nil
 }

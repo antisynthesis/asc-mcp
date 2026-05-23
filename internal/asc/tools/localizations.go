@@ -372,7 +372,7 @@ func (r *Registry) handleGetAppInfos(ctx context.Context, args json.RawMessage) 
 	}
 
 	result := formatAppInfos(resp.Data)
-	return mcp.NewSuccessResult(result), nil
+	return newDataResult(result, resp.Data), nil
 }
 
 func (r *Registry) handleListAppInfoLocalizations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -396,7 +396,7 @@ func (r *Registry) handleListAppInfoLocalizations(ctx context.Context, args json
 	}
 
 	result := formatAppInfoLocalizations(resp.Data)
-	return newListResult(result, resp.Links), nil
+	return newListResult(result, resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetAppInfoLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -417,7 +417,7 @@ func (r *Registry) handleGetAppInfoLocalization(ctx context.Context, args json.R
 	}
 
 	result := formatAppInfoLocalization(&resp.Data)
-	return mcp.NewSuccessResult(result), nil
+	return newDataResult(result, resp.Data), nil
 }
 
 func (r *Registry) handleCreateAppInfoLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -467,7 +467,7 @@ func (r *Registry) handleCreateAppInfoLocalization(ctx context.Context, args jso
 
 	result := fmt.Sprintf("Created app info localization for locale '%s'\n\n%s",
 		params.Locale, formatAppInfoLocalization(&resp.Data))
-	return mcp.NewSuccessResult(result), nil
+	return newDataResult(result, resp.Data), nil
 }
 
 func (r *Registry) handleUpdateAppInfoLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -507,7 +507,7 @@ func (r *Registry) handleUpdateAppInfoLocalization(ctx context.Context, args jso
 	}
 
 	result := fmt.Sprintf("Updated app info localization\n\n%s", formatAppInfoLocalization(&resp.Data))
-	return mcp.NewSuccessResult(result), nil
+	return newDataResult(result, resp.Data), nil
 }
 
 func (r *Registry) handleDeleteAppInfoLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -553,7 +553,7 @@ func (r *Registry) handleListVersionLocalizations(ctx context.Context, args json
 	}
 
 	result := formatVersionLocalizations(resp.Data)
-	return newListResult(result, resp.Links), nil
+	return newListResult(result, resp.Data, resp.Links), nil
 }
 
 func (r *Registry) handleGetVersionLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -574,7 +574,7 @@ func (r *Registry) handleGetVersionLocalization(ctx context.Context, args json.R
 	}
 
 	result := formatVersionLocalization(&resp.Data)
-	return mcp.NewSuccessResult(result), nil
+	return newDataResult(result, resp.Data), nil
 }
 
 func (r *Registry) handleCreateVersionLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -626,7 +626,7 @@ func (r *Registry) handleCreateVersionLocalization(ctx context.Context, args jso
 
 	result := fmt.Sprintf("Created version localization for locale '%s'\n\n%s",
 		params.Locale, formatVersionLocalization(&resp.Data))
-	return mcp.NewSuccessResult(result), nil
+	return newDataResult(result, resp.Data), nil
 }
 
 func (r *Registry) handleUpdateVersionLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -668,7 +668,7 @@ func (r *Registry) handleUpdateVersionLocalization(ctx context.Context, args jso
 	}
 
 	result := fmt.Sprintf("Updated version localization\n\n%s", formatVersionLocalization(&resp.Data))
-	return mcp.NewSuccessResult(result), nil
+	return newDataResult(result, resp.Data), nil
 }
 
 func (r *Registry) handleDeleteVersionLocalization(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
