@@ -26,6 +26,7 @@ func Execute() {
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
+	rootCmd.AddCommand(serveHTTPCmd)
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(validateCmd)
 	rootCmd.AddCommand(toolsCmd)
