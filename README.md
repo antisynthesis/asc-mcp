@@ -495,7 +495,13 @@ make lint
 
 ## Architecture
 
-This project uses only the Go standard library. No external dependencies are required.
+The MCP protocol layer, JWT/ES256 signing, and HTTP client are implemented
+using only the Go standard library. The CLI is built on
+[`spf13/cobra`](https://github.com/spf13/cobra) (see ADR-0004). No other
+runtime dependencies are required.
+
+The server speaks MCP protocol version `2025-06-18` and negotiates down to
+`2025-03-26` or `2024-11-05` for older clients.
 
 ```
 asc-mcp/
