@@ -112,6 +112,9 @@ func NewRegistry(client *api.Client) *Registry {
 	// Misc tools (EULA, categories, alternative distribution)
 	r.registerMiscTools()
 
+	// Asset uploads (screenshots, previews, review attachments)
+	r.registerUploadTools()
+
 	return r
 }
 

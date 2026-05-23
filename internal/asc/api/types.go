@@ -1157,11 +1157,13 @@ type RequestHeader struct {
 	Value string `json:"value,omitempty"`
 }
 
-// AssetDeliveryState represents asset delivery state.
+// AssetDeliveryState represents asset delivery state for an upload.
+// Errors and Warnings carry the same per-error detail shape as the
+// top-level ErrorResponse.
 type AssetDeliveryState struct {
-	Errors   []APIError `json:"errors,omitempty"`
-	Warnings []APIError `json:"warnings,omitempty"`
-	State    string     `json:"state,omitempty"`
+	Errors   []APIErrorDetail `json:"errors,omitempty"`
+	Warnings []APIErrorDetail `json:"warnings,omitempty"`
+	State    string           `json:"state,omitempty"`
 }
 
 // AppScreenshotCreateRequest represents a request to create a screenshot.
@@ -1290,6 +1292,26 @@ type AppPreviewCreateAttributes struct {
 // AppPreviewCreateRelationships contains relationships for creating a preview.
 type AppPreviewCreateRelationships struct {
 	AppPreviewSet RelationshipData `json:"appPreviewSet"`
+}
+
+// AppPreviewUpdateRequest represents a commit/update for a preview upload.
+type AppPreviewUpdateRequest struct {
+	Data AppPreviewUpdateData `json:"data"`
+}
+
+// AppPreviewUpdateData carries the type, id, and commit attributes.
+type AppPreviewUpdateData struct {
+	Type       string                     `json:"type"`
+	ID         string                     `json:"id"`
+	Attributes AppPreviewUpdateAttributes `json:"attributes"`
+}
+
+// AppPreviewUpdateAttributes carries the SHA-256 checksum and uploaded
+// flag that Apple uses to verify a finished upload.
+type AppPreviewUpdateAttributes struct {
+	SourceFileChecksum   string `json:"sourceFileChecksum,omitempty"`
+	Uploaded             *bool  `json:"uploaded,omitempty"`
+	PreviewFrameTimeCode string `json:"previewFrameTimeCode,omitempty"`
 }
 
 // App Pre-Order types

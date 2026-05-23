@@ -1349,6 +1349,21 @@ func (c *Client) CreateAppPreview(ctx context.Context, req *AppPreviewCreateRequ
 	return &resp, nil
 }
 
+// UpdateAppPreview commits an uploaded preview by sending its SHA-256
+// checksum and uploaded=true. Also used to update the preview frame
+// timecode after upload.
+func (c *Client) UpdateAppPreview(ctx context.Context, previewID string, req *AppPreviewUpdateRequest) (*AppPreviewResponse, error) {
+	data, err := c.Patch(ctx, "/v1/appPreviews/"+url.PathEscape(previewID), req)
+	if err != nil {
+		return nil, err
+	}
+	var resp AppPreviewResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+	return &resp, nil
+}
+
 // DeleteAppPreview deletes a preview.
 func (c *Client) DeleteAppPreview(ctx context.Context, previewID string) error {
 	return c.Delete(ctx, "/v1/appPreviews/"+url.PathEscape(previewID))

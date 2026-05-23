@@ -122,9 +122,9 @@ func TestRegistry_ListTools(t *testing.T) {
 
 	tools := registry.ListTools()
 
-	// Should have 200 tools total
-	if len(tools) != 200 {
-		t.Errorf("expected 200 tools, got %d", len(tools))
+	// Should have 203 tools total (200 base + 3 upload tools).
+	if len(tools) != 203 {
+		t.Errorf("expected 203 tools, got %d", len(tools))
 	}
 
 	// Verify tool structure
@@ -362,6 +362,10 @@ func TestRegistry_ListTools(t *testing.T) {
 		"create_marketplace_search_detail": false,
 		"update_marketplace_search_detail": false,
 		"delete_marketplace_search_detail": false,
+		// Asset upload tools
+		"upload_app_screenshot":    false,
+		"upload_app_preview":       false,
+		"upload_review_attachment": false,
 	}
 
 	for _, tool := range tools {
