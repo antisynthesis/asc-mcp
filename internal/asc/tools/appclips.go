@@ -121,7 +121,7 @@ func (r *Registry) registerAppClipTools() {
 	}, r.handleGetAppClipAdvancedExperience)
 }
 
-func (r *Registry) handleListAppClips(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAppClips(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 		Limit int    `json:"limit"`
@@ -139,7 +139,7 @@ func (r *Registry) handleListAppClips(args json.RawMessage) (*mcp.ToolsCallResul
 		limit = 50
 	}
 
-	resp, err := r.client.ListAppClips(context.Background(), params.AppID, limit)
+	resp, err := r.client.ListAppClips(ctx, params.AppID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app clips: %v", err)), nil
 	}
@@ -147,7 +147,7 @@ func (r *Registry) handleListAppClips(args json.RawMessage) (*mcp.ToolsCallResul
 	return mcp.NewSuccessResult(formatAppClips(resp.Data)), nil
 }
 
-func (r *Registry) handleGetAppClip(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppClip(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppClipID string `json:"app_clip_id"`
 	}
@@ -159,7 +159,7 @@ func (r *Registry) handleGetAppClip(args json.RawMessage) (*mcp.ToolsCallResult,
 		return nil, fmt.Errorf("app_clip_id is required")
 	}
 
-	resp, err := r.client.GetAppClip(context.Background(), params.AppClipID)
+	resp, err := r.client.GetAppClip(ctx, params.AppClipID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app clip: %v", err)), nil
 	}
@@ -167,7 +167,7 @@ func (r *Registry) handleGetAppClip(args json.RawMessage) (*mcp.ToolsCallResult,
 	return mcp.NewSuccessResult(formatAppClip(resp.Data)), nil
 }
 
-func (r *Registry) handleListAppClipDefaultExperiences(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAppClipDefaultExperiences(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppClipID string `json:"app_clip_id"`
 		Limit     int    `json:"limit"`
@@ -185,7 +185,7 @@ func (r *Registry) handleListAppClipDefaultExperiences(args json.RawMessage) (*m
 		limit = 50
 	}
 
-	resp, err := r.client.ListAppClipDefaultExperiences(context.Background(), params.AppClipID, limit)
+	resp, err := r.client.ListAppClipDefaultExperiences(ctx, params.AppClipID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app clip default experiences: %v", err)), nil
 	}
@@ -193,7 +193,7 @@ func (r *Registry) handleListAppClipDefaultExperiences(args json.RawMessage) (*m
 	return mcp.NewSuccessResult(formatAppClipDefaultExperiences(resp.Data)), nil
 }
 
-func (r *Registry) handleGetAppClipDefaultExperience(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppClipDefaultExperience(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ExperienceID string `json:"experience_id"`
 	}
@@ -205,7 +205,7 @@ func (r *Registry) handleGetAppClipDefaultExperience(args json.RawMessage) (*mcp
 		return nil, fmt.Errorf("experience_id is required")
 	}
 
-	resp, err := r.client.GetAppClipDefaultExperience(context.Background(), params.ExperienceID)
+	resp, err := r.client.GetAppClipDefaultExperience(ctx, params.ExperienceID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app clip default experience: %v", err)), nil
 	}
@@ -213,7 +213,7 @@ func (r *Registry) handleGetAppClipDefaultExperience(args json.RawMessage) (*mcp
 	return mcp.NewSuccessResult(formatAppClipDefaultExperience(resp.Data)), nil
 }
 
-func (r *Registry) handleListAppClipAdvancedExperiences(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAppClipAdvancedExperiences(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppClipID string `json:"app_clip_id"`
 		Limit     int    `json:"limit"`
@@ -231,7 +231,7 @@ func (r *Registry) handleListAppClipAdvancedExperiences(args json.RawMessage) (*
 		limit = 50
 	}
 
-	resp, err := r.client.ListAppClipAdvancedExperiences(context.Background(), params.AppClipID, limit)
+	resp, err := r.client.ListAppClipAdvancedExperiences(ctx, params.AppClipID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app clip advanced experiences: %v", err)), nil
 	}
@@ -239,7 +239,7 @@ func (r *Registry) handleListAppClipAdvancedExperiences(args json.RawMessage) (*
 	return mcp.NewSuccessResult(formatAppClipAdvancedExperiences(resp.Data)), nil
 }
 
-func (r *Registry) handleGetAppClipAdvancedExperience(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppClipAdvancedExperience(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ExperienceID string `json:"experience_id"`
 	}
@@ -251,7 +251,7 @@ func (r *Registry) handleGetAppClipAdvancedExperience(args json.RawMessage) (*mc
 		return nil, fmt.Errorf("experience_id is required")
 	}
 
-	resp, err := r.client.GetAppClipAdvancedExperience(context.Background(), params.ExperienceID)
+	resp, err := r.client.GetAppClipAdvancedExperience(ctx, params.ExperienceID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app clip advanced experience: %v", err)), nil
 	}

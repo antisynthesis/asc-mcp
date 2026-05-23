@@ -157,7 +157,7 @@ func (r *Registry) registerScreenshotTools() {
 	}, r.handleDeletePreview)
 }
 
-func (r *Registry) handleListScreenshotSets(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListScreenshotSets(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 		Limit          int    `json:"limit"`
@@ -175,7 +175,7 @@ func (r *Registry) handleListScreenshotSets(args json.RawMessage) (*mcp.ToolsCal
 		limit = 50
 	}
 
-	resp, err := r.client.ListAppScreenshotSets(context.Background(), params.LocalizationID, limit)
+	resp, err := r.client.ListAppScreenshotSets(ctx, params.LocalizationID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list screenshot sets: %v", err)), nil
 	}
@@ -183,7 +183,7 @@ func (r *Registry) handleListScreenshotSets(args json.RawMessage) (*mcp.ToolsCal
 	return mcp.NewSuccessResult(formatScreenshotSets(resp.Data)), nil
 }
 
-func (r *Registry) handleListScreenshots(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListScreenshots(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ScreenshotSetID string `json:"screenshot_set_id"`
 		Limit           int    `json:"limit"`
@@ -201,7 +201,7 @@ func (r *Registry) handleListScreenshots(args json.RawMessage) (*mcp.ToolsCallRe
 		limit = 50
 	}
 
-	resp, err := r.client.ListAppScreenshots(context.Background(), params.ScreenshotSetID, limit)
+	resp, err := r.client.ListAppScreenshots(ctx, params.ScreenshotSetID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list screenshots: %v", err)), nil
 	}
@@ -209,7 +209,7 @@ func (r *Registry) handleListScreenshots(args json.RawMessage) (*mcp.ToolsCallRe
 	return mcp.NewSuccessResult(formatScreenshots(resp.Data)), nil
 }
 
-func (r *Registry) handleGetScreenshot(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetScreenshot(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ScreenshotID string `json:"screenshot_id"`
 	}
@@ -221,7 +221,7 @@ func (r *Registry) handleGetScreenshot(args json.RawMessage) (*mcp.ToolsCallResu
 		return nil, fmt.Errorf("screenshot_id is required")
 	}
 
-	resp, err := r.client.GetAppScreenshot(context.Background(), params.ScreenshotID)
+	resp, err := r.client.GetAppScreenshot(ctx, params.ScreenshotID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get screenshot: %v", err)), nil
 	}
@@ -229,7 +229,7 @@ func (r *Registry) handleGetScreenshot(args json.RawMessage) (*mcp.ToolsCallResu
 	return mcp.NewSuccessResult(formatScreenshot(resp.Data)), nil
 }
 
-func (r *Registry) handleDeleteScreenshot(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteScreenshot(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ScreenshotID string `json:"screenshot_id"`
 	}
@@ -241,7 +241,7 @@ func (r *Registry) handleDeleteScreenshot(args json.RawMessage) (*mcp.ToolsCallR
 		return nil, fmt.Errorf("screenshot_id is required")
 	}
 
-	err := r.client.DeleteAppScreenshot(context.Background(), params.ScreenshotID)
+	err := r.client.DeleteAppScreenshot(ctx, params.ScreenshotID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete screenshot: %v", err)), nil
 	}
@@ -249,7 +249,7 @@ func (r *Registry) handleDeleteScreenshot(args json.RawMessage) (*mcp.ToolsCallR
 	return mcp.NewSuccessResult("Screenshot deleted successfully"), nil
 }
 
-func (r *Registry) handleListPreviewSets(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListPreviewSets(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		LocalizationID string `json:"localization_id"`
 		Limit          int    `json:"limit"`
@@ -267,7 +267,7 @@ func (r *Registry) handleListPreviewSets(args json.RawMessage) (*mcp.ToolsCallRe
 		limit = 50
 	}
 
-	resp, err := r.client.ListAppPreviewSets(context.Background(), params.LocalizationID, limit)
+	resp, err := r.client.ListAppPreviewSets(ctx, params.LocalizationID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list preview sets: %v", err)), nil
 	}
@@ -275,7 +275,7 @@ func (r *Registry) handleListPreviewSets(args json.RawMessage) (*mcp.ToolsCallRe
 	return mcp.NewSuccessResult(formatPreviewSets(resp.Data)), nil
 }
 
-func (r *Registry) handleListPreviews(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListPreviews(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PreviewSetID string `json:"preview_set_id"`
 		Limit        int    `json:"limit"`
@@ -293,7 +293,7 @@ func (r *Registry) handleListPreviews(args json.RawMessage) (*mcp.ToolsCallResul
 		limit = 50
 	}
 
-	resp, err := r.client.ListAppPreviews(context.Background(), params.PreviewSetID, limit)
+	resp, err := r.client.ListAppPreviews(ctx, params.PreviewSetID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list previews: %v", err)), nil
 	}
@@ -301,7 +301,7 @@ func (r *Registry) handleListPreviews(args json.RawMessage) (*mcp.ToolsCallResul
 	return mcp.NewSuccessResult(formatPreviews(resp.Data)), nil
 }
 
-func (r *Registry) handleGetPreview(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetPreview(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PreviewID string `json:"preview_id"`
 	}
@@ -313,7 +313,7 @@ func (r *Registry) handleGetPreview(args json.RawMessage) (*mcp.ToolsCallResult,
 		return nil, fmt.Errorf("preview_id is required")
 	}
 
-	resp, err := r.client.GetAppPreview(context.Background(), params.PreviewID)
+	resp, err := r.client.GetAppPreview(ctx, params.PreviewID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get preview: %v", err)), nil
 	}
@@ -321,7 +321,7 @@ func (r *Registry) handleGetPreview(args json.RawMessage) (*mcp.ToolsCallResult,
 	return mcp.NewSuccessResult(formatPreview(resp.Data)), nil
 }
 
-func (r *Registry) handleDeletePreview(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeletePreview(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PreviewID string `json:"preview_id"`
 	}
@@ -333,7 +333,7 @@ func (r *Registry) handleDeletePreview(args json.RawMessage) (*mcp.ToolsCallResu
 		return nil, fmt.Errorf("preview_id is required")
 	}
 
-	err := r.client.DeleteAppPreview(context.Background(), params.PreviewID)
+	err := r.client.DeleteAppPreview(ctx, params.PreviewID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete preview: %v", err)), nil
 	}

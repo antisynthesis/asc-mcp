@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -402,10 +403,14 @@ func TestRegistry_CallTool_UnknownTool(t *testing.T) {
 	client, _ := api.NewClient("test-issuer", "TESTKEY123", keyPath)
 	registry := NewRegistry(client)
 
-	_, err := registry.CallTool("unknown_tool", json.RawMessage(`{}`))
+	_, err := registry.CallTool(context.Background(), "unknown_tool", json.RawMessage(`{}`))
 
 	if err == nil {
 		t.Fatal("expected error for unknown tool")
+	}
+
+	if !errors.Is(err, ErrUnknownTool) {
+		t.Errorf("expected ErrUnknownTool, got %v", err)
 	}
 
 	if !strings.Contains(err.Error(), "unknown tool") {
@@ -436,7 +441,7 @@ func TestRegistry_Register(t *testing.T) {
 		InputSchema: mcp.JSONSchema{Type: "object"},
 	}
 
-	handler := func(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+	handler := func(_ context.Context, _ json.RawMessage) (*mcp.ToolsCallResult, error) {
 		return mcp.NewSuccessResult("custom result"), nil
 	}
 
@@ -455,7 +460,7 @@ func TestRegistry_Register(t *testing.T) {
 	}
 
 	// Call the custom tool
-	result, err := registry.CallTool("custom_tool", json.RawMessage(`{}`))
+	result, err := registry.CallTool(context.Background(), "custom_tool", json.RawMessage(`{}`))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

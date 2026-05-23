@@ -201,7 +201,7 @@ func (r *Registry) registerAgeRatingTools() {
 	}, r.handleDeleteIdfaDeclaration)
 }
 
-func (r *Registry) handleGetAgeRatingDeclaration(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAgeRatingDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppInfoID string `json:"app_info_id"`
 	}
@@ -213,7 +213,7 @@ func (r *Registry) handleGetAgeRatingDeclaration(args json.RawMessage) (*mcp.Too
 		return nil, fmt.Errorf("app_info_id is required")
 	}
 
-	resp, err := r.client.GetAgeRatingDeclaration(context.Background(), params.AppInfoID)
+	resp, err := r.client.GetAgeRatingDeclaration(ctx, params.AppInfoID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get age rating declaration: %v", err)), nil
 	}
@@ -221,7 +221,7 @@ func (r *Registry) handleGetAgeRatingDeclaration(args json.RawMessage) (*mcp.Too
 	return mcp.NewSuccessResult(formatAgeRatingDeclaration(resp.Data)), nil
 }
 
-func (r *Registry) handleUpdateAgeRatingDeclaration(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateAgeRatingDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		DeclarationID                                  string  `json:"declaration_id"`
 		AlcoholTobaccoOrDrugUseOrReferences            *string `json:"alcohol_tobacco_or_drug_use_or_references"`
@@ -271,7 +271,7 @@ func (r *Registry) handleUpdateAgeRatingDeclaration(args json.RawMessage) (*mcp.
 		},
 	}
 
-	resp, err := r.client.UpdateAgeRatingDeclaration(context.Background(), params.DeclarationID, req)
+	resp, err := r.client.UpdateAgeRatingDeclaration(ctx, params.DeclarationID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update age rating declaration: %v", err)), nil
 	}
@@ -279,7 +279,7 @@ func (r *Registry) handleUpdateAgeRatingDeclaration(args json.RawMessage) (*mcp.
 	return mcp.NewSuccessResult(fmt.Sprintf("Age rating declaration updated:\n%s", formatAgeRatingDeclaration(resp.Data))), nil
 }
 
-func (r *Registry) handleGetIdfaDeclaration(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
 	}
@@ -291,7 +291,7 @@ func (r *Registry) handleGetIdfaDeclaration(args json.RawMessage) (*mcp.ToolsCal
 		return nil, fmt.Errorf("version_id is required")
 	}
 
-	resp, err := r.client.GetIdfaDeclaration(context.Background(), params.VersionID)
+	resp, err := r.client.GetIdfaDeclaration(ctx, params.VersionID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get IDFA declaration: %v", err)), nil
 	}
@@ -299,7 +299,7 @@ func (r *Registry) handleGetIdfaDeclaration(args json.RawMessage) (*mcp.ToolsCal
 	return mcp.NewSuccessResult(formatIdfaDeclaration(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateIdfaDeclaration(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID                            string `json:"version_id"`
 		ServesAds                            bool   `json:"serves_ads"`
@@ -332,7 +332,7 @@ func (r *Registry) handleCreateIdfaDeclaration(args json.RawMessage) (*mcp.Tools
 		},
 	}
 
-	resp, err := r.client.CreateIdfaDeclaration(context.Background(), req)
+	resp, err := r.client.CreateIdfaDeclaration(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create IDFA declaration: %v", err)), nil
 	}
@@ -340,7 +340,7 @@ func (r *Registry) handleCreateIdfaDeclaration(args json.RawMessage) (*mcp.Tools
 	return mcp.NewSuccessResult(fmt.Sprintf("IDFA declaration created:\n%s", formatIdfaDeclaration(resp.Data))), nil
 }
 
-func (r *Registry) handleUpdateIdfaDeclaration(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		DeclarationID                        string `json:"declaration_id"`
 		ServesAds                            *bool  `json:"serves_ads"`
@@ -369,7 +369,7 @@ func (r *Registry) handleUpdateIdfaDeclaration(args json.RawMessage) (*mcp.Tools
 		},
 	}
 
-	resp, err := r.client.UpdateIdfaDeclaration(context.Background(), params.DeclarationID, req)
+	resp, err := r.client.UpdateIdfaDeclaration(ctx, params.DeclarationID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update IDFA declaration: %v", err)), nil
 	}
@@ -377,7 +377,7 @@ func (r *Registry) handleUpdateIdfaDeclaration(args json.RawMessage) (*mcp.Tools
 	return mcp.NewSuccessResult(fmt.Sprintf("IDFA declaration updated:\n%s", formatIdfaDeclaration(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteIdfaDeclaration(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		DeclarationID string `json:"declaration_id"`
 	}
@@ -389,7 +389,7 @@ func (r *Registry) handleDeleteIdfaDeclaration(args json.RawMessage) (*mcp.Tools
 		return nil, fmt.Errorf("declaration_id is required")
 	}
 
-	err := r.client.DeleteIdfaDeclaration(context.Background(), params.DeclarationID)
+	err := r.client.DeleteIdfaDeclaration(ctx, params.DeclarationID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete IDFA declaration: %v", err)), nil
 	}

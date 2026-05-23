@@ -85,7 +85,7 @@ func (r *Registry) registerSubscriptionTools() {
 	}, r.handleGetSubscription)
 }
 
-func (r *Registry) handleListSubscriptionGroups(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListSubscriptionGroups(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 		Limit int    `json:"limit"`
@@ -103,7 +103,7 @@ func (r *Registry) handleListSubscriptionGroups(args json.RawMessage) (*mcp.Tool
 		limit = 50
 	}
 
-	resp, err := r.client.ListSubscriptionGroups(context.Background(), params.AppID, limit)
+	resp, err := r.client.ListSubscriptionGroups(ctx, params.AppID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list subscription groups: %v", err)), nil
 	}
@@ -111,7 +111,7 @@ func (r *Registry) handleListSubscriptionGroups(args json.RawMessage) (*mcp.Tool
 	return mcp.NewSuccessResult(formatSubscriptionGroups(resp.Data)), nil
 }
 
-func (r *Registry) handleGetSubscriptionGroup(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetSubscriptionGroup(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		GroupID string `json:"group_id"`
 	}
@@ -123,7 +123,7 @@ func (r *Registry) handleGetSubscriptionGroup(args json.RawMessage) (*mcp.ToolsC
 		return nil, fmt.Errorf("group_id is required")
 	}
 
-	resp, err := r.client.GetSubscriptionGroup(context.Background(), params.GroupID)
+	resp, err := r.client.GetSubscriptionGroup(ctx, params.GroupID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get subscription group: %v", err)), nil
 	}
@@ -131,7 +131,7 @@ func (r *Registry) handleGetSubscriptionGroup(args json.RawMessage) (*mcp.ToolsC
 	return mcp.NewSuccessResult(formatSubscriptionGroup(resp.Data)), nil
 }
 
-func (r *Registry) handleListSubscriptions(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListSubscriptions(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		GroupID string `json:"group_id"`
 		Limit   int    `json:"limit"`
@@ -149,7 +149,7 @@ func (r *Registry) handleListSubscriptions(args json.RawMessage) (*mcp.ToolsCall
 		limit = 50
 	}
 
-	resp, err := r.client.ListSubscriptions(context.Background(), params.GroupID, limit)
+	resp, err := r.client.ListSubscriptions(ctx, params.GroupID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list subscriptions: %v", err)), nil
 	}
@@ -157,7 +157,7 @@ func (r *Registry) handleListSubscriptions(args json.RawMessage) (*mcp.ToolsCall
 	return mcp.NewSuccessResult(formatSubscriptions(resp.Data)), nil
 }
 
-func (r *Registry) handleGetSubscription(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetSubscription(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		SubscriptionID string `json:"subscription_id"`
 	}
@@ -169,7 +169,7 @@ func (r *Registry) handleGetSubscription(args json.RawMessage) (*mcp.ToolsCallRe
 		return nil, fmt.Errorf("subscription_id is required")
 	}
 
-	resp, err := r.client.GetSubscription(context.Background(), params.SubscriptionID)
+	resp, err := r.client.GetSubscription(ctx, params.SubscriptionID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get subscription: %v", err)), nil
 	}

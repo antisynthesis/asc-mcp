@@ -46,6 +46,7 @@ func (r *Registry) registerAvailabilityTools() {
 				"territory_ids": {
 					Type:        "array",
 					Description: "List of territory IDs where the app should be available",
+					Items:       &mcp.Property{Type: "string"},
 				},
 			},
 			Required: []string{"app_id"},
@@ -73,7 +74,7 @@ func (r *Registry) registerAvailabilityTools() {
 	}, r.handleListTerritoryAvailabilities)
 }
 
-func (r *Registry) handleGetAppAvailability(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppAvailability(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 	}
@@ -85,7 +86,7 @@ func (r *Registry) handleGetAppAvailability(args json.RawMessage) (*mcp.ToolsCal
 		return nil, fmt.Errorf("app_id is required")
 	}
 
-	resp, err := r.client.GetAppAvailability(context.Background(), params.AppID)
+	resp, err := r.client.GetAppAvailability(ctx, params.AppID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app availability: %v", err)), nil
 	}
@@ -93,7 +94,7 @@ func (r *Registry) handleGetAppAvailability(args json.RawMessage) (*mcp.ToolsCal
 	return mcp.NewSuccessResult(formatAppAvailability(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateAppAvailability(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateAppAvailability(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID                     string   `json:"app_id"`
 		AvailableInNewTerritories *bool    `json:"available_in_new_territories"`
@@ -134,7 +135,7 @@ func (r *Registry) handleCreateAppAvailability(args json.RawMessage) (*mcp.Tools
 		},
 	}
 
-	resp, err := r.client.CreateAppAvailability(context.Background(), req)
+	resp, err := r.client.CreateAppAvailability(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create app availability: %v", err)), nil
 	}
@@ -142,7 +143,7 @@ func (r *Registry) handleCreateAppAvailability(args json.RawMessage) (*mcp.Tools
 	return mcp.NewSuccessResult(fmt.Sprintf("App availability created:\n%s", formatAppAvailability(resp.Data))), nil
 }
 
-func (r *Registry) handleListTerritoryAvailabilities(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListTerritoryAvailabilities(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AvailabilityID string `json:"availability_id"`
 		Limit          int    `json:"limit"`
@@ -160,7 +161,7 @@ func (r *Registry) handleListTerritoryAvailabilities(args json.RawMessage) (*mcp
 		limit = 100
 	}
 
-	resp, err := r.client.ListTerritoryAvailabilities(context.Background(), params.AvailabilityID, limit)
+	resp, err := r.client.ListTerritoryAvailabilities(ctx, params.AvailabilityID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list territory availabilities: %v", err)), nil
 	}

@@ -2,15 +2,22 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/antisynthesis/asc-mcp/internal/asc/api"
 	"github.com/antisynthesis/asc-mcp/internal/asc/mcp"
 )
 
+// ErrUnknownTool is returned by CallTool when the requested tool name has
+// not been registered. The server uses this sentinel to map the failure to
+// a JSON-RPC "method not found" error instead of a tool-result error.
+var ErrUnknownTool = errors.New("unknown tool")
+
 // ToolHandler is a function that handles a tool call.
-type ToolHandler func(args json.RawMessage) (*mcp.ToolsCallResult, error)
+type ToolHandler func(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error)
 
 // Registry manages tool definitions and handlers.
 type Registry struct {
@@ -114,13 +121,13 @@ func (r *Registry) ListTools() []mcp.Tool {
 }
 
 // CallTool executes a tool by name.
-func (r *Registry) CallTool(name string, args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) CallTool(ctx context.Context, name string, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	handler, ok := r.handlers[name]
 	if !ok {
-		return nil, fmt.Errorf("unknown tool: %s", name)
+		return nil, fmt.Errorf("%w: %s", ErrUnknownTool, name)
 	}
 
-	return handler(args)
+	return handler(ctx, args)
 }
 
 // register adds a tool to the registry.

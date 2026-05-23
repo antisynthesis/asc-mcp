@@ -10,9 +10,54 @@ func TestConstants(t *testing.T) {
 		t.Errorf("JSONRPCVersion = %q, want 2.0", JSONRPCVersion)
 	}
 
-	if ProtocolVersion != "2024-11-05" {
-		t.Errorf("ProtocolVersion = %q, want 2024-11-05", ProtocolVersion)
+	if ProtocolVersion != "2025-06-18" {
+		t.Errorf("ProtocolVersion = %q, want 2025-06-18", ProtocolVersion)
 	}
+
+	if len(SupportedProtocolVersions) == 0 {
+		t.Fatal("SupportedProtocolVersions must not be empty")
+	}
+	if SupportedProtocolVersions[0] != ProtocolVersion {
+		t.Errorf("SupportedProtocolVersions[0] = %q, want %q", SupportedProtocolVersions[0], ProtocolVersion)
+	}
+}
+
+func TestNegotiateProtocolVersion(t *testing.T) {
+	tests := []struct {
+		name      string
+		requested string
+		want      string
+	}{
+		{"latest", "2025-06-18", "2025-06-18"},
+		{"older supported", "2024-11-05", "2024-11-05"},
+		{"interim supported", "2025-03-26", "2025-03-26"},
+		{"unknown falls back to latest", "1999-01-01", ProtocolVersion},
+		{"empty falls back to latest", "", ProtocolVersion},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NegotiateProtocolVersion(tt.requested)
+			if got != tt.want {
+				t.Errorf("NegotiateProtocolVersion(%q) = %q, want %q", tt.requested, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRequest_IsNotification(t *testing.T) {
+	t.Run("with id", func(t *testing.T) {
+		r := Request{ID: json.RawMessage(`1`)}
+		if r.IsNotification() {
+			t.Error("request with id should not be a notification")
+		}
+	})
+	t.Run("without id", func(t *testing.T) {
+		r := Request{}
+		if !r.IsNotification() {
+			t.Error("request without id should be a notification")
+		}
+	})
 }
 
 func TestErrorCodes(t *testing.T) {

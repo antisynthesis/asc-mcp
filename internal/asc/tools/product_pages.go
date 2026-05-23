@@ -213,7 +213,7 @@ func (r *Registry) registerProductPagesTools() {
 	}, r.handleDeleteAppStoreVersionExperiment)
 }
 
-func (r *Registry) handleListAppCustomProductPages(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAppCustomProductPages(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 		Limit int    `json:"limit"`
@@ -231,7 +231,7 @@ func (r *Registry) handleListAppCustomProductPages(args json.RawMessage) (*mcp.T
 		limit = 50
 	}
 
-	resp, err := r.client.ListAppCustomProductPages(context.Background(), params.AppID, limit)
+	resp, err := r.client.ListAppCustomProductPages(ctx, params.AppID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list custom product pages: %v", err)), nil
 	}
@@ -239,7 +239,7 @@ func (r *Registry) handleListAppCustomProductPages(args json.RawMessage) (*mcp.T
 	return mcp.NewSuccessResult(formatAppCustomProductPages(resp.Data)), nil
 }
 
-func (r *Registry) handleGetAppCustomProductPage(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppCustomProductPage(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PageID string `json:"page_id"`
 	}
@@ -251,7 +251,7 @@ func (r *Registry) handleGetAppCustomProductPage(args json.RawMessage) (*mcp.Too
 		return nil, fmt.Errorf("page_id is required")
 	}
 
-	resp, err := r.client.GetAppCustomProductPage(context.Background(), params.PageID)
+	resp, err := r.client.GetAppCustomProductPage(ctx, params.PageID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get custom product page: %v", err)), nil
 	}
@@ -259,7 +259,7 @@ func (r *Registry) handleGetAppCustomProductPage(args json.RawMessage) (*mcp.Too
 	return mcp.NewSuccessResult(formatAppCustomProductPage(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateAppCustomProductPage(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateAppCustomProductPage(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 		Name  string `json:"name"`
@@ -286,7 +286,7 @@ func (r *Registry) handleCreateAppCustomProductPage(args json.RawMessage) (*mcp.
 		},
 	}
 
-	resp, err := r.client.CreateAppCustomProductPage(context.Background(), req)
+	resp, err := r.client.CreateAppCustomProductPage(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create custom product page: %v", err)), nil
 	}
@@ -294,7 +294,7 @@ func (r *Registry) handleCreateAppCustomProductPage(args json.RawMessage) (*mcp.
 	return mcp.NewSuccessResult(fmt.Sprintf("Custom product page created:\n%s", formatAppCustomProductPage(resp.Data))), nil
 }
 
-func (r *Registry) handleUpdateAppCustomProductPage(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateAppCustomProductPage(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PageID  string `json:"page_id"`
 		Name    string `json:"name"`
@@ -319,7 +319,7 @@ func (r *Registry) handleUpdateAppCustomProductPage(args json.RawMessage) (*mcp.
 		},
 	}
 
-	resp, err := r.client.UpdateAppCustomProductPage(context.Background(), params.PageID, req)
+	resp, err := r.client.UpdateAppCustomProductPage(ctx, params.PageID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update custom product page: %v", err)), nil
 	}
@@ -327,7 +327,7 @@ func (r *Registry) handleUpdateAppCustomProductPage(args json.RawMessage) (*mcp.
 	return mcp.NewSuccessResult(fmt.Sprintf("Custom product page updated:\n%s", formatAppCustomProductPage(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteAppCustomProductPage(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteAppCustomProductPage(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		PageID string `json:"page_id"`
 	}
@@ -339,7 +339,7 @@ func (r *Registry) handleDeleteAppCustomProductPage(args json.RawMessage) (*mcp.
 		return nil, fmt.Errorf("page_id is required")
 	}
 
-	err := r.client.DeleteAppCustomProductPage(context.Background(), params.PageID)
+	err := r.client.DeleteAppCustomProductPage(ctx, params.PageID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete custom product page: %v", err)), nil
 	}
@@ -347,7 +347,7 @@ func (r *Registry) handleDeleteAppCustomProductPage(args json.RawMessage) (*mcp.
 	return mcp.NewSuccessResult("Custom product page deleted"), nil
 }
 
-func (r *Registry) handleListAppStoreVersionExperiments(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAppStoreVersionExperiments(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID string `json:"version_id"`
 		Limit     int    `json:"limit"`
@@ -365,7 +365,7 @@ func (r *Registry) handleListAppStoreVersionExperiments(args json.RawMessage) (*
 		limit = 50
 	}
 
-	resp, err := r.client.ListAppStoreVersionExperiments(context.Background(), params.VersionID, limit)
+	resp, err := r.client.ListAppStoreVersionExperiments(ctx, params.VersionID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list experiments: %v", err)), nil
 	}
@@ -373,7 +373,7 @@ func (r *Registry) handleListAppStoreVersionExperiments(args json.RawMessage) (*
 	return mcp.NewSuccessResult(formatAppStoreVersionExperiments(resp.Data)), nil
 }
 
-func (r *Registry) handleGetAppStoreVersionExperiment(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppStoreVersionExperiment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ExperimentID string `json:"experiment_id"`
 	}
@@ -385,7 +385,7 @@ func (r *Registry) handleGetAppStoreVersionExperiment(args json.RawMessage) (*mc
 		return nil, fmt.Errorf("experiment_id is required")
 	}
 
-	resp, err := r.client.GetAppStoreVersionExperiment(context.Background(), params.ExperimentID)
+	resp, err := r.client.GetAppStoreVersionExperiment(ctx, params.ExperimentID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get experiment: %v", err)), nil
 	}
@@ -393,7 +393,7 @@ func (r *Registry) handleGetAppStoreVersionExperiment(args json.RawMessage) (*mc
 	return mcp.NewSuccessResult(formatAppStoreVersionExperiment(resp.Data)), nil
 }
 
-func (r *Registry) handleCreateAppStoreVersionExperiment(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCreateAppStoreVersionExperiment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		VersionID         string `json:"version_id"`
 		Name              string `json:"name"`
@@ -427,7 +427,7 @@ func (r *Registry) handleCreateAppStoreVersionExperiment(args json.RawMessage) (
 		},
 	}
 
-	resp, err := r.client.CreateAppStoreVersionExperiment(context.Background(), req)
+	resp, err := r.client.CreateAppStoreVersionExperiment(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to create experiment: %v", err)), nil
 	}
@@ -435,7 +435,7 @@ func (r *Registry) handleCreateAppStoreVersionExperiment(args json.RawMessage) (
 	return mcp.NewSuccessResult(fmt.Sprintf("Experiment created:\n%s", formatAppStoreVersionExperiment(resp.Data))), nil
 }
 
-func (r *Registry) handleUpdateAppStoreVersionExperiment(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleUpdateAppStoreVersionExperiment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ExperimentID      string `json:"experiment_id"`
 		Name              string `json:"name"`
@@ -462,7 +462,7 @@ func (r *Registry) handleUpdateAppStoreVersionExperiment(args json.RawMessage) (
 		},
 	}
 
-	resp, err := r.client.UpdateAppStoreVersionExperiment(context.Background(), params.ExperimentID, req)
+	resp, err := r.client.UpdateAppStoreVersionExperiment(ctx, params.ExperimentID, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to update experiment: %v", err)), nil
 	}
@@ -470,7 +470,7 @@ func (r *Registry) handleUpdateAppStoreVersionExperiment(args json.RawMessage) (
 	return mcp.NewSuccessResult(fmt.Sprintf("Experiment updated:\n%s", formatAppStoreVersionExperiment(resp.Data))), nil
 }
 
-func (r *Registry) handleDeleteAppStoreVersionExperiment(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleDeleteAppStoreVersionExperiment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ExperimentID string `json:"experiment_id"`
 	}
@@ -482,7 +482,7 @@ func (r *Registry) handleDeleteAppStoreVersionExperiment(args json.RawMessage) (
 		return nil, fmt.Errorf("experiment_id is required")
 	}
 
-	err := r.client.DeleteAppStoreVersionExperiment(context.Background(), params.ExperimentID)
+	err := r.client.DeleteAppStoreVersionExperiment(ctx, params.ExperimentID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete experiment: %v", err)), nil
 	}

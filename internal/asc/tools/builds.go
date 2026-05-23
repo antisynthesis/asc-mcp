@@ -54,7 +54,7 @@ func (r *Registry) registerBuildTools() {
 }
 
 // handleListBuilds handles the list_builds tool.
-func (r *Registry) handleListBuilds(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListBuilds(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 		Limit int    `json:"limit"`
@@ -74,7 +74,6 @@ func (r *Registry) handleListBuilds(args json.RawMessage) (*mcp.ToolsCallResult,
 		params.Limit = 200
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.ListBuilds(ctx, params.AppID, params.Limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list builds: %v", err)), nil
@@ -106,7 +105,7 @@ func (r *Registry) handleListBuilds(args json.RawMessage) (*mcp.ToolsCallResult,
 }
 
 // handleGetBuild handles the get_build tool.
-func (r *Registry) handleGetBuild(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetBuild(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BuildID string `json:"build_id"`
 	}
@@ -119,7 +118,6 @@ func (r *Registry) handleGetBuild(args json.RawMessage) (*mcp.ToolsCallResult, e
 		return mcp.NewErrorResult("build_id is required"), nil
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.GetBuild(ctx, params.BuildID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get build: %v", err)), nil

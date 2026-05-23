@@ -152,7 +152,7 @@ func (r *Registry) registerXcodeCloudTools() {
 	}, r.handleCancelCiBuildRun)
 }
 
-func (r *Registry) handleListCiProducts(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListCiProducts(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 		Limit int    `json:"limit"`
@@ -166,7 +166,7 @@ func (r *Registry) handleListCiProducts(args json.RawMessage) (*mcp.ToolsCallRes
 		limit = 50
 	}
 
-	resp, err := r.client.ListCiProducts(context.Background(), params.AppID, limit)
+	resp, err := r.client.ListCiProducts(ctx, params.AppID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list CI products: %v", err)), nil
 	}
@@ -174,7 +174,7 @@ func (r *Registry) handleListCiProducts(args json.RawMessage) (*mcp.ToolsCallRes
 	return mcp.NewSuccessResult(formatCiProducts(resp.Data)), nil
 }
 
-func (r *Registry) handleGetCiProduct(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetCiProduct(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ProductID string `json:"product_id"`
 	}
@@ -186,7 +186,7 @@ func (r *Registry) handleGetCiProduct(args json.RawMessage) (*mcp.ToolsCallResul
 		return nil, fmt.Errorf("product_id is required")
 	}
 
-	resp, err := r.client.GetCiProduct(context.Background(), params.ProductID)
+	resp, err := r.client.GetCiProduct(ctx, params.ProductID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get CI product: %v", err)), nil
 	}
@@ -194,7 +194,7 @@ func (r *Registry) handleGetCiProduct(args json.RawMessage) (*mcp.ToolsCallResul
 	return mcp.NewSuccessResult(formatCiProduct(resp.Data)), nil
 }
 
-func (r *Registry) handleListCiWorkflows(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListCiWorkflows(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		ProductID string `json:"product_id"`
 		Limit     int    `json:"limit"`
@@ -212,7 +212,7 @@ func (r *Registry) handleListCiWorkflows(args json.RawMessage) (*mcp.ToolsCallRe
 		limit = 50
 	}
 
-	resp, err := r.client.ListCiWorkflows(context.Background(), params.ProductID, limit)
+	resp, err := r.client.ListCiWorkflows(ctx, params.ProductID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list CI workflows: %v", err)), nil
 	}
@@ -220,7 +220,7 @@ func (r *Registry) handleListCiWorkflows(args json.RawMessage) (*mcp.ToolsCallRe
 	return mcp.NewSuccessResult(formatCiWorkflows(resp.Data)), nil
 }
 
-func (r *Registry) handleGetCiWorkflow(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetCiWorkflow(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		WorkflowID string `json:"workflow_id"`
 	}
@@ -232,7 +232,7 @@ func (r *Registry) handleGetCiWorkflow(args json.RawMessage) (*mcp.ToolsCallResu
 		return nil, fmt.Errorf("workflow_id is required")
 	}
 
-	resp, err := r.client.GetCiWorkflow(context.Background(), params.WorkflowID)
+	resp, err := r.client.GetCiWorkflow(ctx, params.WorkflowID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get CI workflow: %v", err)), nil
 	}
@@ -240,7 +240,7 @@ func (r *Registry) handleGetCiWorkflow(args json.RawMessage) (*mcp.ToolsCallResu
 	return mcp.NewSuccessResult(formatCiWorkflow(resp.Data)), nil
 }
 
-func (r *Registry) handleListCiBuildRuns(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListCiBuildRuns(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		WorkflowID string `json:"workflow_id"`
 		Limit      int    `json:"limit"`
@@ -258,7 +258,7 @@ func (r *Registry) handleListCiBuildRuns(args json.RawMessage) (*mcp.ToolsCallRe
 		limit = 50
 	}
 
-	resp, err := r.client.ListCiBuildRuns(context.Background(), params.WorkflowID, limit)
+	resp, err := r.client.ListCiBuildRuns(ctx, params.WorkflowID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list CI build runs: %v", err)), nil
 	}
@@ -266,7 +266,7 @@ func (r *Registry) handleListCiBuildRuns(args json.RawMessage) (*mcp.ToolsCallRe
 	return mcp.NewSuccessResult(formatCiBuildRuns(resp.Data)), nil
 }
 
-func (r *Registry) handleGetCiBuildRun(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetCiBuildRun(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BuildRunID string `json:"build_run_id"`
 	}
@@ -278,7 +278,7 @@ func (r *Registry) handleGetCiBuildRun(args json.RawMessage) (*mcp.ToolsCallResu
 		return nil, fmt.Errorf("build_run_id is required")
 	}
 
-	resp, err := r.client.GetCiBuildRun(context.Background(), params.BuildRunID)
+	resp, err := r.client.GetCiBuildRun(ctx, params.BuildRunID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get CI build run: %v", err)), nil
 	}
@@ -286,7 +286,7 @@ func (r *Registry) handleGetCiBuildRun(args json.RawMessage) (*mcp.ToolsCallResu
 	return mcp.NewSuccessResult(formatCiBuildRun(resp.Data)), nil
 }
 
-func (r *Registry) handleStartCiBuildRun(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleStartCiBuildRun(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		WorkflowID string `json:"workflow_id"`
 	}
@@ -298,7 +298,7 @@ func (r *Registry) handleStartCiBuildRun(args json.RawMessage) (*mcp.ToolsCallRe
 		return nil, fmt.Errorf("workflow_id is required")
 	}
 
-	resp, err := r.client.StartCiBuildRun(context.Background(), params.WorkflowID)
+	resp, err := r.client.StartCiBuildRun(ctx, params.WorkflowID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to start CI build run: %v", err)), nil
 	}
@@ -306,7 +306,7 @@ func (r *Registry) handleStartCiBuildRun(args json.RawMessage) (*mcp.ToolsCallRe
 	return mcp.NewSuccessResult(fmt.Sprintf("Started build run: %s (build #%d)", resp.Data.ID, resp.Data.Attributes.Number)), nil
 }
 
-func (r *Registry) handleCancelCiBuildRun(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleCancelCiBuildRun(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BuildRunID string `json:"build_run_id"`
 	}
@@ -318,7 +318,7 @@ func (r *Registry) handleCancelCiBuildRun(args json.RawMessage) (*mcp.ToolsCallR
 		return nil, fmt.Errorf("build_run_id is required")
 	}
 
-	err := r.client.CancelCiBuildRun(context.Background(), params.BuildRunID)
+	err := r.client.CancelCiBuildRun(ctx, params.BuildRunID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to cancel CI build run: %v", err)), nil
 	}

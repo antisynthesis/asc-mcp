@@ -132,7 +132,7 @@ func (r *Registry) registerProvisioningTools() {
 }
 
 // handleListBundleIDs handles the list_bundle_ids tool.
-func (r *Registry) handleListBundleIDs(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListBundleIDs(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		Limit int `json:"limit"`
 	}
@@ -144,7 +144,6 @@ func (r *Registry) handleListBundleIDs(args json.RawMessage) (*mcp.ToolsCallResu
 		}
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.ListBundleIDs(ctx, params.Limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list bundle IDs: %v", err)), nil
@@ -172,7 +171,7 @@ func (r *Registry) handleListBundleIDs(args json.RawMessage) (*mcp.ToolsCallResu
 }
 
 // handleGetBundleID handles the get_bundle_id tool.
-func (r *Registry) handleGetBundleID(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetBundleID(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		BundleIDID string `json:"bundle_id_id"`
 	}
@@ -185,7 +184,6 @@ func (r *Registry) handleGetBundleID(args json.RawMessage) (*mcp.ToolsCallResult
 		return mcp.NewErrorResult("bundle_id_id is required"), nil
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.GetBundleID(ctx, params.BundleIDID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get bundle ID: %v", err)), nil
@@ -205,7 +203,7 @@ func (r *Registry) handleGetBundleID(args json.RawMessage) (*mcp.ToolsCallResult
 }
 
 // handleListCertificates handles the list_certificates tool.
-func (r *Registry) handleListCertificates(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListCertificates(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		Limit int `json:"limit"`
 	}
@@ -217,7 +215,6 @@ func (r *Registry) handleListCertificates(args json.RawMessage) (*mcp.ToolsCallR
 		}
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.ListCertificates(ctx, params.Limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list certificates: %v", err)), nil
@@ -252,7 +249,7 @@ func (r *Registry) handleListCertificates(args json.RawMessage) (*mcp.ToolsCallR
 }
 
 // handleListProfiles handles the list_profiles tool.
-func (r *Registry) handleListProfiles(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListProfiles(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		Limit int `json:"limit"`
 	}
@@ -264,7 +261,6 @@ func (r *Registry) handleListProfiles(args json.RawMessage) (*mcp.ToolsCallResul
 		}
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.ListProfiles(ctx, params.Limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list profiles: %v", err)), nil
@@ -297,7 +293,7 @@ func (r *Registry) handleListProfiles(args json.RawMessage) (*mcp.ToolsCallResul
 }
 
 // handleListDevices handles the list_devices tool.
-func (r *Registry) handleListDevices(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListDevices(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		Limit int `json:"limit"`
 	}
@@ -309,7 +305,6 @@ func (r *Registry) handleListDevices(args json.RawMessage) (*mcp.ToolsCallResult
 		}
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.ListDevices(ctx, params.Limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list devices: %v", err)), nil
@@ -340,7 +335,7 @@ func (r *Registry) handleListDevices(args json.RawMessage) (*mcp.ToolsCallResult
 }
 
 // handleRegisterDevice handles the register_device tool.
-func (r *Registry) handleRegisterDevice(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleRegisterDevice(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		Name     string `json:"name"`
 		UDID     string `json:"udid"`
@@ -372,7 +367,6 @@ func (r *Registry) handleRegisterDevice(args json.RawMessage) (*mcp.ToolsCallRes
 		},
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.RegisterDevice(ctx, req)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to register device: %v", err)), nil

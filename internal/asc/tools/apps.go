@@ -73,7 +73,7 @@ func (r *Registry) registerAppTools() {
 }
 
 // handleListApps handles the list_apps tool.
-func (r *Registry) handleListApps(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListApps(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		Limit int `json:"limit"`
 	}
@@ -92,7 +92,6 @@ func (r *Registry) handleListApps(args json.RawMessage) (*mcp.ToolsCallResult, e
 		params.Limit = 200
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.ListApps(ctx, params.Limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list apps: %v", err)), nil
@@ -118,7 +117,7 @@ func (r *Registry) handleListApps(args json.RawMessage) (*mcp.ToolsCallResult, e
 }
 
 // handleGetApp handles the get_app tool.
-func (r *Registry) handleGetApp(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetApp(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 	}
@@ -131,7 +130,6 @@ func (r *Registry) handleGetApp(args json.RawMessage) (*mcp.ToolsCallResult, err
 		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.GetApp(ctx, params.AppID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app: %v", err)), nil
@@ -154,7 +152,7 @@ func (r *Registry) handleGetApp(args json.RawMessage) (*mcp.ToolsCallResult, err
 }
 
 // handleGetAppVersions handles the get_app_versions tool.
-func (r *Registry) handleGetAppVersions(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppVersions(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 		Limit int    `json:"limit"`
@@ -169,7 +167,6 @@ func (r *Registry) handleGetAppVersions(args json.RawMessage) (*mcp.ToolsCallRes
 		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
-	ctx := context.Background()
 	resp, err := r.client.GetAppVersions(ctx, params.AppID, params.Limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app versions: %v", err)), nil

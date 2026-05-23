@@ -84,7 +84,7 @@ func (r *Registry) registerPricingTools() {
 	}, r.handleListSubscriptionPricePoints)
 }
 
-func (r *Registry) handleGetAppPriceSchedule(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleGetAppPriceSchedule(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 	}
@@ -96,7 +96,7 @@ func (r *Registry) handleGetAppPriceSchedule(args json.RawMessage) (*mcp.ToolsCa
 		return nil, fmt.Errorf("app_id is required")
 	}
 
-	resp, err := r.client.GetAppPriceSchedule(context.Background(), params.AppID)
+	resp, err := r.client.GetAppPriceSchedule(ctx, params.AppID)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app price schedule: %v", err)), nil
 	}
@@ -104,7 +104,7 @@ func (r *Registry) handleGetAppPriceSchedule(args json.RawMessage) (*mcp.ToolsCa
 	return mcp.NewSuccessResult(formatAppPriceSchedule(resp.Data)), nil
 }
 
-func (r *Registry) handleListAppPricePoints(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListAppPricePoints(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		AppID string `json:"app_id"`
 		Limit int    `json:"limit"`
@@ -122,7 +122,7 @@ func (r *Registry) handleListAppPricePoints(args json.RawMessage) (*mcp.ToolsCal
 		limit = 100
 	}
 
-	resp, err := r.client.ListAppPricePoints(context.Background(), params.AppID, limit)
+	resp, err := r.client.ListAppPricePoints(ctx, params.AppID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app price points: %v", err)), nil
 	}
@@ -130,7 +130,7 @@ func (r *Registry) handleListAppPricePoints(args json.RawMessage) (*mcp.ToolsCal
 	return mcp.NewSuccessResult(formatAppPricePoints(resp.Data)), nil
 }
 
-func (r *Registry) handleListTerritories(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListTerritories(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		Limit int `json:"limit"`
 	}
@@ -143,7 +143,7 @@ func (r *Registry) handleListTerritories(args json.RawMessage) (*mcp.ToolsCallRe
 		limit = 200
 	}
 
-	resp, err := r.client.ListTerritories(context.Background(), limit)
+	resp, err := r.client.ListTerritories(ctx, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list territories: %v", err)), nil
 	}
@@ -151,7 +151,7 @@ func (r *Registry) handleListTerritories(args json.RawMessage) (*mcp.ToolsCallRe
 	return mcp.NewSuccessResult(formatTerritories(resp.Data)), nil
 }
 
-func (r *Registry) handleListSubscriptionPricePoints(args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListSubscriptionPricePoints(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		SubscriptionID string `json:"subscription_id"`
 		Limit          int    `json:"limit"`
@@ -169,7 +169,7 @@ func (r *Registry) handleListSubscriptionPricePoints(args json.RawMessage) (*mcp
 		limit = 100
 	}
 
-	resp, err := r.client.ListSubscriptionPricePoints(context.Background(), params.SubscriptionID, limit)
+	resp, err := r.client.ListSubscriptionPricePoints(ctx, params.SubscriptionID, limit)
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list subscription price points: %v", err)), nil
 	}
