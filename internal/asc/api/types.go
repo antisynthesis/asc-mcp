@@ -22,11 +22,13 @@ type PagingInformation struct {
 
 // ErrorResponse represents an API error response.
 type ErrorResponse struct {
-	Errors []APIError `json:"errors"`
+	Errors []APIErrorDetail `json:"errors"`
 }
 
-// APIError represents a single API error.
-type APIError struct {
+// APIErrorDetail represents a single error entry in an API error response.
+// The wrapper *APIError exposed to callers carries the HTTP status code
+// alongside one or more of these details.
+type APIErrorDetail struct {
 	ID     string `json:"id,omitempty"`
 	Status string `json:"status"`
 	Code   string `json:"code"`

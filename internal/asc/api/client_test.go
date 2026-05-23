@@ -6,12 +6,20 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
 	"time"
 )
+
+// errorsAs is a thin wrapper around errors.As for test readability.
+func errorsAs(err error, target any) bool { return errors.As(err, target) }
+
+// atomicInc increments the counter and returns the new value.
+func atomicInc(n *int32) int32 { return atomic.AddInt32(n, 1) }
 
 // mockTokenProvider creates a mock token provider for testing.
 func mockTokenProvider(t *testing.T) *TokenProvider {
@@ -501,5 +509,112 @@ func BenchmarkClient_Post(b *testing.B) {
 		if err != nil {
 			b.Fatalf("request failed: %v", err)
 		}
+	}
+}
+
+func TestClient_SendsAcceptAndUserAgent(t *testing.T) {
+	var gotAccept, gotUA string
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAccept = r.Header.Get("Accept")
+		gotUA = r.Header.Get("User-Agent")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{}`))
+	})
+	client, server := newTestClient(t, handler)
+	defer server.Close()
+
+	if _, err := client.Get(context.Background(), "/anything", nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotAccept != "application/json" {
+		t.Errorf("Accept = %q, want application/json", gotAccept)
+	}
+	if gotUA == "" || gotUA == "Go-http-client/1.1" {
+		t.Errorf("User-Agent = %q, want a custom asc-mcp UA", gotUA)
+	}
+}
+
+func TestClient_APIErrorIsTyped(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte(`{"errors":[{"title":"FORBIDDEN","detail":"nope"}]}`))
+	})
+	client, server := newTestClient(t, handler)
+	defer server.Close()
+
+	_, err := client.Get(context.Background(), "/x", nil)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	var apiErr *APIError
+	if !errorsAs(err, &apiErr) {
+		t.Fatalf("expected *APIError, got %T: %v", err, err)
+	}
+	if !apiErr.IsAuth() {
+		t.Errorf("403 should be classified as auth error")
+	}
+	if apiErr.StatusCode != http.StatusForbidden {
+		t.Errorf("StatusCode = %d, want 403", apiErr.StatusCode)
+	}
+}
+
+func TestClient_Retries5xx(t *testing.T) {
+	var attempts int32
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := atomicInc(&attempts)
+		if n < 3 {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ok":true}`))
+	})
+	client, server := newTestClient(t, handler)
+	defer server.Close()
+
+	// Speed up the test by lowering the base delay through tight context.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	_, err := client.Get(ctx, "/x", nil)
+	if err != nil {
+		t.Fatalf("expected success after retries, got %v", err)
+	}
+	if attempts != 3 {
+		t.Errorf("attempts = %d, want 3", attempts)
+	}
+}
+
+func TestClient_NoRetryOn400(t *testing.T) {
+	var attempts int32
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomicInc(&attempts)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{}`))
+	})
+	client, server := newTestClient(t, handler)
+	defer server.Close()
+
+	if _, err := client.Get(context.Background(), "/x", nil); err == nil {
+		t.Fatal("expected error")
+	}
+	if attempts != 1 {
+		t.Errorf("attempts = %d, want 1 (4xx should not retry)", attempts)
+	}
+}
+
+func TestClient_RespectsMaxResponseSize(t *testing.T) {
+	big := make([]byte, MaxResponseSize+2048)
+	for i := range big {
+		big[i] = 'a'
+	}
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write(big)
+	})
+	client, server := newTestClient(t, handler)
+	defer server.Close()
+
+	if _, err := client.Get(context.Background(), "/x", nil); err == nil {
+		t.Fatal("expected size limit error")
 	}
 }

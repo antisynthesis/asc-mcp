@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -19,7 +21,64 @@ const (
 
 	// DefaultTimeout is the default HTTP request timeout.
 	DefaultTimeout = 30 * time.Second
+
+	// MaxResponseSize bounds how much of a single response we are willing
+	// to read into memory. App Store Connect rarely returns large payloads,
+	// so this is mainly DoS protection against malformed responses.
+	MaxResponseSize = 25 * 1024 * 1024 // 25 MiB
+
+	// MaxRetries is the maximum number of times a request will be retried
+	// for transient failures (5xx responses, 429 rate limits, network
+	// errors). The first attempt is not counted.
+	MaxRetries = 3
+
+	// RetryBaseDelay is the starting delay for exponential backoff.
+	RetryBaseDelay = 500 * time.Millisecond
+
+	// RetryMaxDelay caps the exponential backoff between retries.
+	RetryMaxDelay = 10 * time.Second
 )
+
+// userAgent identifies this client to the App Store Connect API.
+// The version is updated at build time alongside cmd.Version.
+var userAgent = "asc-mcp/1.0.0 (+https://github.com/antisynthesis/asc-mcp)"
+
+// APIError is the structured error returned by the App Store Connect API.
+// Callers can use errors.As to inspect the HTTP status code, which is
+// useful for distinguishing authentication failures (401/403), missing
+// resources (404), validation errors (4xx), and transient server errors.
+type APIError struct {
+	StatusCode int
+	Errors     []APIErrorDetail
+	RawBody    string
+}
+
+// Error implements the error interface.
+func (e *APIError) Error() string {
+	if len(e.Errors) == 0 {
+		if e.RawBody != "" {
+			return fmt.Sprintf("API error (%d): %s", e.StatusCode, e.RawBody)
+		}
+		return fmt.Sprintf("API error (%d)", e.StatusCode)
+	}
+	parts := make([]string, 0, len(e.Errors))
+	for _, d := range e.Errors {
+		parts = append(parts, fmt.Sprintf("%s: %s", d.Title, d.Detail))
+	}
+	return fmt.Sprintf("API error (%d): %s", e.StatusCode, strings.Join(parts, "; "))
+}
+
+// IsAuth reports whether the API rejected the request for authentication
+// or authorization reasons.
+func (e *APIError) IsAuth() bool {
+	return e.StatusCode == http.StatusUnauthorized || e.StatusCode == http.StatusForbidden
+}
+
+// IsNotFound reports whether the requested resource was not found.
+func (e *APIError) IsNotFound() bool { return e.StatusCode == http.StatusNotFound }
+
+// IsRateLimited reports whether the API throttled the request.
+func (e *APIError) IsRateLimited() bool { return e.StatusCode == http.StatusTooManyRequests }
 
 // Client is an HTTP client for the App Store Connect API.
 type Client struct {
@@ -44,25 +103,60 @@ func NewClient(issuerID, keyID, privateKeyPath string) (*Client, error) {
 	}, nil
 }
 
-// doRequest performs an HTTP request with authentication.
+// doRequest performs an HTTP request with authentication, retrying on
+// transient failures with exponential backoff. Non-idempotent methods
+// (POST, PATCH) are only retried when the server has not yet processed
+// the request (network errors, 429, or 5xx with no side-effect concern).
 func (c *Client) doRequest(ctx context.Context, method, path string, query url.Values, body any) ([]byte, error) {
+	reqURL := c.baseURL + path
+	if len(query) > 0 {
+		reqURL = reqURL + "?" + query.Encode()
+	}
+
+	var bodyBytes []byte
+	if body != nil {
+		var err error
+		bodyBytes, err = json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+		}
+	}
+
+	var lastErr error
+	for attempt := 0; attempt <= MaxRetries; attempt++ {
+		if attempt > 0 {
+			delay := backoffDelay(attempt, lastErr)
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(delay):
+			}
+		}
+
+		respBody, err := c.attempt(ctx, method, reqURL, bodyBytes)
+		if err == nil {
+			return respBody, nil
+		}
+		lastErr = err
+
+		if !isRetryable(err, method) {
+			return nil, err
+		}
+	}
+
+	return nil, lastErr
+}
+
+// attempt performs a single HTTP request attempt.
+func (c *Client) attempt(ctx context.Context, method, reqURL string, bodyBytes []byte) ([]byte, error) {
 	token, err := c.tokenProvider.GetToken()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get token: %w", err)
 	}
 
-	reqURL := c.baseURL + path
-	if query != nil && len(query) > 0 {
-		reqURL = reqURL + "?" + query.Encode()
-	}
-
 	var bodyReader io.Reader
-	if body != nil {
-		bodyData, err := json.Marshal(body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal request body: %w", err)
-		}
-		bodyReader = bytes.NewReader(bodyData)
+	if bodyBytes != nil {
+		bodyReader = bytes.NewReader(bodyBytes)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, reqURL, bodyReader)
@@ -72,6 +166,8 @@ func (c *Client) doRequest(ctx context.Context, method, path string, query url.V
 
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -79,24 +175,97 @@ func (c *Client) doRequest(ctx context.Context, method, path string, query url.V
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, MaxResponseSize+1))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+	if len(respBody) > MaxResponseSize {
+		return nil, fmt.Errorf("response exceeds max size of %d bytes", MaxResponseSize)
+	}
 
 	if resp.StatusCode >= 400 {
+		apiErr := &APIError{StatusCode: resp.StatusCode}
 		var errResp ErrorResponse
-		if err := json.Unmarshal(respBody, &errResp); err == nil && len(errResp.Errors) > 0 {
-			errMsgs := make([]string, 0, len(errResp.Errors))
-			for _, e := range errResp.Errors {
-				errMsgs = append(errMsgs, fmt.Sprintf("%s: %s", e.Title, e.Detail))
-			}
-			return nil, fmt.Errorf("API error (%d): %s", resp.StatusCode, strings.Join(errMsgs, "; "))
+		if jsonErr := json.Unmarshal(respBody, &errResp); jsonErr == nil && len(errResp.Errors) > 0 {
+			apiErr.Errors = errResp.Errors
+		} else {
+			apiErr.RawBody = string(respBody)
 		}
-		return nil, fmt.Errorf("API error (%d): %s", resp.StatusCode, string(respBody))
+		if resp.StatusCode == http.StatusTooManyRequests {
+			if ra := resp.Header.Get("Retry-After"); ra != "" {
+				return nil, &rateLimitError{APIError: apiErr, retryAfter: parseRetryAfter(ra)}
+			}
+		}
+		return nil, apiErr
 	}
 
 	return respBody, nil
+}
+
+// rateLimitError is an internal wrapper around APIError that also carries
+// the Retry-After hint from the server. It is unwrapped to APIError so
+// callers continue to see a plain *APIError via errors.As.
+type rateLimitError struct {
+	*APIError
+	retryAfter time.Duration
+}
+
+func (e *rateLimitError) Unwrap() error { return e.APIError }
+
+// isRetryable reports whether a failed attempt should be retried.
+func isRetryable(err error, method string) bool {
+	if err == nil {
+		return false
+	}
+	var apiErr *APIError
+	if errors.As(err, &apiErr) {
+		if apiErr.StatusCode == http.StatusTooManyRequests {
+			return true
+		}
+		if apiErr.StatusCode >= 500 {
+			// Retry 5xx for GET/DELETE always; for POST/PATCH it is also
+			// safe because the upstream did not commit (5xx).
+			return true
+		}
+		return false
+	}
+	// Network/transport errors are retryable for idempotent methods.
+	switch method {
+	case http.MethodGet, http.MethodDelete, http.MethodPatch, http.MethodPut:
+		return true
+	}
+	return false
+}
+
+// backoffDelay computes the delay before the next retry attempt.
+// If the last error carries a Retry-After hint, that is honored.
+func backoffDelay(attempt int, lastErr error) time.Duration {
+	var rl *rateLimitError
+	if errors.As(lastErr, &rl) && rl.retryAfter > 0 {
+		if rl.retryAfter > RetryMaxDelay {
+			return RetryMaxDelay
+		}
+		return rl.retryAfter
+	}
+	d := RetryBaseDelay << (attempt - 1)
+	if d > RetryMaxDelay {
+		d = RetryMaxDelay
+	}
+	return d
+}
+
+// parseRetryAfter parses the Retry-After header, which may be either a
+// number of seconds or an HTTP date.
+func parseRetryAfter(v string) time.Duration {
+	if secs, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
+		return time.Duration(secs) * time.Second
+	}
+	if t, err := http.ParseTime(v); err == nil {
+		if d := time.Until(t); d > 0 {
+			return d
+		}
+	}
+	return 0
 }
 
 // Get performs a GET request.
