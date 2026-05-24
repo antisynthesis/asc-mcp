@@ -31,6 +31,24 @@ func (r *Registry) registerPromotedPurchasesTools() {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -170,6 +188,24 @@ func (r *Registry) registerPromotedPurchasesTools() {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
+				},
 			},
 			Required: []string{"subscription_id"},
 		},
@@ -301,6 +337,24 @@ func (r *Registry) registerPromotedPurchasesTools() {
 				"cursor": {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
 				},
 			},
 			Required: []string{"subscription_id"},
@@ -441,9 +495,13 @@ func (r *Registry) registerPromotedPurchasesTools() {
 
 func (r *Registry) handleListPromotedPurchases(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID  string `json:"app_id"`
-		Limit  int    `json:"limit"`
-		Cursor string `json:"cursor"`
+		AppID   string              `json:"app_id"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -462,7 +520,7 @@ func (r *Registry) handleListPromotedPurchases(ctx context.Context, args json.Ra
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.PromotedPurchasesResponse, error) {
-		return r.client.ListPromotedPurchases(ctx, params.AppID, limit)
+		return r.client.ListPromotedPurchases(ctx, params.AppID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list promoted purchases: %v", err)), nil
@@ -597,9 +655,13 @@ func (r *Registry) handleDeletePromotedPurchase(ctx context.Context, args json.R
 
 func (r *Registry) handleListSubscriptionOfferCodes(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		SubscriptionID string `json:"subscription_id"`
-		Limit          int    `json:"limit"`
-		Cursor         string `json:"cursor"`
+		SubscriptionID string              `json:"subscription_id"`
+		Limit          int                 `json:"limit"`
+		Cursor         string              `json:"cursor"`
+		Filter         map[string][]string `json:"filter"`
+		Sort           []string            `json:"sort"`
+		Fields         map[string][]string `json:"fields"`
+		Include        []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -618,7 +680,7 @@ func (r *Registry) handleListSubscriptionOfferCodes(ctx context.Context, args js
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.SubscriptionOfferCodesResponse, error) {
-		return r.client.ListSubscriptionOfferCodes(ctx, params.SubscriptionID, limit)
+		return r.client.ListSubscriptionOfferCodes(ctx, params.SubscriptionID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list subscription offer codes: %v", err)), nil
@@ -725,9 +787,13 @@ func (r *Registry) handleUpdateSubscriptionOfferCode(ctx context.Context, args j
 
 func (r *Registry) handleListWinBackOffers(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		SubscriptionID string `json:"subscription_id"`
-		Limit          int    `json:"limit"`
-		Cursor         string `json:"cursor"`
+		SubscriptionID string              `json:"subscription_id"`
+		Limit          int                 `json:"limit"`
+		Cursor         string              `json:"cursor"`
+		Filter         map[string][]string `json:"filter"`
+		Sort           []string            `json:"sort"`
+		Fields         map[string][]string `json:"fields"`
+		Include        []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -746,7 +812,7 @@ func (r *Registry) handleListWinBackOffers(ctx context.Context, args json.RawMes
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.WinBackOffersResponse, error) {
-		return r.client.ListWinBackOffers(ctx, params.SubscriptionID, limit)
+		return r.client.ListWinBackOffers(ctx, params.SubscriptionID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list win-back offers: %v", err)), nil

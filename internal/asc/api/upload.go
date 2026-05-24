@@ -166,9 +166,9 @@ func (c *Client) UploadAppPreview(ctx context.Context, previewSetID, fileName, m
 		Data: AppPreviewCreateData{
 			Type: "appPreviews",
 			Attributes: AppPreviewCreateAttributes{
-				FileName:   fileName,
-				FileSize:   len(body),
-				MimeType:   mimeType,
+				FileName:             fileName,
+				FileSize:             len(body),
+				MimeType:             mimeType,
 				PreviewFrameTimeCode: "",
 			},
 			Relationships: AppPreviewCreateRelationships{

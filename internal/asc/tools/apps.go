@@ -29,6 +29,24 @@ func (r *Registry) registerAppTools() {
 						Type:        "string",
 						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 					},
+					"filter": {
+						Type:        "object",
+						Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+					},
+					"sort": {
+						Type:        "array",
+						Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+						Items:       &mcp.Property{Type: "string"},
+					},
+					"fields": {
+						Type:        "object",
+						Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+					},
+					"include": {
+						Type:        "array",
+						Description: "Related resource names to include in the response.",
+						Items:       &mcp.Property{Type: "string"},
+					},
 				},
 			},
 			Annotations: &mcp.ToolAnnotations{
@@ -95,8 +113,12 @@ func (r *Registry) registerAppTools() {
 // handleListApps handles the list_apps tool.
 func (r *Registry) handleListApps(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit  int    `json:"limit"`
-		Cursor string `json:"cursor"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	params.Limit = 50
 
@@ -114,7 +136,7 @@ func (r *Registry) handleListApps(ctx context.Context, args json.RawMessage) (*m
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppsResponse, error) {
-		return r.client.ListApps(ctx, params.Limit)
+		return r.client.ListApps(ctx, listOpts(params.Limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list apps: %v", err)), nil
@@ -190,7 +212,7 @@ func (r *Registry) handleGetAppVersions(ctx context.Context, args json.RawMessag
 		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
-	resp, err := r.client.GetAppVersions(ctx, params.AppID, params.Limit)
+	resp, err := r.client.GetAppVersions(ctx, params.AppID, listOpts(params.Limit, nil, nil, nil, nil))
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to get app versions: %v", err)), nil
 	}

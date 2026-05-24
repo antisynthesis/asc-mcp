@@ -20,6 +20,23 @@ func cursorProperty() mcp.Property {
 	}
 }
 
+// listOpts assembles an *api.ListOptions from the four query knobs
+// supported by every App Store Connect list endpoint plus the validated
+// limit. Returns nil when none of them are populated, so the underlying
+// client method emits a query without any of these params.
+func listOpts(limit int, filter map[string][]string, sort []string, fields map[string][]string, include []string) *api.ListOptions {
+	if limit <= 0 && len(filter) == 0 && len(sort) == 0 && len(fields) == 0 && len(include) == 0 {
+		return nil
+	}
+	return &api.ListOptions{
+		Limit:   limit,
+		Filter:  filter,
+		Sort:    sort,
+		Fields:  fields,
+		Include: include,
+	}
+}
+
 // paginatedFetch returns the next page of a list response, either by
 // fetching the first page (when cursor is empty) or by following the
 // cursor URL returned by a previous call.

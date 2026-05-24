@@ -31,6 +31,24 @@ func (r *Registry) registerDiagnosticsTools() {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -59,6 +77,24 @@ func (r *Registry) registerDiagnosticsTools() {
 				"cursor": {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
 				},
 			},
 			Required: []string{"build_id"},
@@ -89,6 +125,24 @@ func (r *Registry) registerDiagnosticsTools() {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
+				},
 			},
 			Required: []string{"signature_id"},
 		},
@@ -117,6 +171,24 @@ func (r *Registry) registerDiagnosticsTools() {
 				"cursor": {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
 				},
 			},
 			Required: []string{"version_id"},
@@ -281,9 +353,13 @@ func (r *Registry) registerDiagnosticsTools() {
 
 func (r *Registry) handleListPerfPowerMetrics(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID  string `json:"app_id"`
-		Limit  int    `json:"limit"`
-		Cursor string `json:"cursor"`
+		AppID   string              `json:"app_id"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -302,7 +378,7 @@ func (r *Registry) handleListPerfPowerMetrics(ctx context.Context, args json.Raw
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.PerfPowerMetricsResponse, error) {
-		return r.client.ListPerfPowerMetrics(ctx, params.AppID, limit)
+		return r.client.ListPerfPowerMetrics(ctx, params.AppID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list performance metrics: %v", err)), nil
@@ -313,9 +389,13 @@ func (r *Registry) handleListPerfPowerMetrics(ctx context.Context, args json.Raw
 
 func (r *Registry) handleListDiagnosticSignatures(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		BuildID string `json:"build_id"`
-		Limit   int    `json:"limit"`
-		Cursor  string `json:"cursor"`
+		BuildID string              `json:"build_id"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -334,7 +414,7 @@ func (r *Registry) handleListDiagnosticSignatures(ctx context.Context, args json
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.DiagnosticSignaturesResponse, error) {
-		return r.client.ListDiagnosticSignatures(ctx, params.BuildID, limit)
+		return r.client.ListDiagnosticSignatures(ctx, params.BuildID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list diagnostic signatures: %v", err)), nil
@@ -345,9 +425,13 @@ func (r *Registry) handleListDiagnosticSignatures(ctx context.Context, args json
 
 func (r *Registry) handleListDiagnosticLogs(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		SignatureID string `json:"signature_id"`
-		Limit       int    `json:"limit"`
-		Cursor      string `json:"cursor"`
+		SignatureID string              `json:"signature_id"`
+		Limit       int                 `json:"limit"`
+		Cursor      string              `json:"cursor"`
+		Filter      map[string][]string `json:"filter"`
+		Sort        []string            `json:"sort"`
+		Fields      map[string][]string `json:"fields"`
+		Include     []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -366,7 +450,7 @@ func (r *Registry) handleListDiagnosticLogs(ctx context.Context, args json.RawMe
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.DiagnosticLogsResponse, error) {
-		return r.client.ListDiagnosticLogs(ctx, params.SignatureID, limit)
+		return r.client.ListDiagnosticLogs(ctx, params.SignatureID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list diagnostic logs: %v", err)), nil
@@ -377,9 +461,13 @@ func (r *Registry) handleListDiagnosticLogs(ctx context.Context, args json.RawMe
 
 func (r *Registry) handleListAppStoreReviewAttachments(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		VersionID string `json:"version_id"`
-		Limit     int    `json:"limit"`
-		Cursor    string `json:"cursor"`
+		VersionID string              `json:"version_id"`
+		Limit     int                 `json:"limit"`
+		Cursor    string              `json:"cursor"`
+		Filter    map[string][]string `json:"filter"`
+		Sort      []string            `json:"sort"`
+		Fields    map[string][]string `json:"fields"`
+		Include   []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -398,7 +486,7 @@ func (r *Registry) handleListAppStoreReviewAttachments(ctx context.Context, args
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppStoreReviewAttachmentsResponse, error) {
-		return r.client.ListAppStoreReviewAttachments(ctx, params.VersionID, limit)
+		return r.client.ListAppStoreReviewAttachments(ctx, params.VersionID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list review attachments: %v", err)), nil

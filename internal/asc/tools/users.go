@@ -27,6 +27,24 @@ func (r *Registry) registerUserTools() {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
+				},
 			},
 		},
 		Annotations: &mcp.ToolAnnotations{
@@ -127,6 +145,24 @@ func (r *Registry) registerUserTools() {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
+				},
 			},
 		},
 		Annotations: &mcp.ToolAnnotations{
@@ -223,8 +259,12 @@ func (r *Registry) registerUserTools() {
 
 func (r *Registry) handleListUsers(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit  int    `json:"limit"`
-		Cursor string `json:"cursor"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -239,7 +279,7 @@ func (r *Registry) handleListUsers(ctx context.Context, args json.RawMessage) (*
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.UsersResponse, error) {
-		return r.client.ListUsers(ctx, limit)
+		return r.client.ListUsers(ctx, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list users: %v", err)), nil
@@ -323,8 +363,12 @@ func (r *Registry) handleDeleteUser(ctx context.Context, args json.RawMessage) (
 
 func (r *Registry) handleListUserInvitations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit  int    `json:"limit"`
-		Cursor string `json:"cursor"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -339,7 +383,7 @@ func (r *Registry) handleListUserInvitations(ctx context.Context, args json.RawM
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.UserInvitationsResponse, error) {
-		return r.client.ListUserInvitations(ctx, limit)
+		return r.client.ListUserInvitations(ctx, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list user invitations: %v", err)), nil

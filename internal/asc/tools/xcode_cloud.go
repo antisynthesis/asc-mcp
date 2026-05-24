@@ -31,6 +31,24 @@ func (r *Registry) registerXcodeCloudTools() {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
+				},
 			},
 		},
 		Annotations: &mcp.ToolAnnotations{
@@ -79,6 +97,24 @@ func (r *Registry) registerXcodeCloudTools() {
 				"cursor": {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
 				},
 			},
 			Required: []string{"product_id"},
@@ -129,6 +165,24 @@ func (r *Registry) registerXcodeCloudTools() {
 				"cursor": {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
 				},
 			},
 			Required: []string{"workflow_id"},
@@ -210,9 +264,13 @@ func (r *Registry) registerXcodeCloudTools() {
 
 func (r *Registry) handleListCiProducts(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID  string `json:"app_id"`
-		Limit  int    `json:"limit"`
-		Cursor string `json:"cursor"`
+		AppID   string              `json:"app_id"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -227,7 +285,7 @@ func (r *Registry) handleListCiProducts(ctx context.Context, args json.RawMessag
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.CiProductsResponse, error) {
-		return r.client.ListCiProducts(ctx, params.AppID, limit)
+		return r.client.ListCiProducts(ctx, params.AppID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list CI products: %v", err)), nil
@@ -258,9 +316,13 @@ func (r *Registry) handleGetCiProduct(ctx context.Context, args json.RawMessage)
 
 func (r *Registry) handleListCiWorkflows(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		ProductID string `json:"product_id"`
-		Limit     int    `json:"limit"`
-		Cursor    string `json:"cursor"`
+		ProductID string              `json:"product_id"`
+		Limit     int                 `json:"limit"`
+		Cursor    string              `json:"cursor"`
+		Filter    map[string][]string `json:"filter"`
+		Sort      []string            `json:"sort"`
+		Fields    map[string][]string `json:"fields"`
+		Include   []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -279,7 +341,7 @@ func (r *Registry) handleListCiWorkflows(ctx context.Context, args json.RawMessa
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.CiWorkflowsResponse, error) {
-		return r.client.ListCiWorkflows(ctx, params.ProductID, limit)
+		return r.client.ListCiWorkflows(ctx, params.ProductID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list CI workflows: %v", err)), nil
@@ -310,9 +372,13 @@ func (r *Registry) handleGetCiWorkflow(ctx context.Context, args json.RawMessage
 
 func (r *Registry) handleListCiBuildRuns(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		WorkflowID string `json:"workflow_id"`
-		Limit      int    `json:"limit"`
-		Cursor     string `json:"cursor"`
+		WorkflowID string              `json:"workflow_id"`
+		Limit      int                 `json:"limit"`
+		Cursor     string              `json:"cursor"`
+		Filter     map[string][]string `json:"filter"`
+		Sort       []string            `json:"sort"`
+		Fields     map[string][]string `json:"fields"`
+		Include    []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -331,7 +397,7 @@ func (r *Registry) handleListCiBuildRuns(ctx context.Context, args json.RawMessa
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.CiBuildRunsResponse, error) {
-		return r.client.ListCiBuildRuns(ctx, params.WorkflowID, limit)
+		return r.client.ListCiBuildRuns(ctx, params.WorkflowID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list CI build runs: %v", err)), nil

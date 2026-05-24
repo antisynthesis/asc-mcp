@@ -52,6 +52,24 @@ func (r *Registry) registerGameCenterTools() {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
+				},
 			},
 			Required: []string{"game_center_detail_id"},
 		},
@@ -210,6 +228,24 @@ func (r *Registry) registerGameCenterTools() {
 				"cursor": {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
 				},
 			},
 			Required: []string{"game_center_detail_id"},
@@ -374,9 +410,13 @@ func (r *Registry) handleGetGameCenterDetail(ctx context.Context, args json.RawM
 
 func (r *Registry) handleListGameCenterAchievements(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		GameCenterDetailID string `json:"game_center_detail_id"`
-		Limit              int    `json:"limit"`
-		Cursor             string `json:"cursor"`
+		GameCenterDetailID string              `json:"game_center_detail_id"`
+		Limit              int                 `json:"limit"`
+		Cursor             string              `json:"cursor"`
+		Filter             map[string][]string `json:"filter"`
+		Sort               []string            `json:"sort"`
+		Fields             map[string][]string `json:"fields"`
+		Include            []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -395,7 +435,7 @@ func (r *Registry) handleListGameCenterAchievements(ctx context.Context, args js
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.GameCenterAchievementsResponse, error) {
-		return r.client.ListGameCenterAchievements(ctx, params.GameCenterDetailID, limit)
+		return r.client.ListGameCenterAchievements(ctx, params.GameCenterDetailID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list achievements: %v", err)), nil
@@ -537,9 +577,13 @@ func (r *Registry) handleDeleteGameCenterAchievement(ctx context.Context, args j
 
 func (r *Registry) handleListGameCenterLeaderboards(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		GameCenterDetailID string `json:"game_center_detail_id"`
-		Limit              int    `json:"limit"`
-		Cursor             string `json:"cursor"`
+		GameCenterDetailID string              `json:"game_center_detail_id"`
+		Limit              int                 `json:"limit"`
+		Cursor             string              `json:"cursor"`
+		Filter             map[string][]string `json:"filter"`
+		Sort               []string            `json:"sort"`
+		Fields             map[string][]string `json:"fields"`
+		Include            []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -558,7 +602,7 @@ func (r *Registry) handleListGameCenterLeaderboards(ctx context.Context, args js
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.GameCenterLeaderboardsResponse, error) {
-		return r.client.ListGameCenterLeaderboards(ctx, params.GameCenterDetailID, limit)
+		return r.client.ListGameCenterLeaderboards(ctx, params.GameCenterDetailID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list leaderboards: %v", err)), nil

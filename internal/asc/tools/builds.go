@@ -33,6 +33,24 @@ func (r *Registry) registerBuildTools() {
 						Type:        "string",
 						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 					},
+					"filter": {
+						Type:        "object",
+						Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+					},
+					"sort": {
+						Type:        "array",
+						Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+						Items:       &mcp.Property{Type: "string"},
+					},
+					"fields": {
+						Type:        "object",
+						Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+					},
+					"include": {
+						Type:        "array",
+						Description: "Related resource names to include in the response.",
+						Items:       &mcp.Property{Type: "string"},
+					},
 				},
 			},
 			Annotations: &mcp.ToolAnnotations{
@@ -71,9 +89,13 @@ func (r *Registry) registerBuildTools() {
 // handleListBuilds handles the list_builds tool.
 func (r *Registry) handleListBuilds(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID  string `json:"app_id"`
-		Limit  int    `json:"limit"`
-		Cursor string `json:"cursor"`
+		AppID   string              `json:"app_id"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	params.Limit = 20
 
@@ -91,7 +113,7 @@ func (r *Registry) handleListBuilds(ctx context.Context, args json.RawMessage) (
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BuildsResponse, error) {
-		return r.client.ListBuilds(ctx, params.AppID, params.Limit)
+		return r.client.ListBuilds(ctx, params.AppID, listOpts(params.Limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list builds: %v", err)), nil

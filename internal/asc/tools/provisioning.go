@@ -29,6 +29,24 @@ func (r *Registry) registerProvisioningTools() {
 						Type:        "string",
 						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 					},
+					"filter": {
+						Type:        "object",
+						Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+					},
+					"sort": {
+						Type:        "array",
+						Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+						Items:       &mcp.Property{Type: "string"},
+					},
+					"fields": {
+						Type:        "object",
+						Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+					},
+					"include": {
+						Type:        "array",
+						Description: "Related resource names to include in the response.",
+						Items:       &mcp.Property{Type: "string"},
+					},
 				},
 			},
 			Annotations: &mcp.ToolAnnotations{
@@ -79,6 +97,24 @@ func (r *Registry) registerProvisioningTools() {
 						Type:        "string",
 						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 					},
+					"filter": {
+						Type:        "object",
+						Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+					},
+					"sort": {
+						Type:        "array",
+						Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+						Items:       &mcp.Property{Type: "string"},
+					},
+					"fields": {
+						Type:        "object",
+						Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+					},
+					"include": {
+						Type:        "array",
+						Description: "Related resource names to include in the response.",
+						Items:       &mcp.Property{Type: "string"},
+					},
 				},
 			},
 			Annotations: &mcp.ToolAnnotations{
@@ -106,6 +142,24 @@ func (r *Registry) registerProvisioningTools() {
 						Type:        "string",
 						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 					},
+					"filter": {
+						Type:        "object",
+						Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+					},
+					"sort": {
+						Type:        "array",
+						Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+						Items:       &mcp.Property{Type: "string"},
+					},
+					"fields": {
+						Type:        "object",
+						Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+					},
+					"include": {
+						Type:        "array",
+						Description: "Related resource names to include in the response.",
+						Items:       &mcp.Property{Type: "string"},
+					},
 				},
 			},
 			Annotations: &mcp.ToolAnnotations{
@@ -132,6 +186,24 @@ func (r *Registry) registerProvisioningTools() {
 					"cursor": {
 						Type:        "string",
 						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+					},
+					"filter": {
+						Type:        "object",
+						Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+					},
+					"sort": {
+						Type:        "array",
+						Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+						Items:       &mcp.Property{Type: "string"},
+					},
+					"fields": {
+						Type:        "object",
+						Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+					},
+					"include": {
+						Type:        "array",
+						Description: "Related resource names to include in the response.",
+						Items:       &mcp.Property{Type: "string"},
 					},
 				},
 			},
@@ -182,8 +254,12 @@ func (r *Registry) registerProvisioningTools() {
 // handleListBundleIDs handles the list_bundle_ids tool.
 func (r *Registry) handleListBundleIDs(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit  int    `json:"limit"`
-		Cursor string `json:"cursor"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	params.Limit = 50
 
@@ -194,7 +270,7 @@ func (r *Registry) handleListBundleIDs(ctx context.Context, args json.RawMessage
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BundleIDsResponse, error) {
-		return r.client.ListBundleIDs(ctx, params.Limit)
+		return r.client.ListBundleIDs(ctx, listOpts(params.Limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list bundle IDs: %v", err)), nil
@@ -256,8 +332,12 @@ func (r *Registry) handleGetBundleID(ctx context.Context, args json.RawMessage) 
 // handleListCertificates handles the list_certificates tool.
 func (r *Registry) handleListCertificates(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit  int    `json:"limit"`
-		Cursor string `json:"cursor"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	params.Limit = 50
 
@@ -268,7 +348,7 @@ func (r *Registry) handleListCertificates(ctx context.Context, args json.RawMess
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.CertificatesResponse, error) {
-		return r.client.ListCertificates(ctx, params.Limit)
+		return r.client.ListCertificates(ctx, listOpts(params.Limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list certificates: %v", err)), nil
@@ -305,8 +385,12 @@ func (r *Registry) handleListCertificates(ctx context.Context, args json.RawMess
 // handleListProfiles handles the list_profiles tool.
 func (r *Registry) handleListProfiles(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit  int    `json:"limit"`
-		Cursor string `json:"cursor"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	params.Limit = 50
 
@@ -317,7 +401,7 @@ func (r *Registry) handleListProfiles(ctx context.Context, args json.RawMessage)
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.ProfilesResponse, error) {
-		return r.client.ListProfiles(ctx, params.Limit)
+		return r.client.ListProfiles(ctx, listOpts(params.Limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list profiles: %v", err)), nil
@@ -352,8 +436,12 @@ func (r *Registry) handleListProfiles(ctx context.Context, args json.RawMessage)
 // handleListDevices handles the list_devices tool.
 func (r *Registry) handleListDevices(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		Limit  int    `json:"limit"`
-		Cursor string `json:"cursor"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	params.Limit = 50
 
@@ -364,7 +452,7 @@ func (r *Registry) handleListDevices(ctx context.Context, args json.RawMessage) 
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.DevicesResponse, error) {
-		return r.client.ListDevices(ctx, params.Limit)
+		return r.client.ListDevices(ctx, listOpts(params.Limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list devices: %v", err)), nil

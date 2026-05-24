@@ -326,10 +326,10 @@ func (c *Client) GetURL(ctx context.Context, fullURL string) ([]byte, error) {
 // Apps API methods
 
 // ListApps returns a list of apps.
-func (c *Client) ListApps(ctx context.Context, limit int) (*AppsResponse, error) {
+func (c *Client) ListApps(ctx context.Context, opts *ListOptions) (*AppsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/apps", query)
@@ -361,10 +361,10 @@ func (c *Client) GetApp(ctx context.Context, appID string) (*AppResponse, error)
 }
 
 // GetAppVersions returns versions for an app.
-func (c *Client) GetAppVersions(ctx context.Context, appID string, limit int) (*AppStoreVersionsResponse, error) {
+func (c *Client) GetAppVersions(ctx context.Context, appID string, opts *ListOptions) (*AppStoreVersionsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appStoreVersions", query)
@@ -383,10 +383,10 @@ func (c *Client) GetAppVersions(ctx context.Context, appID string, limit int) (*
 // Builds API methods
 
 // ListBuilds returns a list of builds.
-func (c *Client) ListBuilds(ctx context.Context, appID string, limit int) (*BuildsResponse, error) {
+func (c *Client) ListBuilds(ctx context.Context, appID string, opts *ListOptions) (*BuildsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 	if appID != "" {
 		query.Set("filter[app]", appID)
@@ -423,10 +423,10 @@ func (c *Client) GetBuild(ctx context.Context, buildID string) (*BuildResponse, 
 // Beta Groups API methods
 
 // ListBetaGroups returns a list of beta groups.
-func (c *Client) ListBetaGroups(ctx context.Context, appID string, limit int) (*BetaGroupsResponse, error) {
+func (c *Client) ListBetaGroups(ctx context.Context, appID string, opts *ListOptions) (*BetaGroupsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 	if appID != "" {
 		query.Set("filter[app]", appID)
@@ -468,10 +468,10 @@ func (c *Client) DeleteBetaGroup(ctx context.Context, betaGroupID string) error 
 // Beta Testers API methods
 
 // ListBetaTesters returns a list of beta testers.
-func (c *Client) ListBetaTesters(ctx context.Context, betaGroupID string, limit int) (*BetaTestersResponse, error) {
+func (c *Client) ListBetaTesters(ctx context.Context, betaGroupID string, opts *ListOptions) (*BetaTestersResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 	if betaGroupID != "" {
 		query.Set("filter[betaGroups]", betaGroupID)
@@ -535,10 +535,10 @@ func (c *Client) RemoveBetaTesterFromGroup(ctx context.Context, betaGroupID, bet
 // Bundle IDs API methods
 
 // ListBundleIDs returns a list of bundle IDs.
-func (c *Client) ListBundleIDs(ctx context.Context, limit int) (*BundleIDsResponse, error) {
+func (c *Client) ListBundleIDs(ctx context.Context, opts *ListOptions) (*BundleIDsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/bundleIds", query)
@@ -572,10 +572,10 @@ func (c *Client) GetBundleID(ctx context.Context, bundleIDID string) (*BundleIDR
 // Devices API methods
 
 // ListDevices returns a list of devices.
-func (c *Client) ListDevices(ctx context.Context, limit int) (*DevicesResponse, error) {
+func (c *Client) ListDevices(ctx context.Context, opts *ListOptions) (*DevicesResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/devices", query)
@@ -609,10 +609,10 @@ func (c *Client) RegisterDevice(ctx context.Context, req *DeviceCreateRequest) (
 // Certificates API methods
 
 // ListCertificates returns a list of certificates.
-func (c *Client) ListCertificates(ctx context.Context, limit int) (*CertificatesResponse, error) {
+func (c *Client) ListCertificates(ctx context.Context, opts *ListOptions) (*CertificatesResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/certificates", query)
@@ -631,10 +631,10 @@ func (c *Client) ListCertificates(ctx context.Context, limit int) (*Certificates
 // Profiles API methods
 
 // ListProfiles returns a list of provisioning profiles.
-func (c *Client) ListProfiles(ctx context.Context, limit int) (*ProfilesResponse, error) {
+func (c *Client) ListProfiles(ctx context.Context, opts *ListOptions) (*ProfilesResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/profiles", query)
@@ -685,8 +685,12 @@ func (c *Client) GetAppInfos(ctx context.Context, appID string) (*AppInfosRespon
 // App Info Localization API methods
 
 // ListAppInfoLocalizations returns localizations for an app info.
-func (c *Client) ListAppInfoLocalizations(ctx context.Context, appInfoID string) (*AppInfoLocalizationsResponse, error) {
-	data, err := c.Get(ctx, "/v1/appInfos/"+url.PathEscape(appInfoID)+"/appInfoLocalizations", nil)
+func (c *Client) ListAppInfoLocalizations(ctx context.Context, appInfoID string, opts *ListOptions) (*AppInfoLocalizationsResponse, error) {
+	query := url.Values{}
+	if opts != nil {
+		opts.Apply(query)
+	}
+	data, err := c.Get(ctx, "/v1/appInfos/"+url.PathEscape(appInfoID)+"/appInfoLocalizations", query)
 	if err != nil {
 		return nil, err
 	}
@@ -752,8 +756,12 @@ func (c *Client) DeleteAppInfoLocalization(ctx context.Context, localizationID s
 // App Store Version Localization API methods
 
 // ListAppStoreVersionLocalizations returns localizations for a version.
-func (c *Client) ListAppStoreVersionLocalizations(ctx context.Context, versionID string) (*AppStoreVersionLocalizationsResponse, error) {
-	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/appStoreVersionLocalizations", nil)
+func (c *Client) ListAppStoreVersionLocalizations(ctx context.Context, versionID string, opts *ListOptions) (*AppStoreVersionLocalizationsResponse, error) {
+	query := url.Values{}
+	if opts != nil {
+		opts.Apply(query)
+	}
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/appStoreVersionLocalizations", query)
 	if err != nil {
 		return nil, err
 	}
@@ -819,10 +827,10 @@ func (c *Client) DeleteAppStoreVersionLocalization(ctx context.Context, localiza
 // Customer Reviews API methods
 
 // ListCustomerReviews returns customer reviews for an app.
-func (c *Client) ListCustomerReviews(ctx context.Context, appID string, limit int) (*CustomerReviewsResponse, error) {
+func (c *Client) ListCustomerReviews(ctx context.Context, appID string, opts *ListOptions) (*CustomerReviewsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/customerReviews", query)
@@ -876,10 +884,10 @@ func (c *Client) DeleteCustomerReviewResponse(ctx context.Context, responseID st
 // In-App Purchases API methods
 
 // ListInAppPurchases returns in-app purchases for an app.
-func (c *Client) ListInAppPurchases(ctx context.Context, appID string, limit int) (*InAppPurchasesResponse, error) {
+func (c *Client) ListInAppPurchases(ctx context.Context, appID string, opts *ListOptions) (*InAppPurchasesResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v2/apps/"+url.PathEscape(appID)+"/inAppPurchasesV2", query)
@@ -948,10 +956,10 @@ func (c *Client) DeleteInAppPurchase(ctx context.Context, iapID string) error {
 // Subscriptions API methods
 
 // ListSubscriptionGroups returns subscription groups for an app.
-func (c *Client) ListSubscriptionGroups(ctx context.Context, appID string, limit int) (*SubscriptionGroupsResponse, error) {
+func (c *Client) ListSubscriptionGroups(ctx context.Context, appID string, opts *ListOptions) (*SubscriptionGroupsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/subscriptionGroups", query)
@@ -983,10 +991,10 @@ func (c *Client) GetSubscriptionGroup(ctx context.Context, groupID string) (*Sub
 }
 
 // ListSubscriptions returns subscriptions for a subscription group.
-func (c *Client) ListSubscriptions(ctx context.Context, groupID string, limit int) (*SubscriptionsResponse, error) {
+func (c *Client) ListSubscriptions(ctx context.Context, groupID string, opts *ListOptions) (*SubscriptionsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/subscriptionGroups/"+url.PathEscape(groupID)+"/subscriptions", query)
@@ -1188,10 +1196,10 @@ func (c *Client) DeleteAppStoreVersionPhasedRelease(ctx context.Context, phasedR
 // App Screenshot API methods
 
 // ListAppScreenshotSets returns screenshot sets for a version localization.
-func (c *Client) ListAppScreenshotSets(ctx context.Context, localizationID string, limit int) (*AppScreenshotSetsResponse, error) {
+func (c *Client) ListAppScreenshotSets(ctx context.Context, localizationID string, opts *ListOptions) (*AppScreenshotSetsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/appStoreVersionLocalizations/"+url.PathEscape(localizationID)+"/appScreenshotSets", query)
@@ -1208,10 +1216,10 @@ func (c *Client) ListAppScreenshotSets(ctx context.Context, localizationID strin
 }
 
 // ListAppScreenshots returns screenshots for a screenshot set.
-func (c *Client) ListAppScreenshots(ctx context.Context, screenshotSetID string, limit int) (*AppScreenshotsResponse, error) {
+func (c *Client) ListAppScreenshots(ctx context.Context, screenshotSetID string, opts *ListOptions) (*AppScreenshotsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/appScreenshotSets/"+url.PathEscape(screenshotSetID)+"/appScreenshots", query)
@@ -1280,10 +1288,10 @@ func (c *Client) DeleteAppScreenshot(ctx context.Context, screenshotID string) e
 // App Preview API methods
 
 // ListAppPreviewSets returns preview sets for a version localization.
-func (c *Client) ListAppPreviewSets(ctx context.Context, localizationID string, limit int) (*AppPreviewSetsResponse, error) {
+func (c *Client) ListAppPreviewSets(ctx context.Context, localizationID string, opts *ListOptions) (*AppPreviewSetsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/appStoreVersionLocalizations/"+url.PathEscape(localizationID)+"/appPreviewSets", query)
@@ -1300,10 +1308,10 @@ func (c *Client) ListAppPreviewSets(ctx context.Context, localizationID string, 
 }
 
 // ListAppPreviews returns previews for a preview set.
-func (c *Client) ListAppPreviews(ctx context.Context, previewSetID string, limit int) (*AppPreviewsResponse, error) {
+func (c *Client) ListAppPreviews(ctx context.Context, previewSetID string, opts *ListOptions) (*AppPreviewsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/appPreviewSets/"+url.PathEscape(previewSetID)+"/appPreviews", query)
@@ -1424,10 +1432,10 @@ func (c *Client) DeleteAppPreOrder(ctx context.Context, preOrderID string) error
 // App Event API methods
 
 // ListAppEvents returns app events for an app.
-func (c *Client) ListAppEvents(ctx context.Context, appID string, limit int) (*AppEventsResponse, error) {
+func (c *Client) ListAppEvents(ctx context.Context, appID string, opts *ListOptions) (*AppEventsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appEvents", query)
@@ -1496,10 +1504,10 @@ func (c *Client) DeleteAppEvent(ctx context.Context, eventID string) error {
 // Analytics API methods
 
 // ListAnalyticsReportRequests returns analytics report requests for an app.
-func (c *Client) ListAnalyticsReportRequests(ctx context.Context, appID string, limit int) (*AnalyticsReportRequestsResponse, error) {
+func (c *Client) ListAnalyticsReportRequests(ctx context.Context, appID string, opts *ListOptions) (*AnalyticsReportRequestsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/analyticsReportRequests", query)
@@ -1551,10 +1559,10 @@ func (c *Client) DeleteAnalyticsReportRequest(ctx context.Context, requestID str
 }
 
 // ListAnalyticsReports returns analytics reports for a request.
-func (c *Client) ListAnalyticsReports(ctx context.Context, requestID string, limit int) (*AnalyticsReportsResponse, error) {
+func (c *Client) ListAnalyticsReports(ctx context.Context, requestID string, opts *ListOptions) (*AnalyticsReportsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/analyticsReportRequests/"+url.PathEscape(requestID)+"/reports", query)
@@ -1571,10 +1579,10 @@ func (c *Client) ListAnalyticsReports(ctx context.Context, requestID string, lim
 }
 
 // ListAnalyticsReportInstances returns instances for a report.
-func (c *Client) ListAnalyticsReportInstances(ctx context.Context, reportID string, limit int) (*AnalyticsReportInstancesResponse, error) {
+func (c *Client) ListAnalyticsReportInstances(ctx context.Context, reportID string, opts *ListOptions) (*AnalyticsReportInstancesResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/analyticsReports/"+url.PathEscape(reportID)+"/instances", query)
@@ -1591,10 +1599,10 @@ func (c *Client) ListAnalyticsReportInstances(ctx context.Context, reportID stri
 }
 
 // ListAnalyticsReportSegments returns segments for a report instance.
-func (c *Client) ListAnalyticsReportSegments(ctx context.Context, instanceID string, limit int) (*AnalyticsReportSegmentsResponse, error) {
+func (c *Client) ListAnalyticsReportSegments(ctx context.Context, instanceID string, opts *ListOptions) (*AnalyticsReportSegmentsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/analyticsReportInstances/"+url.PathEscape(instanceID)+"/segments", query)
@@ -1613,10 +1621,10 @@ func (c *Client) ListAnalyticsReportSegments(ctx context.Context, instanceID str
 // App Clip API methods
 
 // ListAppClips returns app clips for an app.
-func (c *Client) ListAppClips(ctx context.Context, appID string, limit int) (*AppClipsResponse, error) {
+func (c *Client) ListAppClips(ctx context.Context, appID string, opts *ListOptions) (*AppClipsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appClips", query)
@@ -1648,10 +1656,10 @@ func (c *Client) GetAppClip(ctx context.Context, appClipID string) (*AppClipResp
 }
 
 // ListAppClipDefaultExperiences returns default experiences for an app clip.
-func (c *Client) ListAppClipDefaultExperiences(ctx context.Context, appClipID string, limit int) (*AppClipDefaultExperiencesResponse, error) {
+func (c *Client) ListAppClipDefaultExperiences(ctx context.Context, appClipID string, opts *ListOptions) (*AppClipDefaultExperiencesResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/appClips/"+url.PathEscape(appClipID)+"/appClipDefaultExperiences", query)
@@ -1683,10 +1691,10 @@ func (c *Client) GetAppClipDefaultExperience(ctx context.Context, experienceID s
 }
 
 // ListAppClipAdvancedExperiences returns advanced experiences for an app clip.
-func (c *Client) ListAppClipAdvancedExperiences(ctx context.Context, appClipID string, limit int) (*AppClipAdvancedExperiencesResponse, error) {
+func (c *Client) ListAppClipAdvancedExperiences(ctx context.Context, appClipID string, opts *ListOptions) (*AppClipAdvancedExperiencesResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/appClips/"+url.PathEscape(appClipID)+"/appClipAdvancedExperiences", query)
@@ -1735,10 +1743,10 @@ func (c *Client) GetGameCenterDetail(ctx context.Context, appID string) (*GameCe
 }
 
 // ListGameCenterAchievements returns achievements for a game center detail.
-func (c *Client) ListGameCenterAchievements(ctx context.Context, gameCenterDetailID string, limit int) (*GameCenterAchievementsResponse, error) {
+func (c *Client) ListGameCenterAchievements(ctx context.Context, gameCenterDetailID string, opts *ListOptions) (*GameCenterAchievementsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/gameCenterDetails/"+url.PathEscape(gameCenterDetailID)+"/gameCenterAchievements", query)
@@ -1805,10 +1813,10 @@ func (c *Client) DeleteGameCenterAchievement(ctx context.Context, achievementID 
 }
 
 // ListGameCenterLeaderboards returns leaderboards for a game center detail.
-func (c *Client) ListGameCenterLeaderboards(ctx context.Context, gameCenterDetailID string, limit int) (*GameCenterLeaderboardsResponse, error) {
+func (c *Client) ListGameCenterLeaderboards(ctx context.Context, gameCenterDetailID string, opts *ListOptions) (*GameCenterLeaderboardsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/gameCenterDetails/"+url.PathEscape(gameCenterDetailID)+"/gameCenterLeaderboards", query)
@@ -1877,10 +1885,10 @@ func (c *Client) DeleteGameCenterLeaderboard(ctx context.Context, leaderboardID 
 // Xcode Cloud API methods
 
 // ListCiProducts returns Xcode Cloud products for an app.
-func (c *Client) ListCiProducts(ctx context.Context, appID string, limit int) (*CiProductsResponse, error) {
+func (c *Client) ListCiProducts(ctx context.Context, appID string, opts *ListOptions) (*CiProductsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 	if appID != "" {
 		query.Set("filter[app]", appID)
@@ -1915,10 +1923,10 @@ func (c *Client) GetCiProduct(ctx context.Context, productID string) (*CiProduct
 }
 
 // ListCiWorkflows returns workflows for a product.
-func (c *Client) ListCiWorkflows(ctx context.Context, productID string, limit int) (*CiWorkflowsResponse, error) {
+func (c *Client) ListCiWorkflows(ctx context.Context, productID string, opts *ListOptions) (*CiWorkflowsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/ciProducts/"+url.PathEscape(productID)+"/workflows", query)
@@ -1950,10 +1958,10 @@ func (c *Client) GetCiWorkflow(ctx context.Context, workflowID string) (*CiWorkf
 }
 
 // ListCiBuildRuns returns build runs for a workflow.
-func (c *Client) ListCiBuildRuns(ctx context.Context, workflowID string, limit int) (*CiBuildRunsResponse, error) {
+func (c *Client) ListCiBuildRuns(ctx context.Context, workflowID string, opts *ListOptions) (*CiBuildRunsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 
 	data, err := c.Get(ctx, "/v1/ciWorkflows/"+url.PathEscape(workflowID)+"/buildRuns", query)
@@ -2056,10 +2064,10 @@ func (c *Client) GetFinanceReport(ctx context.Context, vendorNumber, regionCode,
 // App Encryption API methods
 
 // ListAppEncryptionDeclarations returns encryption declarations for an app.
-func (c *Client) ListAppEncryptionDeclarations(ctx context.Context, appID string, limit int) (*AppEncryptionDeclarationsResponse, error) {
+func (c *Client) ListAppEncryptionDeclarations(ctx context.Context, appID string, opts *ListOptions) (*AppEncryptionDeclarationsResponse, error) {
 	query := url.Values{}
-	if limit > 0 {
-		query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
 	}
 	if appID != "" {
 		query.Set("filter[app]", appID)
@@ -2126,9 +2134,11 @@ func (c *Client) AssignBuildToEncryptionDeclaration(ctx context.Context, declara
 // User management methods
 
 // ListUsers returns a list of users.
-func (c *Client) ListUsers(ctx context.Context, limit int) (*UsersResponse, error) {
+func (c *Client) ListUsers(ctx context.Context, opts *ListOptions) (*UsersResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/users", query)
 	if err != nil {
 		return nil, err
@@ -2178,9 +2188,11 @@ func (c *Client) DeleteUser(ctx context.Context, userID string) error {
 }
 
 // ListUserInvitations returns a list of user invitations.
-func (c *Client) ListUserInvitations(ctx context.Context, limit int) (*UserInvitationsResponse, error) {
+func (c *Client) ListUserInvitations(ctx context.Context, opts *ListOptions) (*UserInvitationsResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/userInvitations", query)
 	if err != nil {
 		return nil, err
@@ -2247,9 +2259,11 @@ func (c *Client) GetAppPriceSchedule(ctx context.Context, appID string) (*AppPri
 }
 
 // ListAppPricePoints returns price points for an app.
-func (c *Client) ListAppPricePoints(ctx context.Context, appID string, limit int) (*AppPricePointsResponse, error) {
+func (c *Client) ListAppPricePoints(ctx context.Context, appID string, opts *ListOptions) (*AppPricePointsResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appPricePoints", query)
 	if err != nil {
 		return nil, err
@@ -2264,9 +2278,11 @@ func (c *Client) ListAppPricePoints(ctx context.Context, appID string, limit int
 }
 
 // ListTerritories returns all territories.
-func (c *Client) ListTerritories(ctx context.Context, limit int) (*TerritoriesResponse, error) {
+func (c *Client) ListTerritories(ctx context.Context, opts *ListOptions) (*TerritoriesResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/territories", query)
 	if err != nil {
 		return nil, err
@@ -2313,9 +2329,11 @@ func (c *Client) CreateAppAvailability(ctx context.Context, req *AppAvailability
 }
 
 // ListTerritoryAvailabilities returns territory availabilities.
-func (c *Client) ListTerritoryAvailabilities(ctx context.Context, appAvailabilityID string, limit int) (*TerritoryAvailabilitiesResponse, error) {
+func (c *Client) ListTerritoryAvailabilities(ctx context.Context, appAvailabilityID string, opts *ListOptions) (*TerritoryAvailabilitiesResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/appAvailabilities/"+url.PathEscape(appAvailabilityID)+"/territoryAvailabilities", query)
 	if err != nil {
 		return nil, err
@@ -2468,9 +2486,11 @@ func (c *Client) DeleteEndUserLicenseAgreement(ctx context.Context, agreementID 
 // Beta App Review Submission methods
 
 // ListBetaAppReviewSubmissions returns a list of beta app review submissions.
-func (c *Client) ListBetaAppReviewSubmissions(ctx context.Context, limit int) (*BetaAppReviewSubmissionsResponse, error) {
+func (c *Client) ListBetaAppReviewSubmissions(ctx context.Context, opts *ListOptions) (*BetaAppReviewSubmissionsResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/betaAppReviewSubmissions", query)
 	if err != nil {
 		return nil, err
@@ -2517,9 +2537,11 @@ func (c *Client) CreateBetaAppReviewSubmission(ctx context.Context, req *BetaApp
 // Beta License Agreement methods
 
 // ListBetaLicenseAgreements returns a list of beta license agreements.
-func (c *Client) ListBetaLicenseAgreements(ctx context.Context, limit int) (*BetaLicenseAgreementsResponse, error) {
+func (c *Client) ListBetaLicenseAgreements(ctx context.Context, opts *ListOptions) (*BetaLicenseAgreementsResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/betaLicenseAgreements", query)
 	if err != nil {
 		return nil, err
@@ -2566,9 +2588,11 @@ func (c *Client) UpdateBetaLicenseAgreement(ctx context.Context, agreementID str
 // Sandbox Tester methods
 
 // ListSandboxTesters returns a list of sandbox testers.
-func (c *Client) ListSandboxTesters(ctx context.Context, limit int) (*SandboxTestersResponse, error) {
+func (c *Client) ListSandboxTesters(ctx context.Context, opts *ListOptions) (*SandboxTestersResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v2/sandboxTesters", query)
 	if err != nil {
 		return nil, err
@@ -2620,9 +2644,11 @@ func (c *Client) DeleteSandboxTester(ctx context.Context, testerID string) error
 // Promoted Purchase methods
 
 // ListPromotedPurchases returns promoted purchases for an app.
-func (c *Client) ListPromotedPurchases(ctx context.Context, appID string, limit int) (*PromotedPurchasesResponse, error) {
+func (c *Client) ListPromotedPurchases(ctx context.Context, appID string, opts *ListOptions) (*PromotedPurchasesResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/promotedPurchases", query)
 	if err != nil {
 		return nil, err
@@ -2689,9 +2715,11 @@ func (c *Client) DeletePromotedPurchase(ctx context.Context, promotedPurchaseID 
 // Subscription Offer Code methods
 
 // ListSubscriptionOfferCodes returns offer codes for a subscription.
-func (c *Client) ListSubscriptionOfferCodes(ctx context.Context, subscriptionID string, limit int) (*SubscriptionOfferCodesResponse, error) {
+func (c *Client) ListSubscriptionOfferCodes(ctx context.Context, subscriptionID string, opts *ListOptions) (*SubscriptionOfferCodesResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/subscriptions/"+url.PathEscape(subscriptionID)+"/offerCodes", query)
 	if err != nil {
 		return nil, err
@@ -2753,9 +2781,11 @@ func (c *Client) UpdateSubscriptionOfferCode(ctx context.Context, offerCodeID st
 // Subscription Price Point methods
 
 // ListSubscriptionPricePoints returns price points for a subscription.
-func (c *Client) ListSubscriptionPricePoints(ctx context.Context, subscriptionID string, limit int) (*SubscriptionPricePointsResponse, error) {
+func (c *Client) ListSubscriptionPricePoints(ctx context.Context, subscriptionID string, opts *ListOptions) (*SubscriptionPricePointsResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/subscriptions/"+url.PathEscape(subscriptionID)+"/pricePoints", query)
 	if err != nil {
 		return nil, err
@@ -2772,9 +2802,11 @@ func (c *Client) ListSubscriptionPricePoints(ctx context.Context, subscriptionID
 // Win-back Offer methods
 
 // ListWinBackOffers returns win-back offers for a subscription.
-func (c *Client) ListWinBackOffers(ctx context.Context, subscriptionID string, limit int) (*WinBackOffersResponse, error) {
+func (c *Client) ListWinBackOffers(ctx context.Context, subscriptionID string, opts *ListOptions) (*WinBackOffersResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/subscriptions/"+url.PathEscape(subscriptionID)+"/winBackOffers", query)
 	if err != nil {
 		return nil, err
@@ -2841,9 +2873,11 @@ func (c *Client) DeleteWinBackOffer(ctx context.Context, offerID string) error {
 // App Store Version Experiment methods
 
 // ListAppStoreVersionExperiments returns experiments for a version.
-func (c *Client) ListAppStoreVersionExperiments(ctx context.Context, versionID string, limit int) (*AppStoreVersionExperimentsResponse, error) {
+func (c *Client) ListAppStoreVersionExperiments(ctx context.Context, versionID string, opts *ListOptions) (*AppStoreVersionExperimentsResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/appStoreVersionExperiments", query)
 	if err != nil {
 		return nil, err
@@ -2910,9 +2944,11 @@ func (c *Client) DeleteAppStoreVersionExperiment(ctx context.Context, experiment
 // Custom Product Page methods
 
 // ListAppCustomProductPages returns custom product pages for an app.
-func (c *Client) ListAppCustomProductPages(ctx context.Context, appID string, limit int) (*AppCustomProductPagesResponse, error) {
+func (c *Client) ListAppCustomProductPages(ctx context.Context, appID string, opts *ListOptions) (*AppCustomProductPagesResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appCustomProductPages", query)
 	if err != nil {
 		return nil, err
@@ -3031,9 +3067,11 @@ func (c *Client) DeleteRoutingAppCoverage(ctx context.Context, coverageID string
 // Performance Metrics methods
 
 // ListPerfPowerMetrics returns performance and power metrics.
-func (c *Client) ListPerfPowerMetrics(ctx context.Context, appID string, limit int) (*PerfPowerMetricsResponse, error) {
+func (c *Client) ListPerfPowerMetrics(ctx context.Context, appID string, opts *ListOptions) (*PerfPowerMetricsResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/perfPowerMetrics", query)
 	if err != nil {
 		return nil, err
@@ -3048,9 +3086,11 @@ func (c *Client) ListPerfPowerMetrics(ctx context.Context, appID string, limit i
 }
 
 // ListBuildPerfPowerMetrics returns performance metrics for a build.
-func (c *Client) ListBuildPerfPowerMetrics(ctx context.Context, buildID string, limit int) (*PerfPowerMetricsResponse, error) {
+func (c *Client) ListBuildPerfPowerMetrics(ctx context.Context, buildID string, opts *ListOptions) (*PerfPowerMetricsResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/builds/"+url.PathEscape(buildID)+"/perfPowerMetrics", query)
 	if err != nil {
 		return nil, err
@@ -3067,9 +3107,11 @@ func (c *Client) ListBuildPerfPowerMetrics(ctx context.Context, buildID string, 
 // Diagnostic methods
 
 // ListDiagnosticSignatures returns diagnostic signatures.
-func (c *Client) ListDiagnosticSignatures(ctx context.Context, buildID string, limit int) (*DiagnosticSignaturesResponse, error) {
+func (c *Client) ListDiagnosticSignatures(ctx context.Context, buildID string, opts *ListOptions) (*DiagnosticSignaturesResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/builds/"+url.PathEscape(buildID)+"/diagnosticSignatures", query)
 	if err != nil {
 		return nil, err
@@ -3084,9 +3126,11 @@ func (c *Client) ListDiagnosticSignatures(ctx context.Context, buildID string, l
 }
 
 // ListDiagnosticLogs returns diagnostic logs.
-func (c *Client) ListDiagnosticLogs(ctx context.Context, signatureID string, limit int) (*DiagnosticLogsResponse, error) {
+func (c *Client) ListDiagnosticLogs(ctx context.Context, signatureID string, opts *ListOptions) (*DiagnosticLogsResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/diagnosticSignatures/"+url.PathEscape(signatureID)+"/logs", query)
 	if err != nil {
 		return nil, err
@@ -3103,9 +3147,11 @@ func (c *Client) ListDiagnosticLogs(ctx context.Context, signatureID string, lim
 // Review Attachment methods
 
 // ListAppStoreReviewAttachments returns review attachments.
-func (c *Client) ListAppStoreReviewAttachments(ctx context.Context, reviewDetailID string, limit int) (*AppStoreReviewAttachmentsResponse, error) {
+func (c *Client) ListAppStoreReviewAttachments(ctx context.Context, reviewDetailID string, opts *ListOptions) (*AppStoreReviewAttachmentsResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/appStoreReviewDetails/"+url.PathEscape(reviewDetailID)+"/appStoreReviewAttachments", query)
 	if err != nil {
 		return nil, err
@@ -3172,9 +3218,11 @@ func (c *Client) DeleteAppStoreReviewAttachment(ctx context.Context, attachmentI
 // App Category methods
 
 // ListAppCategories returns all app categories.
-func (c *Client) ListAppCategories(ctx context.Context, limit int) (*AppCategoriesResponse, error) {
+func (c *Client) ListAppCategories(ctx context.Context, opts *ListOptions) (*AppCategoriesResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/appCategories", query)
 	if err != nil {
 		return nil, err
@@ -3206,10 +3254,12 @@ func (c *Client) GetAppCategory(ctx context.Context, categoryID string) (*AppCat
 // Beta App Localization methods
 
 // ListBetaAppLocalizations returns beta app localizations.
-func (c *Client) ListBetaAppLocalizations(ctx context.Context, appID string, limit int) (*BetaAppLocalizationsResponse, error) {
+func (c *Client) ListBetaAppLocalizations(ctx context.Context, appID string, opts *ListOptions) (*BetaAppLocalizationsResponse, error) {
 	query := url.Values{}
 	query.Set("filter[app]", appID)
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/betaAppLocalizations", query)
 	if err != nil {
 		return nil, err
@@ -3276,10 +3326,12 @@ func (c *Client) DeleteBetaAppLocalization(ctx context.Context, localizationID s
 // Beta Build Localization methods
 
 // ListBetaBuildLocalizations returns beta build localizations.
-func (c *Client) ListBetaBuildLocalizations(ctx context.Context, buildID string, limit int) (*BetaBuildLocalizationsResponse, error) {
+func (c *Client) ListBetaBuildLocalizations(ctx context.Context, buildID string, opts *ListOptions) (*BetaBuildLocalizationsResponse, error) {
 	query := url.Values{}
 	query.Set("filter[build]", buildID)
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/betaBuildLocalizations", query)
 	if err != nil {
 		return nil, err
@@ -3378,9 +3430,11 @@ func (c *Client) UpdateBuildBetaDetail(ctx context.Context, detailID string, req
 // Alternative Distribution methods
 
 // ListAlternativeDistributionKeys returns alternative distribution keys.
-func (c *Client) ListAlternativeDistributionKeys(ctx context.Context, limit int) (*AlternativeDistributionKeysResponse, error) {
+func (c *Client) ListAlternativeDistributionKeys(ctx context.Context, opts *ListOptions) (*AlternativeDistributionKeysResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/alternativeDistributionKeys", query)
 	if err != nil {
 		return nil, err
@@ -3430,9 +3484,11 @@ func (c *Client) DeleteAlternativeDistributionKey(ctx context.Context, keyID str
 }
 
 // ListAlternativeDistributionPackages returns alternative distribution packages.
-func (c *Client) ListAlternativeDistributionPackages(ctx context.Context, appID string, limit int) (*AlternativeDistributionPackagesResponse, error) {
+func (c *Client) ListAlternativeDistributionPackages(ctx context.Context, appID string, opts *ListOptions) (*AlternativeDistributionPackagesResponse, error) {
 	query := url.Values{}
-	query.Set("limit", fmt.Sprintf("%d", limit))
+	if opts != nil {
+		opts.Apply(query)
+	}
 	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/alternativeDistributionPackages", query)
 	if err != nil {
 		return nil, err

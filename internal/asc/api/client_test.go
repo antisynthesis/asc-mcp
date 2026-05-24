@@ -283,7 +283,7 @@ func TestClient_ListApps(t *testing.T) {
 	defer server.Close()
 
 	ctx := context.Background()
-	resp, err := client.ListApps(ctx, 50)
+	resp, err := client.ListApps(ctx, &ListOptions{Limit: 50})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -362,7 +362,7 @@ func TestClient_ListBuilds(t *testing.T) {
 	defer server.Close()
 
 	ctx := context.Background()
-	resp, err := client.ListBuilds(ctx, "app123", 50)
+	resp, err := client.ListBuilds(ctx, "app123", &ListOptions{Limit: 50})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -394,7 +394,7 @@ func TestClient_ListBetaGroups(t *testing.T) {
 	defer server.Close()
 
 	ctx := context.Background()
-	resp, err := client.ListBetaGroups(ctx, "", 50)
+	resp, err := client.ListBetaGroups(ctx, "", &ListOptions{Limit: 50})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -432,7 +432,7 @@ func TestClient_ListDevices(t *testing.T) {
 	defer server.Close()
 
 	ctx := context.Background()
-	resp, err := client.ListDevices(ctx, 50)
+	resp, err := client.ListDevices(ctx, &ListOptions{Limit: 50})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

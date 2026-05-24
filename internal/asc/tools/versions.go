@@ -31,6 +31,24 @@ func (r *Registry) registerVersionSubmissionTools() {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
+				},
 			},
 			Required: []string{"app_id"},
 		},
@@ -335,7 +353,7 @@ func (r *Registry) handleListAppStoreVersions(ctx context.Context, args json.Raw
 		limit = 200
 	}
 
-	resp, err := r.client.GetAppVersions(ctx, params.AppID, limit)
+	resp, err := r.client.GetAppVersions(ctx, params.AppID, listOpts(limit, nil, nil, nil, nil))
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app store versions: %v", err)), nil
 	}

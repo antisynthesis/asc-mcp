@@ -33,6 +33,24 @@ func (r *Registry) registerTestFlightTools() {
 						Type:        "string",
 						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 					},
+					"filter": {
+						Type:        "object",
+						Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+					},
+					"sort": {
+						Type:        "array",
+						Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+						Items:       &mcp.Property{Type: "string"},
+					},
+					"fields": {
+						Type:        "object",
+						Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+					},
+					"include": {
+						Type:        "array",
+						Description: "Related resource names to include in the response.",
+						Items:       &mcp.Property{Type: "string"},
+					},
 				},
 			},
 			Annotations: &mcp.ToolAnnotations{
@@ -125,6 +143,24 @@ func (r *Registry) registerTestFlightTools() {
 					"cursor": {
 						Type:        "string",
 						Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+					},
+					"filter": {
+						Type:        "object",
+						Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+					},
+					"sort": {
+						Type:        "array",
+						Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+						Items:       &mcp.Property{Type: "string"},
+					},
+					"fields": {
+						Type:        "object",
+						Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+					},
+					"include": {
+						Type:        "array",
+						Description: "Related resource names to include in the response.",
+						Items:       &mcp.Property{Type: "string"},
 					},
 				},
 			},
@@ -233,9 +269,13 @@ func (r *Registry) registerTestFlightTools() {
 // handleListBetaGroups handles the list_beta_groups tool.
 func (r *Registry) handleListBetaGroups(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppID  string `json:"app_id"`
-		Limit  int    `json:"limit"`
-		Cursor string `json:"cursor"`
+		AppID   string              `json:"app_id"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Sort    []string            `json:"sort"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
 	}
 	params.Limit = 50
 
@@ -246,7 +286,7 @@ func (r *Registry) handleListBetaGroups(ctx context.Context, args json.RawMessag
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BetaGroupsResponse, error) {
-		return r.client.ListBetaGroups(ctx, params.AppID, params.Limit)
+		return r.client.ListBetaGroups(ctx, params.AppID, listOpts(params.Limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list beta groups: %v", err)), nil
@@ -356,9 +396,13 @@ func (r *Registry) handleDeleteBetaGroup(ctx context.Context, args json.RawMessa
 // handleListBetaTesters handles the list_beta_testers tool.
 func (r *Registry) handleListBetaTesters(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		BetaGroupID string `json:"beta_group_id"`
-		Limit       int    `json:"limit"`
-		Cursor      string `json:"cursor"`
+		BetaGroupID string              `json:"beta_group_id"`
+		Limit       int                 `json:"limit"`
+		Cursor      string              `json:"cursor"`
+		Filter      map[string][]string `json:"filter"`
+		Sort        []string            `json:"sort"`
+		Fields      map[string][]string `json:"fields"`
+		Include     []string            `json:"include"`
 	}
 	params.Limit = 50
 
@@ -369,7 +413,7 @@ func (r *Registry) handleListBetaTesters(ctx context.Context, args json.RawMessa
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.BetaTestersResponse, error) {
-		return r.client.ListBetaTesters(ctx, params.BetaGroupID, params.Limit)
+		return r.client.ListBetaTesters(ctx, params.BetaGroupID, listOpts(params.Limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list beta testers: %v", err)), nil

@@ -31,6 +31,24 @@ func (r *Registry) registerScreenshotTools() {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
+				},
 			},
 			Required: []string{"localization_id"},
 		},
@@ -59,6 +77,24 @@ func (r *Registry) registerScreenshotTools() {
 				"cursor": {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
 				},
 			},
 			Required: []string{"screenshot_set_id"},
@@ -133,6 +169,24 @@ func (r *Registry) registerScreenshotTools() {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
+				},
 			},
 			Required: []string{"localization_id"},
 		},
@@ -161,6 +215,24 @@ func (r *Registry) registerScreenshotTools() {
 				"cursor": {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
 				},
 			},
 			Required: []string{"preview_set_id"},
@@ -219,9 +291,13 @@ func (r *Registry) registerScreenshotTools() {
 
 func (r *Registry) handleListScreenshotSets(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		LocalizationID string `json:"localization_id"`
-		Limit          int    `json:"limit"`
-		Cursor         string `json:"cursor"`
+		LocalizationID string              `json:"localization_id"`
+		Limit          int                 `json:"limit"`
+		Cursor         string              `json:"cursor"`
+		Filter         map[string][]string `json:"filter"`
+		Sort           []string            `json:"sort"`
+		Fields         map[string][]string `json:"fields"`
+		Include        []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -240,7 +316,7 @@ func (r *Registry) handleListScreenshotSets(ctx context.Context, args json.RawMe
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppScreenshotSetsResponse, error) {
-		return r.client.ListAppScreenshotSets(ctx, params.LocalizationID, limit)
+		return r.client.ListAppScreenshotSets(ctx, params.LocalizationID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list screenshot sets: %v", err)), nil
@@ -251,9 +327,13 @@ func (r *Registry) handleListScreenshotSets(ctx context.Context, args json.RawMe
 
 func (r *Registry) handleListScreenshots(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		ScreenshotSetID string `json:"screenshot_set_id"`
-		Limit           int    `json:"limit"`
-		Cursor          string `json:"cursor"`
+		ScreenshotSetID string              `json:"screenshot_set_id"`
+		Limit           int                 `json:"limit"`
+		Cursor          string              `json:"cursor"`
+		Filter          map[string][]string `json:"filter"`
+		Sort            []string            `json:"sort"`
+		Fields          map[string][]string `json:"fields"`
+		Include         []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -272,7 +352,7 @@ func (r *Registry) handleListScreenshots(ctx context.Context, args json.RawMessa
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppScreenshotsResponse, error) {
-		return r.client.ListAppScreenshots(ctx, params.ScreenshotSetID, limit)
+		return r.client.ListAppScreenshots(ctx, params.ScreenshotSetID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list screenshots: %v", err)), nil
@@ -323,9 +403,13 @@ func (r *Registry) handleDeleteScreenshot(ctx context.Context, args json.RawMess
 
 func (r *Registry) handleListPreviewSets(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		LocalizationID string `json:"localization_id"`
-		Limit          int    `json:"limit"`
-		Cursor         string `json:"cursor"`
+		LocalizationID string              `json:"localization_id"`
+		Limit          int                 `json:"limit"`
+		Cursor         string              `json:"cursor"`
+		Filter         map[string][]string `json:"filter"`
+		Sort           []string            `json:"sort"`
+		Fields         map[string][]string `json:"fields"`
+		Include        []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -344,7 +428,7 @@ func (r *Registry) handleListPreviewSets(ctx context.Context, args json.RawMessa
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppPreviewSetsResponse, error) {
-		return r.client.ListAppPreviewSets(ctx, params.LocalizationID, limit)
+		return r.client.ListAppPreviewSets(ctx, params.LocalizationID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list preview sets: %v", err)), nil
@@ -355,9 +439,13 @@ func (r *Registry) handleListPreviewSets(ctx context.Context, args json.RawMessa
 
 func (r *Registry) handleListPreviews(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		PreviewSetID string `json:"preview_set_id"`
-		Limit        int    `json:"limit"`
-		Cursor       string `json:"cursor"`
+		PreviewSetID string              `json:"preview_set_id"`
+		Limit        int                 `json:"limit"`
+		Cursor       string              `json:"cursor"`
+		Filter       map[string][]string `json:"filter"`
+		Sort         []string            `json:"sort"`
+		Fields       map[string][]string `json:"fields"`
+		Include      []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -376,7 +464,7 @@ func (r *Registry) handleListPreviews(ctx context.Context, args json.RawMessage)
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppPreviewsResponse, error) {
-		return r.client.ListAppPreviews(ctx, params.PreviewSetID, limit)
+		return r.client.ListAppPreviews(ctx, params.PreviewSetID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list previews: %v", err)), nil

@@ -22,6 +22,24 @@ func (r *Registry) registerAppInfoLocalizationTools() {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
 				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
+				},
 				"app_info_id": {
 					Type:        "string",
 					Description: "The app info ID",
@@ -198,6 +216,24 @@ func (r *Registry) registerVersionLocalizationTools() {
 				"cursor": {
 					Type:        "string",
 					Description: "Opaque pagination cursor. Pass the URL surfaced as Next cursor in the previous response to fetch the next page.",
+				},
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Keys are attribute names; values are arrays of allowed values, e.g. {\"platform\": [\"IOS\"]} becomes filter[platform]=IOS.",
+				},
+				"sort": {
+					Type:        "array",
+					Description: "Sort fields; prefix with - for descending. Joined comma-separated for the sort query param.",
+					Items:       &mcp.Property{Type: "string"},
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response.",
+					Items:       &mcp.Property{Type: "string"},
 				},
 				"version_id": {
 					Type:        "string",
@@ -377,8 +413,12 @@ func (r *Registry) handleGetAppInfos(ctx context.Context, args json.RawMessage) 
 
 func (r *Registry) handleListAppInfoLocalizations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		AppInfoID string `json:"app_info_id"`
-		Cursor    string `json:"cursor"`
+		AppInfoID string              `json:"app_info_id"`
+		Cursor    string              `json:"cursor"`
+		Filter    map[string][]string `json:"filter"`
+		Sort      []string            `json:"sort"`
+		Fields    map[string][]string `json:"fields"`
+		Include   []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -389,7 +429,7 @@ func (r *Registry) handleListAppInfoLocalizations(ctx context.Context, args json
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppInfoLocalizationsResponse, error) {
-		return r.client.ListAppInfoLocalizations(ctx, params.AppInfoID)
+		return r.client.ListAppInfoLocalizations(ctx, params.AppInfoID, listOpts(0, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list app info localizations: %v", err)), nil
@@ -534,8 +574,12 @@ func (r *Registry) handleDeleteAppInfoLocalization(ctx context.Context, args jso
 
 func (r *Registry) handleListVersionLocalizations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		VersionID string `json:"version_id"`
-		Cursor    string `json:"cursor"`
+		VersionID string              `json:"version_id"`
+		Cursor    string              `json:"cursor"`
+		Filter    map[string][]string `json:"filter"`
+		Sort      []string            `json:"sort"`
+		Fields    map[string][]string `json:"fields"`
+		Include   []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -546,7 +590,7 @@ func (r *Registry) handleListVersionLocalizations(ctx context.Context, args json
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppStoreVersionLocalizationsResponse, error) {
-		return r.client.ListAppStoreVersionLocalizations(ctx, params.VersionID)
+		return r.client.ListAppStoreVersionLocalizations(ctx, params.VersionID, listOpts(0, params.Filter, params.Sort, params.Fields, params.Include))
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list version localizations: %v", err)), nil
