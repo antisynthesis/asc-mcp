@@ -4,6 +4,8 @@ package server
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -54,25 +56,47 @@ type HTTPServer struct {
 	// caller is expected to use a fronting reverse proxy that enforces
 	// its own policy in that case).
 	allowedOrigins map[string]struct{}
+
+	// authTokens, when non-empty, makes every /mcp request require a
+	// Bearer token from this set. Tokens are stored as SHA-256 digests
+	// so log scrapes and core dumps can't leak the raw value.
+	authTokens map[[32]byte]struct{}
+}
+
+// HTTPOptions configures the HTTP transport. Both fields are optional;
+// the zero value disables the corresponding check.
+type HTTPOptions struct {
+	// AllowedOrigins restricts the Origin header (DNS rebinding defense).
+	AllowedOrigins []string
+	// AuthTokens, when non-empty, requires `Authorization: Bearer <token>`
+	// on every /mcp request and rejects anything else with 401. Pass
+	// multiple to support graceful rotation.
+	AuthTokens []string
 }
 
 // NewHTTPServer constructs an HTTP transport for the MCP dispatcher.
-// origins, when non-empty, restricts the Origin header to that set
-// (defense in depth against DNS rebinding attacks, as recommended by
-// the MCP spec).
-func NewHTTPServer(cfg *config.Config, origins []string) (*HTTPServer, error) {
+func NewHTTPServer(cfg *config.Config, opts HTTPOptions) (*HTTPServer, error) {
 	d, err := NewDispatcher(cfg)
 	if err != nil {
 		return nil, err
 	}
-	allowed := make(map[string]struct{}, len(origins))
-	for _, o := range origins {
+	allowed := make(map[string]struct{}, len(opts.AllowedOrigins))
+	for _, o := range opts.AllowedOrigins {
 		allowed[strings.ToLower(o)] = struct{}{}
+	}
+	tokens := make(map[[32]byte]struct{}, len(opts.AuthTokens))
+	for _, t := range opts.AuthTokens {
+		t = strings.TrimSpace(t)
+		if t == "" {
+			continue
+		}
+		tokens[sha256.Sum256([]byte(t))] = struct{}{}
 	}
 	h := &HTTPServer{
 		dispatcher:     d,
 		sessions:       make(map[string]*Session),
 		allowedOrigins: allowed,
+		authTokens:     tokens,
 	}
 	go h.reapLoop()
 	return h, nil
@@ -101,6 +125,11 @@ func (h *HTTPServer) Handler() http.Handler {
 func (h *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !h.checkOrigin(r) {
 		http.Error(w, "origin not allowed", http.StatusForbidden)
+		return
+	}
+	if !h.checkAuth(r) {
+		w.Header().Set("WWW-Authenticate", `Bearer realm="asc-mcp"`)
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 	switch r.Method {
@@ -243,6 +272,33 @@ func (h *HTTPServer) checkOrigin(r *http.Request) bool {
 	}
 	_, ok := h.allowedOrigins[origin]
 	return ok
+}
+
+// checkAuth returns true when the request carries a valid Bearer token
+// (or when no tokens are configured, in which case the endpoint is
+// open). Tokens are compared in constant time against stored SHA-256
+// digests so timing side-channels and core-dump scrapes cannot leak the
+// raw secret.
+func (h *HTTPServer) checkAuth(r *http.Request) bool {
+	if len(h.authTokens) == 0 {
+		return true
+	}
+	header := r.Header.Get("Authorization")
+	const prefix = "Bearer "
+	if !strings.HasPrefix(header, prefix) {
+		return false
+	}
+	presented := sha256.Sum256([]byte(strings.TrimSpace(header[len(prefix):])))
+	// Iterate the configured set in constant time per entry. The map
+	// has at most a handful of rotation tokens, so this is fine; we
+	// still use subtle.ConstantTimeCompare to avoid leaking which token
+	// matched (or how close a near-miss got).
+	match := 0
+	for digest := range h.authTokens {
+		d := digest
+		match |= subtle.ConstantTimeCompare(presented[:], d[:])
+	}
+	return match == 1
 }
 
 // reapLoop periodically discards sessions that have been idle for

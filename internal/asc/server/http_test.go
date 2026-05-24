@@ -36,7 +36,7 @@ func newHTTPTestServer(t *testing.T) *httptest.Server {
 		t.Fatalf("write key: %v", err)
 	}
 	cfg := &config.Config{IssuerID: "iss", KeyID: "kid", PrivateKeyPath: keyPath}
-	hs, err := NewHTTPServer(cfg, nil)
+	hs, err := NewHTTPServer(cfg, HTTPOptions{})
 	if err != nil {
 		t.Fatalf("new http server: %v", err)
 	}
@@ -285,7 +285,7 @@ func TestHTTP_OriginAllowlist(t *testing.T) {
 	keyPath := filepath.Join(tmpDir, "k.p8")
 	_ = os.WriteFile(keyPath, pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes}), 0o600)
 	cfg := &config.Config{IssuerID: "iss", KeyID: "kid", PrivateKeyPath: keyPath}
-	hs, err := NewHTTPServer(cfg, []string{"https://allowed.example"})
+	hs, err := NewHTTPServer(cfg, HTTPOptions{AllowedOrigins: []string{"https://allowed.example"}})
 	if err != nil {
 		t.Fatalf("new: %v", err)
 	}
@@ -316,5 +316,85 @@ func TestHTTP_OriginAllowlist(t *testing.T) {
 	defer resp2.Body.Close()
 	if resp2.StatusCode != http.StatusOK {
 		t.Errorf("allowed origin status = %d, want 200", resp2.StatusCode)
+	}
+}
+
+func newHTTPTestServerWithOpts(t *testing.T, opts HTTPOptions) *httptest.Server {
+	t.Helper()
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate key: %v", err)
+	}
+	keyBytes, _ := x509.MarshalPKCS8PrivateKey(privateKey)
+	tmpDir := t.TempDir()
+	keyPath := filepath.Join(tmpDir, "k.p8")
+	_ = os.WriteFile(keyPath, pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes}), 0o600)
+	cfg := &config.Config{IssuerID: "iss", KeyID: "kid", PrivateKeyPath: keyPath}
+	hs, err := NewHTTPServer(cfg, opts)
+	if err != nil {
+		t.Fatalf("new: %v", err)
+	}
+	return httptest.NewServer(hs.Handler())
+}
+
+func TestHTTP_Auth_MissingToken(t *testing.T) {
+	srv := newHTTPTestServerWithOpts(t, HTTPOptions{AuthTokens: []string{"s3cret"}})
+	defer srv.Close()
+
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion, ID: json.RawMessage(`1`), Method: "initialize",
+		Params: json.RawMessage(`{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}`),
+	}, nil)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("status = %d, want 401", resp.StatusCode)
+	}
+	if got := resp.Header.Get("WWW-Authenticate"); !strings.HasPrefix(got, "Bearer") {
+		t.Errorf("WWW-Authenticate = %q, want Bearer challenge", got)
+	}
+}
+
+func TestHTTP_Auth_WrongToken(t *testing.T) {
+	srv := newHTTPTestServerWithOpts(t, HTTPOptions{AuthTokens: []string{"s3cret"}})
+	defer srv.Close()
+
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion, ID: json.RawMessage(`1`), Method: "initialize",
+		Params: json.RawMessage(`{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}`),
+	}, map[string]string{"Authorization": "Bearer nope"})
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("status = %d, want 401", resp.StatusCode)
+	}
+}
+
+func TestHTTP_Auth_CorrectToken(t *testing.T) {
+	srv := newHTTPTestServerWithOpts(t, HTTPOptions{AuthTokens: []string{"primary", "rotating"}})
+	defer srv.Close()
+
+	// Either token in the set is accepted (rotation support).
+	for _, tok := range []string{"primary", "rotating"} {
+		resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+			JSONRPC: mcp.JSONRPCVersion, ID: json.RawMessage(`1`), Method: "initialize",
+			Params: json.RawMessage(`{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}`),
+		}, map[string]string{"Authorization": "Bearer " + tok})
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("token %q: status = %d, want 200", tok, resp.StatusCode)
+		}
+		resp.Body.Close()
+	}
+}
+
+func TestHTTP_Auth_DoesNotGateHealthz(t *testing.T) {
+	srv := newHTTPTestServerWithOpts(t, HTTPOptions{AuthTokens: []string{"s3cret"}})
+	defer srv.Close()
+	// /healthz must remain reachable for K8s probes even when /mcp is locked down.
+	resp, err := http.Get(srv.URL + "/healthz")
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", resp.StatusCode)
 	}
 }

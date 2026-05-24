@@ -18,6 +18,7 @@ import (
 var (
 	httpAddr           string
 	httpAllowedOrigins string
+	httpAuthTokens     string
 )
 
 var serveHTTPCmd = &cobra.Command{
@@ -44,6 +45,9 @@ func init() {
 	serveHTTPCmd.Flags().StringVar(&httpAddr, "addr", ":8080", "address to bind (e.g. :8080 or 127.0.0.1:8080)")
 	serveHTTPCmd.Flags().StringVar(&httpAllowedOrigins, "allowed-origins", "",
 		"comma-separated list of allowed Origin headers; empty disables the check")
+	serveHTTPCmd.Flags().StringVar(&httpAuthTokens, "auth-tokens", "",
+		"comma-separated list of accepted Bearer tokens. Empty leaves the endpoint open. "+
+			"Reads from ASC_MCP_AUTH_TOKENS env var when the flag is unset.")
 }
 
 func runServeHTTP(_ *cobra.Command, _ []string) error {
@@ -52,17 +56,15 @@ func runServeHTTP(_ *cobra.Command, _ []string) error {
 		return err
 	}
 
-	var origins []string
-	if httpAllowedOrigins != "" {
-		for _, o := range strings.Split(httpAllowedOrigins, ",") {
-			o = strings.TrimSpace(o)
-			if o != "" {
-				origins = append(origins, o)
-			}
-		}
+	opts := server.HTTPOptions{
+		AllowedOrigins: splitCSV(httpAllowedOrigins),
+		AuthTokens:     splitCSV(authTokensValue()),
+	}
+	if len(opts.AuthTokens) == 0 {
+		log.Printf("WARNING: serve-http running without --auth-tokens; the /mcp endpoint is open to anyone who can reach it.")
 	}
 
-	srv, err := server.NewHTTPServer(cfg, origins)
+	srv, err := server.NewHTTPServer(cfg, opts)
 	if err != nil {
 		return err
 	}
@@ -72,4 +74,29 @@ func runServeHTTP(_ *cobra.Command, _ []string) error {
 
 	log.Printf("serving MCP over HTTP on %s", httpAddr)
 	return srv.ListenAndServe(ctx, httpAddr)
+}
+
+// authTokensValue returns the configured auth tokens, falling back to
+// the ASC_MCP_AUTH_TOKENS env var when --auth-tokens is empty.
+func authTokensValue() string {
+	if httpAuthTokens != "" {
+		return httpAuthTokens
+	}
+	return os.Getenv("ASC_MCP_AUTH_TOKENS")
+}
+
+// splitCSV trims whitespace and drops empty entries from a
+// comma-separated string.
+func splitCSV(s string) []string {
+	if s == "" {
+		return nil
+	}
+	var out []string
+	for _, v := range strings.Split(s, ",") {
+		v = strings.TrimSpace(v)
+		if v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }
