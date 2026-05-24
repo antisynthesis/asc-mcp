@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"sync/atomic"
 	"time"
 
@@ -23,6 +24,8 @@ type Dispatcher struct {
 	cfg      *config.Config
 	client   *api.Client
 	registry *tools.Registry
+	logger   *slog.Logger
+	metrics  *metrics // optional; nil disables tool-call metrics
 }
 
 // NewDispatcher constructs a Dispatcher backed by an authenticated
@@ -36,7 +39,16 @@ func NewDispatcher(cfg *config.Config) (*Dispatcher, error) {
 		cfg:      cfg,
 		client:   client,
 		registry: tools.NewRegistry(client),
+		logger:   slog.Default(),
 	}, nil
+}
+
+// SetLogger replaces the logger used for per-request structured logs.
+// Callers typically configure this once during process startup.
+func (d *Dispatcher) SetLogger(l *slog.Logger) {
+	if l != nil {
+		d.logger = l
+	}
 }
 
 // Session carries the per-connection state that the dispatcher needs to
@@ -159,7 +171,31 @@ func (d *Dispatcher) handleToolsCall(ctx context.Context, req *mcp.Request, sess
 	}
 	callCtx, cancel := context.WithTimeout(ctx, toolCallTimeout)
 	defer cancel()
+
+	start := time.Now()
 	result, err := d.registry.CallTool(callCtx, params.Name, params.Arguments)
+	elapsed := time.Since(start)
+
+	outcome := "ok"
+	if err != nil {
+		if errors.Is(err, tools.ErrUnknownTool) {
+			outcome = "unknown"
+		} else {
+			outcome = "error"
+		}
+	} else if result != nil && result.IsError {
+		outcome = "error"
+	}
+	if d.metrics != nil {
+		d.metrics.toolCalls.WithLabelValues(params.Name, outcome).Inc()
+		d.metrics.toolDuration.WithLabelValues(params.Name).Observe(elapsed.Seconds())
+	}
+	d.logger.LogAttrs(ctx, slog.LevelInfo, "tool_call",
+		slog.String("tool", params.Name),
+		slog.String("result", outcome),
+		slog.Duration("duration", elapsed),
+	)
+
 	if err != nil {
 		// Per the MCP CallToolResult guidance, only protocol-level
 		// errors (unknown tool) become JSON-RPC errors; tool execution

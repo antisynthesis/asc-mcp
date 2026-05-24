@@ -16,6 +16,8 @@ import (
 	"strings"
 	"testing"
 
+	dto "github.com/prometheus/client_model/go"
+
 	"github.com/antisynthesis/asc-mcp/internal/asc/config"
 	"github.com/antisynthesis/asc-mcp/internal/asc/mcp"
 )
@@ -396,5 +398,140 @@ func TestHTTP_Auth_DoesNotGateHealthz(t *testing.T) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("status = %d, want 200", resp.StatusCode)
+	}
+}
+
+// metricValue reads a Prometheus counter or gauge metric from the
+// registry by name. Returns -1 when the metric is missing.
+func metricValue(t *testing.T, srv *HTTPServer, name string, labels map[string]string) float64 {
+	t.Helper()
+	mfs, err := srv.metrics.registry.Gather()
+	if err != nil {
+		t.Fatalf("gather: %v", err)
+	}
+	for _, mf := range mfs {
+		if mf.GetName() != name {
+			continue
+		}
+		for _, m := range mf.GetMetric() {
+			if !labelsMatch(m.GetLabel(), labels) {
+				continue
+			}
+			if m.Counter != nil {
+				return m.Counter.GetValue()
+			}
+			if m.Gauge != nil {
+				return m.Gauge.GetValue()
+			}
+		}
+	}
+	return -1
+}
+
+func labelsMatch(have []*dto.LabelPair, want map[string]string) bool {
+	for k, v := range want {
+		found := false
+		for _, p := range have {
+			if p.GetName() == k && p.GetValue() == v {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+// metricsHelper builds an HTTPServer directly (not wrapped in httptest)
+// so the test can read counter values from the registry.
+func httpServerForMetrics(t *testing.T, opts HTTPOptions) (*HTTPServer, *httptest.Server) {
+	t.Helper()
+	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	keyBytes, _ := x509.MarshalPKCS8PrivateKey(privateKey)
+	tmpDir := t.TempDir()
+	keyPath := filepath.Join(tmpDir, "k.p8")
+	_ = os.WriteFile(keyPath, pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes}), 0o600)
+	cfg := &config.Config{IssuerID: "iss", KeyID: "kid", PrivateKeyPath: keyPath}
+	hs, err := NewHTTPServer(cfg, opts)
+	if err != nil {
+		t.Fatalf("new: %v", err)
+	}
+	srv := httptest.NewServer(hs.Handler())
+	return hs, srv
+}
+
+func TestHTTP_MetricsEndpoint(t *testing.T) {
+	_, srv := httpServerForMetrics(t, HTTPOptions{})
+	defer srv.Close()
+	// Trigger one request first; Prometheus omits zero-value series
+	// from the text exposition format, so we need something to emit.
+	init := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion, ID: json.RawMessage(`1`), Method: "initialize",
+		Params: json.RawMessage(`{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}`),
+	}, nil)
+	init.Body.Close()
+
+	resp, err := http.Get(srv.URL + "/metrics")
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200", resp.StatusCode)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	for _, want := range []string{
+		"asc_mcp_http_requests_total",
+		"asc_mcp_http_request_duration_seconds",
+		"asc_mcp_session_active",
+	} {
+		if !strings.Contains(string(body), want) {
+			t.Errorf("metrics output missing %q", want)
+		}
+	}
+}
+
+func TestHTTP_MetricsRecordRequests(t *testing.T) {
+	hs, srv := httpServerForMetrics(t, HTTPOptions{})
+	defer srv.Close()
+
+	// Issue one initialize + one tools/list.
+	init := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion, ID: json.RawMessage(`1`), Method: "initialize",
+		Params: json.RawMessage(`{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}`),
+	}, nil)
+	sess := init.Header.Get(SessionHeader)
+	init.Body.Close()
+	list := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion, ID: json.RawMessage(`2`), Method: "tools/list",
+	}, map[string]string{SessionHeader: sess})
+	list.Body.Close()
+
+	// At least two POSTs should be recorded with status=200.
+	got := metricValue(t, hs, "asc_mcp_http_requests_total", map[string]string{"method": "POST", "status": "200"})
+	if got < 2 {
+		t.Errorf("asc_mcp_http_requests_total{method=POST,status=200} = %v, want >= 2", got)
+	}
+	// One session should be active.
+	if active := metricValue(t, hs, "asc_mcp_session_active", nil); active != 1 {
+		t.Errorf("active sessions = %v, want 1", active)
+	}
+	// One session should have been created.
+	if created := metricValue(t, hs, "asc_mcp_session_created_total", nil); created != 1 {
+		t.Errorf("created sessions = %v, want 1", created)
+	}
+}
+
+func TestHTTP_MetricsAuthFailure(t *testing.T) {
+	hs, srv := httpServerForMetrics(t, HTTPOptions{AuthTokens: []string{"secret"}})
+	defer srv.Close()
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion, ID: json.RawMessage(`1`), Method: "initialize",
+	}, nil)
+	resp.Body.Close()
+	if got := metricValue(t, hs, "asc_mcp_http_auth_failures_total", nil); got != 1 {
+		t.Errorf("auth failures = %v, want 1", got)
 	}
 }

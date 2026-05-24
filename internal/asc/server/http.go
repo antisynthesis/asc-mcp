@@ -12,10 +12,14 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/antisynthesis/asc-mcp/internal/asc/config"
 	"github.com/antisynthesis/asc-mcp/internal/asc/mcp"
@@ -61,10 +65,13 @@ type HTTPServer struct {
 	// Bearer token from this set. Tokens are stored as SHA-256 digests
 	// so log scrapes and core dumps can't leak the raw value.
 	authTokens map[[32]byte]struct{}
+
+	logger  *slog.Logger
+	metrics *metrics
 }
 
-// HTTPOptions configures the HTTP transport. Both fields are optional;
-// the zero value disables the corresponding check.
+// HTTPOptions configures the HTTP transport. All fields are optional;
+// the zero value disables the corresponding feature.
 type HTTPOptions struct {
 	// AllowedOrigins restricts the Origin header (DNS rebinding defense).
 	AllowedOrigins []string
@@ -72,6 +79,9 @@ type HTTPOptions struct {
 	// on every /mcp request and rejects anything else with 401. Pass
 	// multiple to support graceful rotation.
 	AuthTokens []string
+	// Logger overrides the slog logger used for per-request structured
+	// logs. When nil the server uses slog.Default().
+	Logger *slog.Logger
 }
 
 // NewHTTPServer constructs an HTTP transport for the MCP dispatcher.
@@ -92,28 +102,110 @@ func NewHTTPServer(cfg *config.Config, opts HTTPOptions) (*HTTPServer, error) {
 		}
 		tokens[sha256.Sum256([]byte(t))] = struct{}{}
 	}
+	logger := opts.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+	m := newMetrics()
+	d.metrics = m
+	d.SetLogger(logger)
 	h := &HTTPServer{
 		dispatcher:     d,
 		sessions:       make(map[string]*Session),
 		allowedOrigins: allowed,
 		authTokens:     tokens,
+		logger:         logger,
+		metrics:        m,
 	}
 	go h.reapLoop()
 	return h, nil
 }
 
+// Metrics returns the Prometheus registry the HTTPServer uses. Useful
+// for tests that want to read counter values without scraping /metrics.
+func (h *HTTPServer) Metrics() *metrics { return h.metrics }
+
 // Handler returns the net/http handler for the MCP endpoint. Mount it
 // at /mcp (or wherever the deployment prefers).
 func (h *HTTPServer) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/mcp", h)
+	mux.Handle("/mcp", h.observe(h))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		// Readiness probe: the dispatcher is alive if it constructed
 		// successfully, which it has if we made it here.
 		w.WriteHeader(http.StatusOK)
 		_, _ = io.WriteString(w, "ok")
 	})
+	mux.Handle("/metrics", promhttp.HandlerFor(h.metrics.registry, promhttp.HandlerOpts{
+		Registry: h.metrics.registry,
+	}))
 	return mux
+}
+
+// observe wraps the /mcp handler with structured logging and request
+// metrics. The wrapper assigns a request id, captures the response
+// status, and records the duration both as a Prometheus histogram and
+// in the structured log line.
+func (h *HTTPServer) observe(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		reqID := newRequestID()
+		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		// Stash the request id so handlers can include it in their own
+		// log lines if they want.
+		ctx := context.WithValue(r.Context(), requestIDKey{}, reqID)
+		next.ServeHTTP(rec, r.WithContext(ctx))
+		elapsed := time.Since(start)
+		status := rec.status
+		h.metrics.httpRequests.WithLabelValues(r.Method, strconv.Itoa(status)).Inc()
+		h.metrics.httpDuration.WithLabelValues(r.Method).Observe(elapsed.Seconds())
+		h.logger.LogAttrs(r.Context(), slog.LevelInfo, "http_request",
+			slog.String("request_id", reqID),
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path),
+			slog.String("session_id", r.Header.Get(SessionHeader)),
+			slog.Int("status", status),
+			slog.Duration("duration", elapsed),
+			slog.String("remote", r.RemoteAddr),
+		)
+	})
+}
+
+// requestIDKey is the context key for the per-request id assigned by
+// the observe middleware.
+type requestIDKey struct{}
+
+// RequestIDFromContext returns the request id installed by the HTTP
+// middleware, or "" when called outside an HTTP-handled request.
+func RequestIDFromContext(ctx context.Context) string {
+	v, _ := ctx.Value(requestIDKey{}).(string)
+	return v
+}
+
+// statusRecorder captures the HTTP status code so the middleware can
+// log and meter it after the handler returns.
+type statusRecorder struct {
+	http.ResponseWriter
+	status      int
+	wroteHeader bool
+}
+
+func (s *statusRecorder) WriteHeader(code int) {
+	if !s.wroteHeader {
+		s.status = code
+		s.wroteHeader = true
+	}
+	s.ResponseWriter.WriteHeader(code)
+}
+
+// newRequestID returns an 8-byte hex id, short enough to fit comfortably
+// in log lines without taking the spotlight from the message.
+func newRequestID() string {
+	var buf [8]byte
+	if _, err := rand.Read(buf[:]); err != nil {
+		return fmt.Sprintf("req-%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(buf[:])
 }
 
 // ServeHTTP implements the Streamable HTTP MCP transport on a single
@@ -128,6 +220,7 @@ func (h *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !h.checkAuth(r) {
+		h.metrics.authFailures.Inc()
 		w.Header().Set("WWW-Authenticate", `Bearer realm="asc-mcp"`)
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -179,7 +272,10 @@ func (h *HTTPServer) handlePost(w http.ResponseWriter, r *http.Request) {
 		sess = NewSession()
 		h.mu.Lock()
 		h.sessions[sessID] = sess
+		active := len(h.sessions)
 		h.mu.Unlock()
+		h.metrics.sessionsCreated.Inc()
+		h.metrics.sessionsActive.Set(float64(active))
 	} else {
 		if sessID == "" {
 			http.Error(w, "missing "+SessionHeader+" header", http.StatusBadRequest)
@@ -235,11 +331,13 @@ func (h *HTTPServer) handleDelete(w http.ResponseWriter, r *http.Request) {
 	h.mu.Lock()
 	_, existed := h.sessions[sessID]
 	delete(h.sessions, sessID)
+	active := len(h.sessions)
 	h.mu.Unlock()
 	if !existed {
 		http.Error(w, "unknown session", http.StatusNotFound)
 		return
 	}
+	h.metrics.sessionsActive.Set(float64(active))
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -308,13 +406,20 @@ func (h *HTTPServer) reapLoop() {
 	defer t.Stop()
 	for range t.C {
 		cutoff := time.Now().Add(-sessionIdleTimeout)
+		reaped := 0
 		h.mu.Lock()
 		for id, sess := range h.sessions {
 			if sess.LastActive().Before(cutoff) {
 				delete(h.sessions, id)
+				reaped++
 			}
 		}
+		active := len(h.sessions)
 		h.mu.Unlock()
+		if reaped > 0 {
+			h.metrics.sessionsReaped.Add(float64(reaped))
+			h.metrics.sessionsActive.Set(float64(active))
+		}
 	}
 }
 
