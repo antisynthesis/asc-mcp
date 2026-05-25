@@ -84,6 +84,7 @@ Add the following to your Claude Desktop configuration file:
   "mcpServers": {
     "asc-mcp": {
       "command": "/path/to/asc-mcp",
+      "args": ["serve"],
       "env": {
         "ASC_ISSUER_ID": "your-issuer-id",
         "ASC_KEY_ID": "your-key-id",
@@ -103,6 +104,7 @@ Add to your project's `.mcp.json`:
   "mcpServers": {
     "asc-mcp": {
       "command": "/path/to/asc-mcp",
+      "args": ["serve"],
       "env": {
         "ASC_ISSUER_ID": "your-issuer-id",
         "ASC_KEY_ID": "your-key-id",
