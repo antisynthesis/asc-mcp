@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -14,6 +15,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -448,7 +450,17 @@ func knownProtocolVersion(v string) bool {
 // ListenAndServe binds the HTTP transport to addr and serves until
 // ctx is cancelled. It is a convenience for the CLI entry point;
 // callers that need finer control can use Handler() directly.
-func (h *HTTPServer) ListenAndServe(ctx context.Context, addr string) error {
+//
+// When tlsCertFile and tlsKeyFile are both non-empty, the server serves
+// HTTPS using TLS 1.2 or newer. When neither is set, plain HTTP is
+// used (suitable for deployments behind a TLS-terminating reverse
+// proxy). Supplying only one of the pair is rejected as a config
+// error to avoid silently downgrading.
+func (h *HTTPServer) ListenAndServe(ctx context.Context, addr, tlsCertFile, tlsKeyFile string) error {
+	useTLS, err := validateTLSPair(tlsCertFile, tlsKeyFile)
+	if err != nil {
+		return err
+	}
 	srv := &http.Server{
 		Addr:              addr,
 		Handler:           h.Handler(),
@@ -456,9 +468,18 @@ func (h *HTTPServer) ListenAndServe(ctx context.Context, addr string) error {
 		ReadTimeout:       60 * time.Second,
 		WriteTimeout:      120 * time.Second,
 		IdleTimeout:       2 * time.Minute,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
 	}
 	errCh := make(chan error, 1)
-	go func() { errCh <- srv.ListenAndServe() }()
+	go func() {
+		if useTLS {
+			errCh <- srv.ListenAndServeTLS(tlsCertFile, tlsKeyFile)
+		} else {
+			errCh <- srv.ListenAndServe()
+		}
+	}()
 
 	select {
 	case <-ctx.Done():
@@ -471,4 +492,23 @@ func (h *HTTPServer) ListenAndServe(ctx context.Context, addr string) error {
 		}
 		return err
 	}
+}
+
+// validateTLSPair returns true when both cert and key are non-empty
+// (and readable). It returns an error when only one of the pair is set
+// to prevent silent downgrades to plain HTTP.
+func validateTLSPair(cert, key string) (bool, error) {
+	switch {
+	case cert == "" && key == "":
+		return false, nil
+	case cert == "" || key == "":
+		return false, fmt.Errorf("tls config invalid: both --tls-cert and --tls-key must be set, or neither")
+	}
+	if _, err := os.Stat(cert); err != nil {
+		return false, fmt.Errorf("tls cert: %w", err)
+	}
+	if _, err := os.Stat(key); err != nil {
+		return false, fmt.Errorf("tls key: %w", err)
+	}
+	return true, nil
 }

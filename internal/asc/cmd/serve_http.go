@@ -22,6 +22,8 @@ var (
 	httpAuthTokens     string
 	httpLogFormat      string
 	httpLogLevel       string
+	httpTLSCert        string
+	httpTLSKey         string
 )
 
 var serveHTTPCmd = &cobra.Command{
@@ -59,6 +61,11 @@ func init() {
 		"log output format: json or text")
 	serveHTTPCmd.Flags().StringVar(&httpLogLevel, "log-level", "info",
 		"log level: debug, info, warn, error")
+	serveHTTPCmd.Flags().StringVar(&httpTLSCert, "tls-cert", "",
+		"PEM-encoded TLS certificate file. Must be set together with --tls-key. "+
+			"If unset, the server listens HTTP; use a TLS-terminating reverse proxy in production.")
+	serveHTTPCmd.Flags().StringVar(&httpTLSKey, "tls-key", "",
+		"PEM-encoded TLS private key file. Must be set together with --tls-cert.")
 }
 
 func runServeHTTP(_ *cobra.Command, _ []string) error {
@@ -90,8 +97,12 @@ func runServeHTTP(_ *cobra.Command, _ []string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	log.Printf("serving MCP over HTTP on %s", httpAddr)
-	return srv.ListenAndServe(ctx, httpAddr)
+	if httpTLSCert != "" && httpTLSKey != "" {
+		log.Printf("serving MCP over HTTPS on %s", httpAddr)
+	} else {
+		log.Printf("serving MCP over HTTP on %s (no TLS; expect a reverse proxy to terminate TLS in production)", httpAddr)
+	}
+	return srv.ListenAndServe(ctx, httpAddr, httpTLSCert, httpTLSKey)
 }
 
 // authTokensValue returns the configured auth tokens, falling back to
