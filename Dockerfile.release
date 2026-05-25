@@ -1,0 +1,16 @@
+# Runtime-only image used by goreleaser. The asc-mcp binary is built by
+# goreleaser for the target platform and COPYd in; this image does NOT
+# compile Go itself. For local development image builds, use Dockerfile.
+FROM alpine:3.20
+
+RUN apk --no-cache add ca-certificates && \
+    adduser -D -g '' -u 10001 appuser
+
+COPY asc-mcp /usr/local/bin/asc-mcp
+
+USER appuser
+
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/asc-mcp"]
+CMD ["serve-http", "--addr", ":8080"]

@@ -1,0 +1,134 @@
+# goreleaser configuration for asc-mcp.
+# Run "goreleaser release --clean" on a tagged commit, or
+# "goreleaser release --clean --snapshot" for a dry run.
+version: 2
+
+project_name: asc-mcp
+
+before:
+  hooks:
+    - go mod tidy
+    - go vet ./...
+
+builds:
+  - id: asc-mcp
+    main: ./cmd/asc-mcp
+    binary: asc-mcp
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/antisynthesis/asc-mcp/internal/asc/cmd.Version={{.Version}}
+      - -X github.com/antisynthesis/asc-mcp/internal/asc/cmd.Commit={{.Commit}}
+      - -X github.com/antisynthesis/asc-mcp/internal/asc/cmd.BuildDate={{.Date}}
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: asc-mcp
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ if eq .Arch "amd64" }}x86_64{{ else }}{{ .Arch }}{{ end }}
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-snapshot"
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 0
+    - title: "Bug fixes"
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 1
+    - title: Refactor
+      regexp: '^.*?refactor(\(.+\))??!?:.+$'
+      order: 2
+    - title: Documentation
+      regexp: '^.*?docs(\(.+\))??!?:.+$'
+      order: 3
+    - title: CI
+      regexp: '^.*?ci(\(.+\))??!?:.+$'
+      order: 4
+    - title: Chores
+      regexp: '^.*?chore(\(.+\))??!?:.+$'
+      order: 5
+  filters:
+    exclude:
+      - "^test:"
+      - "^test\\("
+      - "merge conflict"
+      - Merge pull request
+      - Merge remote-tracking branch
+
+dockers:
+  - id: linux-amd64
+    image_templates:
+      - "ghcr.io/antisynthesis/asc-mcp:{{ .Version }}-amd64"
+      - "ghcr.io/antisynthesis/asc-mcp:latest-amd64"
+    dockerfile: Dockerfile.release
+    use: buildx
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=MCP server for Apple App Store Connect"
+      - "--label=org.opencontainers.image.source=https://github.com/antisynthesis/asc-mcp"
+      - "--label=org.opencontainers.image.licenses=MIT"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+
+  - id: linux-arm64
+    image_templates:
+      - "ghcr.io/antisynthesis/asc-mcp:{{ .Version }}-arm64"
+      - "ghcr.io/antisynthesis/asc-mcp:latest-arm64"
+    dockerfile: Dockerfile.release
+    use: buildx
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=MCP server for Apple App Store Connect"
+      - "--label=org.opencontainers.image.source=https://github.com/antisynthesis/asc-mcp"
+      - "--label=org.opencontainers.image.licenses=MIT"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+
+docker_manifests:
+  - name_template: "ghcr.io/antisynthesis/asc-mcp:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/antisynthesis/asc-mcp:{{ .Version }}-amd64"
+      - "ghcr.io/antisynthesis/asc-mcp:{{ .Version }}-arm64"
+  - name_template: "ghcr.io/antisynthesis/asc-mcp:latest"
+    image_templates:
+      - "ghcr.io/antisynthesis/asc-mcp:latest-amd64"
+      - "ghcr.io/antisynthesis/asc-mcp:latest-arm64"
+
+release:
+  github:
+    owner: antisynthesis
+    name: asc-mcp
+  draft: false
+  prerelease: auto
+  name_template: "v{{ .Version }}"
+  footer: |
+    ---
+    **Container image**: `ghcr.io/antisynthesis/asc-mcp:{{ .Version }}`
