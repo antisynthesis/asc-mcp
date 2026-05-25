@@ -509,11 +509,20 @@ Two transports are supported, sharing the same dispatcher and tool registry:
 
 - `asc-mcp serve` — stdio. JSON-RPC messages on stdin/stdout. Use this when
   the server is spawned by a desktop client such as Claude Desktop.
-- `asc-mcp serve-http --addr :8080 [--allowed-origins ...]` — Streamable
-  HTTP per the 2025-06-18 spec. `POST /mcp` for JSON-RPC submissions,
-  `DELETE /mcp` to end a session, `GET /healthz` for the K8s probe. The
-  server assigns an `Mcp-Session-Id` on initialize and clients echo it on
-  every subsequent request.
+- `asc-mcp serve-http --addr :8080` — Streamable HTTP per the
+  2025-06-18 spec. `POST /mcp` for JSON-RPC submissions, `DELETE /mcp`
+  to end a session, `GET /healthz` for the K8s probe, `GET /metrics`
+  for Prometheus scraping. The server assigns an `Mcp-Session-Id` on
+  initialize and clients echo it on every subsequent request. Useful
+  flags:
+  - `--auth-tokens` (or `ASC_MCP_AUTH_TOKENS` env): comma-separated
+    Bearer tokens. Required for any non-trusted-network deployment.
+  - `--allowed-origins`: comma-separated Origin allowlist (DNS rebinding
+    defense for browser clients).
+  - `--tls-cert` / `--tls-key`: PEM cert+key to terminate TLS in
+    process (TLS 1.2 minimum). Omit both to listen plain HTTP behind a
+    TLS-terminating reverse proxy.
+  - `--log-format` (json|text), `--log-level` (debug|info|warn|error).
 
 Asset uploads (screenshots, previews, review attachments) use the
 three-step App Store Connect handshake (reserve → chunked upload →
