@@ -280,6 +280,27 @@ func (r *Registry) registerMiscTools() {
 		},
 	}, r.handleDeleteAlternativeDistributionKey)
 
+	// Get alternative distribution package for a version
+	r.register(mcp.Tool{
+		Name:        "get_alternative_distribution_package",
+		Description: "Get the alternative distribution package for an App Store version (EU marketplace distribution)",
+		InputSchema: mcp.JSONSchema{
+			Type: "object",
+			Properties: map[string]mcp.Property{
+				"version_id": {
+					Type:        "string",
+					Description: "The App Store version ID",
+				},
+			},
+			Required: []string{"version_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "Get Alternative Distribution Package",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
+	}, r.handleGetAlternativeDistributionPackage)
+
 	// Marketplace Search Detail tools
 	r.register(mcp.Tool{
 		Name:        "get_marketplace_search_detail",
@@ -386,7 +407,7 @@ func (r *Registry) handleGetEndUserLicenseAgreement(ctx context.Context, args js
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	resp, err := r.client.GetEndUserLicenseAgreement(ctx, params.AppID)
@@ -408,7 +429,7 @@ func (r *Registry) handleCreateEndUserLicenseAgreement(ctx context.Context, args
 	}
 
 	if params.AppID == "" || params.AgreementText == "" {
-		return nil, fmt.Errorf("app_id and agreement_text are required")
+		return mcp.NewErrorResult("app_id and agreement_text are required"), nil
 	}
 
 	var territories []api.ResourceIdentifier
@@ -451,7 +472,7 @@ func (r *Registry) handleUpdateEndUserLicenseAgreement(ctx context.Context, args
 	}
 
 	if params.EULAID == "" || params.AgreementText == "" {
-		return nil, fmt.Errorf("eula_id and agreement_text are required")
+		return mcp.NewErrorResult("eula_id and agreement_text are required"), nil
 	}
 
 	req := &api.EndUserLicenseAgreementUpdateRequest{
@@ -481,7 +502,7 @@ func (r *Registry) handleDeleteEndUserLicenseAgreement(ctx context.Context, args
 	}
 
 	if params.EULAID == "" {
-		return nil, fmt.Errorf("eula_id is required")
+		return mcp.NewErrorResult("eula_id is required"), nil
 	}
 
 	err := r.client.DeleteEndUserLicenseAgreement(ctx, params.EULAID)
@@ -533,7 +554,7 @@ func (r *Registry) handleGetAppCategory(ctx context.Context, args json.RawMessag
 	}
 
 	if params.CategoryID == "" {
-		return nil, fmt.Errorf("category_id is required")
+		return mcp.NewErrorResult("category_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppCategory(ctx, params.CategoryID)
@@ -585,7 +606,7 @@ func (r *Registry) handleGetAlternativeDistributionKey(ctx context.Context, args
 	}
 
 	if params.KeyID == "" {
-		return nil, fmt.Errorf("key_id is required")
+		return mcp.NewErrorResult("key_id is required"), nil
 	}
 
 	resp, err := r.client.GetAlternativeDistributionKey(ctx, params.KeyID)
@@ -605,7 +626,7 @@ func (r *Registry) handleCreateAlternativeDistributionKey(ctx context.Context, a
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	req := &api.AlternativeDistributionKeyCreateRequest{
@@ -636,7 +657,7 @@ func (r *Registry) handleDeleteAlternativeDistributionKey(ctx context.Context, a
 	}
 
 	if params.KeyID == "" {
-		return nil, fmt.Errorf("key_id is required")
+		return mcp.NewErrorResult("key_id is required"), nil
 	}
 
 	err := r.client.DeleteAlternativeDistributionKey(ctx, params.KeyID)
@@ -645,6 +666,26 @@ func (r *Registry) handleDeleteAlternativeDistributionKey(ctx context.Context, a
 	}
 
 	return mcp.NewSuccessResult("Alternative distribution key deleted"), nil
+}
+
+func (r *Registry) handleGetAlternativeDistributionPackage(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
+	var params struct {
+		VersionID string `json:"version_id"`
+	}
+	if err := json.Unmarshal(args, &params); err != nil {
+		return nil, fmt.Errorf("invalid arguments: %w", err)
+	}
+
+	if params.VersionID == "" {
+		return mcp.NewErrorResult("version_id is required"), nil
+	}
+
+	resp, err := r.client.GetAlternativeDistributionPackageForVersion(ctx, params.VersionID)
+	if err != nil {
+		return mcp.NewErrorResult(fmt.Sprintf("Failed to get alternative distribution package: %v", err)), nil
+	}
+
+	return newDataResult(fmt.Sprintf("Alternative Distribution Package ID: %s\n", resp.Data.ID), resp.Data), nil
 }
 
 // Marketplace search detail handlers
@@ -657,7 +698,7 @@ func (r *Registry) handleGetMarketplaceSearchDetail(ctx context.Context, args js
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	resp, err := r.client.GetMarketplaceSearchDetail(ctx, params.AppID)
@@ -678,7 +719,7 @@ func (r *Registry) handleCreateMarketplaceSearchDetail(ctx context.Context, args
 	}
 
 	if params.AppID == "" || params.CatalogURL == "" {
-		return nil, fmt.Errorf("app_id and catalog_url are required")
+		return mcp.NewErrorResult("app_id and catalog_url are required"), nil
 	}
 
 	req := &api.MarketplaceSearchDetailCreateRequest{
@@ -713,7 +754,7 @@ func (r *Registry) handleUpdateMarketplaceSearchDetail(ctx context.Context, args
 	}
 
 	if params.DetailID == "" || params.CatalogURL == "" {
-		return nil, fmt.Errorf("detail_id and catalog_url are required")
+		return mcp.NewErrorResult("detail_id and catalog_url are required"), nil
 	}
 
 	req := &api.MarketplaceSearchDetailUpdateRequest{
@@ -743,7 +784,7 @@ func (r *Registry) handleDeleteMarketplaceSearchDetail(ctx context.Context, args
 	}
 
 	if params.DetailID == "" {
-		return nil, fmt.Errorf("detail_id is required")
+		return mcp.NewErrorResult("detail_id is required"), nil
 	}
 
 	err := r.client.DeleteMarketplaceSearchDetail(ctx, params.DetailID)

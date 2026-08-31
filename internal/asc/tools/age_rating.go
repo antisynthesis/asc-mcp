@@ -10,7 +10,7 @@ import (
 	"github.com/antisynthesis/asc-mcp/internal/asc/mcp"
 )
 
-// registerAgeRatingTools registers age rating and IDFA declaration tools.
+// registerAgeRatingTools registers age rating declaration tools.
 func (r *Registry) registerAgeRatingTools() {
 	// Get age rating declaration
 	r.register(mcp.Tool{
@@ -116,127 +116,40 @@ func (r *Registry) registerAgeRatingTools() {
 		},
 	}, r.handleUpdateAgeRatingDeclaration)
 
-	// Get IDFA declaration
+	// List territory age ratings
 	r.register(mcp.Tool{
-		Name:        "get_idfa_declaration",
-		Description: "Get the IDFA declaration for an app store version",
+		Name:        "list_territory_age_ratings",
+		Description: "List an app's App Store age rating per territory for an app info",
 		InputSchema: mcp.JSONSchema{
 			Type: "object",
 			Properties: map[string]mcp.Property{
-				"version_id": {
+				"app_info_id": {
 					Type:        "string",
-					Description: "The app store version ID",
+					Description: "The app info ID",
+				},
+				"limit": {
+					Type:        "integer",
+					Description: "Maximum number of territory age ratings to return (default 50, max 200)",
+				},
+				"cursor": cursorProperty(),
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response (supported: territory).",
+					Items:       &mcp.Property{Type: "string"},
 				},
 			},
-			Required: []string{"version_id"},
+			Required: []string{"app_info_id"},
 		},
 		Annotations: &mcp.ToolAnnotations{
-			Title:         "Get Idfa Declaration",
+			Title:         "List Territory Age Ratings",
 			ReadOnlyHint:  mcp.BoolPtr(true),
 			OpenWorldHint: mcp.BoolPtr(true),
 		},
-	}, r.handleGetIdfaDeclaration)
-
-	// Create IDFA declaration
-	r.register(mcp.Tool{
-		Name:        "create_idfa_declaration",
-		Description: "Create an IDFA declaration for an app store version",
-		InputSchema: mcp.JSONSchema{
-			Type: "object",
-			Properties: map[string]mcp.Property{
-				"version_id": {
-					Type:        "string",
-					Description: "The app store version ID",
-				},
-				"serves_ads": {
-					Type:        "boolean",
-					Description: "Whether the app serves ads",
-				},
-				"attributes_app_installation_to_previous_ad": {
-					Type:        "boolean",
-					Description: "Whether app attributes installation to ads",
-				},
-				"attributes_action_with_previous_ad": {
-					Type:        "boolean",
-					Description: "Whether app attributes actions to ads",
-				},
-				"honors_limited_ad_tracking": {
-					Type:        "boolean",
-					Description: "Whether app honors limited ad tracking",
-				},
-			},
-			Required: []string{"version_id", "serves_ads", "attributes_app_installation_to_previous_ad", "attributes_action_with_previous_ad", "honors_limited_ad_tracking"},
-		},
-		Annotations: &mcp.ToolAnnotations{
-			Title:           "Create Idfa Declaration",
-			ReadOnlyHint:    mcp.BoolPtr(false),
-			DestructiveHint: mcp.BoolPtr(false),
-			IdempotentHint:  mcp.BoolPtr(false),
-			OpenWorldHint:   mcp.BoolPtr(true),
-		},
-	}, r.handleCreateIdfaDeclaration)
-
-	// Update IDFA declaration
-	r.register(mcp.Tool{
-		Name:        "update_idfa_declaration",
-		Description: "Update an IDFA declaration",
-		InputSchema: mcp.JSONSchema{
-			Type: "object",
-			Properties: map[string]mcp.Property{
-				"declaration_id": {
-					Type:        "string",
-					Description: "The IDFA declaration ID",
-				},
-				"serves_ads": {
-					Type:        "boolean",
-					Description: "Whether the app serves ads",
-				},
-				"attributes_app_installation_to_previous_ad": {
-					Type:        "boolean",
-					Description: "Whether app attributes installation to ads",
-				},
-				"attributes_action_with_previous_ad": {
-					Type:        "boolean",
-					Description: "Whether app attributes actions to ads",
-				},
-				"honors_limited_ad_tracking": {
-					Type:        "boolean",
-					Description: "Whether app honors limited ad tracking",
-				},
-			},
-			Required: []string{"declaration_id"},
-		},
-		Annotations: &mcp.ToolAnnotations{
-			Title:           "Update Idfa Declaration",
-			ReadOnlyHint:    mcp.BoolPtr(false),
-			DestructiveHint: mcp.BoolPtr(true),
-			IdempotentHint:  mcp.BoolPtr(true),
-			OpenWorldHint:   mcp.BoolPtr(true),
-		},
-	}, r.handleUpdateIdfaDeclaration)
-
-	// Delete IDFA declaration
-	r.register(mcp.Tool{
-		Name:        "delete_idfa_declaration",
-		Description: "Delete an IDFA declaration",
-		InputSchema: mcp.JSONSchema{
-			Type: "object",
-			Properties: map[string]mcp.Property{
-				"declaration_id": {
-					Type:        "string",
-					Description: "The IDFA declaration ID to delete",
-				},
-			},
-			Required: []string{"declaration_id"},
-		},
-		Annotations: &mcp.ToolAnnotations{
-			Title:           "Delete Idfa Declaration",
-			ReadOnlyHint:    mcp.BoolPtr(false),
-			DestructiveHint: mcp.BoolPtr(true),
-			IdempotentHint:  mcp.BoolPtr(true),
-			OpenWorldHint:   mcp.BoolPtr(true),
-		},
-	}, r.handleDeleteIdfaDeclaration)
+	}, r.handleListTerritoryAgeRatings)
 }
 
 func (r *Registry) handleGetAgeRatingDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -248,7 +161,7 @@ func (r *Registry) handleGetAgeRatingDeclaration(ctx context.Context, args json.
 	}
 
 	if params.AppInfoID == "" {
-		return nil, fmt.Errorf("app_info_id is required")
+		return mcp.NewErrorResult("app_info_id is required"), nil
 	}
 
 	resp, err := r.client.GetAgeRatingDeclaration(ctx, params.AppInfoID)
@@ -283,7 +196,7 @@ func (r *Registry) handleUpdateAgeRatingDeclaration(ctx context.Context, args js
 	}
 
 	if params.DeclarationID == "" {
-		return nil, fmt.Errorf("declaration_id is required")
+		return mcp.NewErrorResult("declaration_id is required"), nil
 	}
 
 	req := &api.AgeRatingDeclarationUpdateRequest{
@@ -317,122 +230,57 @@ func (r *Registry) handleUpdateAgeRatingDeclaration(ctx context.Context, args js
 	return newDataResult(fmt.Sprintf("Age rating declaration updated:\n%s", formatAgeRatingDeclaration(resp.Data)), resp.Data), nil
 }
 
-func (r *Registry) handleGetIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleListTerritoryAgeRatings(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		VersionID string `json:"version_id"`
+		AppInfoID string              `json:"app_info_id"`
+		Limit     int                 `json:"limit"`
+		Cursor    string              `json:"cursor"`
+		Fields    map[string][]string `json:"fields"`
+		Include   []string            `json:"include"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
 	}
 
-	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+	if params.AppInfoID == "" {
+		return mcp.NewErrorResult("app_info_id is required"), nil
 	}
 
-	resp, err := r.client.GetIdfaDeclaration(ctx, params.VersionID)
+	limit := params.Limit
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.TerritoryAgeRatingsResponse, error) {
+		return r.client.ListTerritoryAgeRatings(ctx, params.AppInfoID, listOpts(limit, nil, nil, params.Fields, params.Include))
+	})
 	if err != nil {
-		return mcp.NewErrorResult(fmt.Sprintf("Failed to get IDFA declaration: %v", err)), nil
+		return mcp.NewErrorResult(fmt.Sprintf("Failed to list territory age ratings: %v", err)), nil
 	}
 
-	return newDataResult(formatIdfaDeclaration(resp.Data), resp.Data), nil
+	return newListResult(formatTerritoryAgeRatings(resp.Data), resp.Data, resp.Links), nil
 }
 
-func (r *Registry) handleCreateIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
-	var params struct {
-		VersionID                             string `json:"version_id"`
-		ServesAds                             bool   `json:"serves_ads"`
-		AttributesAppInstallationToPreviousAd bool   `json:"attributes_app_installation_to_previous_ad"`
-		AttributesActionWithPreviousAd        bool   `json:"attributes_action_with_previous_ad"`
-		HonorsLimitedAdTracking               bool   `json:"honors_limited_ad_tracking"`
-	}
-	if err := json.Unmarshal(args, &params); err != nil {
-		return nil, fmt.Errorf("invalid arguments: %w", err)
+func formatTerritoryAgeRatings(ratings []api.TerritoryAgeRating) string {
+	if len(ratings) == 0 {
+		return "No territory age ratings found"
 	}
 
-	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("Found %d territory age ratings:\n\n", len(ratings)))
+
+	for _, rating := range ratings {
+		sb.WriteString(fmt.Sprintf("ID: %s\n", rating.ID))
+		if rating.Attributes.AppStoreAgeRating != "" {
+			sb.WriteString(fmt.Sprintf("App Store Age Rating: %s\n", rating.Attributes.AppStoreAgeRating))
+		}
+		sb.WriteString("---\n")
 	}
 
-	req := &api.IdfaDeclarationCreateRequest{
-		Data: api.IdfaDeclarationCreateData{
-			Type: "idfaDeclarations",
-			Attributes: api.IdfaDeclarationCreateAttributes{
-				ServesAds:                             params.ServesAds,
-				AttributesAppInstallationToPreviousAd: params.AttributesAppInstallationToPreviousAd,
-				AttributesActionWithPreviousAd:        params.AttributesActionWithPreviousAd,
-				HonorsLimitedAdTracking:               params.HonorsLimitedAdTracking,
-			},
-			Relationships: api.IdfaDeclarationCreateRelationships{
-				AppStoreVersion: api.RelationshipData{
-					Data: api.ResourceIdentifier{Type: "appStoreVersions", ID: params.VersionID},
-				},
-			},
-		},
-	}
-
-	resp, err := r.client.CreateIdfaDeclaration(ctx, req)
-	if err != nil {
-		return mcp.NewErrorResult(fmt.Sprintf("Failed to create IDFA declaration: %v", err)), nil
-	}
-
-	return newDataResult(fmt.Sprintf("IDFA declaration created:\n%s", formatIdfaDeclaration(resp.Data)), resp.Data), nil
-}
-
-func (r *Registry) handleUpdateIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
-	var params struct {
-		DeclarationID                         string `json:"declaration_id"`
-		ServesAds                             *bool  `json:"serves_ads"`
-		AttributesAppInstallationToPreviousAd *bool  `json:"attributes_app_installation_to_previous_ad"`
-		AttributesActionWithPreviousAd        *bool  `json:"attributes_action_with_previous_ad"`
-		HonorsLimitedAdTracking               *bool  `json:"honors_limited_ad_tracking"`
-	}
-	if err := json.Unmarshal(args, &params); err != nil {
-		return nil, fmt.Errorf("invalid arguments: %w", err)
-	}
-
-	if params.DeclarationID == "" {
-		return nil, fmt.Errorf("declaration_id is required")
-	}
-
-	req := &api.IdfaDeclarationUpdateRequest{
-		Data: api.IdfaDeclarationUpdateData{
-			Type: "idfaDeclarations",
-			ID:   params.DeclarationID,
-			Attributes: api.IdfaDeclarationUpdateAttributes{
-				ServesAds:                             params.ServesAds,
-				AttributesAppInstallationToPreviousAd: params.AttributesAppInstallationToPreviousAd,
-				AttributesActionWithPreviousAd:        params.AttributesActionWithPreviousAd,
-				HonorsLimitedAdTracking:               params.HonorsLimitedAdTracking,
-			},
-		},
-	}
-
-	resp, err := r.client.UpdateIdfaDeclaration(ctx, params.DeclarationID, req)
-	if err != nil {
-		return mcp.NewErrorResult(fmt.Sprintf("Failed to update IDFA declaration: %v", err)), nil
-	}
-
-	return newDataResult(fmt.Sprintf("IDFA declaration updated:\n%s", formatIdfaDeclaration(resp.Data)), resp.Data), nil
-}
-
-func (r *Registry) handleDeleteIdfaDeclaration(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
-	var params struct {
-		DeclarationID string `json:"declaration_id"`
-	}
-	if err := json.Unmarshal(args, &params); err != nil {
-		return nil, fmt.Errorf("invalid arguments: %w", err)
-	}
-
-	if params.DeclarationID == "" {
-		return nil, fmt.Errorf("declaration_id is required")
-	}
-
-	err := r.client.DeleteIdfaDeclaration(ctx, params.DeclarationID)
-	if err != nil {
-		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete IDFA declaration: %v", err)), nil
-	}
-
-	return mcp.NewSuccessResult("IDFA declaration deleted"), nil
+	return sb.String()
 }
 
 func stringValue(s *string) string {
@@ -440,13 +288,6 @@ func stringValue(s *string) string {
 		return ""
 	}
 	return *s
-}
-
-func boolValue(b *bool) bool {
-	if b == nil {
-		return false
-	}
-	return *b
 }
 
 func formatAgeRatingDeclaration(decl api.AgeRatingDeclaration) string {
@@ -500,15 +341,5 @@ func formatAgeRatingDeclaration(decl api.AgeRatingDeclaration) string {
 		sb.WriteString("17+ Age Rating: Yes\n")
 	}
 
-	return sb.String()
-}
-
-func formatIdfaDeclaration(decl api.IdfaDeclaration) string {
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("ID: %s\n", decl.ID))
-	sb.WriteString(fmt.Sprintf("Serves Ads: %t\n", decl.Attributes.ServesAds))
-	sb.WriteString(fmt.Sprintf("Attributes Installation to Previous Ad: %t\n", decl.Attributes.AttributesAppInstallationToPreviousAd))
-	sb.WriteString(fmt.Sprintf("Attributes Action with Previous Ad: %t\n", decl.Attributes.AttributesActionWithPreviousAd))
-	sb.WriteString(fmt.Sprintf("Honors Limited Ad Tracking: %t\n", decl.Attributes.HonorsLimitedAdTracking))
 	return sb.String()
 }

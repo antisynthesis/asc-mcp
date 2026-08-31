@@ -129,6 +129,45 @@ func (r *Registry) registerCustomerReviewTools() {
 			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleDeleteCustomerReviewResponse)
+
+	// List customer review summarizations
+	r.register(mcp.Tool{
+		Name:        "list_customer_review_summarizations",
+		Description: "List Apple-generated summaries of an app's customer reviews per platform, locale, and territory",
+		InputSchema: mcp.JSONSchema{
+			Type: "object",
+			Properties: map[string]mcp.Property{
+				"app_id": {
+					Type:        "string",
+					Description: "The App ID to list review summarizations for",
+				},
+				"limit": {
+					Type:        "integer",
+					Description: "Maximum number of summarizations to return (default 50, max 200)",
+				},
+				"cursor": cursorProperty(),
+				"filter": {
+					Type:        "object",
+					Description: "JSON:API filter map. Supported keys: platform (IOS, MAC_OS, TV_OS, VISION_OS), territory. Values are arrays, e.g. {\"platform\": [\"IOS\"], \"territory\": [\"USA\"]}.",
+				},
+				"fields": {
+					Type:        "object",
+					Description: "Sparse fieldsets. Keys are resource type names; values are arrays of attribute names to return.",
+				},
+				"include": {
+					Type:        "array",
+					Description: "Related resource names to include in the response (supported: territory).",
+					Items:       &mcp.Property{Type: "string"},
+				},
+			},
+			Required: []string{"app_id"},
+		},
+		Annotations: &mcp.ToolAnnotations{
+			Title:         "List Customer Review Summarizations",
+			ReadOnlyHint:  mcp.BoolPtr(true),
+			OpenWorldHint: mcp.BoolPtr(true),
+		},
+	}, r.handleListCustomerReviewSummarizations)
 }
 
 func (r *Registry) handleListCustomerReviews(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -146,7 +185,7 @@ func (r *Registry) handleListCustomerReviews(ctx context.Context, args json.RawM
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -176,7 +215,7 @@ func (r *Registry) handleGetCustomerReview(ctx context.Context, args json.RawMes
 	}
 
 	if params.ReviewID == "" {
-		return nil, fmt.Errorf("review_id is required")
+		return mcp.NewErrorResult("review_id is required"), nil
 	}
 
 	resp, err := r.client.GetCustomerReview(ctx, params.ReviewID)
@@ -197,10 +236,10 @@ func (r *Registry) handleCreateCustomerReviewResponse(ctx context.Context, args 
 	}
 
 	if params.ReviewID == "" {
-		return nil, fmt.Errorf("review_id is required")
+		return mcp.NewErrorResult("review_id is required"), nil
 	}
 	if params.ResponseBody == "" {
-		return nil, fmt.Errorf("response_body is required")
+		return mcp.NewErrorResult("response_body is required"), nil
 	}
 
 	req := &api.CustomerReviewResponseCreateRequest{
@@ -237,7 +276,7 @@ func (r *Registry) handleDeleteCustomerReviewResponse(ctx context.Context, args 
 	}
 
 	if params.ResponseID == "" {
-		return nil, fmt.Errorf("response_id is required")
+		return mcp.NewErrorResult("response_id is required"), nil
 	}
 
 	err := r.client.DeleteCustomerReviewResponse(ctx, params.ResponseID)
@@ -246,6 +285,41 @@ func (r *Registry) handleDeleteCustomerReviewResponse(ctx context.Context, args 
 	}
 
 	return mcp.NewSuccessResult("Review response deleted successfully"), nil
+}
+
+func (r *Registry) handleListCustomerReviewSummarizations(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
+	var params struct {
+		AppID   string              `json:"app_id"`
+		Limit   int                 `json:"limit"`
+		Cursor  string              `json:"cursor"`
+		Filter  map[string][]string `json:"filter"`
+		Fields  map[string][]string `json:"fields"`
+		Include []string            `json:"include"`
+	}
+	if err := json.Unmarshal(args, &params); err != nil {
+		return nil, fmt.Errorf("invalid arguments: %w", err)
+	}
+
+	if params.AppID == "" {
+		return mcp.NewErrorResult("app_id is required"), nil
+	}
+
+	limit := params.Limit
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 200 {
+		limit = 200
+	}
+
+	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.CustomerReviewSummarizationsResponse, error) {
+		return r.client.ListCustomerReviewSummarizations(ctx, params.AppID, listOpts(limit, params.Filter, nil, params.Fields, params.Include))
+	})
+	if err != nil {
+		return mcp.NewErrorResult(fmt.Sprintf("Failed to list customer review summarizations: %v", err)), nil
+	}
+
+	return newListResult(formatCustomerReviewSummarizations(resp.Data), resp.Data, resp.Links), nil
 }
 
 func formatCustomerReviews(reviews []api.CustomerReview) string {
@@ -283,5 +357,33 @@ func formatCustomerReview(review api.CustomerReview) string {
 	if review.Attributes.CreatedDate != nil {
 		sb.WriteString(fmt.Sprintf("Created: %s\n", review.Attributes.CreatedDate.Format("2006-01-02")))
 	}
+	return sb.String()
+}
+
+func formatCustomerReviewSummarizations(summaries []api.CustomerReviewSummarization) string {
+	if len(summaries) == 0 {
+		return "No customer review summarizations found"
+	}
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("Found %d customer review summarizations:\n\n", len(summaries)))
+
+	for _, summary := range summaries {
+		sb.WriteString(fmt.Sprintf("Summarization ID: %s\n", summary.ID))
+		if summary.Attributes.Platform != "" {
+			sb.WriteString(fmt.Sprintf("Platform: %s\n", summary.Attributes.Platform))
+		}
+		if summary.Attributes.Locale != "" {
+			sb.WriteString(fmt.Sprintf("Locale: %s\n", summary.Attributes.Locale))
+		}
+		if summary.Attributes.CreatedDate != nil {
+			sb.WriteString(fmt.Sprintf("Created: %s\n", summary.Attributes.CreatedDate.Format("2006-01-02")))
+		}
+		if summary.Attributes.Text != "" {
+			sb.WriteString(fmt.Sprintf("Summary: %s\n", summary.Attributes.Text))
+		}
+		sb.WriteString("\n---\n")
+	}
+
 	return sb.String()
 }

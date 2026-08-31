@@ -177,19 +177,28 @@ func (r *Registry) registerVersionSubmissionTools() {
 		},
 	}, r.handleDeleteAppStoreVersion)
 
-	// Submit for review
+	// Submit for review (creates a review submission, attaches the
+	// version, and submits it in one step)
 	r.register(mcp.Tool{
 		Name:        "submit_app_for_review",
-		Description: "Submit an App Store version for review",
+		Description: "Submit an App Store version for review. Creates a review submission for the app, attaches the version, and submits it.",
 		InputSchema: mcp.JSONSchema{
 			Type: "object",
 			Properties: map[string]mcp.Property{
+				"app_id": {
+					Type:        "string",
+					Description: "The app ID",
+				},
 				"version_id": {
 					Type:        "string",
 					Description: "The App Store version ID to submit",
 				},
+				"platform": {
+					Type:        "string",
+					Description: "Platform: IOS, MAC_OS, TV_OS, VISION_OS (default IOS)",
+				},
 			},
-			Required: []string{"version_id"},
+			Required: []string{"app_id", "version_id"},
 		},
 		Annotations: &mcp.ToolAnnotations{
 			Title:           "Submit App For Review",
@@ -342,7 +351,7 @@ func (r *Registry) handleListAppStoreVersions(ctx context.Context, args json.Raw
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -370,7 +379,7 @@ func (r *Registry) handleGetAppStoreVersion(ctx context.Context, args json.RawMe
 	}
 
 	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+		return mcp.NewErrorResult("version_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppStoreVersion(ctx, params.VersionID)
@@ -394,13 +403,13 @@ func (r *Registry) handleCreateAppStoreVersion(ctx context.Context, args json.Ra
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 	if params.VersionString == "" {
-		return nil, fmt.Errorf("version_string is required")
+		return mcp.NewErrorResult("version_string is required"), nil
 	}
 	if params.Platform == "" {
-		return nil, fmt.Errorf("platform is required")
+		return mcp.NewErrorResult("platform is required"), nil
 	}
 
 	req := &api.AppStoreVersionCreateRequest{
@@ -443,7 +452,7 @@ func (r *Registry) handleUpdateAppStoreVersion(ctx context.Context, args json.Ra
 	}
 
 	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+		return mcp.NewErrorResult("version_id is required"), nil
 	}
 
 	req := &api.AppStoreVersionUpdateRequest{
@@ -475,7 +484,7 @@ func (r *Registry) handleDeleteAppStoreVersion(ctx context.Context, args json.Ra
 	}
 
 	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+		return mcp.NewErrorResult("version_id is required"), nil
 	}
 
 	err := r.client.DeleteAppStoreVersion(ctx, params.VersionID)
@@ -488,36 +497,83 @@ func (r *Registry) handleDeleteAppStoreVersion(ctx context.Context, args json.Ra
 
 func (r *Registry) handleSubmitAppForReview(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
+		AppID     string `json:"app_id"`
 		VersionID string `json:"version_id"`
+		Platform  string `json:"platform"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
 	}
 
+	if params.AppID == "" {
+		return mcp.NewErrorResult("app_id is required"), nil
+	}
 	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+		return mcp.NewErrorResult("version_id is required"), nil
 	}
 
-	req := &api.AppStoreVersionSubmissionCreateRequest{
-		Data: api.AppStoreVersionSubmissionCreateData{
-			Type: "appStoreVersionSubmissions",
-			Relationships: api.AppStoreVersionSubmissionCreateRelationships{
-				AppStoreVersion: api.RelationshipData{
-					Data: api.ResourceIdentifier{
-						Type: "appStoreVersions",
-						ID:   params.VersionID,
-					},
+	platform := params.Platform
+	if platform == "" {
+		platform = "IOS"
+	}
+
+	// Create a review submission for the app.
+	createReq := &api.ReviewSubmissionCreateRequest{
+		Data: api.ReviewSubmissionCreateData{
+			Type: "reviewSubmissions",
+			Attributes: &api.ReviewSubmissionCreateAttributes{
+				Platform: platform,
+			},
+			Relationships: api.ReviewSubmissionCreateRelationships{
+				App: api.RelationshipData{
+					Data: api.ResourceIdentifier{Type: "apps", ID: params.AppID},
 				},
 			},
 		},
 	}
 
-	resp, err := r.client.CreateAppStoreVersionSubmission(ctx, req)
+	submission, err := r.client.CreateReviewSubmission(ctx, createReq)
 	if err != nil {
-		return mcp.NewErrorResult(fmt.Sprintf("Failed to submit app for review: %v", err)), nil
+		return mcp.NewErrorResult(fmt.Sprintf("Failed to create review submission: %v", err)), nil
 	}
 
-	return newDataResult(fmt.Sprintf("App submitted for review (submission ID: %s)", resp.Data.ID), resp.Data), nil
+	// Attach the app store version to the submission.
+	itemReq := &api.ReviewSubmissionItemCreateRequest{
+		Data: api.ReviewSubmissionItemCreateData{
+			Type: "reviewSubmissionItems",
+			Relationships: api.ReviewSubmissionItemCreateRelationships{
+				ReviewSubmission: api.RelationshipData{
+					Data: api.ResourceIdentifier{Type: "reviewSubmissions", ID: submission.Data.ID},
+				},
+				AppStoreVersion: &api.RelationshipData{
+					Data: api.ResourceIdentifier{Type: "appStoreVersions", ID: params.VersionID},
+				},
+			},
+		},
+	}
+
+	if _, err := r.client.CreateReviewSubmissionItem(ctx, itemReq); err != nil {
+		return mcp.NewErrorResult(fmt.Sprintf("Failed to attach version to review submission %s: %v", submission.Data.ID, err)), nil
+	}
+
+	// Submit the review submission.
+	submitted := true
+	updateReq := &api.ReviewSubmissionUpdateRequest{
+		Data: api.ReviewSubmissionUpdateData{
+			Type: "reviewSubmissions",
+			ID:   submission.Data.ID,
+			Attributes: api.ReviewSubmissionUpdateAttributes{
+				Submitted: &submitted,
+			},
+		},
+	}
+
+	resp, err := r.client.UpdateReviewSubmission(ctx, submission.Data.ID, updateReq)
+	if err != nil {
+		return mcp.NewErrorResult(fmt.Sprintf("Failed to submit review submission %s: %v", submission.Data.ID, err)), nil
+	}
+
+	return newDataResult(fmt.Sprintf("App submitted for review (review submission ID: %s)", resp.Data.ID), resp.Data), nil
 }
 
 func (r *Registry) handleGetAppStoreReviewDetail(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -529,7 +585,7 @@ func (r *Registry) handleGetAppStoreReviewDetail(ctx context.Context, args json.
 	}
 
 	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+		return mcp.NewErrorResult("version_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppStoreReviewDetail(ctx, params.VersionID)
@@ -557,7 +613,7 @@ func (r *Registry) handleCreateAppStoreReviewDetail(ctx context.Context, args js
 	}
 
 	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+		return mcp.NewErrorResult("version_id is required"), nil
 	}
 
 	req := &api.AppStoreReviewDetailCreateRequest{
@@ -609,7 +665,7 @@ func (r *Registry) handleUpdateAppStoreReviewDetail(ctx context.Context, args js
 	}
 
 	if params.DetailID == "" {
-		return nil, fmt.Errorf("detail_id is required")
+		return mcp.NewErrorResult("detail_id is required"), nil
 	}
 
 	req := &api.AppStoreReviewDetailUpdateRequest{

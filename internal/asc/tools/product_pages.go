@@ -164,13 +164,17 @@ func (r *Registry) registerProductPagesTools() {
 	// List app store version experiments
 	r.register(mcp.Tool{
 		Name:        "list_app_store_version_experiments",
-		Description: "List A/B testing experiments for an app store version",
+		Description: "List A/B testing experiments for an app or an app store version. Provide app_id or version_id.",
 		InputSchema: mcp.JSONSchema{
 			Type: "object",
 			Properties: map[string]mcp.Property{
+				"app_id": {
+					Type:        "string",
+					Description: "The App ID to list experiments for (preferred; v2 experiments attach to an app)",
+				},
 				"version_id": {
 					Type:        "string",
-					Description: "The app store version ID",
+					Description: "The app store version ID to list experiments for",
 				},
 				"limit": {
 					Type:        "integer",
@@ -199,7 +203,6 @@ func (r *Registry) registerProductPagesTools() {
 					Items:       &mcp.Property{Type: "string"},
 				},
 			},
-			Required: []string{"version_id"},
 		},
 		Annotations: &mcp.ToolAnnotations{
 			Title:         "List App Store Version Experiments",
@@ -232,24 +235,28 @@ func (r *Registry) registerProductPagesTools() {
 	// Create app store version experiment
 	r.register(mcp.Tool{
 		Name:        "create_app_store_version_experiment",
-		Description: "Create a new A/B testing experiment",
+		Description: "Create a new A/B testing experiment for an app",
 		InputSchema: mcp.JSONSchema{
 			Type: "object",
 			Properties: map[string]mcp.Property{
-				"version_id": {
+				"app_id": {
 					Type:        "string",
-					Description: "The app store version ID",
+					Description: "The App ID (v2 experiments attach to an app, not a version)",
 				},
 				"name": {
 					Type:        "string",
 					Description: "Name of the experiment",
+				},
+				"platform": {
+					Type:        "string",
+					Description: "Platform for the experiment (IOS, MAC_OS, TV_OS, VISION_OS)",
 				},
 				"traffic_proportion": {
 					Type:        "integer",
 					Description: "Percentage of traffic for the experiment (1-100)",
 				},
 			},
-			Required: []string{"version_id", "name"},
+			Required: []string{"app_id", "name", "platform"},
 		},
 		Annotations: &mcp.ToolAnnotations{
 			Title:           "Create App Store Version Experiment",
@@ -334,7 +341,7 @@ func (r *Registry) handleListAppCustomProductPages(ctx context.Context, args jso
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -364,7 +371,7 @@ func (r *Registry) handleGetAppCustomProductPage(ctx context.Context, args json.
 	}
 
 	if params.PageID == "" {
-		return nil, fmt.Errorf("page_id is required")
+		return mcp.NewErrorResult("page_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppCustomProductPage(ctx, params.PageID)
@@ -385,7 +392,7 @@ func (r *Registry) handleCreateAppCustomProductPage(ctx context.Context, args js
 	}
 
 	if params.AppID == "" || params.Name == "" {
-		return nil, fmt.Errorf("app_id and name are required")
+		return mcp.NewErrorResult("app_id and name are required"), nil
 	}
 
 	req := &api.AppCustomProductPageCreateRequest{
@@ -421,7 +428,7 @@ func (r *Registry) handleUpdateAppCustomProductPage(ctx context.Context, args js
 	}
 
 	if params.PageID == "" {
-		return nil, fmt.Errorf("page_id is required")
+		return mcp.NewErrorResult("page_id is required"), nil
 	}
 
 	req := &api.AppCustomProductPageUpdateRequest{
@@ -452,7 +459,7 @@ func (r *Registry) handleDeleteAppCustomProductPage(ctx context.Context, args js
 	}
 
 	if params.PageID == "" {
-		return nil, fmt.Errorf("page_id is required")
+		return mcp.NewErrorResult("page_id is required"), nil
 	}
 
 	err := r.client.DeleteAppCustomProductPage(ctx, params.PageID)
@@ -465,6 +472,7 @@ func (r *Registry) handleDeleteAppCustomProductPage(ctx context.Context, args js
 
 func (r *Registry) handleListAppStoreVersionExperiments(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
+		AppID     string              `json:"app_id"`
 		VersionID string              `json:"version_id"`
 		Limit     int                 `json:"limit"`
 		Cursor    string              `json:"cursor"`
@@ -477,8 +485,8 @@ func (r *Registry) handleListAppStoreVersionExperiments(ctx context.Context, arg
 		return nil, fmt.Errorf("invalid arguments: %w", err)
 	}
 
-	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+	if params.AppID == "" && params.VersionID == "" {
+		return mcp.NewErrorResult("app_id or version_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -490,7 +498,11 @@ func (r *Registry) handleListAppStoreVersionExperiments(ctx context.Context, arg
 	}
 
 	resp, err := paginatedFetch(ctx, r.client, params.Cursor, func() (*api.AppStoreVersionExperimentsResponse, error) {
-		return r.client.ListAppStoreVersionExperiments(ctx, params.VersionID, listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include))
+		opts := listOpts(limit, params.Filter, params.Sort, params.Fields, params.Include)
+		if params.VersionID != "" {
+			return r.client.ListAppStoreVersionExperiments(ctx, params.VersionID, opts)
+		}
+		return r.client.ListAppStoreVersionExperimentsForApp(ctx, params.AppID, opts)
 	})
 	if err != nil {
 		return mcp.NewErrorResult(fmt.Sprintf("Failed to list experiments: %v", err)), nil
@@ -508,7 +520,7 @@ func (r *Registry) handleGetAppStoreVersionExperiment(ctx context.Context, args 
 	}
 
 	if params.ExperimentID == "" {
-		return nil, fmt.Errorf("experiment_id is required")
+		return mcp.NewErrorResult("experiment_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppStoreVersionExperiment(ctx, params.ExperimentID)
@@ -521,16 +533,17 @@ func (r *Registry) handleGetAppStoreVersionExperiment(ctx context.Context, args 
 
 func (r *Registry) handleCreateAppStoreVersionExperiment(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		VersionID         string `json:"version_id"`
+		AppID             string `json:"app_id"`
 		Name              string `json:"name"`
+		Platform          string `json:"platform"`
 		TrafficProportion int    `json:"traffic_proportion"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
 	}
 
-	if params.VersionID == "" || params.Name == "" {
-		return nil, fmt.Errorf("version_id and name are required")
+	if params.AppID == "" || params.Name == "" || params.Platform == "" {
+		return mcp.NewErrorResult("app_id, name, and platform are required"), nil
 	}
 
 	traffic := params.TrafficProportion
@@ -543,11 +556,12 @@ func (r *Registry) handleCreateAppStoreVersionExperiment(ctx context.Context, ar
 			Type: "appStoreVersionExperiments",
 			Attributes: api.AppStoreVersionExperimentCreateAttributes{
 				Name:              params.Name,
+				Platform:          params.Platform,
 				TrafficProportion: traffic,
 			},
 			Relationships: api.AppStoreVersionExperimentCreateRelationships{
-				AppStoreVersion: api.RelationshipData{
-					Data: api.ResourceIdentifier{Type: "appStoreVersions", ID: params.VersionID},
+				App: api.RelationshipData{
+					Data: api.ResourceIdentifier{Type: "apps", ID: params.AppID},
 				},
 			},
 		},
@@ -573,7 +587,7 @@ func (r *Registry) handleUpdateAppStoreVersionExperiment(ctx context.Context, ar
 	}
 
 	if params.ExperimentID == "" {
-		return nil, fmt.Errorf("experiment_id is required")
+		return mcp.NewErrorResult("experiment_id is required"), nil
 	}
 
 	req := &api.AppStoreVersionExperimentUpdateRequest{
@@ -605,7 +619,7 @@ func (r *Registry) handleDeleteAppStoreVersionExperiment(ctx context.Context, ar
 	}
 
 	if params.ExperimentID == "" {
-		return nil, fmt.Errorf("experiment_id is required")
+		return mcp.NewErrorResult("experiment_id is required"), nil
 	}
 
 	err := r.client.DeleteAppStoreVersionExperiment(ctx, params.ExperimentID)

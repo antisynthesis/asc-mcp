@@ -122,9 +122,10 @@ func TestRegistry_ListTools(t *testing.T) {
 
 	tools := registry.ListTools()
 
-	// Should have 203 tools total (200 base + 3 upload tools).
-	if len(tools) != 203 {
-		t.Errorf("expected 203 tools, got %d", len(tools))
+	// Should have 248 tools total (221 base + 3 upload tools + 6 build
+	// upload tools + 8 beta feedback tools + 10 background asset tools).
+	if len(tools) != 248 {
+		t.Errorf("expected 248 tools, got %d", len(tools))
 	}
 
 	// Verify tool structure
@@ -187,6 +188,12 @@ func TestRegistry_ListTools(t *testing.T) {
 		"update_app_store_version":       false,
 		"delete_app_store_version":       false,
 		"submit_app_for_review":          false,
+		"list_review_submissions":        false,
+		"get_review_submission":          false,
+		"create_review_submission":       false,
+		"add_review_submission_item":     false,
+		"submit_review_submission":       false,
+		"cancel_review_submission":       false,
 		"get_app_store_review_detail":    false,
 		"create_app_store_review_detail": false,
 		"update_app_store_review_detail": false,
@@ -205,10 +212,7 @@ func TestRegistry_ListTools(t *testing.T) {
 		"get_preview":          false,
 		"delete_preview":       false,
 		// Pre-Order tools
-		"get_pre_order":    false,
-		"create_pre_order": false,
-		"update_pre_order": false,
-		"delete_pre_order": false,
+		"end_app_availability_pre_order": false,
 		// App Event tools
 		"list_app_events":  false,
 		"get_app_event":    false,
@@ -243,14 +247,13 @@ func TestRegistry_ListTools(t *testing.T) {
 		"update_game_center_leaderboard": false,
 		"delete_game_center_leaderboard": false,
 		// Xcode Cloud tools
-		"list_ci_products":    false,
-		"get_ci_product":      false,
-		"list_ci_workflows":   false,
-		"get_ci_workflow":     false,
-		"list_ci_build_runs":  false,
-		"get_ci_build_run":    false,
-		"start_ci_build_run":  false,
-		"cancel_ci_build_run": false,
+		"list_ci_products":   false,
+		"get_ci_product":     false,
+		"list_ci_workflows":  false,
+		"get_ci_workflow":    false,
+		"list_ci_build_runs": false,
+		"get_ci_build_run":   false,
+		"start_ci_build_run": false,
 		// Reports tools
 		"get_sales_report":   false,
 		"get_finance_report": false,
@@ -280,10 +283,6 @@ func TestRegistry_ListTools(t *testing.T) {
 		// Age Rating tools
 		"get_age_rating_declaration":    false,
 		"update_age_rating_declaration": false,
-		"get_idfa_declaration":          false,
-		"create_idfa_declaration":       false,
-		"update_idfa_declaration":       false,
-		"delete_idfa_declaration":       false,
 		// Beta Review and Agreements tools
 		"list_beta_app_review_submissions":  false,
 		"get_beta_app_review_submission":    false,
@@ -303,10 +302,9 @@ func TestRegistry_ListTools(t *testing.T) {
 		"get_build_beta_detail":             false,
 		"update_build_beta_detail":          false,
 		// Sandbox Testers tools
-		"list_sandbox_testers":  false,
-		"create_sandbox_tester": false,
-		"update_sandbox_tester": false,
-		"delete_sandbox_tester": false,
+		"list_sandbox_testers":                  false,
+		"update_sandbox_tester":                 false,
+		"clear_sandbox_tester_purchase_history": false,
 		// Promoted Purchases tools
 		"list_promoted_purchases":        false,
 		"get_promoted_purchase":          false,
@@ -353,10 +351,11 @@ func TestRegistry_ListTools(t *testing.T) {
 		"list_app_categories": false,
 		"get_app_category":    false,
 		// Alternative Distribution tools
-		"list_alternative_distribution_keys":  false,
-		"get_alternative_distribution_key":    false,
-		"create_alternative_distribution_key": false,
-		"delete_alternative_distribution_key": false,
+		"list_alternative_distribution_keys":   false,
+		"get_alternative_distribution_key":     false,
+		"create_alternative_distribution_key":  false,
+		"delete_alternative_distribution_key":  false,
+		"get_alternative_distribution_package": false,
 		// Marketplace Search tools
 		"get_marketplace_search_detail":    false,
 		"create_marketplace_search_detail": false,
@@ -366,6 +365,62 @@ func TestRegistry_ListTools(t *testing.T) {
 		"upload_app_screenshot":    false,
 		"upload_app_preview":       false,
 		"upload_review_attachment": false,
+		// Webhook tools
+		"list_webhooks":              false,
+		"get_webhook":                false,
+		"create_webhook":             false,
+		"update_webhook":             false,
+		"delete_webhook":             false,
+		"list_webhook_deliveries":    false,
+		"ping_webhook":               false,
+		"redeliver_webhook_delivery": false,
+		// Accessibility declaration tools
+		"list_accessibility_declarations":  false,
+		"get_accessibility_declaration":    false,
+		"create_accessibility_declaration": false,
+		"update_accessibility_declaration": false,
+		"delete_accessibility_declaration": false,
+		// Customer review summarization tools
+		"list_customer_review_summarizations": false,
+		// App tag tools
+		"list_app_tags":            false,
+		"update_app_tag":           false,
+		"list_app_tag_territories": false,
+		// Territory age rating tools
+		"list_territory_age_ratings": false,
+		// Android-to-iOS app mapping tools
+		"list_android_to_ios_app_mappings":  false,
+		"get_android_to_ios_app_mapping":    false,
+		"create_android_to_ios_app_mapping": false,
+		"update_android_to_ios_app_mapping": false,
+		"delete_android_to_ios_app_mapping": false,
+		// Build upload tools
+		"start_build_upload":      false,
+		"upload_build_file":       false,
+		"get_build_upload":        false,
+		"list_build_uploads":      false,
+		"list_build_upload_files": false,
+		"delete_build_upload":     false,
+		// Beta feedback tools
+		"list_beta_feedback_crashes":      false,
+		"get_beta_feedback_crash":         false,
+		"get_beta_feedback_crash_log":     false,
+		"delete_beta_feedback_crash":      false,
+		"list_beta_feedback_screenshots":  false,
+		"get_beta_feedback_screenshot":    false,
+		"delete_beta_feedback_screenshot": false,
+		"get_beta_build_usage_metrics":    false,
+		// Background asset tools
+		"list_background_assets":               false,
+		"get_background_asset":                 false,
+		"create_background_asset":              false,
+		"update_background_asset":              false,
+		"list_background_asset_versions":       false,
+		"get_background_asset_version":         false,
+		"create_background_asset_version":      false,
+		"upload_background_asset_file":         false,
+		"list_background_asset_upload_files":   false,
+		"get_background_asset_version_release": false,
 	}
 
 	for _, tool := range tools {
@@ -419,6 +474,58 @@ func TestRegistry_CallTool_UnknownTool(t *testing.T) {
 
 	if !strings.Contains(err.Error(), "unknown tool") {
 		t.Errorf("error %q does not mention unknown tool", err.Error())
+	}
+}
+
+// TestRegistry_CallTool_MissingArgumentIsToolError verifies that
+// input-validation failures surface as tool execution errors
+// (isError results) rather than Go errors, as the 2025-11-25 spec
+// revision requires. The handlers span several tool files to pin the
+// convention registry-wide.
+func TestRegistry_CallTool_MissingArgumentIsToolError(t *testing.T) {
+	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	keyBytes, _ := x509.MarshalPKCS8PrivateKey(privateKey)
+	pemBlock := &pem.Block{Type: "PRIVATE KEY", Bytes: keyBytes}
+
+	tmpDir := t.TempDir()
+	keyPath := filepath.Join(tmpDir, "test_key.p8")
+	os.WriteFile(keyPath, pem.EncodeToMemory(pemBlock), 0600)
+
+	client, _ := api.NewClient("test-issuer", "TESTKEY123", keyPath)
+	registry := NewRegistry(client)
+
+	tests := []struct {
+		tool     string
+		args     string
+		wantText string
+	}{
+		{"list_analytics_report_requests", `{}`, "app_id is required"},
+		{"get_analytics_report_request", `{}`, "request_id is required"},
+		{"create_analytics_report_request", `{"app_id":"123"}`, "access_type is required"},
+		{"get_app_clip", `{}`, "app_clip_id is required"},
+		{"get_age_rating_declaration", `{}`, "app_info_id is required"},
+		{"start_build_upload", `{"app_id":"123"}`, "cf_bundle_short_version_string is required"},
+		{"upload_build_file", `{}`, "build_upload_id is required"},
+		{"get_beta_feedback_crash_log", `{}`, "submission_id is required"},
+		{"get_beta_build_usage_metrics", `{}`, "build_id is required"},
+		{"create_background_asset", `{"app_id":"123"}`, "asset_pack_identifier is required"},
+		{"upload_background_asset_file", `{}`, "version_id is required"},
+		{"update_background_asset", `{"background_asset_id":"123"}`, "archived is required"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.tool, func(t *testing.T) {
+			result, err := registry.CallTool(context.Background(), tt.tool, json.RawMessage(tt.args))
+			if err != nil {
+				t.Fatalf("CallTool returned Go error %v, want isError result", err)
+			}
+			if result == nil || !result.IsError {
+				t.Fatalf("result = %+v, want isError result", result)
+			}
+			if result.Content[0].Text != tt.wantText {
+				t.Errorf("error text = %q, want %q", result.Content[0].Text, tt.wantText)
+			}
+		})
 	}
 }
 

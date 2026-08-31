@@ -854,34 +854,120 @@ type SubscriptionGroupAttributes struct {
 	ReferenceName string `json:"referenceName,omitempty"`
 }
 
-// App Store Version Submission types
+// Review Submission types
 
-// AppStoreVersionSubmissionResponse represents a version submission response.
-type AppStoreVersionSubmissionResponse struct {
-	Data     AppStoreVersionSubmission `json:"data"`
-	Included []any                     `json:"included,omitempty"`
+// ReviewSubmissionsResponse represents a list of review submissions.
+type ReviewSubmissionsResponse struct {
+	Data     []ReviewSubmission `json:"data"`
+	Links    PagedDocumentLinks `json:"links"`
+	Meta     *PagingInformation `json:"meta,omitempty"`
+	Included []any              `json:"included,omitempty"`
 }
 
-// AppStoreVersionSubmission represents a version submission.
-type AppStoreVersionSubmission struct {
-	Type string `json:"type"`
-	ID   string `json:"id"`
+// ReviewSubmissionResponse represents a single review submission.
+type ReviewSubmissionResponse struct {
+	Data     ReviewSubmission `json:"data"`
+	Included []any            `json:"included,omitempty"`
 }
 
-// AppStoreVersionSubmissionCreateRequest represents a request to submit a version.
-type AppStoreVersionSubmissionCreateRequest struct {
-	Data AppStoreVersionSubmissionCreateData `json:"data"`
+// ReviewSubmission represents a review submission.
+type ReviewSubmission struct {
+	Type       string                     `json:"type"`
+	ID         string                     `json:"id"`
+	Attributes ReviewSubmissionAttributes `json:"attributes"`
 }
 
-// AppStoreVersionSubmissionCreateData contains the data for creating a submission.
-type AppStoreVersionSubmissionCreateData struct {
-	Type          string                                       `json:"type"`
-	Relationships AppStoreVersionSubmissionCreateRelationships `json:"relationships"`
+// ReviewSubmissionAttributes contains review submission attributes.
+type ReviewSubmissionAttributes struct {
+	Platform      string     `json:"platform,omitempty"`
+	SubmittedDate *time.Time `json:"submittedDate,omitempty"`
+	State         string     `json:"state,omitempty"`
 }
 
-// AppStoreVersionSubmissionCreateRelationships contains relationships for creating a submission.
-type AppStoreVersionSubmissionCreateRelationships struct {
-	AppStoreVersion RelationshipData `json:"appStoreVersion"`
+// ReviewSubmissionCreateRequest represents a request to create a review submission.
+type ReviewSubmissionCreateRequest struct {
+	Data ReviewSubmissionCreateData `json:"data"`
+}
+
+// ReviewSubmissionCreateData contains the data for creating a review submission.
+type ReviewSubmissionCreateData struct {
+	Type          string                              `json:"type"`
+	Attributes    *ReviewSubmissionCreateAttributes   `json:"attributes,omitempty"`
+	Relationships ReviewSubmissionCreateRelationships `json:"relationships"`
+}
+
+// ReviewSubmissionCreateAttributes contains attributes for creating a review submission.
+type ReviewSubmissionCreateAttributes struct {
+	Platform string `json:"platform,omitempty"`
+}
+
+// ReviewSubmissionCreateRelationships contains relationships for creating a review submission.
+type ReviewSubmissionCreateRelationships struct {
+	App RelationshipData `json:"app"`
+}
+
+// ReviewSubmissionUpdateRequest represents a request to update a review submission.
+type ReviewSubmissionUpdateRequest struct {
+	Data ReviewSubmissionUpdateData `json:"data"`
+}
+
+// ReviewSubmissionUpdateData contains the data for updating a review submission.
+type ReviewSubmissionUpdateData struct {
+	Type       string                           `json:"type"`
+	ID         string                           `json:"id"`
+	Attributes ReviewSubmissionUpdateAttributes `json:"attributes"`
+}
+
+// ReviewSubmissionUpdateAttributes contains attributes for updating a review submission.
+type ReviewSubmissionUpdateAttributes struct {
+	Submitted *bool `json:"submitted,omitempty"`
+	Canceled  *bool `json:"canceled,omitempty"`
+}
+
+// ReviewSubmissionItemsResponse represents a list of review submission items.
+type ReviewSubmissionItemsResponse struct {
+	Data     []ReviewSubmissionItem `json:"data"`
+	Links    PagedDocumentLinks     `json:"links"`
+	Meta     *PagingInformation     `json:"meta,omitempty"`
+	Included []any                  `json:"included,omitempty"`
+}
+
+// ReviewSubmissionItemResponse represents a single review submission item.
+type ReviewSubmissionItemResponse struct {
+	Data     ReviewSubmissionItem `json:"data"`
+	Included []any                `json:"included,omitempty"`
+}
+
+// ReviewSubmissionItem represents an item attached to a review submission.
+type ReviewSubmissionItem struct {
+	Type       string                         `json:"type"`
+	ID         string                         `json:"id"`
+	Attributes ReviewSubmissionItemAttributes `json:"attributes"`
+}
+
+// ReviewSubmissionItemAttributes contains review submission item attributes.
+type ReviewSubmissionItemAttributes struct {
+	State string `json:"state,omitempty"`
+}
+
+// ReviewSubmissionItemCreateRequest represents a request to attach an item to a review submission.
+type ReviewSubmissionItemCreateRequest struct {
+	Data ReviewSubmissionItemCreateData `json:"data"`
+}
+
+// ReviewSubmissionItemCreateData contains the data for creating a review submission item.
+type ReviewSubmissionItemCreateData struct {
+	Type          string                                  `json:"type"`
+	Relationships ReviewSubmissionItemCreateRelationships `json:"relationships"`
+}
+
+// ReviewSubmissionItemCreateRelationships contains relationships for creating a review submission item.
+type ReviewSubmissionItemCreateRelationships struct {
+	ReviewSubmission            RelationshipData  `json:"reviewSubmission"`
+	AppStoreVersion             *RelationshipData `json:"appStoreVersion,omitempty"`
+	AppCustomProductPageVersion *RelationshipData `json:"appCustomProductPageVersion,omitempty"`
+	AppStoreVersionExperimentV2 *RelationshipData `json:"appStoreVersionExperimentV2,omitempty"`
+	AppEvent                    *RelationshipData `json:"appEvent,omitempty"`
 }
 
 // AppStoreVersionCreateRequest represents a request to create a version.
@@ -1316,62 +1402,31 @@ type AppPreviewUpdateAttributes struct {
 
 // App Pre-Order types
 
-// AppPreOrderResponse represents a pre-order response.
-type AppPreOrderResponse struct {
-	Data     AppPreOrder `json:"data"`
-	Included []any       `json:"included,omitempty"`
+// EndAppAvailabilityPreOrderCreateRequest represents a request to end pre-order availability.
+type EndAppAvailabilityPreOrderCreateRequest struct {
+	Data EndAppAvailabilityPreOrderCreateData `json:"data"`
 }
 
-// AppPreOrder represents an app pre-order.
-type AppPreOrder struct {
-	Type       string                `json:"type"`
-	ID         string                `json:"id"`
-	Attributes AppPreOrderAttributes `json:"attributes"`
+// EndAppAvailabilityPreOrderCreateData contains the data for ending pre-order availability.
+type EndAppAvailabilityPreOrderCreateData struct {
+	Type          string                                        `json:"type"`
+	Relationships EndAppAvailabilityPreOrderCreateRelationships `json:"relationships"`
 }
 
-// AppPreOrderAttributes contains pre-order attributes.
-type AppPreOrderAttributes struct {
-	PreOrderAvailableDate string `json:"preOrderAvailableDate,omitempty"`
-	AppReleaseDate        string `json:"appReleaseDate,omitempty"`
+// EndAppAvailabilityPreOrderCreateRelationships contains relationships for ending pre-order availability.
+type EndAppAvailabilityPreOrderCreateRelationships struct {
+	TerritoryAvailabilities RelationshipDataList `json:"territoryAvailabilities"`
 }
 
-// AppPreOrderCreateRequest represents a request to create a pre-order.
-type AppPreOrderCreateRequest struct {
-	Data AppPreOrderCreateData `json:"data"`
+// EndAppAvailabilityPreOrderResponse represents an end pre-order response.
+type EndAppAvailabilityPreOrderResponse struct {
+	Data EndAppAvailabilityPreOrder `json:"data"`
 }
 
-// AppPreOrderCreateData contains the data for creating a pre-order.
-type AppPreOrderCreateData struct {
-	Type          string                         `json:"type"`
-	Attributes    AppPreOrderCreateAttributes    `json:"attributes"`
-	Relationships AppPreOrderCreateRelationships `json:"relationships"`
-}
-
-// AppPreOrderCreateAttributes contains attributes for creating a pre-order.
-type AppPreOrderCreateAttributes struct {
-	AppReleaseDate string `json:"appReleaseDate,omitempty"`
-}
-
-// AppPreOrderCreateRelationships contains relationships for creating a pre-order.
-type AppPreOrderCreateRelationships struct {
-	App RelationshipData `json:"app"`
-}
-
-// AppPreOrderUpdateRequest represents a request to update a pre-order.
-type AppPreOrderUpdateRequest struct {
-	Data AppPreOrderUpdateData `json:"data"`
-}
-
-// AppPreOrderUpdateData contains the data for updating a pre-order.
-type AppPreOrderUpdateData struct {
-	Type       string                      `json:"type"`
-	ID         string                      `json:"id"`
-	Attributes AppPreOrderUpdateAttributes `json:"attributes"`
-}
-
-// AppPreOrderUpdateAttributes contains attributes for updating a pre-order.
-type AppPreOrderUpdateAttributes struct {
-	AppReleaseDate string `json:"appReleaseDate,omitempty"`
+// EndAppAvailabilityPreOrder represents an end pre-order resource.
+type EndAppAvailabilityPreOrder struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
 }
 
 // App Event types
@@ -1758,9 +1813,20 @@ type GameCenterAchievementAttributes struct {
 	Archived         bool   `json:"archived,omitempty"`
 }
 
-// GameCenterAchievementCreateRequest represents a request to create an achievement.
+// GameCenterAchievementCreateRequest represents a request to create an achievement
+// via the v2 Game Center API. The v2 API requires an initial version resource,
+// declared inline through the versions relationship and the included array.
 type GameCenterAchievementCreateRequest struct {
-	Data GameCenterAchievementCreateData `json:"data"`
+	Data     GameCenterAchievementCreateData `json:"data"`
+	Included []GameCenterVersionInlineCreate `json:"included,omitempty"`
+}
+
+// GameCenterVersionInlineCreate declares a version resource created inline with a
+// v2 Game Center create request. The ID is a client-chosen temporary identifier
+// referenced from the versions relationship.
+type GameCenterVersionInlineCreate struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
 }
 
 // GameCenterAchievementCreateData contains the data for creating an achievement.
@@ -1771,17 +1837,19 @@ type GameCenterAchievementCreateData struct {
 }
 
 // GameCenterAchievementCreateAttributes contains attributes for creating an achievement.
+// The v2 API requires showBeforeEarned and repeatable to always be present.
 type GameCenterAchievementCreateAttributes struct {
 	ReferenceName    string `json:"referenceName"`
 	VendorIdentifier string `json:"vendorIdentifier"`
 	Points           int    `json:"points"`
-	ShowBeforeEarned bool   `json:"showBeforeEarned,omitempty"`
-	Repeatable       bool   `json:"repeatable,omitempty"`
+	ShowBeforeEarned bool   `json:"showBeforeEarned"`
+	Repeatable       bool   `json:"repeatable"`
 }
 
 // GameCenterAchievementCreateRelationships contains relationships for creating an achievement.
 type GameCenterAchievementCreateRelationships struct {
-	GameCenterDetail RelationshipData `json:"gameCenterDetail"`
+	GameCenterDetail RelationshipData     `json:"gameCenterDetail"`
+	Versions         RelationshipDataList `json:"versions"`
 }
 
 // GameCenterAchievementUpdateRequest represents a request to update an achievement.
@@ -1828,6 +1896,7 @@ type GameCenterLeaderboard struct {
 
 // GameCenterLeaderboardAttributes contains leaderboard attributes.
 type GameCenterLeaderboardAttributes struct {
+	DefaultFormatter    string     `json:"defaultFormatter,omitempty"`
 	ReferenceName       string     `json:"referenceName,omitempty"`
 	VendorIdentifier    string     `json:"vendorIdentifier,omitempty"`
 	SubmissionType      string     `json:"submissionType,omitempty"`
@@ -1838,11 +1907,15 @@ type GameCenterLeaderboardAttributes struct {
 	RecurrenceDuration  string     `json:"recurrenceDuration,omitempty"`
 	RecurrenceRule      string     `json:"recurrenceRule,omitempty"`
 	Archived            bool       `json:"archived,omitempty"`
+	Visibility          string     `json:"visibility,omitempty"`
 }
 
-// GameCenterLeaderboardCreateRequest represents a request to create a leaderboard.
+// GameCenterLeaderboardCreateRequest represents a request to create a leaderboard
+// via the v2 Game Center API. The v2 API requires an initial version resource,
+// declared inline through the versions relationship and the included array.
 type GameCenterLeaderboardCreateRequest struct {
-	Data GameCenterLeaderboardCreateData `json:"data"`
+	Data     GameCenterLeaderboardCreateData `json:"data"`
+	Included []GameCenterVersionInlineCreate `json:"included,omitempty"`
 }
 
 // GameCenterLeaderboardCreateData contains the data for creating a leaderboard.
@@ -1853,7 +1926,9 @@ type GameCenterLeaderboardCreateData struct {
 }
 
 // GameCenterLeaderboardCreateAttributes contains attributes for creating a leaderboard.
+// The v2 API requires defaultFormatter.
 type GameCenterLeaderboardCreateAttributes struct {
+	DefaultFormatter    string     `json:"defaultFormatter"`
 	ReferenceName       string     `json:"referenceName"`
 	VendorIdentifier    string     `json:"vendorIdentifier"`
 	SubmissionType      string     `json:"submissionType"`
@@ -1867,7 +1942,8 @@ type GameCenterLeaderboardCreateAttributes struct {
 
 // GameCenterLeaderboardCreateRelationships contains relationships for creating a leaderboard.
 type GameCenterLeaderboardCreateRelationships struct {
-	GameCenterDetail RelationshipData `json:"gameCenterDetail"`
+	GameCenterDetail RelationshipData     `json:"gameCenterDetail"`
+	Versions         RelationshipDataList `json:"versions"`
 }
 
 // GameCenterLeaderboardUpdateRequest represents a request to update a leaderboard.
@@ -2427,7 +2503,8 @@ type AppAvailabilityAttributes struct {
 
 // AppAvailabilityCreateRequest represents a request to set app availability.
 type AppAvailabilityCreateRequest struct {
-	Data AppAvailabilityCreateData `json:"data"`
+	Data     AppAvailabilityCreateData           `json:"data"`
+	Included []TerritoryAvailabilityInlineCreate `json:"included,omitempty"`
 }
 
 // AppAvailabilityCreateData contains the data for setting app availability.
@@ -2444,8 +2521,29 @@ type AppAvailabilityCreateAttributes struct {
 
 // AppAvailabilityCreateRelationships contains relationships for setting app availability.
 type AppAvailabilityCreateRelationships struct {
-	App                  RelationshipData     `json:"app"`
-	AvailableTerritories RelationshipDataList `json:"availableTerritories"`
+	App                     RelationshipData     `json:"app"`
+	TerritoryAvailabilities RelationshipDataList `json:"territoryAvailabilities"`
+}
+
+// TerritoryAvailabilityInlineCreate represents an inline territory availability
+// included in an app availability create request.
+type TerritoryAvailabilityInlineCreate struct {
+	Type          string                                          `json:"type"`
+	ID            string                                          `json:"id,omitempty"`
+	Attributes    *TerritoryAvailabilityInlineAttributes          `json:"attributes,omitempty"`
+	Relationships *TerritoryAvailabilityInlineCreateRelationships `json:"relationships,omitempty"`
+}
+
+// TerritoryAvailabilityInlineAttributes contains attributes for an inline territory availability.
+type TerritoryAvailabilityInlineAttributes struct {
+	Available       *bool  `json:"available,omitempty"`
+	ReleaseDate     string `json:"releaseDate,omitempty"`
+	PreOrderEnabled *bool  `json:"preOrderEnabled,omitempty"`
+}
+
+// TerritoryAvailabilityInlineCreateRelationships contains relationships for an inline territory availability.
+type TerritoryAvailabilityInlineCreateRelationships struct {
+	Territory RelationshipData `json:"territory"`
 }
 
 // TerritoryAvailabilitiesResponse represents territory availabilities.
@@ -2536,74 +2634,6 @@ type AgeRatingDeclarationUpdateAttributes struct {
 	ViolenceRealistic                           string `json:"violenceRealistic,omitempty"`
 	ViolenceRealisticProlongedGraphicOrSadistic string `json:"violenceRealisticProlongedGraphicOrSadistic,omitempty"`
 	SeventeenPlus                               *bool  `json:"seventeenPlus,omitempty"`
-}
-
-// IDFA Declaration types (App Tracking Transparency)
-
-// IdfaDeclarationResponse represents an IDFA declaration.
-type IdfaDeclarationResponse struct {
-	Data     IdfaDeclaration `json:"data"`
-	Included []any           `json:"included,omitempty"`
-}
-
-// IdfaDeclaration represents an IDFA declaration.
-type IdfaDeclaration struct {
-	Type       string                    `json:"type"`
-	ID         string                    `json:"id"`
-	Attributes IdfaDeclarationAttributes `json:"attributes"`
-}
-
-// IdfaDeclarationAttributes contains IDFA declaration attributes.
-type IdfaDeclarationAttributes struct {
-	ServesAds                             bool `json:"servesAds,omitempty"`
-	AttributesAppInstallationToPreviousAd bool `json:"attributesAppInstallationToPreviousAd,omitempty"`
-	AttributesActionWithPreviousAd        bool `json:"attributesActionWithPreviousAd,omitempty"`
-	HonorsLimitedAdTracking               bool `json:"honorsLimitedAdTracking,omitempty"`
-}
-
-// IdfaDeclarationCreateRequest represents a request to create an IDFA declaration.
-type IdfaDeclarationCreateRequest struct {
-	Data IdfaDeclarationCreateData `json:"data"`
-}
-
-// IdfaDeclarationCreateData contains the data for creating an IDFA declaration.
-type IdfaDeclarationCreateData struct {
-	Type          string                             `json:"type"`
-	Attributes    IdfaDeclarationCreateAttributes    `json:"attributes"`
-	Relationships IdfaDeclarationCreateRelationships `json:"relationships"`
-}
-
-// IdfaDeclarationCreateAttributes contains attributes for creating an IDFA declaration.
-type IdfaDeclarationCreateAttributes struct {
-	ServesAds                             bool `json:"servesAds"`
-	AttributesAppInstallationToPreviousAd bool `json:"attributesAppInstallationToPreviousAd"`
-	AttributesActionWithPreviousAd        bool `json:"attributesActionWithPreviousAd"`
-	HonorsLimitedAdTracking               bool `json:"honorsLimitedAdTracking"`
-}
-
-// IdfaDeclarationCreateRelationships contains relationships for creating an IDFA declaration.
-type IdfaDeclarationCreateRelationships struct {
-	AppStoreVersion RelationshipData `json:"appStoreVersion"`
-}
-
-// IdfaDeclarationUpdateRequest represents a request to update an IDFA declaration.
-type IdfaDeclarationUpdateRequest struct {
-	Data IdfaDeclarationUpdateData `json:"data"`
-}
-
-// IdfaDeclarationUpdateData contains the data for updating an IDFA declaration.
-type IdfaDeclarationUpdateData struct {
-	Type       string                          `json:"type"`
-	ID         string                          `json:"id"`
-	Attributes IdfaDeclarationUpdateAttributes `json:"attributes"`
-}
-
-// IdfaDeclarationUpdateAttributes contains attributes for updating an IDFA declaration.
-type IdfaDeclarationUpdateAttributes struct {
-	ServesAds                             *bool `json:"servesAds,omitempty"`
-	AttributesAppInstallationToPreviousAd *bool `json:"attributesAppInstallationToPreviousAd,omitempty"`
-	AttributesActionWithPreviousAd        *bool `json:"attributesActionWithPreviousAd,omitempty"`
-	HonorsLimitedAdTracking               *bool `json:"honorsLimitedAdTracking,omitempty"`
 }
 
 // End User License Agreement types
@@ -2800,28 +2830,32 @@ type SandboxTesterAttributes struct {
 	SubscriptionRenewalRate string `json:"subscriptionRenewalRate,omitempty"`
 }
 
-// SandboxTesterCreateRequest represents a request to create a sandbox tester.
-type SandboxTesterCreateRequest struct {
-	Data SandboxTesterCreateData `json:"data"`
+// SandboxTesterClearPurchaseHistoryRequest represents a request to clear
+// purchase history for sandbox testers.
+type SandboxTesterClearPurchaseHistoryRequest struct {
+	Data SandboxTesterClearPurchaseHistoryData `json:"data"`
 }
 
-// SandboxTesterCreateData contains the data for creating a sandbox tester.
-type SandboxTesterCreateData struct {
-	Type       string                        `json:"type"`
-	Attributes SandboxTesterCreateAttributes `json:"attributes"`
+// SandboxTesterClearPurchaseHistoryData contains the data for clearing purchase history.
+type SandboxTesterClearPurchaseHistoryData struct {
+	Type          string                                         `json:"type"`
+	Relationships SandboxTesterClearPurchaseHistoryRelationships `json:"relationships"`
 }
 
-// SandboxTesterCreateAttributes contains attributes for creating a sandbox tester.
-type SandboxTesterCreateAttributes struct {
-	FirstName         string `json:"firstName"`
-	LastName          string `json:"lastName"`
-	Email             string `json:"email"`
-	Password          string `json:"password"`
-	ConfirmPassword   string `json:"confirmPassword"`
-	SecretQuestion    string `json:"secretQuestion"`
-	SecretAnswer      string `json:"secretAnswer"`
-	BirthDate         string `json:"birthDate"`
-	AppStoreTerritory string `json:"appStoreTerritory"`
+// SandboxTesterClearPurchaseHistoryRelationships contains relationships for clearing purchase history.
+type SandboxTesterClearPurchaseHistoryRelationships struct {
+	SandboxTesters RelationshipDataList `json:"sandboxTesters"`
+}
+
+// SandboxTesterClearPurchaseHistoryResponse represents a clear purchase history response.
+type SandboxTesterClearPurchaseHistoryResponse struct {
+	Data SandboxTesterClearPurchaseHistory `json:"data"`
+}
+
+// SandboxTesterClearPurchaseHistory represents a clear purchase history resource.
+type SandboxTesterClearPurchaseHistory struct {
+	Type string `json:"type"`
+	ID   string `json:"id"`
 }
 
 // SandboxTesterUpdateRequest represents a request to update a sandbox tester.
@@ -3152,6 +3186,7 @@ type AppStoreVersionExperiment struct {
 // AppStoreVersionExperimentAttributes contains experiment attributes.
 type AppStoreVersionExperimentAttributes struct {
 	Name                    string     `json:"name,omitempty"`
+	Platform                string     `json:"platform,omitempty"`
 	TrafficProportion       int        `json:"trafficProportion,omitempty"`
 	State                   string     `json:"state,omitempty"`
 	ReviewRequired          bool       `json:"reviewRequired,omitempty"`
@@ -3174,14 +3209,17 @@ type AppStoreVersionExperimentCreateData struct {
 }
 
 // AppStoreVersionExperimentCreateAttributes contains attributes for creating an experiment.
+// The v2 experiments API requires name, platform, and trafficProportion.
 type AppStoreVersionExperimentCreateAttributes struct {
 	Name              string `json:"name"`
+	Platform          string `json:"platform"`
 	TrafficProportion int    `json:"trafficProportion"`
 }
 
 // AppStoreVersionExperimentCreateRelationships contains relationships for creating an experiment.
+// The v2 experiments API attaches experiments to an app rather than a version.
 type AppStoreVersionExperimentCreateRelationships struct {
-	AppStoreVersion RelationshipData `json:"appStoreVersion"`
+	App RelationshipData `json:"app"`
 }
 
 // AppStoreVersionExperimentUpdateRequest represents a request to update an experiment.
@@ -3709,14 +3747,6 @@ type BuildBetaDetailUpdateAttributes struct {
 type AlternativeDistributionPackageResponse struct {
 	Data     AlternativeDistributionPackage `json:"data"`
 	Included []any                          `json:"included,omitempty"`
-}
-
-// AlternativeDistributionPackagesResponse represents a list of alternative distribution packages.
-type AlternativeDistributionPackagesResponse struct {
-	Data     []AlternativeDistributionPackage `json:"data"`
-	Links    PagedDocumentLinks               `json:"links"`
-	Meta     *PagingInformation               `json:"meta,omitempty"`
-	Included []any                            `json:"included,omitempty"`
 }
 
 // AlternativeDistributionPackage represents an alternative distribution package.

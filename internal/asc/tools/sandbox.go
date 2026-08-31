@@ -54,57 +54,6 @@ func (r *Registry) registerSandboxTools() {
 		},
 	}, r.handleListSandboxTesters)
 
-	// Create sandbox tester
-	r.register(mcp.Tool{
-		Name:        "create_sandbox_tester",
-		Description: "Create a new sandbox tester account",
-		InputSchema: mcp.JSONSchema{
-			Type: "object",
-			Properties: map[string]mcp.Property{
-				"email": {
-					Type:        "string",
-					Description: "Email address for the sandbox tester",
-				},
-				"password": {
-					Type:        "string",
-					Description: "Password for the sandbox account",
-				},
-				"first_name": {
-					Type:        "string",
-					Description: "First name of the tester",
-				},
-				"last_name": {
-					Type:        "string",
-					Description: "Last name of the tester",
-				},
-				"secret_question": {
-					Type:        "string",
-					Description: "Security question",
-				},
-				"secret_answer": {
-					Type:        "string",
-					Description: "Answer to security question",
-				},
-				"birth_date": {
-					Type:        "string",
-					Description: "Birth date (YYYY-MM-DD)",
-				},
-				"app_store_territory": {
-					Type:        "string",
-					Description: "App Store territory code (e.g., USA, GBR)",
-				},
-			},
-			Required: []string{"email", "password", "first_name", "last_name", "secret_question", "secret_answer", "birth_date", "app_store_territory"},
-		},
-		Annotations: &mcp.ToolAnnotations{
-			Title:           "Create Sandbox Tester",
-			ReadOnlyHint:    mcp.BoolPtr(false),
-			DestructiveHint: mcp.BoolPtr(false),
-			IdempotentHint:  mcp.BoolPtr(false),
-			OpenWorldHint:   mcp.BoolPtr(true),
-		},
-	}, r.handleCreateSandboxTester)
-
 	// Update sandbox tester
 	r.register(mcp.Tool{
 		Name:        "update_sandbox_tester",
@@ -140,28 +89,29 @@ func (r *Registry) registerSandboxTools() {
 		},
 	}, r.handleUpdateSandboxTester)
 
-	// Delete sandbox tester
+	// Clear sandbox tester purchase history
 	r.register(mcp.Tool{
-		Name:        "delete_sandbox_tester",
-		Description: "Delete a sandbox tester account",
+		Name:        "clear_sandbox_tester_purchase_history",
+		Description: "Clear the purchase history for one or more sandbox testers",
 		InputSchema: mcp.JSONSchema{
 			Type: "object",
 			Properties: map[string]mcp.Property{
-				"tester_id": {
-					Type:        "string",
-					Description: "The sandbox tester ID to delete",
+				"tester_ids": {
+					Type:        "array",
+					Description: "The sandbox tester IDs whose purchase history should be cleared",
+					Items:       &mcp.Property{Type: "string"},
 				},
 			},
-			Required: []string{"tester_id"},
+			Required: []string{"tester_ids"},
 		},
 		Annotations: &mcp.ToolAnnotations{
-			Title:           "Delete Sandbox Tester",
+			Title:           "Clear Sandbox Tester Purchase History",
 			ReadOnlyHint:    mcp.BoolPtr(false),
 			DestructiveHint: mcp.BoolPtr(true),
 			IdempotentHint:  mcp.BoolPtr(true),
 			OpenWorldHint:   mcp.BoolPtr(true),
 		},
-	}, r.handleDeleteSandboxTester)
+	}, r.handleClearSandboxTesterPurchaseHistory)
 }
 
 func (r *Registry) handleListSandboxTesters(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -195,49 +145,6 @@ func (r *Registry) handleListSandboxTesters(ctx context.Context, args json.RawMe
 	return newListResult(formatSandboxTesters(resp.Data), resp.Data, resp.Links), nil
 }
 
-func (r *Registry) handleCreateSandboxTester(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
-	var params struct {
-		Email             string `json:"email"`
-		Password          string `json:"password"`
-		FirstName         string `json:"first_name"`
-		LastName          string `json:"last_name"`
-		SecretQuestion    string `json:"secret_question"`
-		SecretAnswer      string `json:"secret_answer"`
-		BirthDate         string `json:"birth_date"`
-		AppStoreTerritory string `json:"app_store_territory"`
-	}
-	if err := json.Unmarshal(args, &params); err != nil {
-		return nil, fmt.Errorf("invalid arguments: %w", err)
-	}
-
-	if params.Email == "" || params.Password == "" || params.FirstName == "" || params.LastName == "" {
-		return nil, fmt.Errorf("email, password, first_name, and last_name are required")
-	}
-
-	req := &api.SandboxTesterCreateRequest{
-		Data: api.SandboxTesterCreateData{
-			Type: "sandboxTesters",
-			Attributes: api.SandboxTesterCreateAttributes{
-				Email:             params.Email,
-				Password:          params.Password,
-				FirstName:         params.FirstName,
-				LastName:          params.LastName,
-				SecretQuestion:    params.SecretQuestion,
-				SecretAnswer:      params.SecretAnswer,
-				BirthDate:         params.BirthDate,
-				AppStoreTerritory: params.AppStoreTerritory,
-			},
-		},
-	}
-
-	resp, err := r.client.CreateSandboxTester(ctx, req)
-	if err != nil {
-		return mcp.NewErrorResult(fmt.Sprintf("Failed to create sandbox tester: %v", err)), nil
-	}
-
-	return newDataResult(fmt.Sprintf("Sandbox tester created:\n%s", formatSandboxTester(resp.Data)), resp.Data), nil
-}
-
 func (r *Registry) handleUpdateSandboxTester(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
 		TesterID                string `json:"tester_id"`
@@ -250,7 +157,7 @@ func (r *Registry) handleUpdateSandboxTester(ctx context.Context, args json.RawM
 	}
 
 	if params.TesterID == "" {
-		return nil, fmt.Errorf("tester_id is required")
+		return mcp.NewErrorResult("tester_id is required"), nil
 	}
 
 	req := &api.SandboxTesterUpdateRequest{
@@ -273,24 +180,40 @@ func (r *Registry) handleUpdateSandboxTester(ctx context.Context, args json.RawM
 	return newDataResult(fmt.Sprintf("Sandbox tester updated:\n%s", formatSandboxTester(resp.Data)), resp.Data), nil
 }
 
-func (r *Registry) handleDeleteSandboxTester(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
+func (r *Registry) handleClearSandboxTesterPurchaseHistory(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		TesterID string `json:"tester_id"`
+		TesterIDs []string `json:"tester_ids"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
 	}
 
-	if params.TesterID == "" {
-		return nil, fmt.Errorf("tester_id is required")
+	if len(params.TesterIDs) == 0 {
+		return mcp.NewErrorResult("tester_ids is required"), nil
 	}
 
-	err := r.client.DeleteSandboxTester(ctx, params.TesterID)
+	var testers []api.ResourceIdentifier
+	for _, id := range params.TesterIDs {
+		testers = append(testers, api.ResourceIdentifier{Type: "sandboxTesters", ID: id})
+	}
+
+	req := &api.SandboxTesterClearPurchaseHistoryRequest{
+		Data: api.SandboxTesterClearPurchaseHistoryData{
+			Type: "sandboxTestersClearPurchaseHistoryRequest",
+			Relationships: api.SandboxTesterClearPurchaseHistoryRelationships{
+				SandboxTesters: api.RelationshipDataList{
+					Data: testers,
+				},
+			},
+		},
+	}
+
+	resp, err := r.client.ClearSandboxTesterPurchaseHistory(ctx, req)
 	if err != nil {
-		return mcp.NewErrorResult(fmt.Sprintf("Failed to delete sandbox tester: %v", err)), nil
+		return mcp.NewErrorResult(fmt.Sprintf("Failed to clear sandbox tester purchase history: %v", err)), nil
 	}
 
-	return mcp.NewSuccessResult("Sandbox tester deleted"), nil
+	return newDataResult(fmt.Sprintf("Purchase history cleared for %d sandbox testers (request ID: %s)", len(params.TesterIDs), resp.Data.ID), resp.Data), nil
 }
 
 func formatSandboxTesters(testers []api.SandboxTester) string {

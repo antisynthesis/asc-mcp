@@ -502,18 +502,24 @@ using only the Go standard library. The CLI is built on
 [`spf13/cobra`](https://github.com/spf13/cobra) (see ADR-0004). No other
 runtime dependencies are required.
 
-The server speaks MCP protocol version `2025-06-18` and negotiates down to
-`2025-03-26` or `2024-11-05` for older clients.
+The server is dual-era: it speaks the stateless MCP protocol revision
+`2026-07-28` (per-request `_meta` version/capabilities, `server/discover`,
+no sessions) and still serves handshake-based clients, negotiating
+`2025-11-25`, `2025-06-18`, `2025-03-26`, or `2024-11-05` via `initialize`.
+Each request picks its era: a `_meta` `io.modelcontextprotocol/protocolVersion`
+key (or a `server/discover` call) selects the modern path; everything else
+takes the legacy path unchanged.
 
 Two transports are supported, sharing the same dispatcher and tool registry:
 
 - `asc-mcp serve` — stdio. JSON-RPC messages on stdin/stdout. Use this when
   the server is spawned by a desktop client such as Claude Desktop.
-- `asc-mcp serve-http --addr :8080` — Streamable HTTP per the
-  2025-06-18 spec. `POST /mcp` for JSON-RPC submissions, `DELETE /mcp`
-  to end a session, `GET /healthz` for the K8s probe, `GET /metrics`
-  for Prometheus scraping. The server assigns an `Mcp-Session-Id` on
-  initialize and clients echo it on every subsequent request. Useful
+- `asc-mcp serve-http --addr :8080` — Streamable HTTP. `POST /mcp` for
+  JSON-RPC submissions, `GET /healthz` for the K8s probe, `GET /metrics`
+  for Prometheus scraping. Modern (`2026-07-28`) requests are sessionless
+  and must carry the `Mcp-Method` header (plus `Mcp-Name` on `tools/call`);
+  legacy clients get an `Mcp-Session-Id` on initialize, echo it on every
+  subsequent request, and may `DELETE /mcp` to end the session. Useful
   flags:
   - `--auth-tokens` (or `ASC_MCP_AUTH_TOKENS` env): comma-separated
     Bearer tokens. Required for any non-trusted-network deployment.

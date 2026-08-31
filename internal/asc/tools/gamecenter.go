@@ -313,6 +313,10 @@ func (r *Registry) registerGameCenterTools() {
 					Type:        "string",
 					Description: "Maximum valid score",
 				},
+				"default_formatter": {
+					Type:        "string",
+					Description: "Score display format (e.g. INTEGER, DECIMAL_POINT_1_PLACE, ELAPSED_TIME_SECOND, MONEY_DOLLAR). Defaults to INTEGER.",
+				},
 			},
 			Required: []string{"game_center_detail_id", "reference_name", "vendor_identifier", "submission_type", "score_sort_type"},
 		},
@@ -397,7 +401,7 @@ func (r *Registry) handleGetGameCenterDetail(ctx context.Context, args json.RawM
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	resp, err := r.client.GetGameCenterDetail(ctx, params.AppID)
@@ -423,7 +427,7 @@ func (r *Registry) handleListGameCenterAchievements(ctx context.Context, args js
 	}
 
 	if params.GameCenterDetailID == "" {
-		return nil, fmt.Errorf("game_center_detail_id is required")
+		return mcp.NewErrorResult("game_center_detail_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -453,7 +457,7 @@ func (r *Registry) handleGetGameCenterAchievement(ctx context.Context, args json
 	}
 
 	if params.AchievementID == "" {
-		return nil, fmt.Errorf("achievement_id is required")
+		return mcp.NewErrorResult("achievement_id is required"), nil
 	}
 
 	resp, err := r.client.GetGameCenterAchievement(ctx, params.AchievementID)
@@ -478,15 +482,17 @@ func (r *Registry) handleCreateGameCenterAchievement(ctx context.Context, args j
 	}
 
 	if params.GameCenterDetailID == "" {
-		return nil, fmt.Errorf("game_center_detail_id is required")
+		return mcp.NewErrorResult("game_center_detail_id is required"), nil
 	}
 	if params.ReferenceName == "" {
-		return nil, fmt.Errorf("reference_name is required")
+		return mcp.NewErrorResult("reference_name is required"), nil
 	}
 	if params.VendorIdentifier == "" {
-		return nil, fmt.Errorf("vendor_identifier is required")
+		return mcp.NewErrorResult("vendor_identifier is required"), nil
 	}
 
+	// The v2 API requires an initial achievement version, created inline with a
+	// client-chosen temporary ID.
 	req := &api.GameCenterAchievementCreateRequest{
 		Data: api.GameCenterAchievementCreateData{
 			Type: "gameCenterAchievements",
@@ -504,7 +510,15 @@ func (r *Registry) handleCreateGameCenterAchievement(ctx context.Context, args j
 						ID:   params.GameCenterDetailID,
 					},
 				},
+				Versions: api.RelationshipDataList{
+					Data: []api.ResourceIdentifier{
+						{Type: "gameCenterAchievementVersions", ID: "${new-version}"},
+					},
+				},
 			},
+		},
+		Included: []api.GameCenterVersionInlineCreate{
+			{Type: "gameCenterAchievementVersions", ID: "${new-version}"},
 		},
 	}
 
@@ -530,7 +544,7 @@ func (r *Registry) handleUpdateGameCenterAchievement(ctx context.Context, args j
 	}
 
 	if params.AchievementID == "" {
-		return nil, fmt.Errorf("achievement_id is required")
+		return mcp.NewErrorResult("achievement_id is required"), nil
 	}
 
 	req := &api.GameCenterAchievementUpdateRequest{
@@ -564,7 +578,7 @@ func (r *Registry) handleDeleteGameCenterAchievement(ctx context.Context, args j
 	}
 
 	if params.AchievementID == "" {
-		return nil, fmt.Errorf("achievement_id is required")
+		return mcp.NewErrorResult("achievement_id is required"), nil
 	}
 
 	err := r.client.DeleteGameCenterAchievement(ctx, params.AchievementID)
@@ -590,7 +604,7 @@ func (r *Registry) handleListGameCenterLeaderboards(ctx context.Context, args js
 	}
 
 	if params.GameCenterDetailID == "" {
-		return nil, fmt.Errorf("game_center_detail_id is required")
+		return mcp.NewErrorResult("game_center_detail_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -620,7 +634,7 @@ func (r *Registry) handleGetGameCenterLeaderboard(ctx context.Context, args json
 	}
 
 	if params.LeaderboardID == "" {
-		return nil, fmt.Errorf("leaderboard_id is required")
+		return mcp.NewErrorResult("leaderboard_id is required"), nil
 	}
 
 	resp, err := r.client.GetGameCenterLeaderboard(ctx, params.LeaderboardID)
@@ -640,31 +654,41 @@ func (r *Registry) handleCreateGameCenterLeaderboard(ctx context.Context, args j
 		ScoreSortType      string `json:"score_sort_type"`
 		ScoreRangeStart    string `json:"score_range_start"`
 		ScoreRangeEnd      string `json:"score_range_end"`
+		DefaultFormatter   string `json:"default_formatter"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
 	}
 
 	if params.GameCenterDetailID == "" {
-		return nil, fmt.Errorf("game_center_detail_id is required")
+		return mcp.NewErrorResult("game_center_detail_id is required"), nil
 	}
 	if params.ReferenceName == "" {
-		return nil, fmt.Errorf("reference_name is required")
+		return mcp.NewErrorResult("reference_name is required"), nil
 	}
 	if params.VendorIdentifier == "" {
-		return nil, fmt.Errorf("vendor_identifier is required")
+		return mcp.NewErrorResult("vendor_identifier is required"), nil
 	}
 	if params.SubmissionType == "" {
-		return nil, fmt.Errorf("submission_type is required")
+		return mcp.NewErrorResult("submission_type is required"), nil
 	}
 	if params.ScoreSortType == "" {
-		return nil, fmt.Errorf("score_sort_type is required")
+		return mcp.NewErrorResult("score_sort_type is required"), nil
 	}
 
+	// The v2 API requires a default formatter for score display.
+	formatter := params.DefaultFormatter
+	if formatter == "" {
+		formatter = "INTEGER"
+	}
+
+	// The v2 API requires an initial leaderboard version, created inline with a
+	// client-chosen temporary ID.
 	req := &api.GameCenterLeaderboardCreateRequest{
 		Data: api.GameCenterLeaderboardCreateData{
 			Type: "gameCenterLeaderboards",
 			Attributes: api.GameCenterLeaderboardCreateAttributes{
+				DefaultFormatter: formatter,
 				ReferenceName:    params.ReferenceName,
 				VendorIdentifier: params.VendorIdentifier,
 				SubmissionType:   params.SubmissionType,
@@ -679,7 +703,15 @@ func (r *Registry) handleCreateGameCenterLeaderboard(ctx context.Context, args j
 						ID:   params.GameCenterDetailID,
 					},
 				},
+				Versions: api.RelationshipDataList{
+					Data: []api.ResourceIdentifier{
+						{Type: "gameCenterLeaderboardVersions", ID: "${new-version}"},
+					},
+				},
 			},
+		},
+		Included: []api.GameCenterVersionInlineCreate{
+			{Type: "gameCenterLeaderboardVersions", ID: "${new-version}"},
 		},
 	}
 
@@ -704,7 +736,7 @@ func (r *Registry) handleUpdateGameCenterLeaderboard(ctx context.Context, args j
 	}
 
 	if params.LeaderboardID == "" {
-		return nil, fmt.Errorf("leaderboard_id is required")
+		return mcp.NewErrorResult("leaderboard_id is required"), nil
 	}
 
 	req := &api.GameCenterLeaderboardUpdateRequest{
@@ -737,7 +769,7 @@ func (r *Registry) handleDeleteGameCenterLeaderboard(ctx context.Context, args j
 	}
 
 	if params.LeaderboardID == "" {
-		return nil, fmt.Errorf("leaderboard_id is required")
+		return mcp.NewErrorResult("leaderboard_id is required"), nil
 	}
 
 	err := r.client.DeleteGameCenterLeaderboard(ctx, params.LeaderboardID)

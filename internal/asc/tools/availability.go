@@ -122,7 +122,7 @@ func (r *Registry) handleGetAppAvailability(ctx context.Context, args json.RawMe
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppAvailability(ctx, params.AppID)
@@ -144,7 +144,7 @@ func (r *Registry) handleCreateAppAvailability(ctx context.Context, args json.Ra
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	availInNew := true
@@ -152,9 +152,26 @@ func (r *Registry) handleCreateAppAvailability(ctx context.Context, args json.Ra
 		availInNew = *params.AvailableInNewTerritories
 	}
 
-	var territories []api.ResourceIdentifier
+	// The v2 endpoint takes territory availabilities as inline-created
+	// resources referenced by temporary IDs.
+	available := true
+	var refs []api.ResourceIdentifier
+	var included []api.TerritoryAvailabilityInlineCreate
 	for _, tid := range params.TerritoryIDs {
-		territories = append(territories, api.ResourceIdentifier{Type: "territories", ID: tid})
+		tempID := "${" + tid + "}"
+		refs = append(refs, api.ResourceIdentifier{Type: "territoryAvailabilities", ID: tempID})
+		included = append(included, api.TerritoryAvailabilityInlineCreate{
+			Type: "territoryAvailabilities",
+			ID:   tempID,
+			Attributes: &api.TerritoryAvailabilityInlineAttributes{
+				Available: &available,
+			},
+			Relationships: &api.TerritoryAvailabilityInlineCreateRelationships{
+				Territory: api.RelationshipData{
+					Data: api.ResourceIdentifier{Type: "territories", ID: tid},
+				},
+			},
+		})
 	}
 
 	req := &api.AppAvailabilityCreateRequest{
@@ -167,11 +184,12 @@ func (r *Registry) handleCreateAppAvailability(ctx context.Context, args json.Ra
 				App: api.RelationshipData{
 					Data: api.ResourceIdentifier{Type: "apps", ID: params.AppID},
 				},
-				AvailableTerritories: api.RelationshipDataList{
-					Data: territories,
+				TerritoryAvailabilities: api.RelationshipDataList{
+					Data: refs,
 				},
 			},
 		},
+		Included: included,
 	}
 
 	resp, err := r.client.CreateAppAvailability(ctx, req)
@@ -197,7 +215,7 @@ func (r *Registry) handleListTerritoryAvailabilities(ctx context.Context, args j
 	}
 
 	if params.AvailabilityID == "" {
-		return nil, fmt.Errorf("availability_id is required")
+		return mcp.NewErrorResult("availability_id is required"), nil
 	}
 
 	limit := params.Limit

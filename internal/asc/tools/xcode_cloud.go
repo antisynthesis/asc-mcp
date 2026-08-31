@@ -237,29 +237,6 @@ func (r *Registry) registerXcodeCloudTools() {
 			OpenWorldHint:   mcp.BoolPtr(true),
 		},
 	}, r.handleStartCiBuildRun)
-
-	// Cancel CI build run
-	r.register(mcp.Tool{
-		Name:        "cancel_ci_build_run",
-		Description: "Cancel a running Xcode Cloud build run",
-		InputSchema: mcp.JSONSchema{
-			Type: "object",
-			Properties: map[string]mcp.Property{
-				"build_run_id": {
-					Type:        "string",
-					Description: "The CI build run ID to cancel",
-				},
-			},
-			Required: []string{"build_run_id"},
-		},
-		Annotations: &mcp.ToolAnnotations{
-			Title:           "Cancel Ci Build Run",
-			ReadOnlyHint:    mcp.BoolPtr(false),
-			DestructiveHint: mcp.BoolPtr(true),
-			IdempotentHint:  mcp.BoolPtr(true),
-			OpenWorldHint:   mcp.BoolPtr(true),
-		},
-	}, r.handleCancelCiBuildRun)
 }
 
 func (r *Registry) handleListCiProducts(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
@@ -303,7 +280,7 @@ func (r *Registry) handleGetCiProduct(ctx context.Context, args json.RawMessage)
 	}
 
 	if params.ProductID == "" {
-		return nil, fmt.Errorf("product_id is required")
+		return mcp.NewErrorResult("product_id is required"), nil
 	}
 
 	resp, err := r.client.GetCiProduct(ctx, params.ProductID)
@@ -329,7 +306,7 @@ func (r *Registry) handleListCiWorkflows(ctx context.Context, args json.RawMessa
 	}
 
 	if params.ProductID == "" {
-		return nil, fmt.Errorf("product_id is required")
+		return mcp.NewErrorResult("product_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -359,7 +336,7 @@ func (r *Registry) handleGetCiWorkflow(ctx context.Context, args json.RawMessage
 	}
 
 	if params.WorkflowID == "" {
-		return nil, fmt.Errorf("workflow_id is required")
+		return mcp.NewErrorResult("workflow_id is required"), nil
 	}
 
 	resp, err := r.client.GetCiWorkflow(ctx, params.WorkflowID)
@@ -385,7 +362,7 @@ func (r *Registry) handleListCiBuildRuns(ctx context.Context, args json.RawMessa
 	}
 
 	if params.WorkflowID == "" {
-		return nil, fmt.Errorf("workflow_id is required")
+		return mcp.NewErrorResult("workflow_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -415,7 +392,7 @@ func (r *Registry) handleGetCiBuildRun(ctx context.Context, args json.RawMessage
 	}
 
 	if params.BuildRunID == "" {
-		return nil, fmt.Errorf("build_run_id is required")
+		return mcp.NewErrorResult("build_run_id is required"), nil
 	}
 
 	resp, err := r.client.GetCiBuildRun(ctx, params.BuildRunID)
@@ -435,7 +412,7 @@ func (r *Registry) handleStartCiBuildRun(ctx context.Context, args json.RawMessa
 	}
 
 	if params.WorkflowID == "" {
-		return nil, fmt.Errorf("workflow_id is required")
+		return mcp.NewErrorResult("workflow_id is required"), nil
 	}
 
 	resp, err := r.client.StartCiBuildRun(ctx, params.WorkflowID)
@@ -444,26 +421,6 @@ func (r *Registry) handleStartCiBuildRun(ctx context.Context, args json.RawMessa
 	}
 
 	return newDataResult(fmt.Sprintf("Started build run: %s (build #%d)", resp.Data.ID, resp.Data.Attributes.Number), resp.Data), nil
-}
-
-func (r *Registry) handleCancelCiBuildRun(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
-	var params struct {
-		BuildRunID string `json:"build_run_id"`
-	}
-	if err := json.Unmarshal(args, &params); err != nil {
-		return nil, fmt.Errorf("invalid arguments: %w", err)
-	}
-
-	if params.BuildRunID == "" {
-		return nil, fmt.Errorf("build_run_id is required")
-	}
-
-	err := r.client.CancelCiBuildRun(ctx, params.BuildRunID)
-	if err != nil {
-		return mcp.NewErrorResult(fmt.Sprintf("Failed to cancel CI build run: %v", err)), nil
-	}
-
-	return mcp.NewSuccessResult("Build run cancelled successfully"), nil
 }
 
 func formatCiProducts(products []api.CiProduct) string {

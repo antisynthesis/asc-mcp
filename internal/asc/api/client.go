@@ -890,7 +890,7 @@ func (c *Client) ListInAppPurchases(ctx context.Context, appID string, opts *Lis
 		opts.Apply(query)
 	}
 
-	data, err := c.Get(ctx, "/v2/apps/"+url.PathEscape(appID)+"/inAppPurchasesV2", query)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/inAppPurchasesV2", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1075,23 +1075,6 @@ func (c *Client) UpdateAppStoreVersion(ctx context.Context, versionID string, re
 // DeleteAppStoreVersion deletes an app store version.
 func (c *Client) DeleteAppStoreVersion(ctx context.Context, versionID string) error {
 	return c.Delete(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID))
-}
-
-// App Store Version Submission API methods
-
-// CreateAppStoreVersionSubmission submits an app store version for review.
-func (c *Client) CreateAppStoreVersionSubmission(ctx context.Context, req *AppStoreVersionSubmissionCreateRequest) (*AppStoreVersionSubmissionResponse, error) {
-	data, err := c.Post(ctx, "/v1/appStoreVersionSubmissions", req)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp AppStoreVersionSubmissionResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return &resp, nil
 }
 
 // App Store Review Detail API methods
@@ -1379,54 +1362,20 @@ func (c *Client) DeleteAppPreview(ctx context.Context, previewID string) error {
 
 // App Pre-Order API methods
 
-// GetAppPreOrder returns pre-order info for an app.
-func (c *Client) GetAppPreOrder(ctx context.Context, appID string) (*AppPreOrderResponse, error) {
-	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/preOrder", nil)
+// EndAppAvailabilityPreOrder ends pre-order availability for the given
+// territory availabilities.
+func (c *Client) EndAppAvailabilityPreOrder(ctx context.Context, req *EndAppAvailabilityPreOrderCreateRequest) (*EndAppAvailabilityPreOrderResponse, error) {
+	data, err := c.Post(ctx, "/v1/endAppAvailabilityPreOrders", req)
 	if err != nil {
 		return nil, err
 	}
 
-	var resp AppPreOrderResponse
+	var resp EndAppAvailabilityPreOrderResponse
 	if err := json.Unmarshal(data, &resp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	return &resp, nil
-}
-
-// CreateAppPreOrder creates a pre-order.
-func (c *Client) CreateAppPreOrder(ctx context.Context, req *AppPreOrderCreateRequest) (*AppPreOrderResponse, error) {
-	data, err := c.Post(ctx, "/v1/appPreOrders", req)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp AppPreOrderResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return &resp, nil
-}
-
-// UpdateAppPreOrder updates a pre-order.
-func (c *Client) UpdateAppPreOrder(ctx context.Context, preOrderID string, req *AppPreOrderUpdateRequest) (*AppPreOrderResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appPreOrders/"+url.PathEscape(preOrderID), req)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp AppPreOrderResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return &resp, nil
-}
-
-// DeleteAppPreOrder deletes a pre-order.
-func (c *Client) DeleteAppPreOrder(ctx context.Context, preOrderID string) error {
-	return c.Delete(ctx, "/v1/appPreOrders/"+url.PathEscape(preOrderID))
 }
 
 // App Event API methods
@@ -1742,14 +1691,14 @@ func (c *Client) GetGameCenterDetail(ctx context.Context, appID string) (*GameCe
 	return &resp, nil
 }
 
-// ListGameCenterAchievements returns achievements for a game center detail.
+// ListGameCenterAchievements returns achievements for a game center detail via the v2 Game Center API.
 func (c *Client) ListGameCenterAchievements(ctx context.Context, gameCenterDetailID string, opts *ListOptions) (*GameCenterAchievementsResponse, error) {
 	query := url.Values{}
 	if opts != nil {
 		opts.Apply(query)
 	}
 
-	data, err := c.Get(ctx, "/v1/gameCenterDetails/"+url.PathEscape(gameCenterDetailID)+"/gameCenterAchievements", query)
+	data, err := c.Get(ctx, "/v1/gameCenterDetails/"+url.PathEscape(gameCenterDetailID)+"/gameCenterAchievementsV2", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1764,7 +1713,7 @@ func (c *Client) ListGameCenterAchievements(ctx context.Context, gameCenterDetai
 
 // GetGameCenterAchievement returns a single achievement.
 func (c *Client) GetGameCenterAchievement(ctx context.Context, achievementID string) (*GameCenterAchievementResponse, error) {
-	data, err := c.Get(ctx, "/v1/gameCenterAchievements/"+url.PathEscape(achievementID), nil)
+	data, err := c.Get(ctx, "/v2/gameCenterAchievements/"+url.PathEscape(achievementID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1777,9 +1726,9 @@ func (c *Client) GetGameCenterAchievement(ctx context.Context, achievementID str
 	return &resp, nil
 }
 
-// CreateGameCenterAchievement creates a new achievement.
+// CreateGameCenterAchievement creates a new achievement via the v2 Game Center API.
 func (c *Client) CreateGameCenterAchievement(ctx context.Context, req *GameCenterAchievementCreateRequest) (*GameCenterAchievementResponse, error) {
-	data, err := c.Post(ctx, "/v1/gameCenterAchievements", req)
+	data, err := c.Post(ctx, "/v2/gameCenterAchievements", req)
 	if err != nil {
 		return nil, err
 	}
@@ -1794,7 +1743,7 @@ func (c *Client) CreateGameCenterAchievement(ctx context.Context, req *GameCente
 
 // UpdateGameCenterAchievement updates an achievement.
 func (c *Client) UpdateGameCenterAchievement(ctx context.Context, achievementID string, req *GameCenterAchievementUpdateRequest) (*GameCenterAchievementResponse, error) {
-	data, err := c.Patch(ctx, "/v1/gameCenterAchievements/"+url.PathEscape(achievementID), req)
+	data, err := c.Patch(ctx, "/v2/gameCenterAchievements/"+url.PathEscape(achievementID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -1809,17 +1758,17 @@ func (c *Client) UpdateGameCenterAchievement(ctx context.Context, achievementID 
 
 // DeleteGameCenterAchievement deletes an achievement.
 func (c *Client) DeleteGameCenterAchievement(ctx context.Context, achievementID string) error {
-	return c.Delete(ctx, "/v1/gameCenterAchievements/"+url.PathEscape(achievementID))
+	return c.Delete(ctx, "/v2/gameCenterAchievements/"+url.PathEscape(achievementID))
 }
 
-// ListGameCenterLeaderboards returns leaderboards for a game center detail.
+// ListGameCenterLeaderboards returns leaderboards for a game center detail via the v2 Game Center API.
 func (c *Client) ListGameCenterLeaderboards(ctx context.Context, gameCenterDetailID string, opts *ListOptions) (*GameCenterLeaderboardsResponse, error) {
 	query := url.Values{}
 	if opts != nil {
 		opts.Apply(query)
 	}
 
-	data, err := c.Get(ctx, "/v1/gameCenterDetails/"+url.PathEscape(gameCenterDetailID)+"/gameCenterLeaderboards", query)
+	data, err := c.Get(ctx, "/v1/gameCenterDetails/"+url.PathEscape(gameCenterDetailID)+"/gameCenterLeaderboardsV2", query)
 	if err != nil {
 		return nil, err
 	}
@@ -1834,7 +1783,7 @@ func (c *Client) ListGameCenterLeaderboards(ctx context.Context, gameCenterDetai
 
 // GetGameCenterLeaderboard returns a single leaderboard.
 func (c *Client) GetGameCenterLeaderboard(ctx context.Context, leaderboardID string) (*GameCenterLeaderboardResponse, error) {
-	data, err := c.Get(ctx, "/v1/gameCenterLeaderboards/"+url.PathEscape(leaderboardID), nil)
+	data, err := c.Get(ctx, "/v2/gameCenterLeaderboards/"+url.PathEscape(leaderboardID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1847,9 +1796,9 @@ func (c *Client) GetGameCenterLeaderboard(ctx context.Context, leaderboardID str
 	return &resp, nil
 }
 
-// CreateGameCenterLeaderboard creates a new leaderboard.
+// CreateGameCenterLeaderboard creates a new leaderboard via the v2 Game Center API.
 func (c *Client) CreateGameCenterLeaderboard(ctx context.Context, req *GameCenterLeaderboardCreateRequest) (*GameCenterLeaderboardResponse, error) {
-	data, err := c.Post(ctx, "/v1/gameCenterLeaderboards", req)
+	data, err := c.Post(ctx, "/v2/gameCenterLeaderboards", req)
 	if err != nil {
 		return nil, err
 	}
@@ -1864,7 +1813,7 @@ func (c *Client) CreateGameCenterLeaderboard(ctx context.Context, req *GameCente
 
 // UpdateGameCenterLeaderboard updates a leaderboard.
 func (c *Client) UpdateGameCenterLeaderboard(ctx context.Context, leaderboardID string, req *GameCenterLeaderboardUpdateRequest) (*GameCenterLeaderboardResponse, error) {
-	data, err := c.Patch(ctx, "/v1/gameCenterLeaderboards/"+url.PathEscape(leaderboardID), req)
+	data, err := c.Patch(ctx, "/v2/gameCenterLeaderboards/"+url.PathEscape(leaderboardID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -1879,7 +1828,7 @@ func (c *Client) UpdateGameCenterLeaderboard(ctx context.Context, leaderboardID 
 
 // DeleteGameCenterLeaderboard deletes a leaderboard.
 func (c *Client) DeleteGameCenterLeaderboard(ctx context.Context, leaderboardID string) error {
-	return c.Delete(ctx, "/v1/gameCenterLeaderboards/"+url.PathEscape(leaderboardID))
+	return c.Delete(ctx, "/v2/gameCenterLeaderboards/"+url.PathEscape(leaderboardID))
 }
 
 // Xcode Cloud API methods
@@ -2021,11 +1970,6 @@ func (c *Client) StartCiBuildRun(ctx context.Context, workflowID string) (*CiBui
 	return &resp, nil
 }
 
-// CancelCiBuildRun cancels a build run.
-func (c *Client) CancelCiBuildRun(ctx context.Context, buildRunID string) error {
-	return c.Delete(ctx, "/v1/ciBuildRuns/"+url.PathEscape(buildRunID))
-}
-
 // Sales and Finance API methods
 
 // GetSalesReport returns sales reports.
@@ -2116,18 +2060,18 @@ func (c *Client) CreateAppEncryptionDeclaration(ctx context.Context, req *AppEnc
 	return &resp, nil
 }
 
-// AssignBuildToEncryptionDeclaration assigns a build to an encryption declaration.
+// AssignBuildToEncryptionDeclaration assigns a build to an encryption declaration
+// by setting the build's appEncryptionDeclaration relationship. This replaces the
+// deprecated POST /v1/appEncryptionDeclarations/{id}/relationships/builds endpoint.
 func (c *Client) AssignBuildToEncryptionDeclaration(ctx context.Context, declarationID, buildID string) error {
 	body := map[string]any{
-		"data": []map[string]string{
-			{
-				"type": "builds",
-				"id":   buildID,
-			},
+		"data": map[string]string{
+			"type": "appEncryptionDeclarations",
+			"id":   declarationID,
 		},
 	}
 
-	_, err := c.Post(ctx, "/v1/appEncryptionDeclarations/"+url.PathEscape(declarationID)+"/relationships/builds", body)
+	_, err := c.Patch(ctx, "/v1/builds/"+url.PathEscape(buildID)+"/relationships/appEncryptionDeclaration", body)
 	return err
 }
 
@@ -2300,7 +2244,7 @@ func (c *Client) ListTerritories(ctx context.Context, opts *ListOptions) (*Terri
 
 // GetAppAvailability returns app availability.
 func (c *Client) GetAppAvailability(ctx context.Context, appID string) (*AppAvailabilityResponse, error) {
-	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appAvailability", nil)
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appAvailabilityV2", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2315,7 +2259,7 @@ func (c *Client) GetAppAvailability(ctx context.Context, appID string) (*AppAvai
 
 // CreateAppAvailability sets app availability.
 func (c *Client) CreateAppAvailability(ctx context.Context, req *AppAvailabilityCreateRequest) (*AppAvailabilityResponse, error) {
-	data, err := c.Post(ctx, "/v1/appAvailabilities", req)
+	data, err := c.Post(ctx, "/v2/appAvailabilities", req)
 	if err != nil {
 		return nil, err
 	}
@@ -2334,7 +2278,7 @@ func (c *Client) ListTerritoryAvailabilities(ctx context.Context, appAvailabilit
 	if opts != nil {
 		opts.Apply(query)
 	}
-	data, err := c.Get(ctx, "/v1/appAvailabilities/"+url.PathEscape(appAvailabilityID)+"/territoryAvailabilities", query)
+	data, err := c.Get(ctx, "/v2/appAvailabilities/"+url.PathEscape(appAvailabilityID)+"/territoryAvailabilities", query)
 	if err != nil {
 		return nil, err
 	}
@@ -2377,58 +2321,6 @@ func (c *Client) UpdateAgeRatingDeclaration(ctx context.Context, declarationID s
 	}
 
 	return &resp, nil
-}
-
-// IDFA Declaration methods
-
-// GetIdfaDeclaration returns an IDFA declaration.
-func (c *Client) GetIdfaDeclaration(ctx context.Context, versionID string) (*IdfaDeclarationResponse, error) {
-	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/idfaDeclaration", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp IdfaDeclarationResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return &resp, nil
-}
-
-// CreateIdfaDeclaration creates an IDFA declaration.
-func (c *Client) CreateIdfaDeclaration(ctx context.Context, req *IdfaDeclarationCreateRequest) (*IdfaDeclarationResponse, error) {
-	data, err := c.Post(ctx, "/v1/idfaDeclarations", req)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp IdfaDeclarationResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return &resp, nil
-}
-
-// UpdateIdfaDeclaration updates an IDFA declaration.
-func (c *Client) UpdateIdfaDeclaration(ctx context.Context, declarationID string, req *IdfaDeclarationUpdateRequest) (*IdfaDeclarationResponse, error) {
-	data, err := c.Patch(ctx, "/v1/idfaDeclarations/"+url.PathEscape(declarationID), req)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp IdfaDeclarationResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return &resp, nil
-}
-
-// DeleteIdfaDeclaration deletes an IDFA declaration.
-func (c *Client) DeleteIdfaDeclaration(ctx context.Context, declarationID string) error {
-	return c.Delete(ctx, "/v1/idfaDeclarations/"+url.PathEscape(declarationID))
 }
 
 // End User License Agreement methods
@@ -2606,21 +2498,6 @@ func (c *Client) ListSandboxTesters(ctx context.Context, opts *ListOptions) (*Sa
 	return &resp, nil
 }
 
-// CreateSandboxTester creates a sandbox tester.
-func (c *Client) CreateSandboxTester(ctx context.Context, req *SandboxTesterCreateRequest) (*SandboxTesterResponse, error) {
-	data, err := c.Post(ctx, "/v2/sandboxTesters", req)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp SandboxTesterResponse
-	if err := json.Unmarshal(data, &resp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return &resp, nil
-}
-
 // UpdateSandboxTester updates a sandbox tester.
 func (c *Client) UpdateSandboxTester(ctx context.Context, testerID string, req *SandboxTesterUpdateRequest) (*SandboxTesterResponse, error) {
 	data, err := c.Patch(ctx, "/v2/sandboxTesters/"+url.PathEscape(testerID), req)
@@ -2636,9 +2513,20 @@ func (c *Client) UpdateSandboxTester(ctx context.Context, testerID string, req *
 	return &resp, nil
 }
 
-// DeleteSandboxTester deletes a sandbox tester.
-func (c *Client) DeleteSandboxTester(ctx context.Context, testerID string) error {
-	return c.Delete(ctx, "/v2/sandboxTesters/"+url.PathEscape(testerID))
+// ClearSandboxTesterPurchaseHistory clears the purchase history for the
+// given sandbox testers.
+func (c *Client) ClearSandboxTesterPurchaseHistory(ctx context.Context, req *SandboxTesterClearPurchaseHistoryRequest) (*SandboxTesterClearPurchaseHistoryResponse, error) {
+	data, err := c.Post(ctx, "/v2/sandboxTestersClearPurchaseHistoryRequest", req)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp SandboxTesterClearPurchaseHistoryResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
 }
 
 // Promoted Purchase methods
@@ -2872,13 +2760,13 @@ func (c *Client) DeleteWinBackOffer(ctx context.Context, offerID string) error {
 
 // App Store Version Experiment methods
 
-// ListAppStoreVersionExperiments returns experiments for a version.
+// ListAppStoreVersionExperiments returns v2 experiments for a version.
 func (c *Client) ListAppStoreVersionExperiments(ctx context.Context, versionID string, opts *ListOptions) (*AppStoreVersionExperimentsResponse, error) {
 	query := url.Values{}
 	if opts != nil {
 		opts.Apply(query)
 	}
-	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/appStoreVersionExperiments", query)
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/appStoreVersionExperimentsV2", query)
 	if err != nil {
 		return nil, err
 	}
@@ -2891,9 +2779,28 @@ func (c *Client) ListAppStoreVersionExperiments(ctx context.Context, versionID s
 	return &resp, nil
 }
 
-// GetAppStoreVersionExperiment returns a single experiment.
+// ListAppStoreVersionExperimentsForApp returns v2 experiments for an app.
+func (c *Client) ListAppStoreVersionExperimentsForApp(ctx context.Context, appID string, opts *ListOptions) (*AppStoreVersionExperimentsResponse, error) {
+	query := url.Values{}
+	if opts != nil {
+		opts.Apply(query)
+	}
+	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/appStoreVersionExperimentsV2", query)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp AppStoreVersionExperimentsResponse
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// GetAppStoreVersionExperiment returns a single v2 experiment.
 func (c *Client) GetAppStoreVersionExperiment(ctx context.Context, experimentID string) (*AppStoreVersionExperimentResponse, error) {
-	data, err := c.Get(ctx, "/v1/appStoreVersionExperiments/"+url.PathEscape(experimentID), nil)
+	data, err := c.Get(ctx, "/v2/appStoreVersionExperiments/"+url.PathEscape(experimentID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -2906,9 +2813,9 @@ func (c *Client) GetAppStoreVersionExperiment(ctx context.Context, experimentID 
 	return &resp, nil
 }
 
-// CreateAppStoreVersionExperiment creates an experiment.
+// CreateAppStoreVersionExperiment creates a v2 experiment attached to an app.
 func (c *Client) CreateAppStoreVersionExperiment(ctx context.Context, req *AppStoreVersionExperimentCreateRequest) (*AppStoreVersionExperimentResponse, error) {
-	data, err := c.Post(ctx, "/v1/appStoreVersionExperiments", req)
+	data, err := c.Post(ctx, "/v2/appStoreVersionExperiments", req)
 	if err != nil {
 		return nil, err
 	}
@@ -2921,9 +2828,9 @@ func (c *Client) CreateAppStoreVersionExperiment(ctx context.Context, req *AppSt
 	return &resp, nil
 }
 
-// UpdateAppStoreVersionExperiment updates an experiment.
+// UpdateAppStoreVersionExperiment updates a v2 experiment.
 func (c *Client) UpdateAppStoreVersionExperiment(ctx context.Context, experimentID string, req *AppStoreVersionExperimentUpdateRequest) (*AppStoreVersionExperimentResponse, error) {
-	data, err := c.Patch(ctx, "/v1/appStoreVersionExperiments/"+url.PathEscape(experimentID), req)
+	data, err := c.Patch(ctx, "/v2/appStoreVersionExperiments/"+url.PathEscape(experimentID), req)
 	if err != nil {
 		return nil, err
 	}
@@ -2936,9 +2843,9 @@ func (c *Client) UpdateAppStoreVersionExperiment(ctx context.Context, experiment
 	return &resp, nil
 }
 
-// DeleteAppStoreVersionExperiment deletes an experiment.
+// DeleteAppStoreVersionExperiment deletes a v2 experiment.
 func (c *Client) DeleteAppStoreVersionExperiment(ctx context.Context, experimentID string) error {
-	return c.Delete(ctx, "/v1/appStoreVersionExperiments/"+url.PathEscape(experimentID))
+	return c.Delete(ctx, "/v2/appStoreVersionExperiments/"+url.PathEscape(experimentID))
 }
 
 // Custom Product Page methods
@@ -3483,18 +3390,15 @@ func (c *Client) DeleteAlternativeDistributionKey(ctx context.Context, keyID str
 	return c.Delete(ctx, "/v1/alternativeDistributionKeys/"+url.PathEscape(keyID))
 }
 
-// ListAlternativeDistributionPackages returns alternative distribution packages.
-func (c *Client) ListAlternativeDistributionPackages(ctx context.Context, appID string, opts *ListOptions) (*AlternativeDistributionPackagesResponse, error) {
-	query := url.Values{}
-	if opts != nil {
-		opts.Apply(query)
-	}
-	data, err := c.Get(ctx, "/v1/apps/"+url.PathEscape(appID)+"/alternativeDistributionPackages", query)
+// GetAlternativeDistributionPackageForVersion returns the alternative
+// distribution package for an app store version.
+func (c *Client) GetAlternativeDistributionPackageForVersion(ctx context.Context, versionID string) (*AlternativeDistributionPackageResponse, error) {
+	data, err := c.Get(ctx, "/v1/appStoreVersions/"+url.PathEscape(versionID)+"/alternativeDistributionPackage", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var resp AlternativeDistributionPackagesResponse
+	var resp AlternativeDistributionPackageResponse
 	if err := json.Unmarshal(data, &resp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}

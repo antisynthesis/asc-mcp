@@ -53,6 +53,7 @@ func NewRegistry(client *api.Client) *Registry {
 
 	// App Store versions and submissions
 	r.registerVersionSubmissionTools()
+	r.registerReviewSubmissionTools()
 	r.registerPhasedReleaseTools()
 
 	// Screenshots and previews
@@ -112,8 +113,29 @@ func NewRegistry(client *api.Client) *Registry {
 	// Misc tools (EULA, categories, alternative distribution)
 	r.registerMiscTools()
 
+	// Webhooks
+	r.registerWebhookTools()
+
+	// Accessibility declarations
+	r.registerAccessibilityTools()
+
+	// Apple-created app tags
+	r.registerAppTagTools()
+
+	// Android-to-iOS app mappings
+	r.registerAndroidMappingTools()
+
 	// Asset uploads (screenshots, previews, review attachments)
 	r.registerUploadTools()
+
+	// Build uploads (deliver build binaries via the API)
+	r.registerBuildUploadTools()
+
+	// TestFlight beta feedback (crashes, screenshots, usage metrics)
+	r.registerBetaFeedbackTools()
+
+	// Apple-Hosted Background Assets
+	r.registerBackgroundAssetTools()
 
 	return r
 }
@@ -131,6 +153,14 @@ func (r *Registry) CallTool(ctx context.Context, name string, args json.RawMessa
 	}
 
 	return handler(ctx, args)
+}
+
+// Register adds a tool definition and handler beyond the built-in set.
+// It is exported for callers outside this package (notably transport
+// tests that need to inject fake handlers) and must be called before the
+// registry is shared across goroutines.
+func (r *Registry) Register(tool mcp.Tool, handler ToolHandler) {
+	r.register(tool, handler)
 }
 
 // register adds a tool to the registry.

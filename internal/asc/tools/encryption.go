@@ -199,7 +199,7 @@ func (r *Registry) handleGetEncryptionDeclaration(ctx context.Context, args json
 	}
 
 	if params.DeclarationID == "" {
-		return nil, fmt.Errorf("declaration_id is required")
+		return mcp.NewErrorResult("declaration_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppEncryptionDeclaration(ctx, params.DeclarationID)
@@ -226,7 +226,7 @@ func (r *Registry) handleCreateEncryptionDeclaration(ctx context.Context, args j
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	req := &api.AppEncryptionDeclarationCreateRequest{
@@ -270,10 +270,10 @@ func (r *Registry) handleAssignBuildToEncryptionDeclaration(ctx context.Context,
 	}
 
 	if params.DeclarationID == "" {
-		return nil, fmt.Errorf("declaration_id is required")
+		return mcp.NewErrorResult("declaration_id is required"), nil
 	}
 	if params.BuildID == "" {
-		return nil, fmt.Errorf("build_id is required")
+		return mcp.NewErrorResult("build_id is required"), nil
 	}
 
 	err := r.client.AssignBuildToEncryptionDeclaration(ctx, params.DeclarationID, params.BuildID)
