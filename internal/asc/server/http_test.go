@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	dto "github.com/prometheus/client_model/go"
 
@@ -787,6 +788,35 @@ func metricValue(t *testing.T, srv *HTTPServer, name string, labels map[string]s
 	return -1
 }
 
+// drainResponse reads a response body to EOF and closes it. Tests that
+// assert on request metrics must consume the whole body first: postJSON
+// returns as soon as the response headers arrive, while the observe
+// middleware only records the request once the handler has finished
+// writing. Closing a large body undrained (tools/list is a few hundred
+// KB) also resets the connection mid-write on the server side.
+func drainResponse(t *testing.T, resp *http.Response) {
+	t.Helper()
+	_, _ = io.Copy(io.Discard, resp.Body)
+	resp.Body.Close()
+}
+
+// waitForMetric polls the registry until want holds for the metric value
+// or the deadline passes, returning the last value read. Even with the
+// body fully drained, observe increments its counters just after the
+// final write, so the client can observe a metric a scheduling quantum
+// before the middleware records it.
+func waitForMetric(t *testing.T, srv *HTTPServer, name string, labels map[string]string, want func(float64) bool) float64 {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		got := metricValue(t, srv, name, labels)
+		if want(got) || time.Now().After(deadline) {
+			return got
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
 func labelsMatch(have []*dto.LabelPair, want map[string]string) bool {
 	for k, v := range want {
 		found := false
@@ -830,7 +860,7 @@ func TestHTTP_MetricsEndpoint(t *testing.T) {
 		JSONRPC: mcp.JSONRPCVersion, ID: json.RawMessage(`1`), Method: "initialize",
 		Params: json.RawMessage(`{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}`),
 	}, nil)
-	init.Body.Close()
+	drainResponse(t, init)
 
 	resp, err := http.Get(srv.URL + "/metrics")
 	if err != nil {
@@ -862,14 +892,16 @@ func TestHTTP_MetricsRecordRequests(t *testing.T) {
 		Params: json.RawMessage(`{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}`),
 	}, nil)
 	sess := init.Header.Get(SessionHeader)
-	init.Body.Close()
+	drainResponse(t, init)
 	list := postJSON(t, srv.URL+"/mcp", mcp.Request{
 		JSONRPC: mcp.JSONRPCVersion, ID: json.RawMessage(`2`), Method: "tools/list",
 	}, map[string]string{SessionHeader: sess})
-	list.Body.Close()
+	drainResponse(t, list)
 
 	// At least two POSTs should be recorded with status=200.
-	got := metricValue(t, hs, "asc_mcp_http_requests_total", map[string]string{"method": "POST", "status": "200"})
+	got := waitForMetric(t, hs, "asc_mcp_http_requests_total",
+		map[string]string{"method": "POST", "status": "200"},
+		func(v float64) bool { return v >= 2 })
 	if got < 2 {
 		t.Errorf("asc_mcp_http_requests_total{method=POST,status=200} = %v, want >= 2", got)
 	}
@@ -889,8 +921,10 @@ func TestHTTP_MetricsAuthFailure(t *testing.T) {
 	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
 		JSONRPC: mcp.JSONRPCVersion, ID: json.RawMessage(`1`), Method: "initialize",
 	}, nil)
-	resp.Body.Close()
-	if got := metricValue(t, hs, "asc_mcp_http_auth_failures_total", nil); got != 1 {
+	drainResponse(t, resp)
+	got := waitForMetric(t, hs, "asc_mcp_http_auth_failures_total", nil,
+		func(v float64) bool { return v == 1 })
+	if got != 1 {
 		t.Errorf("auth failures = %v, want 1", got)
 	}
 }
