@@ -119,7 +119,7 @@ func (r *Registry) handleGetPhasedRelease(ctx context.Context, args json.RawMess
 	}
 
 	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+		return mcp.NewErrorResult("version_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppStoreVersionPhasedRelease(ctx, params.VersionID)
@@ -140,7 +140,7 @@ func (r *Registry) handleCreatePhasedRelease(ctx context.Context, args json.RawM
 	}
 
 	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+		return mcp.NewErrorResult("version_id is required"), nil
 	}
 
 	req := &api.AppStoreVersionPhasedReleaseCreateRequest{
@@ -178,10 +178,10 @@ func (r *Registry) handleUpdatePhasedRelease(ctx context.Context, args json.RawM
 	}
 
 	if params.PhasedReleaseID == "" {
-		return nil, fmt.Errorf("phased_release_id is required")
+		return mcp.NewErrorResult("phased_release_id is required"), nil
 	}
 	if params.State == "" {
-		return nil, fmt.Errorf("state is required")
+		return mcp.NewErrorResult("state is required"), nil
 	}
 
 	req := &api.AppStoreVersionPhasedReleaseUpdateRequest{
@@ -211,7 +211,7 @@ func (r *Registry) handleDeletePhasedRelease(ctx context.Context, args json.RawM
 	}
 
 	if params.PhasedReleaseID == "" {
-		return nil, fmt.Errorf("phased_release_id is required")
+		return mcp.NewErrorResult("phased_release_id is required"), nil
 	}
 
 	err := r.client.DeleteAppStoreVersionPhasedRelease(ctx, params.PhasedReleaseID)

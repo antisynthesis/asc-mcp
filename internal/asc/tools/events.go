@@ -217,7 +217,7 @@ func (r *Registry) handleListAppEvents(ctx context.Context, args json.RawMessage
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -247,7 +247,7 @@ func (r *Registry) handleGetAppEvent(ctx context.Context, args json.RawMessage) 
 	}
 
 	if params.EventID == "" {
-		return nil, fmt.Errorf("event_id is required")
+		return mcp.NewErrorResult("event_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppEvent(ctx, params.EventID)
@@ -274,10 +274,10 @@ func (r *Registry) handleCreateAppEvent(ctx context.Context, args json.RawMessag
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 	if params.ReferenceName == "" {
-		return nil, fmt.Errorf("reference_name is required")
+		return mcp.NewErrorResult("reference_name is required"), nil
 	}
 
 	req := &api.AppEventCreateRequest{
@@ -326,7 +326,7 @@ func (r *Registry) handleUpdateAppEvent(ctx context.Context, args json.RawMessag
 	}
 
 	if params.EventID == "" {
-		return nil, fmt.Errorf("event_id is required")
+		return mcp.NewErrorResult("event_id is required"), nil
 	}
 
 	req := &api.AppEventUpdateRequest{
@@ -361,7 +361,7 @@ func (r *Registry) handleDeleteAppEvent(ctx context.Context, args json.RawMessag
 	}
 
 	if params.EventID == "" {
-		return nil, fmt.Errorf("event_id is required")
+		return mcp.NewErrorResult("event_id is required"), nil
 	}
 
 	err := r.client.DeleteAppEvent(ctx, params.EventID)

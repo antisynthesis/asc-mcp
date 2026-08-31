@@ -94,19 +94,19 @@ func (r *Registry) handleGetSalesReport(ctx context.Context, args json.RawMessag
 	}
 
 	if params.VendorNumber == "" {
-		return nil, fmt.Errorf("vendor_number is required")
+		return mcp.NewErrorResult("vendor_number is required"), nil
 	}
 	if params.ReportType == "" {
-		return nil, fmt.Errorf("report_type is required")
+		return mcp.NewErrorResult("report_type is required"), nil
 	}
 	if params.ReportSubType == "" {
-		return nil, fmt.Errorf("report_sub_type is required")
+		return mcp.NewErrorResult("report_sub_type is required"), nil
 	}
 	if params.Frequency == "" {
-		return nil, fmt.Errorf("frequency is required")
+		return mcp.NewErrorResult("frequency is required"), nil
 	}
 	if params.ReportDate == "" {
-		return nil, fmt.Errorf("report_date is required")
+		return mcp.NewErrorResult("report_date is required"), nil
 	}
 
 	data, err := r.client.GetSalesReport(ctx, params.VendorNumber, params.ReportType, params.ReportSubType, params.Frequency, params.ReportDate)
@@ -130,16 +130,16 @@ func (r *Registry) handleGetFinanceReport(ctx context.Context, args json.RawMess
 	}
 
 	if params.VendorNumber == "" {
-		return nil, fmt.Errorf("vendor_number is required")
+		return mcp.NewErrorResult("vendor_number is required"), nil
 	}
 	if params.RegionCode == "" {
-		return nil, fmt.Errorf("region_code is required")
+		return mcp.NewErrorResult("region_code is required"), nil
 	}
 	if params.ReportType == "" {
-		return nil, fmt.Errorf("report_type is required")
+		return mcp.NewErrorResult("report_type is required"), nil
 	}
 	if params.ReportDate == "" {
-		return nil, fmt.Errorf("report_date is required")
+		return mcp.NewErrorResult("report_date is required"), nil
 	}
 
 	data, err := r.client.GetFinanceReport(ctx, params.VendorNumber, params.RegionCode, params.ReportType, params.ReportDate)

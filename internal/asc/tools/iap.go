@@ -197,7 +197,7 @@ func (r *Registry) handleListInAppPurchases(ctx context.Context, args json.RawMe
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -227,7 +227,7 @@ func (r *Registry) handleGetInAppPurchase(ctx context.Context, args json.RawMess
 	}
 
 	if params.IAPID == "" {
-		return nil, fmt.Errorf("iap_id is required")
+		return mcp.NewErrorResult("iap_id is required"), nil
 	}
 
 	resp, err := r.client.GetInAppPurchase(ctx, params.IAPID)
@@ -252,16 +252,16 @@ func (r *Registry) handleCreateInAppPurchase(ctx context.Context, args json.RawM
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 	if params.Name == "" {
-		return nil, fmt.Errorf("name is required")
+		return mcp.NewErrorResult("name is required"), nil
 	}
 	if params.ProductID == "" {
-		return nil, fmt.Errorf("product_id is required")
+		return mcp.NewErrorResult("product_id is required"), nil
 	}
 	if params.IAPType == "" {
-		return nil, fmt.Errorf("iap_type is required")
+		return mcp.NewErrorResult("iap_type is required"), nil
 	}
 
 	req := &api.InAppPurchaseCreateRequest{
@@ -305,7 +305,7 @@ func (r *Registry) handleUpdateInAppPurchase(ctx context.Context, args json.RawM
 	}
 
 	if params.IAPID == "" {
-		return nil, fmt.Errorf("iap_id is required")
+		return mcp.NewErrorResult("iap_id is required"), nil
 	}
 
 	req := &api.InAppPurchaseUpdateRequest{
@@ -337,7 +337,7 @@ func (r *Registry) handleDeleteInAppPurchase(ctx context.Context, args json.RawM
 	}
 
 	if params.IAPID == "" {
-		return nil, fmt.Errorf("iap_id is required")
+		return mcp.NewErrorResult("iap_id is required"), nil
 	}
 
 	err := r.client.DeleteInAppPurchase(ctx, params.IAPID)

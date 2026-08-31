@@ -304,7 +304,7 @@ func (r *Registry) handleListScreenshotSets(ctx context.Context, args json.RawMe
 	}
 
 	if params.LocalizationID == "" {
-		return nil, fmt.Errorf("localization_id is required")
+		return mcp.NewErrorResult("localization_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -340,7 +340,7 @@ func (r *Registry) handleListScreenshots(ctx context.Context, args json.RawMessa
 	}
 
 	if params.ScreenshotSetID == "" {
-		return nil, fmt.Errorf("screenshot_set_id is required")
+		return mcp.NewErrorResult("screenshot_set_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -370,7 +370,7 @@ func (r *Registry) handleGetScreenshot(ctx context.Context, args json.RawMessage
 	}
 
 	if params.ScreenshotID == "" {
-		return nil, fmt.Errorf("screenshot_id is required")
+		return mcp.NewErrorResult("screenshot_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppScreenshot(ctx, params.ScreenshotID)
@@ -390,7 +390,7 @@ func (r *Registry) handleDeleteScreenshot(ctx context.Context, args json.RawMess
 	}
 
 	if params.ScreenshotID == "" {
-		return nil, fmt.Errorf("screenshot_id is required")
+		return mcp.NewErrorResult("screenshot_id is required"), nil
 	}
 
 	err := r.client.DeleteAppScreenshot(ctx, params.ScreenshotID)
@@ -416,7 +416,7 @@ func (r *Registry) handleListPreviewSets(ctx context.Context, args json.RawMessa
 	}
 
 	if params.LocalizationID == "" {
-		return nil, fmt.Errorf("localization_id is required")
+		return mcp.NewErrorResult("localization_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -452,7 +452,7 @@ func (r *Registry) handleListPreviews(ctx context.Context, args json.RawMessage)
 	}
 
 	if params.PreviewSetID == "" {
-		return nil, fmt.Errorf("preview_set_id is required")
+		return mcp.NewErrorResult("preview_set_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -482,7 +482,7 @@ func (r *Registry) handleGetPreview(ctx context.Context, args json.RawMessage) (
 	}
 
 	if params.PreviewID == "" {
-		return nil, fmt.Errorf("preview_id is required")
+		return mcp.NewErrorResult("preview_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppPreview(ctx, params.PreviewID)
@@ -502,7 +502,7 @@ func (r *Registry) handleDeletePreview(ctx context.Context, args json.RawMessage
 	}
 
 	if params.PreviewID == "" {
-		return nil, fmt.Errorf("preview_id is required")
+		return mcp.NewErrorResult("preview_id is required"), nil
 	}
 
 	err := r.client.DeleteAppPreview(ctx, params.PreviewID)

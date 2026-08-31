@@ -366,7 +366,7 @@ func (r *Registry) handleListPerfPowerMetrics(ctx context.Context, args json.Raw
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -402,7 +402,7 @@ func (r *Registry) handleListDiagnosticSignatures(ctx context.Context, args json
 	}
 
 	if params.BuildID == "" {
-		return nil, fmt.Errorf("build_id is required")
+		return mcp.NewErrorResult("build_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -438,7 +438,7 @@ func (r *Registry) handleListDiagnosticLogs(ctx context.Context, args json.RawMe
 	}
 
 	if params.SignatureID == "" {
-		return nil, fmt.Errorf("signature_id is required")
+		return mcp.NewErrorResult("signature_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -474,7 +474,7 @@ func (r *Registry) handleListAppStoreReviewAttachments(ctx context.Context, args
 	}
 
 	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+		return mcp.NewErrorResult("version_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -504,7 +504,7 @@ func (r *Registry) handleGetAppStoreReviewAttachment(ctx context.Context, args j
 	}
 
 	if params.AttachmentID == "" {
-		return nil, fmt.Errorf("attachment_id is required")
+		return mcp.NewErrorResult("attachment_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppStoreReviewAttachment(ctx, params.AttachmentID)
@@ -526,7 +526,7 @@ func (r *Registry) handleCreateAppStoreReviewAttachment(ctx context.Context, arg
 	}
 
 	if params.ReviewDetailID == "" || params.FileName == "" || params.FileSize <= 0 {
-		return nil, fmt.Errorf("review_detail_id, file_name, and file_size are required")
+		return mcp.NewErrorResult("review_detail_id, file_name, and file_size are required"), nil
 	}
 
 	req := &api.AppStoreReviewAttachmentCreateRequest{
@@ -561,7 +561,7 @@ func (r *Registry) handleDeleteAppStoreReviewAttachment(ctx context.Context, arg
 	}
 
 	if params.AttachmentID == "" {
-		return nil, fmt.Errorf("attachment_id is required")
+		return mcp.NewErrorResult("attachment_id is required"), nil
 	}
 
 	err := r.client.DeleteAppStoreReviewAttachment(ctx, params.AttachmentID)
@@ -581,7 +581,7 @@ func (r *Registry) handleGetRoutingAppCoverage(ctx context.Context, args json.Ra
 	}
 
 	if params.VersionID == "" {
-		return nil, fmt.Errorf("version_id is required")
+		return mcp.NewErrorResult("version_id is required"), nil
 	}
 
 	resp, err := r.client.GetRoutingAppCoverage(ctx, params.VersionID)
@@ -603,7 +603,7 @@ func (r *Registry) handleCreateRoutingAppCoverage(ctx context.Context, args json
 	}
 
 	if params.VersionID == "" || params.FileName == "" || params.FileSize <= 0 {
-		return nil, fmt.Errorf("version_id, file_name, and file_size are required")
+		return mcp.NewErrorResult("version_id, file_name, and file_size are required"), nil
 	}
 
 	req := &api.RoutingAppCoverageCreateRequest{
@@ -638,7 +638,7 @@ func (r *Registry) handleDeleteRoutingAppCoverage(ctx context.Context, args json
 	}
 
 	if params.CoverageID == "" {
-		return nil, fmt.Errorf("coverage_id is required")
+		return mcp.NewErrorResult("coverage_id is required"), nil
 	}
 
 	err := r.client.DeleteRoutingAppCoverage(ctx, params.CoverageID)

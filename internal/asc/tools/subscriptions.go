@@ -164,7 +164,7 @@ func (r *Registry) handleListSubscriptionGroups(ctx context.Context, args json.R
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -194,7 +194,7 @@ func (r *Registry) handleGetSubscriptionGroup(ctx context.Context, args json.Raw
 	}
 
 	if params.GroupID == "" {
-		return nil, fmt.Errorf("group_id is required")
+		return mcp.NewErrorResult("group_id is required"), nil
 	}
 
 	resp, err := r.client.GetSubscriptionGroup(ctx, params.GroupID)
@@ -220,7 +220,7 @@ func (r *Registry) handleListSubscriptions(ctx context.Context, args json.RawMes
 	}
 
 	if params.GroupID == "" {
-		return nil, fmt.Errorf("group_id is required")
+		return mcp.NewErrorResult("group_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -250,7 +250,7 @@ func (r *Registry) handleGetSubscription(ctx context.Context, args json.RawMessa
 	}
 
 	if params.SubscriptionID == "" {
-		return nil, fmt.Errorf("subscription_id is required")
+		return mcp.NewErrorResult("subscription_id is required"), nil
 	}
 
 	resp, err := r.client.GetSubscription(ctx, params.SubscriptionID)

@@ -179,7 +179,7 @@ func (r *Registry) handleGetAppPriceSchedule(ctx context.Context, args json.RawM
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppPriceSchedule(ctx, params.AppID)
@@ -205,7 +205,7 @@ func (r *Registry) handleListAppPricePoints(ctx context.Context, args json.RawMe
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -272,7 +272,7 @@ func (r *Registry) handleListSubscriptionPricePoints(ctx context.Context, args j
 	}
 
 	if params.SubscriptionID == "" {
-		return nil, fmt.Errorf("subscription_id is required")
+		return mcp.NewErrorResult("subscription_id is required"), nil
 	}
 
 	limit := params.Limit

@@ -508,7 +508,7 @@ func (r *Registry) handleListPromotedPurchases(ctx context.Context, args json.Ra
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -538,7 +538,7 @@ func (r *Registry) handleGetPromotedPurchase(ctx context.Context, args json.RawM
 	}
 
 	if params.PromotedPurchaseID == "" {
-		return nil, fmt.Errorf("promoted_purchase_id is required")
+		return mcp.NewErrorResult("promoted_purchase_id is required"), nil
 	}
 
 	resp, err := r.client.GetPromotedPurchase(ctx, params.PromotedPurchaseID)
@@ -561,7 +561,7 @@ func (r *Registry) handleCreatePromotedPurchase(ctx context.Context, args json.R
 	}
 
 	if params.AppID == "" || params.InAppPurchaseID == "" {
-		return nil, fmt.Errorf("app_id and in_app_purchase_id are required")
+		return mcp.NewErrorResult("app_id and in_app_purchase_id are required"), nil
 	}
 
 	enabled := true
@@ -611,7 +611,7 @@ func (r *Registry) handleUpdatePromotedPurchase(ctx context.Context, args json.R
 	}
 
 	if params.PromotedPurchaseID == "" {
-		return nil, fmt.Errorf("promoted_purchase_id is required")
+		return mcp.NewErrorResult("promoted_purchase_id is required"), nil
 	}
 
 	req := &api.PromotedPurchaseUpdateRequest{
@@ -642,7 +642,7 @@ func (r *Registry) handleDeletePromotedPurchase(ctx context.Context, args json.R
 	}
 
 	if params.PromotedPurchaseID == "" {
-		return nil, fmt.Errorf("promoted_purchase_id is required")
+		return mcp.NewErrorResult("promoted_purchase_id is required"), nil
 	}
 
 	err := r.client.DeletePromotedPurchase(ctx, params.PromotedPurchaseID)
@@ -668,7 +668,7 @@ func (r *Registry) handleListSubscriptionOfferCodes(ctx context.Context, args js
 	}
 
 	if params.SubscriptionID == "" {
-		return nil, fmt.Errorf("subscription_id is required")
+		return mcp.NewErrorResult("subscription_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -698,7 +698,7 @@ func (r *Registry) handleGetSubscriptionOfferCode(ctx context.Context, args json
 	}
 
 	if params.OfferCodeID == "" {
-		return nil, fmt.Errorf("offer_code_id is required")
+		return mcp.NewErrorResult("offer_code_id is required"), nil
 	}
 
 	resp, err := r.client.GetSubscriptionOfferCode(ctx, params.OfferCodeID)
@@ -724,7 +724,7 @@ func (r *Registry) handleCreateSubscriptionOfferCode(ctx context.Context, args j
 	}
 
 	if params.SubscriptionID == "" || params.Name == "" {
-		return nil, fmt.Errorf("subscription_id and name are required")
+		return mcp.NewErrorResult("subscription_id and name are required"), nil
 	}
 
 	req := &api.SubscriptionOfferCodeCreateRequest{
@@ -764,7 +764,7 @@ func (r *Registry) handleUpdateSubscriptionOfferCode(ctx context.Context, args j
 	}
 
 	if params.OfferCodeID == "" {
-		return nil, fmt.Errorf("offer_code_id is required")
+		return mcp.NewErrorResult("offer_code_id is required"), nil
 	}
 
 	req := &api.SubscriptionOfferCodeUpdateRequest{
@@ -800,7 +800,7 @@ func (r *Registry) handleListWinBackOffers(ctx context.Context, args json.RawMes
 	}
 
 	if params.SubscriptionID == "" {
-		return nil, fmt.Errorf("subscription_id is required")
+		return mcp.NewErrorResult("subscription_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -830,7 +830,7 @@ func (r *Registry) handleGetWinBackOffer(ctx context.Context, args json.RawMessa
 	}
 
 	if params.OfferID == "" {
-		return nil, fmt.Errorf("offer_id is required")
+		return mcp.NewErrorResult("offer_id is required"), nil
 	}
 
 	resp, err := r.client.GetWinBackOffer(ctx, params.OfferID)
@@ -858,7 +858,7 @@ func (r *Registry) handleCreateWinBackOffer(ctx context.Context, args json.RawMe
 	}
 
 	if params.SubscriptionID == "" || params.ReferenceName == "" || params.OfferID == "" {
-		return nil, fmt.Errorf("subscription_id, reference_name, and offer_id are required")
+		return mcp.NewErrorResult("subscription_id, reference_name, and offer_id are required"), nil
 	}
 
 	var prices []api.ResourceIdentifier
@@ -908,7 +908,7 @@ func (r *Registry) handleUpdateWinBackOffer(ctx context.Context, args json.RawMe
 	}
 
 	if params.OfferID == "" {
-		return nil, fmt.Errorf("offer_id is required")
+		return mcp.NewErrorResult("offer_id is required"), nil
 	}
 
 	req := &api.WinBackOfferUpdateRequest{
@@ -939,7 +939,7 @@ func (r *Registry) handleDeleteWinBackOffer(ctx context.Context, args json.RawMe
 	}
 
 	if params.OfferID == "" {
-		return nil, fmt.Errorf("offer_id is required")
+		return mcp.NewErrorResult("offer_id is required"), nil
 	}
 
 	err := r.client.DeleteWinBackOffer(ctx, params.OfferID)

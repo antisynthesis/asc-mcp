@@ -297,7 +297,7 @@ func (r *Registry) handleGetUser(ctx context.Context, args json.RawMessage) (*mc
 	}
 
 	if params.UserID == "" {
-		return nil, fmt.Errorf("user_id is required")
+		return mcp.NewErrorResult("user_id is required"), nil
 	}
 
 	resp, err := r.client.GetUser(ctx, params.UserID)
@@ -319,7 +319,7 @@ func (r *Registry) handleUpdateUser(ctx context.Context, args json.RawMessage) (
 	}
 
 	if params.UserID == "" {
-		return nil, fmt.Errorf("user_id is required")
+		return mcp.NewErrorResult("user_id is required"), nil
 	}
 
 	req := &api.UserUpdateRequest{
@@ -350,7 +350,7 @@ func (r *Registry) handleDeleteUser(ctx context.Context, args json.RawMessage) (
 	}
 
 	if params.UserID == "" {
-		return nil, fmt.Errorf("user_id is required")
+		return mcp.NewErrorResult("user_id is required"), nil
 	}
 
 	err := r.client.DeleteUser(ctx, params.UserID)
@@ -401,7 +401,7 @@ func (r *Registry) handleGetUserInvitation(ctx context.Context, args json.RawMes
 	}
 
 	if params.InvitationID == "" {
-		return nil, fmt.Errorf("invitation_id is required")
+		return mcp.NewErrorResult("invitation_id is required"), nil
 	}
 
 	resp, err := r.client.GetUserInvitation(ctx, params.InvitationID)
@@ -425,11 +425,11 @@ func (r *Registry) handleCreateUserInvitation(ctx context.Context, args json.Raw
 	}
 
 	if params.Email == "" || params.FirstName == "" || params.LastName == "" {
-		return nil, fmt.Errorf("email, first_name, and last_name are required")
+		return mcp.NewErrorResult("email, first_name, and last_name are required"), nil
 	}
 
 	if len(params.Roles) == 0 {
-		return nil, fmt.Errorf("at least one role is required")
+		return mcp.NewErrorResult("at least one role is required"), nil
 	}
 
 	allAppsVisible := true
@@ -467,7 +467,7 @@ func (r *Registry) handleDeleteUserInvitation(ctx context.Context, args json.Raw
 	}
 
 	if params.InvitationID == "" {
-		return nil, fmt.Errorf("invitation_id is required")
+		return mcp.NewErrorResult("invitation_id is required"), nil
 	}
 
 	err := r.client.DeleteUserInvitation(ctx, params.InvitationID)

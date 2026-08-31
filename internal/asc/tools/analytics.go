@@ -287,7 +287,7 @@ func (r *Registry) handleListAnalyticsReportRequests(ctx context.Context, args j
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -317,7 +317,7 @@ func (r *Registry) handleGetAnalyticsReportRequest(ctx context.Context, args jso
 	}
 
 	if params.RequestID == "" {
-		return nil, fmt.Errorf("request_id is required")
+		return mcp.NewErrorResult("request_id is required"), nil
 	}
 
 	resp, err := r.client.GetAnalyticsReportRequest(ctx, params.RequestID)
@@ -338,10 +338,10 @@ func (r *Registry) handleCreateAnalyticsReportRequest(ctx context.Context, args 
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 	if params.AccessType == "" {
-		return nil, fmt.Errorf("access_type is required")
+		return mcp.NewErrorResult("access_type is required"), nil
 	}
 
 	req := &api.AnalyticsReportRequestCreateRequest{
@@ -378,7 +378,7 @@ func (r *Registry) handleDeleteAnalyticsReportRequest(ctx context.Context, args 
 	}
 
 	if params.RequestID == "" {
-		return nil, fmt.Errorf("request_id is required")
+		return mcp.NewErrorResult("request_id is required"), nil
 	}
 
 	err := r.client.DeleteAnalyticsReportRequest(ctx, params.RequestID)
@@ -404,7 +404,7 @@ func (r *Registry) handleListAnalyticsReports(ctx context.Context, args json.Raw
 	}
 
 	if params.RequestID == "" {
-		return nil, fmt.Errorf("request_id is required")
+		return mcp.NewErrorResult("request_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -440,7 +440,7 @@ func (r *Registry) handleListAnalyticsReportInstances(ctx context.Context, args 
 	}
 
 	if params.ReportID == "" {
-		return nil, fmt.Errorf("report_id is required")
+		return mcp.NewErrorResult("report_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -476,7 +476,7 @@ func (r *Registry) handleListAnalyticsReportSegments(ctx context.Context, args j
 	}
 
 	if params.InstanceID == "" {
-		return nil, fmt.Errorf("instance_id is required")
+		return mcp.NewErrorResult("instance_id is required"), nil
 	}
 
 	limit := params.Limit

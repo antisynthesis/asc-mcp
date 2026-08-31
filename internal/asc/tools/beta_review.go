@@ -557,7 +557,7 @@ func (r *Registry) handleGetBetaAppReviewSubmission(ctx context.Context, args js
 	}
 
 	if params.SubmissionID == "" {
-		return nil, fmt.Errorf("submission_id is required")
+		return mcp.NewErrorResult("submission_id is required"), nil
 	}
 
 	resp, err := r.client.GetBetaAppReviewSubmission(ctx, params.SubmissionID)
@@ -577,7 +577,7 @@ func (r *Registry) handleCreateBetaAppReviewSubmission(ctx context.Context, args
 	}
 
 	if params.BuildID == "" {
-		return nil, fmt.Errorf("build_id is required")
+		return mcp.NewErrorResult("build_id is required"), nil
 	}
 
 	req := &api.BetaAppReviewSubmissionCreateRequest{
@@ -608,7 +608,7 @@ func (r *Registry) handleGetBetaLicenseAgreement(ctx context.Context, args json.
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	resp, err := r.client.GetBetaLicenseAgreement(ctx, params.AppID)
@@ -629,7 +629,7 @@ func (r *Registry) handleUpdateBetaLicenseAgreement(ctx context.Context, args js
 	}
 
 	if params.AgreementID == "" || params.AgreementText == "" {
-		return nil, fmt.Errorf("agreement_id and agreement_text are required")
+		return mcp.NewErrorResult("agreement_id and agreement_text are required"), nil
 	}
 
 	req := &api.BetaLicenseAgreementUpdateRequest{
@@ -665,7 +665,7 @@ func (r *Registry) handleListBetaAppLocalizations(ctx context.Context, args json
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -695,7 +695,7 @@ func (r *Registry) handleGetBetaAppLocalization(ctx context.Context, args json.R
 	}
 
 	if params.LocalizationID == "" {
-		return nil, fmt.Errorf("localization_id is required")
+		return mcp.NewErrorResult("localization_id is required"), nil
 	}
 
 	resp, err := r.client.GetBetaAppLocalization(ctx, params.LocalizationID)
@@ -720,7 +720,7 @@ func (r *Registry) handleCreateBetaAppLocalization(ctx context.Context, args jso
 	}
 
 	if params.AppID == "" || params.Locale == "" {
-		return nil, fmt.Errorf("app_id and locale are required")
+		return mcp.NewErrorResult("app_id and locale are required"), nil
 	}
 
 	req := &api.BetaAppLocalizationCreateRequest{
@@ -762,7 +762,7 @@ func (r *Registry) handleUpdateBetaAppLocalization(ctx context.Context, args jso
 	}
 
 	if params.LocalizationID == "" {
-		return nil, fmt.Errorf("localization_id is required")
+		return mcp.NewErrorResult("localization_id is required"), nil
 	}
 
 	req := &api.BetaAppLocalizationUpdateRequest{
@@ -795,7 +795,7 @@ func (r *Registry) handleDeleteBetaAppLocalization(ctx context.Context, args jso
 	}
 
 	if params.LocalizationID == "" {
-		return nil, fmt.Errorf("localization_id is required")
+		return mcp.NewErrorResult("localization_id is required"), nil
 	}
 
 	err := r.client.DeleteBetaAppLocalization(ctx, params.LocalizationID)
@@ -821,7 +821,7 @@ func (r *Registry) handleListBetaBuildLocalizations(ctx context.Context, args js
 	}
 
 	if params.BuildID == "" {
-		return nil, fmt.Errorf("build_id is required")
+		return mcp.NewErrorResult("build_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -851,7 +851,7 @@ func (r *Registry) handleGetBetaBuildLocalization(ctx context.Context, args json
 	}
 
 	if params.LocalizationID == "" {
-		return nil, fmt.Errorf("localization_id is required")
+		return mcp.NewErrorResult("localization_id is required"), nil
 	}
 
 	resp, err := r.client.GetBetaBuildLocalization(ctx, params.LocalizationID)
@@ -873,7 +873,7 @@ func (r *Registry) handleCreateBetaBuildLocalization(ctx context.Context, args j
 	}
 
 	if params.BuildID == "" || params.Locale == "" {
-		return nil, fmt.Errorf("build_id and locale are required")
+		return mcp.NewErrorResult("build_id and locale are required"), nil
 	}
 
 	req := &api.BetaBuildLocalizationCreateRequest{
@@ -909,7 +909,7 @@ func (r *Registry) handleUpdateBetaBuildLocalization(ctx context.Context, args j
 	}
 
 	if params.LocalizationID == "" {
-		return nil, fmt.Errorf("localization_id is required")
+		return mcp.NewErrorResult("localization_id is required"), nil
 	}
 
 	req := &api.BetaBuildLocalizationUpdateRequest{
@@ -939,7 +939,7 @@ func (r *Registry) handleDeleteBetaBuildLocalization(ctx context.Context, args j
 	}
 
 	if params.LocalizationID == "" {
-		return nil, fmt.Errorf("localization_id is required")
+		return mcp.NewErrorResult("localization_id is required"), nil
 	}
 
 	err := r.client.DeleteBetaBuildLocalization(ctx, params.LocalizationID)
@@ -959,7 +959,7 @@ func (r *Registry) handleGetBuildBetaDetail(ctx context.Context, args json.RawMe
 	}
 
 	if params.BuildID == "" {
-		return nil, fmt.Errorf("build_id is required")
+		return mcp.NewErrorResult("build_id is required"), nil
 	}
 
 	resp, err := r.client.GetBuildBetaDetail(ctx, params.BuildID)
@@ -980,7 +980,7 @@ func (r *Registry) handleUpdateBuildBetaDetail(ctx context.Context, args json.Ra
 	}
 
 	if params.DetailID == "" {
-		return nil, fmt.Errorf("detail_id is required")
+		return mcp.NewErrorResult("detail_id is required"), nil
 	}
 
 	req := &api.BuildBetaDetailUpdateRequest{

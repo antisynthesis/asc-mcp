@@ -232,7 +232,7 @@ func (r *Registry) handleListAppClips(ctx context.Context, args json.RawMessage)
 	}
 
 	if params.AppID == "" {
-		return nil, fmt.Errorf("app_id is required")
+		return mcp.NewErrorResult("app_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -262,7 +262,7 @@ func (r *Registry) handleGetAppClip(ctx context.Context, args json.RawMessage) (
 	}
 
 	if params.AppClipID == "" {
-		return nil, fmt.Errorf("app_clip_id is required")
+		return mcp.NewErrorResult("app_clip_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppClip(ctx, params.AppClipID)
@@ -288,7 +288,7 @@ func (r *Registry) handleListAppClipDefaultExperiences(ctx context.Context, args
 	}
 
 	if params.AppClipID == "" {
-		return nil, fmt.Errorf("app_clip_id is required")
+		return mcp.NewErrorResult("app_clip_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -318,7 +318,7 @@ func (r *Registry) handleGetAppClipDefaultExperience(ctx context.Context, args j
 	}
 
 	if params.ExperienceID == "" {
-		return nil, fmt.Errorf("experience_id is required")
+		return mcp.NewErrorResult("experience_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppClipDefaultExperience(ctx, params.ExperienceID)
@@ -344,7 +344,7 @@ func (r *Registry) handleListAppClipAdvancedExperiences(ctx context.Context, arg
 	}
 
 	if params.AppClipID == "" {
-		return nil, fmt.Errorf("app_clip_id is required")
+		return mcp.NewErrorResult("app_clip_id is required"), nil
 	}
 
 	limit := params.Limit
@@ -374,7 +374,7 @@ func (r *Registry) handleGetAppClipAdvancedExperience(ctx context.Context, args 
 	}
 
 	if params.ExperienceID == "" {
-		return nil, fmt.Errorf("experience_id is required")
+		return mcp.NewErrorResult("experience_id is required"), nil
 	}
 
 	resp, err := r.client.GetAppClipAdvancedExperience(ctx, params.ExperienceID)
