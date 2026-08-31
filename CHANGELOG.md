@@ -12,6 +12,24 @@ under `## [Unreleased]` until a release is cut.
 ## [Unreleased]
 
 ### Added
+- MCP 2026-07-28 protocol support alongside the existing handshake era.
+  Modern clients carry their protocol version and capabilities in
+  per-request `_meta`, discover the server through the new mandatory
+  `server/discover` RPC, and receive `resultType` with `ttlMs` /
+  `cacheScope` caching hints. Adds the specification's reserved error
+  codes (-32020, -32021, -32022) and serves modern Streamable HTTP
+  requests without sessions, validating the required `Mcp-Method` and
+  `Mcp-Name` headers.
+- `notifications/cancelled` handling on stdio: requests dispatch
+  concurrently and a cancelled request produces no response.
+- 153 tools for App Store Connect capability areas added between API
+  4.0 and 4.4.1: review submissions, webhooks, accessibility
+  declarations, customer review summarizations, app tags, territory age
+  ratings, Android to iOS app mapping, build uploads, TestFlight beta
+  feedback, Apple-hosted background assets, Game Center leaderboard
+  sets, activities, challenges and player submissions, in-app purchase
+  and subscription versioning, subscription plan availability, in-app
+  purchase offer codes, and app price schedule writes.
 - Native TLS support on the HTTP transport via `--tls-cert` /
   `--tls-key` flags (TLS 1.2 minimum). Missing one of the pair is
   rejected so the listener cannot silently downgrade to plain HTTP.
@@ -23,6 +41,29 @@ under `## [Unreleased]` until a release is cut.
   checksum file, a GitHub release with grouped notes, and a
   multi-arch container image published to GHCR.
 - `CHANGELOG.md` (this file).
+
+### Changed
+- Bundled App Store Connect OpenAPI reference updated from 4.2 to 4.4.1.
+- App availability now uses the v2 endpoints and `appAvailabilityV2`.
+- Game Center achievements and leaderboards, and app store version
+  experiments, moved off endpoints Apple deprecated to their versioned
+  v2 replacements. Build encryption declaration assignment now goes
+  through the build relationship.
+- `submit_app_for_review` drives the review submissions flow, which
+  replaced the removed app store version submission endpoint. It now
+  requires `app_id` alongside `version_id`.
+- Argument validation failures come back as tool errors rather than
+  protocol errors, so a model can see and correct them.
+
+### Removed
+- Pre-order and IDFA declaration tools, sandbox tester creation and
+  deletion, build run cancellation, and app-scoped alternative
+  distribution package listing. Apple removed each of these operations
+  from the API; ending a pre-order is now
+  `end_app_availability_pre_order`.
+- Game Center version release tools. Apple deprecated the entire
+  releases family; Game Center content reaches the store through
+  `add_review_submission_item`.
 
 ## [1.0.0] - 2026-05-23
 

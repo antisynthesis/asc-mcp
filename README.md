@@ -4,9 +4,9 @@ An MCP (Model Context Protocol) server for Apple App Store Connect.
 
 ## Features
 
-**203 MCP tools** covering the complete App Store Connect API, including the
-three-step asset upload flow for screenshots, previews, and review
-attachments:
+**356 MCP tools** covering the major capability areas of the App Store
+Connect API (tracking API version 4.4.1), including the three-step asset
+upload flow for screenshots, previews, and review attachments:
 
 - **App Management**: List apps, get app details, view app versions
 - **Build Management**: List and inspect builds, view processing status
@@ -16,13 +16,14 @@ attachments:
 - **In-App Purchases**: Full CRUD for in-app purchases
 - **Subscriptions**: Manage subscription groups, subscriptions, offer codes, win-back offers
 - **Pricing & Availability**: Configure app pricing, territories, and availability
-- **Age Ratings**: Manage age rating declarations and IDFA declarations
+- **Age Ratings**: Manage age rating declarations, including per-territory ratings
 - **Localizations**: App info and version localizations
 - **Customer Reviews**: Read and respond to customer reviews
 - **App Events**: Create and manage in-app events
 - **App Clips**: Manage default and advanced App Clip experiences
 - **Screenshots & Previews**: Manage screenshot sets and app previews
-- **Game Center**: Achievements and leaderboards
+- **Game Center**: Achievements, leaderboards, leaderboard sets, activities,
+  challenges, and server-side player submissions
 - **Xcode Cloud**: CI products, workflows, and build runs
 - **Analytics**: Analytics report requests and data
 - **Users & Roles**: Team member management and invitations
@@ -208,6 +209,85 @@ Add to your project's `.mcp.json`:
 | `list_subscriptions` | List subscriptions in a group |
 | `get_subscription` | Get subscription details |
 
+### Commerce Versioning (29 tools)
+
+In-app purchases, subscriptions and subscription groups are versioned
+(App Store Connect API 4.4.1). Create a version, edit its localizations
+and images, then attach the version to a review submission with
+`add_review_submission_item`.
+
+| Tool | Description |
+|------|-------------|
+| `create_in_app_purchase_version` | Create an in-app purchase version |
+| `get_in_app_purchase_version` | Get an in-app purchase version |
+| `list_in_app_purchase_versions` | List versions of an in-app purchase |
+| `list_in_app_purchase_version_localizations` | List a version's localizations |
+| `create_in_app_purchase_localization` | Add a localization to a version |
+| `update_in_app_purchase_localization` | Update a localization |
+| `delete_in_app_purchase_localization` | Delete a localization |
+| `list_in_app_purchase_version_images` | List a version's promotional images |
+| `create_in_app_purchase_image` | Reserve an image upload on a version |
+| `update_in_app_purchase_image` | Commit an image upload |
+| `delete_in_app_purchase_image` | Delete a promotional image |
+| `create_subscription_version` | Create a subscription version |
+| `get_subscription_version` | Get a subscription version |
+| `list_subscription_versions` | List versions of a subscription |
+| `list_subscription_version_localizations` | List a version's localizations |
+| `create_subscription_localization` | Add a localization to a version |
+| `update_subscription_localization` | Update a localization |
+| `delete_subscription_localization` | Delete a localization |
+| `list_subscription_version_images` | List a version's promotional images |
+| `create_subscription_image` | Reserve an image upload on a version |
+| `update_subscription_image` | Commit an image upload |
+| `delete_subscription_image` | Delete a promotional image |
+| `create_subscription_group_version` | Create a subscription group version |
+| `get_subscription_group_version` | Get a subscription group version |
+| `list_subscription_group_versions` | List versions of a subscription group |
+| `list_subscription_group_version_localizations` | List a version's localizations |
+| `create_subscription_group_localization` | Add a localization to a version |
+| `update_subscription_group_localization` | Update a localization |
+| `delete_subscription_group_localization` | Delete a localization |
+
+### In-App Purchase Offer Codes (12 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_in_app_purchase_offer_codes` | List an in-app purchase's offer codes |
+| `get_in_app_purchase_offer_code` | Get offer code details |
+| `create_in_app_purchase_offer_code` | Create an offer code with per-territory prices |
+| `update_in_app_purchase_offer_code` | Activate or deactivate an offer code |
+| `list_in_app_purchase_offer_code_prices` | List an offer code's prices |
+| `list_in_app_purchase_offer_code_custom_codes` | List custom code batches |
+| `create_in_app_purchase_offer_code_custom_code` | Issue a custom (memorable) code |
+| `update_in_app_purchase_offer_code_custom_code` | Activate or deactivate a custom code |
+| `list_in_app_purchase_offer_code_one_time_use_codes` | List one-time-use code batches |
+| `create_in_app_purchase_offer_code_one_time_use_code` | Generate a one-time-use code batch |
+| `update_in_app_purchase_offer_code_one_time_use_code` | Activate or deactivate a batch |
+| `get_in_app_purchase_offer_code_one_time_use_code_values` | Download generated codes as CSV |
+
+### Commerce Pricing & Availability (18 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_in_app_purchase_price_points` | List an in-app purchase's price points |
+| `get_in_app_purchase_price_schedule` | Get an in-app purchase's price schedule |
+| `set_in_app_purchase_price_schedule` | Replace an in-app purchase's prices |
+| `list_in_app_purchase_price_schedule_prices` | List manual or automatic scheduled prices |
+| `get_in_app_purchase_availability` | Get in-app purchase territory availability |
+| `set_in_app_purchase_availability` | Set in-app purchase territory availability |
+| `list_in_app_purchase_available_territories` | List covered territories |
+| `list_subscription_plan_availabilities` | List a subscription's plan availabilities |
+| `get_subscription_plan_availability` | Get a plan availability |
+| `create_subscription_plan_availability` | Configure a plan's territory availability |
+| `update_subscription_plan_availability` | Update a plan's territory availability |
+| `list_subscription_plan_available_territories` | List covered territories |
+| `get_subscription_price_point` | Get a subscription price point |
+| `list_subscription_price_point_equalizations` | List equivalent price points |
+| `list_subscription_price_point_adjusted_equalizations` | List pre-paid-adjusted equalizations |
+| `set_app_price_schedule` | Replace an app's price schedule |
+| `get_app_price_point` | Get an app price point |
+| `list_app_price_point_equalizations` | List equivalent app price points |
+
 ### Promoted Purchases & Offers (14 tools)
 
 | Tool | Description |
@@ -239,16 +319,13 @@ Add to your project's `.mcp.json`:
 | `create_app_availability` | Create/update availability settings |
 | `list_territory_availabilities` | List territory availability details |
 
-### Age Ratings & IDFA (6 tools)
+### Age Ratings (3 tools)
 
 | Tool | Description |
 |------|-------------|
 | `get_age_rating_declaration` | Get age rating declaration |
 | `update_age_rating_declaration` | Update age rating declaration |
-| `get_idfa_declaration` | Get IDFA declaration |
-| `create_idfa_declaration` | Create IDFA declaration |
-| `update_idfa_declaration` | Update IDFA declaration |
-| `delete_idfa_declaration` | Delete IDFA declaration |
+| `list_territory_age_ratings` | List age ratings per territory |
 
 ### App Info Localizations (6 tools)
 
@@ -299,14 +376,14 @@ Add to your project's `.mcp.json`:
 | `update_phased_release` | Update phased release state |
 | `delete_phased_release` | Delete phased release |
 
-### Pre-Orders (4 tools)
+### Pre-Orders (1 tool)
+
+Apple removed the `appPreOrders` resource; ending a pre-order is now an
+availability operation.
 
 | Tool | Description |
 |------|-------------|
-| `get_pre_order` | Get pre-order details |
-| `create_pre_order` | Create pre-order |
-| `update_pre_order` | Update pre-order |
-| `delete_pre_order` | Delete pre-order |
+| `end_app_availability_pre_order` | End an app's pre-order period |
 
 ### App Clips (6 tools)
 
@@ -363,7 +440,80 @@ Add to your project's `.mcp.json`:
 | `update_game_center_leaderboard` | Update leaderboard |
 | `delete_game_center_leaderboard` | Delete leaderboard |
 
-### Xcode Cloud (8 tools)
+### Game Center Leaderboard Sets (20 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_game_center_leaderboard_sets` | List leaderboard sets |
+| `get_game_center_leaderboard_set` | Get leaderboard set details |
+| `create_game_center_leaderboard_set` | Create leaderboard set |
+| `update_game_center_leaderboard_set` | Update leaderboard set |
+| `delete_game_center_leaderboard_set` | Delete leaderboard set |
+| `list_game_center_leaderboard_set_members` | List member leaderboards |
+| `add_game_center_leaderboard_set_members` | Add leaderboards to a set |
+| `remove_game_center_leaderboard_set_members` | Remove leaderboards from a set |
+| `list_game_center_leaderboard_set_versions` | List leaderboard set versions |
+| `get_game_center_leaderboard_set_version` | Get leaderboard set version |
+| `create_game_center_leaderboard_set_version` | Open a new version |
+| `list_game_center_leaderboard_set_localizations` | List localizations |
+| `create_game_center_leaderboard_set_localization` | Create localization |
+| `update_game_center_leaderboard_set_localization` | Update localization |
+| `delete_game_center_leaderboard_set_localization` | Delete localization |
+| `upload_game_center_leaderboard_set_image` | Upload localization image |
+| `list_game_center_leaderboard_set_member_localizations` | List per-set leaderboard names |
+| `create_game_center_leaderboard_set_member_localization` | Name a leaderboard within a set |
+| `update_game_center_leaderboard_set_member_localization` | Update a per-set name |
+| `delete_game_center_leaderboard_set_member_localization` | Delete a per-set name |
+
+### Game Center Activities (14 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_game_center_activities` | List activities |
+| `get_game_center_activity` | Get activity details |
+| `create_game_center_activity` | Create activity with its initial version |
+| `update_game_center_activity` | Update activity |
+| `delete_game_center_activity` | Delete activity |
+| `list_game_center_activity_versions` | List activity versions |
+| `get_game_center_activity_version` | Get activity version |
+| `create_game_center_activity_version` | Open a new version |
+| `update_game_center_activity_version` | Update a version's fallback URL |
+| `list_game_center_activity_localizations` | List localizations |
+| `create_game_center_activity_localization` | Create localization |
+| `update_game_center_activity_localization` | Update localization |
+| `delete_game_center_activity_localization` | Delete localization |
+| `upload_game_center_activity_image` | Upload activity image |
+
+### Game Center Challenges (13 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_game_center_challenges` | List challenges |
+| `get_game_center_challenge` | Get challenge details |
+| `create_game_center_challenge` | Create challenge with its initial version |
+| `update_game_center_challenge` | Update challenge |
+| `delete_game_center_challenge` | Delete challenge |
+| `list_game_center_challenge_versions` | List challenge versions |
+| `get_game_center_challenge_version` | Get challenge version |
+| `create_game_center_challenge_version` | Open a new version |
+| `list_game_center_challenge_localizations` | List localizations |
+| `create_game_center_challenge_localization` | Create localization |
+| `update_game_center_challenge_localization` | Update localization |
+| `delete_game_center_challenge_localization` | Delete localization |
+| `upload_game_center_challenge_image` | Upload challenge image |
+
+### Game Center Player Submissions (2 tools)
+
+| Tool | Description |
+|------|-------------|
+| `submit_game_center_player_achievement` | Submit achievement progress for a player |
+| `submit_game_center_leaderboard_entry` | Submit a leaderboard score for a player |
+
+Game Center content reaches App Review through `add_review_submission_item`:
+attach the achievement, leaderboard, leaderboard set, activity, or challenge
+*version* to a draft review submission.
+
+### Xcode Cloud (7 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -374,7 +524,6 @@ Add to your project's `.mcp.json`:
 | `list_ci_build_runs` | List CI build runs |
 | `get_ci_build_run` | Get CI build run details |
 | `start_ci_build_run` | Start a new build run |
-| `cancel_ci_build_run` | Cancel a build run |
 
 ### Analytics (7 tools)
 
@@ -416,14 +565,16 @@ Add to your project's `.mcp.json`:
 | `create_user_invitation` | Invite new user |
 | `delete_user_invitation` | Cancel invitation |
 
-### Sandbox Testers (4 tools)
+### Sandbox Testers (3 tools)
+
+Sandbox testers are created and deleted in App Store Connect; the API
+exposes only reads, updates, and purchase-history resets.
 
 | Tool | Description |
 |------|-------------|
 | `list_sandbox_testers` | List sandbox testers |
-| `create_sandbox_tester` | Create sandbox tester |
 | `update_sandbox_tester` | Update sandbox tester |
-| `delete_sandbox_tester` | Delete sandbox tester |
+| `clear_sandbox_tester_purchase_history` | Clear a tester's purchase history |
 
 ### Encryption Declarations (4 tools)
 
@@ -474,6 +625,116 @@ Add to your project's `.mcp.json`:
 | `create_marketplace_search_detail` | Create marketplace search detail |
 | `update_marketplace_search_detail` | Update marketplace search detail |
 | `delete_marketplace_search_detail` | Delete marketplace search detail |
+
+### Review Submissions (6 tools)
+
+App Store versions, custom product pages, experiments, app events, Game
+Center content, and commerce versions all reach App Review through this
+flow.
+
+| Tool | Description |
+|------|-------------|
+| `list_review_submissions` | List review submissions for an app |
+| `get_review_submission` | Get a submission and its attached items |
+| `create_review_submission` | Open a review submission |
+| `add_review_submission_item` | Attach an item to a submission |
+| `submit_review_submission` | Submit for review |
+| `cancel_review_submission` | Cancel a submission |
+
+### Webhooks (8 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_webhooks` | List webhooks for an app |
+| `get_webhook` | Get webhook details |
+| `create_webhook` | Create a webhook |
+| `update_webhook` | Update a webhook |
+| `delete_webhook` | Delete a webhook |
+| `ping_webhook` | Send a test delivery |
+| `list_webhook_deliveries` | List deliveries for a webhook |
+| `redeliver_webhook_delivery` | Redeliver a past delivery |
+
+### Build Uploads (6 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_build_uploads` | List build uploads |
+| `get_build_upload` | Get build upload details |
+| `start_build_upload` | Reserve a new build upload |
+| `list_build_upload_files` | List files in a build upload |
+| `upload_build_file` | Upload and commit a build file |
+| `delete_build_upload` | Delete a build upload |
+
+### TestFlight Beta Feedback (8 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_beta_feedback_crashes` | List crash feedback from testers |
+| `get_beta_feedback_crash` | Get crash feedback details |
+| `get_beta_feedback_crash_log` | Download a crash log |
+| `delete_beta_feedback_crash` | Delete crash feedback |
+| `list_beta_feedback_screenshots` | List screenshot feedback |
+| `get_beta_feedback_screenshot` | Get screenshot feedback details |
+| `delete_beta_feedback_screenshot` | Delete screenshot feedback |
+| `get_beta_build_usage_metrics` | Get beta build usage metrics |
+
+### Background Assets (10 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_background_assets` | List Apple-hosted background assets |
+| `get_background_asset` | Get background asset details |
+| `create_background_asset` | Create a background asset |
+| `update_background_asset` | Update a background asset |
+| `list_background_asset_versions` | List asset versions |
+| `get_background_asset_version` | Get a version, including state details |
+| `create_background_asset_version` | Create a version |
+| `list_background_asset_upload_files` | List upload files for a version |
+| `upload_background_asset_file` | Upload and commit an asset pack |
+| `get_background_asset_version_release` | Get a version's release state |
+
+### Accessibility Declarations (5 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_accessibility_declarations` | List declarations per device family |
+| `get_accessibility_declaration` | Get declaration details |
+| `create_accessibility_declaration` | Create a declaration |
+| `update_accessibility_declaration` | Update a declaration |
+| `delete_accessibility_declaration` | Delete a declaration |
+
+### App Tags (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_app_tags` | List Apple-created tags for an app |
+| `list_app_tag_territories` | List territories a tag applies to |
+| `update_app_tag` | Opt in or out of a tag |
+
+### Android to iOS App Mapping (5 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_android_to_ios_app_mappings` | List Android app mappings |
+| `get_android_to_ios_app_mapping` | Get a mapping |
+| `create_android_to_ios_app_mapping` | Map an Android app to this app |
+| `update_android_to_ios_app_mapping` | Update a mapping |
+| `delete_android_to_ios_app_mapping` | Delete a mapping |
+
+### Asset Uploads (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `upload_app_screenshot` | Upload a screenshot |
+| `upload_app_preview` | Upload an app preview |
+| `upload_review_attachment` | Upload a review attachment |
+
+### Other (2 tools)
+
+| Tool | Description |
+|------|-------------|
+| `list_customer_review_summarizations` | Read customer review summaries |
+| `get_alternative_distribution_package` | Get a version's distribution package |
 
 ## Development
 
