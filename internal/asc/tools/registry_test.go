@@ -122,10 +122,11 @@ func TestRegistry_ListTools(t *testing.T) {
 
 	tools := registry.ListTools()
 
-	// Should have 248 tools total (221 base + 3 upload tools + 6 build
-	// upload tools + 8 beta feedback tools + 10 background asset tools).
-	if len(tools) != 248 {
-		t.Errorf("expected 248 tools, got %d", len(tools))
+	// Should have 356 tools total (221 base + 3 upload tools + 6 build
+	// upload tools + 8 beta feedback tools + 10 background asset tools +
+	// 49 Game Center content tools + 59 commerce tools).
+	if len(tools) != 356 {
+		t.Errorf("expected 356 tools, got %d", len(tools))
 	}
 
 	// Verify tool structure
@@ -246,6 +247,59 @@ func TestRegistry_ListTools(t *testing.T) {
 		"create_game_center_leaderboard": false,
 		"update_game_center_leaderboard": false,
 		"delete_game_center_leaderboard": false,
+		// Game Center leaderboard set tools
+		"list_game_center_leaderboard_sets":                      false,
+		"get_game_center_leaderboard_set":                        false,
+		"create_game_center_leaderboard_set":                     false,
+		"update_game_center_leaderboard_set":                     false,
+		"delete_game_center_leaderboard_set":                     false,
+		"list_game_center_leaderboard_set_members":               false,
+		"add_game_center_leaderboard_set_members":                false,
+		"remove_game_center_leaderboard_set_members":             false,
+		"list_game_center_leaderboard_set_versions":              false,
+		"get_game_center_leaderboard_set_version":                false,
+		"create_game_center_leaderboard_set_version":             false,
+		"list_game_center_leaderboard_set_localizations":         false,
+		"create_game_center_leaderboard_set_localization":        false,
+		"update_game_center_leaderboard_set_localization":        false,
+		"delete_game_center_leaderboard_set_localization":        false,
+		"upload_game_center_leaderboard_set_image":               false,
+		"list_game_center_leaderboard_set_member_localizations":  false,
+		"create_game_center_leaderboard_set_member_localization": false,
+		"update_game_center_leaderboard_set_member_localization": false,
+		"delete_game_center_leaderboard_set_member_localization": false,
+		// Game Center activity tools
+		"list_game_center_activities":              false,
+		"get_game_center_activity":                 false,
+		"create_game_center_activity":              false,
+		"update_game_center_activity":              false,
+		"delete_game_center_activity":              false,
+		"list_game_center_activity_versions":       false,
+		"get_game_center_activity_version":         false,
+		"create_game_center_activity_version":      false,
+		"update_game_center_activity_version":      false,
+		"list_game_center_activity_localizations":  false,
+		"create_game_center_activity_localization": false,
+		"update_game_center_activity_localization": false,
+		"delete_game_center_activity_localization": false,
+		"upload_game_center_activity_image":        false,
+		// Game Center challenge tools
+		"list_game_center_challenges":               false,
+		"get_game_center_challenge":                 false,
+		"create_game_center_challenge":              false,
+		"update_game_center_challenge":              false,
+		"delete_game_center_challenge":              false,
+		"list_game_center_challenge_versions":       false,
+		"get_game_center_challenge_version":         false,
+		"create_game_center_challenge_version":      false,
+		"list_game_center_challenge_localizations":  false,
+		"create_game_center_challenge_localization": false,
+		"update_game_center_challenge_localization": false,
+		"delete_game_center_challenge_localization": false,
+		"upload_game_center_challenge_image":        false,
+		// Game Center player submission tools
+		"submit_game_center_player_achievement": false,
+		"submit_game_center_leaderboard_entry":  false,
 		// Xcode Cloud tools
 		"list_ci_products":   false,
 		"get_ci_product":     false,
@@ -421,6 +475,68 @@ func TestRegistry_ListTools(t *testing.T) {
 		"upload_background_asset_file":         false,
 		"list_background_asset_upload_files":   false,
 		"get_background_asset_version_release": false,
+		// Commerce version tools
+		"create_in_app_purchase_version":                false,
+		"get_in_app_purchase_version":                   false,
+		"list_in_app_purchase_versions":                 false,
+		"list_in_app_purchase_version_localizations":    false,
+		"create_in_app_purchase_localization":           false,
+		"update_in_app_purchase_localization":           false,
+		"delete_in_app_purchase_localization":           false,
+		"list_in_app_purchase_version_images":           false,
+		"create_in_app_purchase_image":                  false,
+		"update_in_app_purchase_image":                  false,
+		"delete_in_app_purchase_image":                  false,
+		"create_subscription_version":                   false,
+		"get_subscription_version":                      false,
+		"list_subscription_versions":                    false,
+		"list_subscription_version_localizations":       false,
+		"create_subscription_localization":              false,
+		"update_subscription_localization":              false,
+		"delete_subscription_localization":              false,
+		"list_subscription_version_images":              false,
+		"create_subscription_image":                     false,
+		"update_subscription_image":                     false,
+		"delete_subscription_image":                     false,
+		"create_subscription_group_version":             false,
+		"get_subscription_group_version":                false,
+		"list_subscription_group_versions":              false,
+		"list_subscription_group_version_localizations": false,
+		"create_subscription_group_localization":        false,
+		"update_subscription_group_localization":        false,
+		"delete_subscription_group_localization":        false,
+		// In-app purchase offer code tools
+		"list_in_app_purchase_offer_codes":                        false,
+		"get_in_app_purchase_offer_code":                          false,
+		"create_in_app_purchase_offer_code":                       false,
+		"update_in_app_purchase_offer_code":                       false,
+		"list_in_app_purchase_offer_code_prices":                  false,
+		"list_in_app_purchase_offer_code_custom_codes":            false,
+		"create_in_app_purchase_offer_code_custom_code":           false,
+		"update_in_app_purchase_offer_code_custom_code":           false,
+		"list_in_app_purchase_offer_code_one_time_use_codes":      false,
+		"create_in_app_purchase_offer_code_one_time_use_code":     false,
+		"update_in_app_purchase_offer_code_one_time_use_code":     false,
+		"get_in_app_purchase_offer_code_one_time_use_code_values": false,
+		// Commerce pricing and availability tools
+		"list_in_app_purchase_price_points":                    false,
+		"get_in_app_purchase_price_schedule":                   false,
+		"set_in_app_purchase_price_schedule":                   false,
+		"list_in_app_purchase_price_schedule_prices":           false,
+		"get_in_app_purchase_availability":                     false,
+		"set_in_app_purchase_availability":                     false,
+		"list_in_app_purchase_available_territories":           false,
+		"list_subscription_plan_availabilities":                false,
+		"get_subscription_plan_availability":                   false,
+		"create_subscription_plan_availability":                false,
+		"update_subscription_plan_availability":                false,
+		"list_subscription_plan_available_territories":         false,
+		"get_subscription_price_point":                         false,
+		"list_subscription_price_point_equalizations":          false,
+		"list_subscription_price_point_adjusted_equalizations": false,
+		"set_app_price_schedule":                               false,
+		"get_app_price_point":                                  false,
+		"list_app_price_point_equalizations":                   false,
 	}
 
 	for _, tool := range tools {

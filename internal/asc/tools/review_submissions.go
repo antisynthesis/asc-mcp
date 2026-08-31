@@ -110,7 +110,7 @@ func (r *Registry) registerReviewSubmissionTools() {
 	// Add review submission item
 	r.register(mcp.Tool{
 		Name:        "add_review_submission_item",
-		Description: "Attach an item to a draft review submission. Provide exactly one of app_store_version_id, app_custom_product_page_version_id, app_store_version_experiment_id, or app_event_id.",
+		Description: "Attach an item to a draft review submission. Provide exactly one of app_store_version_id, app_custom_product_page_version_id, app_store_version_experiment_id, app_event_id, one of the Game Center version IDs, or one of the commerce version IDs. Game Center content and commerce products reach App Review through this tool: attach the achievement, leaderboard, leaderboard set, activity, challenge, in-app purchase, subscription, or subscription group VERSION, not the content resource itself.",
 		InputSchema: mcp.JSONSchema{
 			Type: "object",
 			Properties: map[string]mcp.Property{
@@ -133,6 +133,38 @@ func (r *Registry) registerReviewSubmissionTools() {
 				"app_event_id": {
 					Type:        "string",
 					Description: "An app event ID to attach",
+				},
+				"game_center_achievement_version_id": {
+					Type:        "string",
+					Description: "A Game Center achievement version ID to attach",
+				},
+				"game_center_leaderboard_version_id": {
+					Type:        "string",
+					Description: "A Game Center leaderboard version ID to attach",
+				},
+				"game_center_leaderboard_set_version_id": {
+					Type:        "string",
+					Description: "A Game Center leaderboard set version ID to attach",
+				},
+				"game_center_activity_version_id": {
+					Type:        "string",
+					Description: "A Game Center activity version ID to attach",
+				},
+				"game_center_challenge_version_id": {
+					Type:        "string",
+					Description: "A Game Center challenge version ID to attach",
+				},
+				"in_app_purchase_version_id": {
+					Type:        "string",
+					Description: "An in-app purchase version ID to attach",
+				},
+				"subscription_version_id": {
+					Type:        "string",
+					Description: "A subscription version ID to attach",
+				},
+				"subscription_group_version_id": {
+					Type:        "string",
+					Description: "A subscription group version ID to attach",
 				},
 			},
 			Required: []string{"review_submission_id"},
@@ -302,11 +334,19 @@ func (r *Registry) handleCreateReviewSubmission(ctx context.Context, args json.R
 
 func (r *Registry) handleAddReviewSubmissionItem(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
 	var params struct {
-		ReviewSubmissionID            string `json:"review_submission_id"`
-		AppStoreVersionID             string `json:"app_store_version_id"`
-		AppCustomProductPageVersionID string `json:"app_custom_product_page_version_id"`
-		AppStoreVersionExperimentID   string `json:"app_store_version_experiment_id"`
-		AppEventID                    string `json:"app_event_id"`
+		ReviewSubmissionID                string `json:"review_submission_id"`
+		AppStoreVersionID                 string `json:"app_store_version_id"`
+		AppCustomProductPageVersionID     string `json:"app_custom_product_page_version_id"`
+		AppStoreVersionExperimentID       string `json:"app_store_version_experiment_id"`
+		AppEventID                        string `json:"app_event_id"`
+		GameCenterAchievementVersionID    string `json:"game_center_achievement_version_id"`
+		GameCenterLeaderboardVersionID    string `json:"game_center_leaderboard_version_id"`
+		GameCenterLeaderboardSetVersionID string `json:"game_center_leaderboard_set_version_id"`
+		GameCenterActivityVersionID       string `json:"game_center_activity_version_id"`
+		GameCenterChallengeVersionID      string `json:"game_center_challenge_version_id"`
+		InAppPurchaseVersionID            string `json:"in_app_purchase_version_id"`
+		SubscriptionVersionID             string `json:"subscription_version_id"`
+		SubscriptionGroupVersionID        string `json:"subscription_group_version_id"`
 	}
 	if err := json.Unmarshal(args, &params); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
@@ -347,9 +387,63 @@ func (r *Registry) handleAddReviewSubmissionItem(ctx context.Context, args json.
 		}
 		itemCount++
 	}
+	// Game Center content is submitted for review by attaching the
+	// content's version resource (App Store Connect API 4.2+).
+	if params.GameCenterAchievementVersionID != "" {
+		rels.GameCenterAchievementVersion = &api.RelationshipData{
+			Data: api.ResourceIdentifier{Type: "gameCenterAchievementVersions", ID: params.GameCenterAchievementVersionID},
+		}
+		itemCount++
+	}
+	if params.GameCenterLeaderboardVersionID != "" {
+		rels.GameCenterLeaderboardVersion = &api.RelationshipData{
+			Data: api.ResourceIdentifier{Type: "gameCenterLeaderboardVersions", ID: params.GameCenterLeaderboardVersionID},
+		}
+		itemCount++
+	}
+	if params.GameCenterLeaderboardSetVersionID != "" {
+		rels.GameCenterLeaderboardSetVersion = &api.RelationshipData{
+			Data: api.ResourceIdentifier{Type: "gameCenterLeaderboardSetVersions", ID: params.GameCenterLeaderboardSetVersionID},
+		}
+		itemCount++
+	}
+	if params.GameCenterActivityVersionID != "" {
+		rels.GameCenterActivityVersion = &api.RelationshipData{
+			Data: api.ResourceIdentifier{Type: "gameCenterActivityVersions", ID: params.GameCenterActivityVersionID},
+		}
+		itemCount++
+	}
+	if params.GameCenterChallengeVersionID != "" {
+		rels.GameCenterChallengeVersion = &api.RelationshipData{
+			Data: api.ResourceIdentifier{Type: "gameCenterChallengeVersions", ID: params.GameCenterChallengeVersionID},
+		}
+		itemCount++
+	}
+
+	// In-app purchases, subscriptions and subscription groups are
+	// submitted for review by attaching the product's version resource
+	// (App Store Connect API 4.4.1).
+	if params.InAppPurchaseVersionID != "" {
+		rels.InAppPurchaseVersion = &api.RelationshipData{
+			Data: api.ResourceIdentifier{Type: "inAppPurchaseVersions", ID: params.InAppPurchaseVersionID},
+		}
+		itemCount++
+	}
+	if params.SubscriptionVersionID != "" {
+		rels.SubscriptionVersion = &api.RelationshipData{
+			Data: api.ResourceIdentifier{Type: "subscriptionVersions", ID: params.SubscriptionVersionID},
+		}
+		itemCount++
+	}
+	if params.SubscriptionGroupVersionID != "" {
+		rels.SubscriptionGroupVersion = &api.RelationshipData{
+			Data: api.ResourceIdentifier{Type: "subscriptionGroupVersions", ID: params.SubscriptionGroupVersionID},
+		}
+		itemCount++
+	}
 
 	if itemCount != 1 {
-		return mcp.NewErrorResult("exactly one of app_store_version_id, app_custom_product_page_version_id, app_store_version_experiment_id, or app_event_id is required"), nil
+		return mcp.NewErrorResult("exactly one of app_store_version_id, app_custom_product_page_version_id, app_store_version_experiment_id, app_event_id, game_center_achievement_version_id, game_center_leaderboard_version_id, game_center_leaderboard_set_version_id, game_center_activity_version_id, game_center_challenge_version_id, in_app_purchase_version_id, subscription_version_id, or subscription_group_version_id is required"), nil
 	}
 
 	req := &api.ReviewSubmissionItemCreateRequest{

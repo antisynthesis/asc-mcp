@@ -284,10 +284,11 @@ func TestServer_HandleToolsList(t *testing.T) {
 		t.Error("expected tools to be returned")
 	}
 
-	// Should have 248 tools (221 base + 3 upload tools + 6 build upload
-	// tools + 8 beta feedback tools + 10 background asset tools).
-	if len(result.Tools) != 248 {
-		t.Errorf("expected 248 tools, got %d", len(result.Tools))
+	// Should have 356 tools (221 base + 3 upload tools + 6 build upload
+	// tools + 8 beta feedback tools + 10 background asset tools + 53
+	// Game Center content tools + 59 commerce tools).
+	if len(result.Tools) != 356 {
+		t.Errorf("expected 356 tools, got %d", len(result.Tools))
 	}
 }
 

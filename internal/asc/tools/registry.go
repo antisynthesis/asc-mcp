@@ -51,6 +51,15 @@ func NewRegistry(client *api.Client) *Registry {
 	r.registerInAppPurchaseTools()
 	r.registerSubscriptionTools()
 
+	// Commerce product versioning (IAP, subscription, subscription group)
+	r.registerCommerceVersionTools()
+
+	// In-app purchase offer codes
+	r.registerInAppPurchaseOfferCodeTools()
+
+	// Commerce pricing and availability
+	r.registerCommercePricingTools()
+
 	// App Store versions and submissions
 	r.registerVersionSubmissionTools()
 	r.registerReviewSubmissionTools()
@@ -73,6 +82,7 @@ func NewRegistry(client *api.Client) *Registry {
 
 	// Game Center
 	r.registerGameCenterTools()
+	r.registerGameCenterContentTools()
 
 	// Xcode Cloud
 	r.registerXcodeCloudTools()

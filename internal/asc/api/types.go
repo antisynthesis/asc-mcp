@@ -962,12 +962,23 @@ type ReviewSubmissionItemCreateData struct {
 }
 
 // ReviewSubmissionItemCreateRelationships contains relationships for creating a review submission item.
+// The gameCenter* pointers carry Game Center content to App Review
+// (App Store Connect API 4.2+): each names a content version rather than
+// the content resource itself.
 type ReviewSubmissionItemCreateRelationships struct {
-	ReviewSubmission            RelationshipData  `json:"reviewSubmission"`
-	AppStoreVersion             *RelationshipData `json:"appStoreVersion,omitempty"`
-	AppCustomProductPageVersion *RelationshipData `json:"appCustomProductPageVersion,omitempty"`
-	AppStoreVersionExperimentV2 *RelationshipData `json:"appStoreVersionExperimentV2,omitempty"`
-	AppEvent                    *RelationshipData `json:"appEvent,omitempty"`
+	ReviewSubmission                RelationshipData  `json:"reviewSubmission"`
+	AppStoreVersion                 *RelationshipData `json:"appStoreVersion,omitempty"`
+	AppCustomProductPageVersion     *RelationshipData `json:"appCustomProductPageVersion,omitempty"`
+	AppStoreVersionExperimentV2     *RelationshipData `json:"appStoreVersionExperimentV2,omitempty"`
+	AppEvent                        *RelationshipData `json:"appEvent,omitempty"`
+	GameCenterAchievementVersion    *RelationshipData `json:"gameCenterAchievementVersion,omitempty"`
+	GameCenterLeaderboardVersion    *RelationshipData `json:"gameCenterLeaderboardVersion,omitempty"`
+	GameCenterLeaderboardSetVersion *RelationshipData `json:"gameCenterLeaderboardSetVersion,omitempty"`
+	GameCenterActivityVersion       *RelationshipData `json:"gameCenterActivityVersion,omitempty"`
+	GameCenterChallengeVersion      *RelationshipData `json:"gameCenterChallengeVersion,omitempty"`
+	InAppPurchaseVersion            *RelationshipData `json:"inAppPurchaseVersion,omitempty"`
+	SubscriptionVersion             *RelationshipData `json:"subscriptionVersion,omitempty"`
+	SubscriptionGroupVersion        *RelationshipData `json:"subscriptionGroupVersion,omitempty"`
 }
 
 // AppStoreVersionCreateRequest represents a request to create a version.
