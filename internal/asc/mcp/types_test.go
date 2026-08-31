@@ -10,15 +10,42 @@ func TestConstants(t *testing.T) {
 		t.Errorf("JSONRPCVersion = %q, want 2.0", JSONRPCVersion)
 	}
 
-	if ProtocolVersion != "2025-06-18" {
-		t.Errorf("ProtocolVersion = %q, want 2025-06-18", ProtocolVersion)
+	if LatestProtocolVersion != "2026-07-28" {
+		t.Errorf("LatestProtocolVersion = %q, want 2026-07-28", LatestProtocolVersion)
+	}
+
+	if ProtocolVersion != "2025-11-25" {
+		t.Errorf("ProtocolVersion = %q, want 2025-11-25", ProtocolVersion)
 	}
 
 	if len(SupportedProtocolVersions) == 0 {
 		t.Fatal("SupportedProtocolVersions must not be empty")
 	}
-	if SupportedProtocolVersions[0] != ProtocolVersion {
-		t.Errorf("SupportedProtocolVersions[0] = %q, want %q", SupportedProtocolVersions[0], ProtocolVersion)
+	if SupportedProtocolVersions[0] != LatestProtocolVersion {
+		t.Errorf("SupportedProtocolVersions[0] = %q, want %q", SupportedProtocolVersions[0], LatestProtocolVersion)
+	}
+
+	want := []string{"2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"}
+	if len(SupportedProtocolVersions) != len(want) {
+		t.Fatalf("SupportedProtocolVersions has %d entries, want %d", len(SupportedProtocolVersions), len(want))
+	}
+	for i, v := range want {
+		if SupportedProtocolVersions[i] != v {
+			t.Errorf("SupportedProtocolVersions[%d] = %q, want %q", i, SupportedProtocolVersions[i], v)
+		}
+	}
+
+	wantLegacy := []string{"2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"}
+	if len(LegacyHandshakeVersions) != len(wantLegacy) {
+		t.Fatalf("LegacyHandshakeVersions has %d entries, want %d", len(LegacyHandshakeVersions), len(wantLegacy))
+	}
+	for i, v := range wantLegacy {
+		if LegacyHandshakeVersions[i] != v {
+			t.Errorf("LegacyHandshakeVersions[%d] = %q, want %q", i, LegacyHandshakeVersions[i], v)
+		}
+	}
+	if LegacyHandshakeVersions[0] != ProtocolVersion {
+		t.Errorf("LegacyHandshakeVersions[0] = %q, want %q", LegacyHandshakeVersions[0], ProtocolVersion)
 	}
 }
 
@@ -28,11 +55,15 @@ func TestNegotiateProtocolVersion(t *testing.T) {
 		requested string
 		want      string
 	}{
-		{"latest", "2025-06-18", "2025-06-18"},
+		{"latest legacy", "2025-11-25", "2025-11-25"},
+		{"prior legacy", "2025-06-18", "2025-06-18"},
 		{"older supported", "2024-11-05", "2024-11-05"},
 		{"interim supported", "2025-03-26", "2025-03-26"},
-		{"unknown falls back to latest", "1999-01-01", ProtocolVersion},
-		{"empty falls back to latest", "", ProtocolVersion},
+		// 2026-07-28 has no initialize handshake, so it must never be
+		// negotiated here: the client gets the legacy fallback, not an echo.
+		{"modern falls back to legacy", "2026-07-28", ProtocolVersion},
+		{"unknown falls back to latest legacy", "1999-01-01", ProtocolVersion},
+		{"empty falls back to latest legacy", "", ProtocolVersion},
 	}
 
 	for _, tt := range tests {
@@ -71,6 +102,9 @@ func TestErrorCodes(t *testing.T) {
 		{"ErrCodeMethodNotFound", ErrCodeMethodNotFound, -32601},
 		{"ErrCodeInvalidParams", ErrCodeInvalidParams, -32602},
 		{"ErrCodeInternal", ErrCodeInternal, -32603},
+		{"ErrCodeHeaderMismatch", ErrCodeHeaderMismatch, -32020},
+		{"ErrCodeMissingClientCapability", ErrCodeMissingClientCapability, -32021},
+		{"ErrCodeUnsupportedProtocolVersion", ErrCodeUnsupportedProtocolVersion, -32022},
 	}
 
 	for _, tt := range tests {
@@ -473,6 +507,319 @@ func TestToolsListResult_JSON(t *testing.T) {
 
 	if len(decoded.Tools) != 2 {
 		t.Errorf("expected 2 tools, got %d", len(decoded.Tools))
+	}
+}
+
+func TestParseRequestMeta(t *testing.T) {
+	t.Run("full modern _meta", func(t *testing.T) {
+		params := json.RawMessage(`{
+			"name": "list_apps",
+			"_meta": {
+				"io.modelcontextprotocol/protocolVersion": "2026-07-28",
+				"io.modelcontextprotocol/clientCapabilities": {"elicitation": {}, "extensions": {"io.example/thing": {"x": 1}}},
+				"io.modelcontextprotocol/clientInfo": {"name": "test-client", "version": "1.0.0"},
+				"progressToken": "tok-1"
+			}
+		}`)
+
+		meta, err := ParseRequestMeta(params)
+		if err != nil {
+			t.Fatalf("ParseRequestMeta returned error: %v", err)
+		}
+
+		if meta.ProtocolVersion != "2026-07-28" {
+			t.Errorf("ProtocolVersion = %q, want 2026-07-28", meta.ProtocolVersion)
+		}
+		if meta.ClientCapabilities == nil {
+			t.Fatal("expected non-nil ClientCapabilities")
+		}
+		if meta.ClientCapabilities.Elicitation == nil {
+			t.Error("expected Elicitation capability")
+		}
+		if _, ok := meta.ClientCapabilities.Extensions["io.example/thing"]; !ok {
+			t.Error("expected extension io.example/thing to be preserved")
+		}
+		if meta.ClientInfo == nil || meta.ClientInfo.Name != "test-client" {
+			t.Errorf("ClientInfo = %+v, want name test-client", meta.ClientInfo)
+		}
+		if string(meta.ProgressToken) != `"tok-1"` {
+			t.Errorf("ProgressToken = %q, want %q", meta.ProgressToken, `"tok-1"`)
+		}
+	})
+
+	t.Run("empty params", func(t *testing.T) {
+		meta, err := ParseRequestMeta(nil)
+		if err != nil {
+			t.Fatalf("ParseRequestMeta returned error: %v", err)
+		}
+		if meta == nil {
+			t.Fatal("expected zero-value RequestMeta, got nil")
+		}
+		if meta.ProtocolVersion != "" || meta.ClientCapabilities != nil || meta.ClientInfo != nil {
+			t.Errorf("expected zero-value RequestMeta, got %+v", meta)
+		}
+	})
+
+	t.Run("params without _meta", func(t *testing.T) {
+		meta, err := ParseRequestMeta(json.RawMessage(`{"name":"list_apps"}`))
+		if err != nil {
+			t.Fatalf("ParseRequestMeta returned error: %v", err)
+		}
+		if meta.ClientCapabilities != nil {
+			t.Error("ClientCapabilities should be nil when _meta is absent")
+		}
+	})
+
+	t.Run("clientCapabilities present as empty object", func(t *testing.T) {
+		params := json.RawMessage(`{"_meta": {"io.modelcontextprotocol/clientCapabilities": {}}}`)
+		meta, err := ParseRequestMeta(params)
+		if err != nil {
+			t.Fatalf("ParseRequestMeta returned error: %v", err)
+		}
+		if meta.ClientCapabilities == nil {
+			t.Error("ClientCapabilities should be non-nil when present as {}")
+		}
+	})
+
+	t.Run("clientCapabilities absent", func(t *testing.T) {
+		params := json.RawMessage(`{"_meta": {"io.modelcontextprotocol/protocolVersion": "2026-07-28"}}`)
+		meta, err := ParseRequestMeta(params)
+		if err != nil {
+			t.Fatalf("ParseRequestMeta returned error: %v", err)
+		}
+		if meta.ClientCapabilities != nil {
+			t.Error("ClientCapabilities should be nil when the key is absent")
+		}
+	})
+
+	t.Run("malformed protocolVersion type", func(t *testing.T) {
+		params := json.RawMessage(`{"_meta": {"io.modelcontextprotocol/protocolVersion": 42}}`)
+		if _, err := ParseRequestMeta(params); err == nil {
+			t.Error("expected error for non-string protocolVersion")
+		}
+	})
+
+	t.Run("malformed params JSON", func(t *testing.T) {
+		if _, err := ParseRequestMeta(json.RawMessage(`{`)); err == nil {
+			t.Error("expected error for malformed params")
+		}
+	})
+}
+
+func TestResultTypeConstants(t *testing.T) {
+	if ResultTypeComplete != "complete" {
+		t.Errorf("ResultTypeComplete = %q, want complete", ResultTypeComplete)
+	}
+	if ResultTypeInputRequired != "input_required" {
+		t.Errorf("ResultTypeInputRequired = %q, want input_required", ResultTypeInputRequired)
+	}
+}
+
+func TestMetaKeyConstants(t *testing.T) {
+	tests := []struct {
+		name string
+		got  string
+		want string
+	}{
+		{"MetaProtocolVersion", MetaProtocolVersion, "io.modelcontextprotocol/protocolVersion"},
+		{"MetaClientCapabilities", MetaClientCapabilities, "io.modelcontextprotocol/clientCapabilities"},
+		{"MetaClientInfo", MetaClientInfo, "io.modelcontextprotocol/clientInfo"},
+		{"MetaServerInfo", MetaServerInfo, "io.modelcontextprotocol/serverInfo"},
+		{"MetaLogLevel", MetaLogLevel, "io.modelcontextprotocol/logLevel"},
+		{"MetaSubscriptionID", MetaSubscriptionID, "io.modelcontextprotocol/subscriptionId"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.got != tt.want {
+				t.Errorf("%s = %q, want %q", tt.name, tt.got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDiscoverResult_JSON(t *testing.T) {
+	result := DiscoverResult{
+		ResultType:        ResultTypeComplete,
+		SupportedVersions: SupportedProtocolVersions,
+		Capabilities: ServerCapability{
+			Tools: &ToolsCapability{},
+		},
+		Instructions: "Use the tools.",
+		TtlMs:        60000,
+		CacheScope:   CacheScopePublic,
+		Meta:         ServerInfoMeta(ServerInfo{Name: "test-server", Version: "1.0.0"}),
+	}
+
+	data, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("failed to marshal: %v", err)
+	}
+
+	// Assert the exact wire field names.
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatalf("failed to unmarshal into map: %v", err)
+	}
+	for _, key := range []string{"resultType", "supportedVersions", "capabilities", "instructions", "ttlMs", "cacheScope", "_meta"} {
+		if _, ok := raw[key]; !ok {
+			t.Errorf("marshaled DiscoverResult missing key %q", key)
+		}
+	}
+
+	var decoded DiscoverResult
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("failed to unmarshal: %v", err)
+	}
+
+	if decoded.ResultType != ResultTypeComplete {
+		t.Errorf("ResultType = %q, want %q", decoded.ResultType, ResultTypeComplete)
+	}
+	if len(decoded.SupportedVersions) != len(SupportedProtocolVersions) {
+		t.Errorf("SupportedVersions count = %d, want %d", len(decoded.SupportedVersions), len(SupportedProtocolVersions))
+	}
+	if decoded.TtlMs != 60000 {
+		t.Errorf("TtlMs = %d, want 60000", decoded.TtlMs)
+	}
+	if decoded.CacheScope != CacheScopePublic {
+		t.Errorf("CacheScope = %q, want %q", decoded.CacheScope, CacheScopePublic)
+	}
+	if decoded.Meta[MetaServerInfo] == nil {
+		t.Error("expected _meta to carry MetaServerInfo")
+	}
+}
+
+func TestToolsListResult_ModernFields(t *testing.T) {
+	t.Run("legacy shape is byte-identical", func(t *testing.T) {
+		result := ToolsListResult{
+			Tools: []Tool{
+				{Name: "tool1", Description: "First tool", InputSchema: JSONSchema{Type: "object"}},
+			},
+		}
+
+		data, err := json.Marshal(result)
+		if err != nil {
+			t.Fatalf("failed to marshal: %v", err)
+		}
+
+		want := `{"tools":[{"name":"tool1","description":"First tool","inputSchema":{"type":"object"}}]}`
+		if string(data) != want {
+			t.Errorf("legacy ToolsListResult marshaled to %s, want %s", data, want)
+		}
+	})
+
+	t.Run("modern fields round-trip", func(t *testing.T) {
+		ttl := int64(0)
+		result := ToolsListResult{
+			Tools:      []Tool{},
+			ResultType: ResultTypeComplete,
+			TtlMs:      &ttl,
+			CacheScope: CacheScopePrivate,
+			Meta:       ServerInfoMeta(ServerInfo{Name: "test-server", Version: "1.0.0"}),
+		}
+
+		data, err := json.Marshal(result)
+		if err != nil {
+			t.Fatalf("failed to marshal: %v", err)
+		}
+
+		var raw map[string]json.RawMessage
+		if err := json.Unmarshal(data, &raw); err != nil {
+			t.Fatalf("failed to unmarshal into map: %v", err)
+		}
+		for _, key := range []string{"resultType", "ttlMs", "cacheScope", "_meta"} {
+			if _, ok := raw[key]; !ok {
+				t.Errorf("marshaled ToolsListResult missing key %q", key)
+			}
+		}
+		if string(raw["ttlMs"]) != "0" {
+			t.Errorf("ttlMs = %s, want 0 (ttlMs:0 must be representable)", raw["ttlMs"])
+		}
+
+		var decoded ToolsListResult
+		if err := json.Unmarshal(data, &decoded); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if decoded.TtlMs == nil || *decoded.TtlMs != 0 {
+			t.Errorf("TtlMs = %v, want pointer to 0", decoded.TtlMs)
+		}
+		if decoded.CacheScope != CacheScopePrivate {
+			t.Errorf("CacheScope = %q, want %q", decoded.CacheScope, CacheScopePrivate)
+		}
+	})
+}
+
+func TestToolsCallResult_ResultType(t *testing.T) {
+	t.Run("legacy shape omits resultType", func(t *testing.T) {
+		result := ToolsCallResult{
+			Content: []ContentBlock{NewTextContent("ok")},
+		}
+
+		data, err := json.Marshal(result)
+		if err != nil {
+			t.Fatalf("failed to marshal: %v", err)
+		}
+
+		want := `{"content":[{"type":"text","text":"ok"}]}`
+		if string(data) != want {
+			t.Errorf("legacy ToolsCallResult marshaled to %s, want %s", data, want)
+		}
+	})
+
+	t.Run("modern resultType round-trips", func(t *testing.T) {
+		result := ToolsCallResult{
+			Content:    []ContentBlock{NewTextContent("ok")},
+			ResultType: ResultTypeComplete,
+		}
+
+		data, err := json.Marshal(result)
+		if err != nil {
+			t.Fatalf("failed to marshal: %v", err)
+		}
+
+		var decoded ToolsCallResult
+		if err := json.Unmarshal(data, &decoded); err != nil {
+			t.Fatalf("failed to unmarshal: %v", err)
+		}
+		if decoded.ResultType != ResultTypeComplete {
+			t.Errorf("ResultType = %q, want %q", decoded.ResultType, ResultTypeComplete)
+		}
+	})
+}
+
+func TestUnsupportedProtocolVersionData_JSON(t *testing.T) {
+	data, err := json.Marshal(UnsupportedProtocolVersionData{
+		Supported: SupportedProtocolVersions,
+		Requested: "1999-01-01",
+	})
+	if err != nil {
+		t.Fatalf("failed to marshal: %v", err)
+	}
+
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatalf("failed to unmarshal into map: %v", err)
+	}
+	if _, ok := raw["supported"]; !ok {
+		t.Error("marshaled data missing key supported")
+	}
+	if _, ok := raw["requested"]; !ok {
+		t.Error("marshaled data missing key requested")
+	}
+	if string(raw["requested"]) != `"1999-01-01"` {
+		t.Errorf("requested = %s, want %q", raw["requested"], "1999-01-01")
+	}
+}
+
+func TestServerInfoMeta(t *testing.T) {
+	meta := ServerInfoMeta(ServerInfo{Name: "asc-mcp", Version: "1.0.0"})
+
+	info, ok := meta[MetaServerInfo].(ServerInfo)
+	if !ok {
+		t.Fatalf("meta[%q] = %T, want ServerInfo", MetaServerInfo, meta[MetaServerInfo])
+	}
+	if info.Name != "asc-mcp" {
+		t.Errorf("Name = %q, want asc-mcp", info.Name)
 	}
 }
 

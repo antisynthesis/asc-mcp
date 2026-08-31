@@ -10,26 +10,99 @@ const (
 	// JSONRPCVersion is the JSON-RPC version used by MCP.
 	JSONRPCVersion = "2.0"
 
-	// ProtocolVersion is the MCP protocol version this server prefers.
-	ProtocolVersion = "2025-06-18"
+	// LatestProtocolVersion is the newest MCP protocol revision this server
+	// speaks: the modern, stateless revision. It has no initialize handshake;
+	// clients select it per request via params._meta and the HTTP
+	// MCP-Protocol-Version header.
+	LatestProtocolVersion = "2026-07-28"
+
+	// ProtocolVersion is the preferred LEGACY handshake version: the version
+	// returned by initialize when the client's requested version is not a
+	// legacy revision this server speaks. 2025-11-25 is the last
+	// handshake-based revision, so it carries the newest legacy semantics.
+	ProtocolVersion = "2025-11-25"
 )
 
 // SupportedProtocolVersions lists every MCP protocol revision this server
-// can speak, newest first. During initialize the server picks the latest
-// version that the client also supports.
+// can speak, newest first. Note that the newest revision (2026-07-28) is
+// stateless and is never negotiated via initialize; see
+// LegacyHandshakeVersions.
 var SupportedProtocolVersions = []string{
+	"2026-07-28",
+	"2025-11-25",
+	"2025-06-18",
+	"2025-03-26",
+	"2024-11-05",
+}
+
+// LegacyHandshakeVersions lists the protocol revisions negotiable via the
+// initialize handshake, newest first. The 2026-07-28 revision is excluded
+// because it has no initialize handshake at all: a client that sends
+// initialize is by definition speaking a legacy revision.
+var LegacyHandshakeVersions = []string{
+	"2025-11-25",
 	"2025-06-18",
 	"2025-03-26",
 	"2024-11-05",
 }
 
 // JSON-RPC error codes.
+//
+// The range -32020..-32099 is reserved exclusively for the MCP
+// specification; implementations MUST NOT allocate their own codes there.
+// The range -32000..-32019 is legacy/implementation-defined and new code
+// MUST NOT allocate there either. Never emit -32002 or -32042.
 const (
 	ErrCodeParse          = -32700
 	ErrCodeInvalidRequest = -32600
 	ErrCodeMethodNotFound = -32601
 	ErrCodeInvalidParams  = -32602
 	ErrCodeInternal       = -32603
+
+	// ErrCodeHeaderMismatch reports that the HTTP MCP-Protocol-Version
+	// header disagrees with the protocol version in the request body.
+	ErrCodeHeaderMismatch = -32020
+
+	// ErrCodeMissingClientCapability reports that the server needs a client
+	// capability the client did not declare; the error data carries
+	// requiredCapabilities.
+	ErrCodeMissingClientCapability = -32021
+
+	// ErrCodeUnsupportedProtocolVersion reports that the requested protocol
+	// version is not supported; the error data lists the supported versions
+	// and echoes the requested one (see UnsupportedProtocolVersionData).
+	ErrCodeUnsupportedProtocolVersion = -32022
+)
+
+// UnsupportedProtocolVersionData is the error data carried by
+// ErrCodeUnsupportedProtocolVersion responses.
+type UnsupportedProtocolVersionData struct {
+	Supported []string `json:"supported"`
+	Requested string   `json:"requested"`
+}
+
+// Reserved _meta keys defined by the MCP specification.
+const (
+	// MetaProtocolVersion carries the protocol revision on every 2026-07-28
+	// request (REQUIRED).
+	MetaProtocolVersion = "io.modelcontextprotocol/protocolVersion"
+
+	// MetaClientCapabilities carries the client's capabilities on every
+	// 2026-07-28 request (REQUIRED; {} is valid and means none).
+	MetaClientCapabilities = "io.modelcontextprotocol/clientCapabilities"
+
+	// MetaClientInfo carries the client implementation info (SHOULD).
+	MetaClientInfo = "io.modelcontextprotocol/clientInfo"
+
+	// MetaServerInfo carries the server implementation info, stamped into
+	// every modern result (SHOULD).
+	MetaServerInfo = "io.modelcontextprotocol/serverInfo"
+
+	// MetaLogLevel carries the requested logging level.
+	MetaLogLevel = "io.modelcontextprotocol/logLevel"
+
+	// MetaSubscriptionID carries a resource subscription identifier.
+	MetaSubscriptionID = "io.modelcontextprotocol/subscriptionId"
 )
 
 // Request represents a JSON-RPC 2.0 request.
@@ -74,6 +147,11 @@ type ClientCapability struct {
 	Sampling     *SamplingCapability `json:"sampling,omitempty"`
 	Elicitation  *EmptyCapability    `json:"elicitation,omitempty"`
 	Experimental map[string]any      `json:"experimental,omitempty"`
+
+	// Extensions carries protocol extensions keyed by reverse-DNS names
+	// (e.g. "io.modelcontextprotocol/tasks"). This server declares no
+	// extensions of its own but accepts client ones without erroring.
+	Extensions map[string]json.RawMessage `json:"extensions,omitempty"`
 }
 
 // RootsCapability represents roots capability.
@@ -111,6 +189,10 @@ type ServerCapability struct {
 	Prompts      *PromptsCap      `json:"prompts,omitempty"`
 	Completions  *EmptyCapability `json:"completions,omitempty"`
 	Experimental map[string]any   `json:"experimental,omitempty"`
+
+	// Extensions carries protocol extensions keyed by reverse-DNS names
+	// (e.g. "io.modelcontextprotocol/tasks"). This server declares none.
+	Extensions map[string]any `json:"extensions,omitempty"`
 }
 
 // ToolsCapability represents tools capability.
@@ -131,15 +213,50 @@ type PromptsCap struct {
 
 // ServerInfo represents information about the server.
 type ServerInfo struct {
-	Name    string `json:"name"`
-	Title   string `json:"title,omitempty"`
-	Version string `json:"version"`
+	Name        string `json:"name"`
+	Title       string `json:"title,omitempty"`
+	Version     string `json:"version"`
+	Description string `json:"description,omitempty"`
 }
 
+// Result type values. On 2026-07-28 every result MUST include resultType;
+// clients treat absence as "complete", which is why omitempty keeps legacy
+// responses byte-identical.
+const (
+	ResultTypeComplete      = "complete"
+	ResultTypeInputRequired = "input_required"
+)
+
+// CacheScope values for cacheable results.
+const (
+	CacheScopePublic  = "public"
+	CacheScopePrivate = "private"
+)
+
 // ToolsListResult represents the result of tools/list.
+//
+// On 2026-07-28 the result MUST additionally carry resultType, ttlMs
+// (freshness hint in milliseconds; 0 = immediately stale) and cacheScope.
+// TtlMs is a pointer so legacy responses omit it while a modern ttlMs:0 is
+// still representable.
 type ToolsListResult struct {
-	Tools      []Tool `json:"tools"`
-	NextCursor string `json:"nextCursor,omitempty"`
+	Tools      []Tool         `json:"tools"`
+	NextCursor string         `json:"nextCursor,omitempty"`
+	ResultType string         `json:"resultType,omitempty"`
+	TtlMs      *int64         `json:"ttlMs,omitempty"`
+	CacheScope string         `json:"cacheScope,omitempty"`
+	Meta       map[string]any `json:"_meta,omitempty"`
+}
+
+// DiscoverResult is the result of the server/discover request (2026-07-28).
+type DiscoverResult struct {
+	ResultType        string           `json:"resultType"`        // always "complete"
+	SupportedVersions []string         `json:"supportedVersions"` // protocol revisions this server accepts
+	Capabilities      ServerCapability `json:"capabilities"`
+	Instructions      string           `json:"instructions,omitempty"`
+	TtlMs             int64            `json:"ttlMs"`           // REQUIRED (CacheableResult)
+	CacheScope        string           `json:"cacheScope"`      // "public" | "private"
+	Meta              map[string]any   `json:"_meta,omitempty"` // SHOULD carry MetaServerInfo
 }
 
 // Tool represents an MCP tool definition.
@@ -194,10 +311,14 @@ type ToolsCallParams struct {
 }
 
 // ToolsCallResult represents the result of tools/call.
+//
+// On 2026-07-28 the result MUST include resultType; tools/call results do
+// NOT carry ttlMs/cacheScope.
 type ToolsCallResult struct {
 	Content           []ContentBlock `json:"content"`
 	StructuredContent any            `json:"structuredContent,omitempty"`
 	IsError           bool           `json:"isError,omitempty"`
+	ResultType        string         `json:"resultType,omitempty"`
 	Meta              map[string]any `json:"_meta,omitempty"`
 }
 
@@ -243,14 +364,81 @@ func NewErrorResult(text string) *ToolsCallResult {
 }
 
 // NegotiateProtocolVersion picks the protocol version to use given the
-// version proposed by the client. If the requested version is supported
-// it is echoed back; otherwise the latest supported version is returned
-// and the client decides whether it can speak it.
+// version proposed by the client during initialize. If the requested
+// version is a legacy handshake version it is echoed back; otherwise the
+// preferred legacy version is returned and the client decides whether it
+// can speak it. The 2026-07-28 revision is deliberately never negotiated
+// here: it has no initialize handshake, so a client sending initialize
+// with protocolVersion "2026-07-28" gets the latest legacy version back.
 func NegotiateProtocolVersion(requested string) string {
-	for _, v := range SupportedProtocolVersions {
+	for _, v := range LegacyHandshakeVersions {
 		if v == requested {
 			return v
 		}
 	}
 	return ProtocolVersion
+}
+
+// RequestMeta is the reserved metadata carried in params._meta on
+// 2026-07-28 requests. Every request (not notification) MUST carry
+// protocolVersion and clientCapabilities ({} is valid and means no
+// optional capabilities); clientInfo SHOULD be present.
+type RequestMeta struct {
+	ProtocolVersion    string            // io.modelcontextprotocol/protocolVersion
+	ClientCapabilities *ClientCapability // io.modelcontextprotocol/clientCapabilities (nil = absent)
+	ClientInfo         *ClientInfo       // io.modelcontextprotocol/clientInfo
+	ProgressToken      json.RawMessage   // progressToken (string or integer)
+}
+
+// ParseRequestMeta extracts RequestMeta from raw request params. Returns a
+// zero-value (not nil) RequestMeta when params or _meta is absent; returns
+// an error only on malformed JSON. A ClientCapabilities key that is present
+// (even as {}) yields a non-nil pointer, letting the dispatcher distinguish
+// "absent" from "declared empty" when enforcing the REQUIRED rule.
+func ParseRequestMeta(params json.RawMessage) (*RequestMeta, error) {
+	meta := &RequestMeta{}
+	if len(params) == 0 {
+		return meta, nil
+	}
+
+	var envelope struct {
+		Meta map[string]json.RawMessage `json:"_meta"`
+	}
+	if err := json.Unmarshal(params, &envelope); err != nil {
+		return nil, err
+	}
+	if envelope.Meta == nil {
+		return meta, nil
+	}
+
+	if raw, ok := envelope.Meta[MetaProtocolVersion]; ok {
+		if err := json.Unmarshal(raw, &meta.ProtocolVersion); err != nil {
+			return nil, err
+		}
+	}
+	if raw, ok := envelope.Meta[MetaClientCapabilities]; ok {
+		caps := &ClientCapability{}
+		if err := json.Unmarshal(raw, caps); err != nil {
+			return nil, err
+		}
+		meta.ClientCapabilities = caps
+	}
+	if raw, ok := envelope.Meta[MetaClientInfo]; ok {
+		info := &ClientInfo{}
+		if err := json.Unmarshal(raw, info); err != nil {
+			return nil, err
+		}
+		meta.ClientInfo = info
+	}
+	if raw, ok := envelope.Meta["progressToken"]; ok {
+		meta.ProgressToken = raw
+	}
+	return meta, nil
+}
+
+// ServerInfoMeta builds the _meta map carrying the server implementation
+// info. Servers SHOULD include it in every modern result so clients can
+// identify the implementation without a handshake.
+func ServerInfoMeta(info ServerInfo) map[string]any {
+	return map[string]any{MetaServerInfo: info}
 }

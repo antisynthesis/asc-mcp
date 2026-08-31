@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -14,9 +15,11 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/antisynthesis/asc-mcp/internal/asc/config"
 	"github.com/antisynthesis/asc-mcp/internal/asc/mcp"
+	"github.com/antisynthesis/asc-mcp/internal/asc/tools"
 )
 
 // testSetup creates a test configuration with temporary key file.
@@ -281,9 +284,10 @@ func TestServer_HandleToolsList(t *testing.T) {
 		t.Error("expected tools to be returned")
 	}
 
-	// Should have 203 tools (200 base + 3 upload tools).
-	if len(result.Tools) != 203 {
-		t.Errorf("expected 203 tools, got %d", len(result.Tools))
+	// Should have 248 tools (221 base + 3 upload tools + 6 build upload
+	// tools + 8 beta feedback tools + 10 background asset tools).
+	if len(result.Tools) != 248 {
+		t.Errorf("expected 248 tools, got %d", len(result.Tools))
 	}
 }
 
@@ -582,6 +586,627 @@ func TestServer_NotificationsInitialized(t *testing.T) {
 	// No response should be sent for notifications
 	if output.Len() != 0 {
 		t.Error("expected no response for notification")
+	}
+}
+
+// modernMeta builds tools-era params carrying the required 2026-07-28
+// _meta keys.
+func modernMeta(protocolVersion string, withCaps bool) json.RawMessage {
+	meta := map[string]any{
+		mcp.MetaProtocolVersion: protocolVersion,
+	}
+	if withCaps {
+		meta[mcp.MetaClientCapabilities] = map[string]any{}
+	}
+	params, _ := json.Marshal(map[string]any{"_meta": meta})
+	return params
+}
+
+func TestServer_Discover_PreInitialize(t *testing.T) {
+	cfg := testSetup(t)
+
+	// server/discover must work as the FIRST message on stdin, before
+	// initialize, so exercise it through Run rather than handleRequest.
+	line, _ := json.Marshal(mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "server/discover",
+	})
+	input := bytes.NewReader(append(line, '\n'))
+	output := &bytes.Buffer{}
+
+	server, err := New(cfg, input, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+	if err := server.Run(); err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+
+	var resp mcp.Response
+	if err := json.NewDecoder(output).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("unexpected error: %v", resp.Error)
+	}
+	if server.initialized() {
+		t.Error("server/discover must not mark the session initialized")
+	}
+
+	resultJSON, _ := json.Marshal(resp.Result)
+	var result mcp.DiscoverResult
+	if err := json.Unmarshal(resultJSON, &result); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	for _, want := range []string{"2026-07-28", "2025-06-18"} {
+		found := false
+		for _, v := range result.SupportedVersions {
+			if v == want {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("supportedVersions missing %q: %v", want, result.SupportedVersions)
+		}
+	}
+	if result.Capabilities.Tools == nil {
+		t.Error("expected capabilities.tools to be present")
+	}
+	if result.ResultType != mcp.ResultTypeComplete {
+		t.Errorf("resultType = %q, want %q", result.ResultType, mcp.ResultTypeComplete)
+	}
+	if result.TtlMs <= 0 {
+		t.Errorf("ttlMs = %d, want > 0", result.TtlMs)
+	}
+	if result.CacheScope != mcp.CacheScopePublic {
+		t.Errorf("cacheScope = %q, want public", result.CacheScope)
+	}
+	info, ok := result.Meta[mcp.MetaServerInfo].(map[string]any)
+	if !ok {
+		t.Fatalf("_meta[%q] missing or wrong type: %v", mcp.MetaServerInfo, result.Meta)
+	}
+	if info["name"] != serverName {
+		t.Errorf("_meta serverInfo name = %v, want %q", info["name"], serverName)
+	}
+}
+
+func TestServer_ModernToolsList_NoHandshake(t *testing.T) {
+	cfg := testSetup(t)
+	output := &bytes.Buffer{}
+	server, err := New(cfg, &bytes.Buffer{}, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+
+	// No initialize: modern requests are stateless and must be served
+	// regardless of handshake state.
+	req := mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/list",
+		Params:  modernMeta("2026-07-28", true),
+	}
+	server.handleRequest(&req)
+
+	var resp mcp.Response
+	if err := json.NewDecoder(output).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("unexpected error: %v", resp.Error)
+	}
+
+	resultJSON, _ := json.Marshal(resp.Result)
+	var result mcp.ToolsListResult
+	if err := json.Unmarshal(resultJSON, &result); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+	if len(result.Tools) == 0 {
+		t.Error("expected tools to be returned")
+	}
+	if result.ResultType != mcp.ResultTypeComplete {
+		t.Errorf("resultType = %q, want %q", result.ResultType, mcp.ResultTypeComplete)
+	}
+	if result.TtlMs == nil {
+		t.Error("expected ttlMs to be set on modern tools/list")
+	}
+	if result.CacheScope != mcp.CacheScopePublic {
+		t.Errorf("cacheScope = %q, want public", result.CacheScope)
+	}
+}
+
+func TestServer_Modern_UnsupportedProtocolVersion(t *testing.T) {
+	cfg := testSetup(t)
+	output := &bytes.Buffer{}
+	server, err := New(cfg, &bytes.Buffer{}, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+
+	// A legacy revision stamped into _meta marks the request modern, but
+	// only the latest revision is valid there.
+	req := mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/list",
+		Params:  modernMeta("2025-06-18", true),
+	}
+	server.handleRequest(&req)
+
+	var resp mcp.Response
+	if err := json.NewDecoder(output).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp.Error == nil {
+		t.Fatal("expected error for unsupported protocol version")
+	}
+	if resp.Error.Code != mcp.ErrCodeUnsupportedProtocolVersion {
+		t.Errorf("Error.Code = %d, want %d", resp.Error.Code, mcp.ErrCodeUnsupportedProtocolVersion)
+	}
+
+	dataJSON, _ := json.Marshal(resp.Error.Data)
+	var data mcp.UnsupportedProtocolVersionData
+	if err := json.Unmarshal(dataJSON, &data); err != nil {
+		t.Fatalf("failed to unmarshal error data: %v", err)
+	}
+	if data.Requested != "2025-06-18" {
+		t.Errorf("data.requested = %q, want 2025-06-18", data.Requested)
+	}
+	if len(data.Supported) != len(mcp.SupportedProtocolVersions) {
+		t.Fatalf("data.supported = %v, want %v", data.Supported, mcp.SupportedProtocolVersions)
+	}
+	for i, v := range mcp.SupportedProtocolVersions {
+		if data.Supported[i] != v {
+			t.Errorf("data.supported[%d] = %q, want %q", i, data.Supported[i], v)
+		}
+	}
+}
+
+func TestServer_Modern_MissingClientCapabilities(t *testing.T) {
+	cfg := testSetup(t)
+	output := &bytes.Buffer{}
+	server, err := New(cfg, &bytes.Buffer{}, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+
+	req := mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/list",
+		Params:  modernMeta("2026-07-28", false),
+	}
+	server.handleRequest(&req)
+
+	var resp mcp.Response
+	if err := json.NewDecoder(output).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp.Error == nil {
+		t.Fatal("expected error for missing clientCapabilities")
+	}
+	if resp.Error.Code != mcp.ErrCodeInvalidParams {
+		t.Errorf("Error.Code = %d, want %d", resp.Error.Code, mcp.ErrCodeInvalidParams)
+	}
+}
+
+func TestServer_Modern_PingRemoved(t *testing.T) {
+	cfg := testSetup(t)
+	output := &bytes.Buffer{}
+	server, err := New(cfg, &bytes.Buffer{}, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+
+	// ping was removed in 2026-07-28; a modern-marked ping is
+	// method-not-found even though the legacy path still answers it.
+	req := mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "ping",
+		Params:  modernMeta("2026-07-28", true),
+	}
+	server.handleRequest(&req)
+
+	var resp mcp.Response
+	if err := json.NewDecoder(output).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp.Error == nil {
+		t.Fatal("expected error for modern ping")
+	}
+	if resp.Error.Code != mcp.ErrCodeMethodNotFound {
+		t.Errorf("Error.Code = %d, want %d", resp.Error.Code, mcp.ErrCodeMethodNotFound)
+	}
+}
+
+func TestServer_HandleInitialize_ModernVersionFallsBack(t *testing.T) {
+	cfg := testSetup(t)
+	output := &bytes.Buffer{}
+	server, err := New(cfg, &bytes.Buffer{}, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+
+	// 2026-07-28 has no initialize handshake, so a client proposing it
+	// there negotiates down to the newest legacy version.
+	req := mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "initialize",
+		Params: json.RawMessage(`{
+			"protocolVersion": "2026-07-28",
+			"capabilities": {},
+			"clientInfo": {"name": "test-client", "version": "1.0.0"}
+		}`),
+	}
+	server.handleRequest(&req)
+
+	var resp mcp.Response
+	if err := json.NewDecoder(output).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	resultJSON, _ := json.Marshal(resp.Result)
+	var result mcp.InitializeResult
+	if err := json.Unmarshal(resultJSON, &result); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+	if result.ProtocolVersion != "2025-11-25" {
+		t.Errorf("ProtocolVersion = %q, want 2025-11-25", result.ProtocolVersion)
+	}
+}
+
+func TestServer_LegacyToolsList_NoModernKeys(t *testing.T) {
+	cfg := testSetup(t)
+	output := &bytes.Buffer{}
+	server, err := New(cfg, &bytes.Buffer{}, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+	server.session.initialized.Store(true)
+
+	req := mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/list",
+	}
+	server.handleRequest(&req)
+
+	// Regression guard: the legacy wire shape must stay byte-identical,
+	// so none of the 2026-07-28 result fields may leak through omitempty.
+	raw := output.String()
+	for _, key := range []string{`"resultType"`, `"ttlMs"`, `"cacheScope"`} {
+		if strings.Contains(raw, key) {
+			t.Errorf("legacy tools/list response contains modern key %s", key)
+		}
+	}
+}
+
+// registerFakeTool installs a test-only tool handler on the server's
+// registry so cancellation and concurrency can be exercised without
+// hitting the App Store Connect API.
+func registerFakeTool(s *Server, name string, handler tools.ToolHandler) {
+	s.registry.Register(mcp.Tool{
+		Name:        name,
+		Description: "test-only tool",
+		InputSchema: mcp.JSONSchema{Type: "object"},
+	}, handler)
+}
+
+// writeRequestLine marshals a request and writes it as one stdio line.
+func writeRequestLine(t *testing.T, w io.Writer, req mcp.Request) {
+	t.Helper()
+	data, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("failed to marshal request: %v", err)
+	}
+	if _, err := w.Write(append(data, '\n')); err != nil {
+		t.Fatalf("failed to write request: %v", err)
+	}
+}
+
+// waitForRun waits for the Run goroutine to finish and fails the test if
+// it errors or hangs.
+func waitForRun(t *testing.T, done <-chan error) {
+	t.Helper()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Run failed: %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("Run did not return after EOF")
+	}
+}
+
+func TestServer_Run_CancelledRequest_NoResponse(t *testing.T) {
+	cfg := testSetup(t)
+
+	inputReader, inputWriter := io.Pipe()
+	output := &bytes.Buffer{}
+
+	server, err := New(cfg, inputReader, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+	server.session.initialized.Store(true)
+
+	started := make(chan struct{})
+	registerFakeTool(server, "slow_tool", func(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
+		close(started)
+		<-ctx.Done()
+		// Completing "successfully" after cancellation must still be
+		// suppressed: no message may be sent for a cancelled request.
+		return mcp.NewSuccessResult("finished after cancel"), nil
+	})
+
+	done := make(chan error, 1)
+	go func() { done <- server.Run() }()
+
+	writeRequestLine(t, inputWriter, mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`7`),
+		Method:  "tools/call",
+		Params:  json.RawMessage(`{"name":"slow_tool"}`),
+	})
+
+	// The read loop must stay free while the tool call is in flight,
+	// otherwise the cancellation below could never be read in time.
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("tool call never started; requests are not dispatched concurrently")
+	}
+
+	writeRequestLine(t, inputWriter, mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		Method:  "notifications/cancelled",
+		Params:  json.RawMessage(`{"requestId":7,"reason":"user gave up"}`),
+	})
+	inputWriter.Close()
+
+	waitForRun(t, done)
+
+	// The server MUST NOT send further messages (including the response)
+	// for the cancelled request, and the notification itself gets none.
+	if got := output.String(); got != "" {
+		t.Errorf("expected no output for cancelled request, got %q", got)
+	}
+}
+
+func TestServer_Run_CancelUnknownID_Ignored(t *testing.T) {
+	cfg := testSetup(t)
+
+	// Unknown and malformed cancellations SHOULD be ignored: no error
+	// response, no output at all.
+	var input bytes.Buffer
+	for _, params := range []string{
+		`{"requestId":999,"reason":"never existed"}`,
+		`{"reason":"missing requestId"}`,
+		`{`,
+	} {
+		line, _ := json.Marshal(mcp.Request{
+			JSONRPC: mcp.JSONRPCVersion,
+			Method:  "notifications/cancelled",
+			Params:  json.RawMessage(params),
+		})
+		input.Write(append(line, '\n'))
+	}
+	output := &bytes.Buffer{}
+
+	server, err := New(cfg, &input, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+	if err := server.Run(); err != nil {
+		t.Fatalf("Run failed: %v", err)
+	}
+	if output.Len() != 0 {
+		t.Errorf("expected no output for ignored cancellations, got %q", output.String())
+	}
+}
+
+func TestServer_Run_CancelIDTypeMismatch(t *testing.T) {
+	cfg := testSetup(t)
+
+	inputReader, inputWriter := io.Pipe()
+	output := &bytes.Buffer{}
+
+	server, err := New(cfg, inputReader, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+	server.session.initialized.Store(true)
+
+	started := make(chan struct{})
+	release := make(chan struct{})
+	registerFakeTool(server, "slow_tool", func(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
+		close(started)
+		select {
+		case <-ctx.Done():
+			return mcp.NewErrorResult("cancelled"), nil
+		case <-release:
+			return mcp.NewSuccessResult("completed"), nil
+		}
+	})
+
+	done := make(chan error, 1)
+	go func() { done <- server.Run() }()
+
+	writeRequestLine(t, inputWriter, mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`7`),
+		Method:  "tools/call",
+		Params:  json.RawMessage(`{"name":"slow_tool"}`),
+	})
+	select {
+	case <-started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("tool call never started")
+	}
+
+	// The string id "7" must not match the in-flight number id 7.
+	writeRequestLine(t, inputWriter, mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		Method:  "notifications/cancelled",
+		Params:  json.RawMessage(`{"requestId":"7"}`),
+	})
+	close(release)
+	inputWriter.Close()
+
+	waitForRun(t, done)
+
+	var resp mcp.Response
+	if err := json.NewDecoder(output).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp.Error != nil {
+		t.Fatalf("unexpected error: %v", resp.Error)
+	}
+	resultJSON, _ := json.Marshal(resp.Result)
+	var result mcp.ToolsCallResult
+	if err := json.Unmarshal(resultJSON, &result); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+	if result.IsError {
+		t.Errorf("string requestId %q cancelled the number-id request: %v", "7", result.Content)
+	}
+}
+
+func TestServer_Run_ConcurrentRequests(t *testing.T) {
+	cfg := testSetup(t)
+
+	inputReader, inputWriter := io.Pipe()
+	output := &bytes.Buffer{}
+
+	server, err := New(cfg, inputReader, output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+	server.session.initialized.Store(true)
+
+	// first_tool refuses to finish until second_tool has started, so both
+	// responses arriving proves the requests interleaved.
+	secondStarted := make(chan struct{})
+	registerFakeTool(server, "first_tool", func(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
+		select {
+		case <-secondStarted:
+			return mcp.NewSuccessResult("first"), nil
+		case <-time.After(5 * time.Second):
+			return mcp.NewErrorResult("second request never started; dispatch is sequential"), nil
+		}
+	})
+	registerFakeTool(server, "second_tool", func(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
+		close(secondStarted)
+		return mcp.NewSuccessResult("second"), nil
+	})
+
+	done := make(chan error, 1)
+	go func() { done <- server.Run() }()
+
+	writeRequestLine(t, inputWriter, mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/call",
+		Params:  json.RawMessage(`{"name":"first_tool"}`),
+	})
+	writeRequestLine(t, inputWriter, mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`2`),
+		Method:  "tools/call",
+		Params:  json.RawMessage(`{"name":"second_tool"}`),
+	})
+	inputWriter.Close()
+
+	waitForRun(t, done)
+
+	// Both requests must respond; responses may arrive in either order.
+	lines := strings.Split(strings.TrimSpace(output.String()), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 responses, got %d: %q", len(lines), output.String())
+	}
+	seen := make(map[string]bool)
+	for _, line := range lines {
+		var resp mcp.Response
+		if err := json.Unmarshal([]byte(line), &resp); err != nil {
+			t.Fatalf("failed to decode response line %q: %v", line, err)
+		}
+		if resp.Error != nil {
+			t.Errorf("unexpected error for id %s: %v", resp.ID, resp.Error)
+		}
+		resultJSON, _ := json.Marshal(resp.Result)
+		var result mcp.ToolsCallResult
+		if err := json.Unmarshal(resultJSON, &result); err != nil {
+			t.Fatalf("failed to unmarshal result: %v", err)
+		}
+		if result.IsError {
+			t.Errorf("tool call id %s failed: %v", resp.ID, result.Content)
+		}
+		seen[string(resp.ID)] = true
+	}
+	for _, id := range []string{"1", "2"} {
+		if !seen[id] {
+			t.Errorf("no response for request id %s; got %v", id, seen)
+		}
+	}
+}
+
+func TestDispatcher_ContextCancellationAbortsToolCall(t *testing.T) {
+	cfg := testSetup(t)
+
+	// The HTTP transport cancels by closing the connection: r.Context()
+	// flows into Dispatch and from there into the tool call. This models
+	// that path at the Dispatcher level.
+	server, err := New(cfg, &bytes.Buffer{}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+	server.session.initialized.Store(true)
+
+	started := make(chan struct{})
+	registerFakeTool(server, "hang_tool", func(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error) {
+		close(started)
+		<-ctx.Done()
+		return nil, ctx.Err()
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		<-started
+		cancel()
+	}()
+
+	respCh := make(chan *mcp.Response, 1)
+	go func() {
+		respCh <- server.dispatcher.Dispatch(ctx, &mcp.Request{
+			JSONRPC: mcp.JSONRPCVersion,
+			ID:      json.RawMessage(`1`),
+			Method:  "tools/call",
+			Params:  json.RawMessage(`{"name":"hang_tool"}`),
+		}, server.session)
+	}()
+
+	select {
+	case resp := <-respCh:
+		if resp == nil {
+			t.Fatal("expected a response")
+		}
+		if resp.Error != nil {
+			t.Fatalf("unexpected protocol error: %v", resp.Error)
+		}
+		resultJSON, _ := json.Marshal(resp.Result)
+		var result mcp.ToolsCallResult
+		if err := json.Unmarshal(resultJSON, &result); err != nil {
+			t.Fatalf("failed to unmarshal result: %v", err)
+		}
+		if !result.IsError {
+			t.Error("expected isError result for a cancelled tool call")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Dispatch did not return after context cancellation; HTTP disconnects would not abort tool calls")
 	}
 }
 

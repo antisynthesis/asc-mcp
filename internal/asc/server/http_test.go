@@ -6,6 +6,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"io"
@@ -398,6 +399,364 @@ func TestHTTP_Auth_DoesNotGateHealthz(t *testing.T) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("status = %d, want 200", resp.StatusCode)
+	}
+}
+
+// modernHTTPParams builds a 2026-07-28 request params payload carrying
+// the required _meta keys plus any extra top-level fields.
+func modernHTTPParams(t *testing.T, version string, extra map[string]any) json.RawMessage {
+	t.Helper()
+	params := map[string]any{
+		"_meta": map[string]any{
+			mcp.MetaProtocolVersion:    version,
+			mcp.MetaClientCapabilities: map[string]any{},
+		},
+	}
+	for k, v := range extra {
+		params[k] = v
+	}
+	data, err := json.Marshal(params)
+	if err != nil {
+		t.Fatalf("marshal params: %v", err)
+	}
+	return data
+}
+
+func TestHTTP_Modern_DiscoverWithoutProtocolVersionHeader(t *testing.T) {
+	srv := newHTTPTestServer(t)
+	defer srv.Close()
+
+	// server/discover is the probe: it may precede version selection, so
+	// MCP-Protocol-Version is not required — but Mcp-Method still is.
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "server/discover",
+	}, map[string]string{MethodHeader: "server/discover"})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	out := decodeMCPResponse(t, resp)
+	if out.Error != nil {
+		t.Fatalf("unexpected error: %v", out.Error)
+	}
+	resultJSON, _ := json.Marshal(out.Result)
+	var dr mcp.DiscoverResult
+	if err := json.Unmarshal(resultJSON, &dr); err != nil {
+		t.Fatalf("decode result: %v", err)
+	}
+	if len(dr.SupportedVersions) == 0 {
+		t.Error("supportedVersions is empty")
+	}
+}
+
+func TestHTTP_Modern_ToolsListSessionless(t *testing.T) {
+	srv := newHTTPTestServer(t)
+	defer srv.Close()
+
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/list",
+		Params:  modernHTTPParams(t, mcp.LatestProtocolVersion, nil),
+	}, map[string]string{
+		ProtocolVersionHeader: mcp.LatestProtocolVersion,
+		MethodHeader:          "tools/list",
+	})
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	// Sessions are removed in 2026-07-28: the server must not mint one.
+	if got := resp.Header.Get(SessionHeader); got != "" {
+		t.Errorf("Mcp-Session-Id = %q, want none", got)
+	}
+	if got := resp.Header.Get(ProtocolVersionHeader); got != mcp.LatestProtocolVersion {
+		t.Errorf("MCP-Protocol-Version = %q, want %q", got, mcp.LatestProtocolVersion)
+	}
+	out := decodeMCPResponse(t, resp)
+	if out.Error != nil {
+		t.Fatalf("unexpected error: %v", out.Error)
+	}
+	resultJSON, _ := json.Marshal(out.Result)
+	var lr mcp.ToolsListResult
+	if err := json.Unmarshal(resultJSON, &lr); err != nil {
+		t.Fatalf("decode result: %v", err)
+	}
+	if lr.ResultType != mcp.ResultTypeComplete {
+		t.Errorf("resultType = %q, want %q", lr.ResultType, mcp.ResultTypeComplete)
+	}
+	if lr.TtlMs == nil {
+		t.Error("ttlMs missing from modern tools/list result")
+	}
+}
+
+func TestHTTP_Modern_IgnoresSessionHeader(t *testing.T) {
+	srv := newHTTPTestServer(t)
+	defer srv.Close()
+
+	// A bogus Mcp-Session-Id must be ignored, not validated: modern
+	// requests are stateless.
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/list",
+		Params:  modernHTTPParams(t, mcp.LatestProtocolVersion, nil),
+	}, map[string]string{
+		ProtocolVersionHeader: mcp.LatestProtocolVersion,
+		MethodHeader:          "tools/list",
+		SessionHeader:         "bogus-session-id",
+	})
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200 (session header ignored)", resp.StatusCode)
+	}
+	if got := resp.Header.Get(SessionHeader); got != "" {
+		t.Errorf("Mcp-Session-Id = %q, want none (never echoed)", got)
+	}
+}
+
+func TestHTTP_Modern_MethodHeaderMismatch(t *testing.T) {
+	srv := newHTTPTestServer(t)
+	defer srv.Close()
+
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/list",
+		Params:  modernHTTPParams(t, mcp.LatestProtocolVersion, nil),
+	}, map[string]string{
+		ProtocolVersionHeader: mcp.LatestProtocolVersion,
+		MethodHeader:          "tools/call",
+	})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", resp.StatusCode)
+	}
+	out := decodeMCPResponse(t, resp)
+	if out.Error == nil || out.Error.Code != mcp.ErrCodeHeaderMismatch {
+		t.Fatalf("error = %+v, want code %d", out.Error, mcp.ErrCodeHeaderMismatch)
+	}
+}
+
+func TestHTTP_Modern_MissingMethodHeader(t *testing.T) {
+	srv := newHTTPTestServer(t)
+	defer srv.Close()
+
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/list",
+		Params:  modernHTTPParams(t, mcp.LatestProtocolVersion, nil),
+	}, map[string]string{
+		ProtocolVersionHeader: mcp.LatestProtocolVersion,
+	})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", resp.StatusCode)
+	}
+	if got := resp.Header.Get(ProtocolVersionHeader); got != mcp.LatestProtocolVersion {
+		t.Errorf("%s = %q, want %q", ProtocolVersionHeader, got, mcp.LatestProtocolVersion)
+	}
+	out := decodeMCPResponse(t, resp)
+	if out.Error == nil || out.Error.Code != mcp.ErrCodeHeaderMismatch {
+		t.Fatalf("error = %+v, want code %d", out.Error, mcp.ErrCodeHeaderMismatch)
+	}
+}
+
+func TestHTTP_Modern_ToolsCallMissingNameHeader(t *testing.T) {
+	srv := newHTTPTestServer(t)
+	defer srv.Close()
+
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/call",
+		Params:  modernHTTPParams(t, mcp.LatestProtocolVersion, map[string]any{"name": "list_apps"}),
+	}, map[string]string{
+		ProtocolVersionHeader: mcp.LatestProtocolVersion,
+		MethodHeader:          "tools/call",
+	})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", resp.StatusCode)
+	}
+	out := decodeMCPResponse(t, resp)
+	if out.Error == nil || out.Error.Code != mcp.ErrCodeHeaderMismatch {
+		t.Fatalf("error = %+v, want code %d", out.Error, mcp.ErrCodeHeaderMismatch)
+	}
+}
+
+func TestHTTP_Modern_ToolsCallNameHeaderMatch(t *testing.T) {
+	srv := newHTTPTestServer(t)
+	defer srv.Close()
+
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/call",
+		Params:  modernHTTPParams(t, mcp.LatestProtocolVersion, map[string]any{"name": "list_apps"}),
+	}, map[string]string{
+		ProtocolVersionHeader: mcp.LatestProtocolVersion,
+		MethodHeader:          "tools/call",
+		NameHeader:            "list_apps",
+	})
+	// The call is dispatched: the API request itself fails (no real
+	// credentials), but that surfaces as an isError tool RESULT, which
+	// stays 200 per spec.
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	out := decodeMCPResponse(t, resp)
+	if out.Error != nil {
+		t.Fatalf("unexpected protocol error: %+v", out.Error)
+	}
+}
+
+func TestHTTP_Modern_NameHeaderBase64(t *testing.T) {
+	srv := newHTTPTestServer(t)
+	defer srv.Close()
+
+	encoded := "=?base64?" + base64.StdEncoding.EncodeToString([]byte("list_apps")) + "?="
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/call",
+		Params:  modernHTTPParams(t, mcp.LatestProtocolVersion, map[string]any{"name": "list_apps"}),
+	}, map[string]string{
+		ProtocolVersionHeader: mcp.LatestProtocolVersion,
+		MethodHeader:          "tools/call",
+		NameHeader:            encoded,
+	})
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("status = %d, want 200 (sentinel-encoded name accepted)", resp.StatusCode)
+	}
+}
+
+func TestHTTP_Modern_ProtocolVersionHeaderMismatch(t *testing.T) {
+	srv := newHTTPTestServer(t)
+	defer srv.Close()
+
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/list",
+		Params:  modernHTTPParams(t, mcp.LatestProtocolVersion, nil),
+	}, map[string]string{
+		ProtocolVersionHeader: "2025-06-18",
+		MethodHeader:          "tools/list",
+	})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", resp.StatusCode)
+	}
+	out := decodeMCPResponse(t, resp)
+	if out.Error == nil || out.Error.Code != mcp.ErrCodeHeaderMismatch {
+		t.Fatalf("error = %+v, want code %d", out.Error, mcp.ErrCodeHeaderMismatch)
+	}
+}
+
+func TestHTTP_Modern_UnsupportedProtocolVersion(t *testing.T) {
+	srv := newHTTPTestServer(t)
+	defer srv.Close()
+
+	// Modern-format request pinning a version the server does not accept
+	// for stateless service. Header matches body, so the dispatcher's
+	// -32022 comes back mapped to HTTP 400.
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "tools/list",
+		Params:  modernHTTPParams(t, "2024-11-05", nil),
+	}, map[string]string{
+		ProtocolVersionHeader: "2024-11-05",
+		MethodHeader:          "tools/list",
+	})
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", resp.StatusCode)
+	}
+	out := decodeMCPResponse(t, resp)
+	if out.Error == nil || out.Error.Code != mcp.ErrCodeUnsupportedProtocolVersion {
+		t.Fatalf("error = %+v, want code %d", out.Error, mcp.ErrCodeUnsupportedProtocolVersion)
+	}
+	dataJSON, _ := json.Marshal(out.Error.Data)
+	var data mcp.UnsupportedProtocolVersionData
+	if err := json.Unmarshal(dataJSON, &data); err != nil {
+		t.Fatalf("decode error data: %v", err)
+	}
+	if len(data.Supported) == 0 {
+		t.Error("error data.supported is empty")
+	}
+}
+
+func TestHTTP_Modern_UnknownMethod(t *testing.T) {
+	srv := newHTTPTestServer(t)
+	defer srv.Close()
+
+	// ping was removed in 2026-07-28; unknown RPC method maps to 404.
+	resp := postJSON(t, srv.URL+"/mcp", mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "ping",
+		Params:  modernHTTPParams(t, mcp.LatestProtocolVersion, nil),
+	}, map[string]string{
+		ProtocolVersionHeader: mcp.LatestProtocolVersion,
+		MethodHeader:          "ping",
+	})
+	if resp.StatusCode != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", resp.StatusCode)
+	}
+	out := decodeMCPResponse(t, resp)
+	if out.Error == nil || out.Error.Code != mcp.ErrCodeMethodNotFound {
+		t.Fatalf("error = %+v, want code %d", out.Error, mcp.ErrCodeMethodNotFound)
+	}
+}
+
+func TestDecodeHeaderValue(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      string
+		want    string
+		wantErr bool
+	}{
+		{name: "plain", in: "tools/list", want: "tools/list"},
+		{name: "empty", in: "", want: ""},
+		{name: "sentinel", in: "=?base64?bGlzdF9hcHBz?=", want: "list_apps"},
+		{name: "sentinel utf8", in: "=?base64?" + base64.StdEncoding.EncodeToString([]byte("outil-été")) + "?=", want: "outil-été"},
+		{name: "malformed base64", in: "=?base64?!!!?=", wantErr: true},
+		{name: "prefix only is verbatim", in: "=?base64?abc", want: "=?base64?abc"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := decodeHeaderValue(tt.in)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("decodeHeaderValue(%q) = %q, want error", tt.in, got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("decodeHeaderValue(%q): %v", tt.in, err)
+			}
+			if got != tt.want {
+				t.Errorf("decodeHeaderValue(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestStatusForModernError(t *testing.T) {
+	tests := []struct {
+		code int
+		want int
+	}{
+		{mcp.ErrCodeHeaderMismatch, http.StatusBadRequest},
+		{mcp.ErrCodeMissingClientCapability, http.StatusBadRequest},
+		{mcp.ErrCodeUnsupportedProtocolVersion, http.StatusBadRequest},
+		{mcp.ErrCodeInvalidParams, http.StatusBadRequest},
+		{mcp.ErrCodeMethodNotFound, http.StatusNotFound},
+		{mcp.ErrCodeInternal, http.StatusOK},
+	}
+	for _, tt := range tests {
+		if got := statusForModernError(tt.code); got != tt.want {
+			t.Errorf("statusForModernError(%d) = %d, want %d", tt.code, got, tt.want)
+		}
 	}
 }
 

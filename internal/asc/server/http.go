@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -34,8 +35,19 @@ const (
 	SessionHeader = "Mcp-Session-Id"
 
 	// ProtocolVersionHeader is the HTTP header that carries the
-	// negotiated MCP protocol version on every post-initialize request.
+	// negotiated MCP protocol version on every post-initialize request
+	// (legacy) or mirrors the body's _meta protocolVersion (2026-07-28).
 	ProtocolVersionHeader = "MCP-Protocol-Version"
+
+	// MethodHeader is the HTTP header that mirrors the JSON-RPC method
+	// on 2026-07-28 requests so intermediaries can route and authorize
+	// without parsing the body. Required on every modern POST.
+	MethodHeader = "Mcp-Method"
+
+	// NameHeader is the HTTP header that mirrors params.name on modern
+	// requests that target a named entity (tools/call, resources/read,
+	// prompts/get — of which this server implements only tools/call).
+	NameHeader = "Mcp-Name"
 
 	// MaxHTTPBodySize bounds the JSON-RPC request body the server is
 	// willing to read. Real MCP messages are tiny; this protects the
@@ -47,10 +59,14 @@ const (
 	sessionIdleTimeout = 30 * time.Minute
 )
 
-// HTTPServer is a Streamable HTTP transport for the MCP dispatcher,
-// matching the 2025-06-18 specification. One Dispatcher backs many
-// concurrent sessions; the session id is generated on initialize and
-// echoed in the Mcp-Session-Id response header.
+// HTTPServer is a Streamable HTTP transport for the MCP dispatcher.
+// It is dual-era: legacy (handshake, up to 2025-11-25) clients get the
+// session flow —
+// the session id is generated on initialize and echoed in the
+// Mcp-Session-Id response header — while 2026-07-28 clients, detected
+// per-request by the _meta protocolVersion in the body (or the
+// server/discover method), are served statelessly with no session ids
+// at all. One Dispatcher backs both eras.
 type HTTPServer struct {
 	dispatcher *Dispatcher
 
@@ -213,9 +229,12 @@ func newRequestID() string {
 // ServeHTTP implements the Streamable HTTP MCP transport on a single
 // endpoint. POST submits a JSON-RPC message and gets back either a
 // single JSON response or 202 Accepted (for notifications). DELETE
-// terminates a session. GET is reserved for the server-initiated SSE
-// stream which this server does not currently produce, so it returns
-// 405.
+// terminates a legacy session — a pure-2026-07-28 server would 405 it
+// along with GET (that revision removed sessions), but this dual-era
+// server retains it for legacy clients. GET is reserved for the
+// server-initiated SSE stream which this server does not currently
+// produce, so it returns 405 (which is also what 2026-07-28 mandates
+// for GET).
 func (h *HTTPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !h.checkOrigin(r) {
 		http.Error(w, "origin not allowed", http.StatusForbidden)
@@ -260,6 +279,22 @@ func (h *HTTPServer) handlePost(w http.ResponseWriter, r *http.Request) {
 	var req mcp.Request
 	if err := json.Unmarshal(body, &req); err != nil {
 		h.writeJSON(w, http.StatusBadRequest, errorResp(nil, mcp.ErrCodeParse, "Parse error", err.Error()))
+		return
+	}
+
+	// Era detection, mirroring the dispatcher: 2026-07-28 clients stamp
+	// a protocol version into params._meta on every request, and
+	// server/discover only exists on the modern revision. A malformed
+	// _meta cannot pick an era, so it stays on the legacy path (except
+	// for server/discover), where it is rejected by the session checks
+	// below or, once a session exists, by the dispatcher as Invalid
+	// params.
+	meta, metaErr := mcp.ParseRequestMeta(req.Params)
+	if metaErr != nil {
+		meta = &mcp.RequestMeta{}
+	}
+	if meta.ProtocolVersion != "" || req.Method == "server/discover" {
+		h.handleModernPost(w, r, &req, meta)
 		return
 	}
 
@@ -320,8 +355,111 @@ func (h *HTTPServer) handlePost(w http.ResponseWriter, r *http.Request) {
 	if isInit {
 		w.Header().Set(SessionHeader, sessID)
 	}
+	// Legacy responses advertise the preferred legacy handshake version;
+	// modern responses (handleModernPost) advertise 2026-07-28.
 	w.Header().Set(ProtocolVersionHeader, mcp.ProtocolVersion)
 	h.writeJSON(w, http.StatusOK, resp)
+}
+
+// handleModernPost serves a 2026-07-28-format POST. The modern revision
+// removed sessions entirely: the server must not mint or echo session
+// ids and must ignore any Mcp-Session-Id the client sends. Cross-request
+// state travels only in explicit request arguments (pagination cursors
+// are tool args here), so every request stands alone.
+func (h *HTTPServer) handleModernPost(w http.ResponseWriter, r *http.Request, req *mcp.Request, meta *mcp.RequestMeta) {
+	// Every modern response — including header-mismatch errors and the
+	// bodyless 202 for notifications — advertises the server's protocol
+	// revision.
+	w.Header().Set(ProtocolVersionHeader, mcp.LatestProtocolVersion)
+	// Mcp-Method is REQUIRED on every modern POST and must mirror the
+	// body's method so intermediaries can route without parsing JSON.
+	if hv, err := decodeHeaderValue(r.Header.Get(MethodHeader)); err != nil || hv != req.Method {
+		h.writeJSON(w, http.StatusBadRequest, errorResp(req.ID, mcp.ErrCodeHeaderMismatch, "Header mismatch", MethodHeader))
+		return
+	}
+	// MCP-Protocol-Version must mirror the body's _meta protocolVersion.
+	// The one exception is server/discover: it is the version-discovery
+	// probe and may precede version selection, so the header is not
+	// enforced there. (The lenient missing-header treatment on the
+	// legacy path is separate and unchanged.)
+	if req.Method != "server/discover" {
+		if hv, err := decodeHeaderValue(r.Header.Get(ProtocolVersionHeader)); err != nil || hv != meta.ProtocolVersion {
+			h.writeJSON(w, http.StatusBadRequest, errorResp(req.ID, mcp.ErrCodeHeaderMismatch, "Header mismatch", ProtocolVersionHeader))
+			return
+		}
+	}
+	// Mcp-Name is REQUIRED on the methods that target a named entity
+	// (tools/call here; resources/read and prompts/get are not
+	// implemented) and must mirror params.name.
+	if req.Method == "tools/call" {
+		var params struct {
+			Name string `json:"name"`
+		}
+		// Malformed params simply fail the comparison below; the body
+		// itself is validated by the dispatcher.
+		_ = json.Unmarshal(req.Params, &params)
+		if hv, err := decodeHeaderValue(r.Header.Get(NameHeader)); err != nil || hv == "" || hv != params.Name {
+			h.writeJSON(w, http.StatusBadRequest, errorResp(req.ID, mcp.ErrCodeHeaderMismatch, "Header mismatch", NameHeader))
+			return
+		}
+	}
+
+	// Dispatch with a throwaway session: the Dispatcher signature wants
+	// one, but the modern path never consults initialization state.
+	// r.Context() is cancelled when the client goes away, and per spec
+	// closing the response stream IS the cancellation signal on HTTP —
+	// the context already flows into the per-call tool timeout, so no
+	// extra notifications/cancelled plumbing is needed.
+	resp := h.dispatcher.Dispatch(r.Context(), req, NewSession())
+
+	// Notifications produce no response: 202 Accepted with no body.
+	if resp == nil {
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
+	// Clients MUST accept either JSON or SSE responses; this server
+	// streams nothing, so a single application/json object is compliant.
+	status := http.StatusOK
+	if resp.Error != nil {
+		status = statusForModernError(resp.Error.Code)
+	}
+	h.writeJSON(w, status, resp)
+}
+
+// decodeHeaderValue decodes the 2026-07-28 sentinel encoding for header
+// values that cannot travel as ASCII: `=?base64?<base64-of-UTF-8>?=`.
+// Values without the sentinel are returned verbatim. Servers MUST
+// decode before comparing to the body; tool names here are snake_case
+// ASCII so the plain path dominates, but the decode path is mandatory.
+func decodeHeaderValue(v string) (string, error) {
+	const prefix, suffix = "=?base64?", "?="
+	if strings.HasPrefix(v, prefix) && strings.HasSuffix(v, suffix) && len(v) >= len(prefix)+len(suffix) {
+		decoded, err := base64.StdEncoding.DecodeString(v[len(prefix) : len(v)-len(suffix)])
+		if err != nil {
+			return "", err
+		}
+		return string(decoded), nil
+	}
+	return v, nil
+}
+
+// statusForModernError maps a modern JSON-RPC error code to the HTTP
+// status the 2026-07-28 spec requires. Tool-call results carrying
+// isError:true are results, not errors, and never reach this mapping —
+// they stay 200. The legacy path keeps its always-200 behavior for
+// dispatched responses.
+func statusForModernError(code int) int {
+	switch code {
+	case mcp.ErrCodeHeaderMismatch,
+		mcp.ErrCodeMissingClientCapability,
+		mcp.ErrCodeUnsupportedProtocolVersion,
+		mcp.ErrCodeInvalidParams:
+		return http.StatusBadRequest
+	case mcp.ErrCodeMethodNotFound:
+		return http.StatusNotFound
+	default:
+		return http.StatusOK
+	}
 }
 
 func (h *HTTPServer) handleDelete(w http.ResponseWriter, r *http.Request) {
