@@ -3,6 +3,7 @@ package server
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
 // metrics is the Prometheus surface for the HTTP transport. It is
@@ -28,8 +29,8 @@ func newMetrics() *metrics {
 	reg := prometheus.NewRegistry()
 	// Standard Go runtime + process collectors so /metrics includes the
 	// usual go_* and process_* time series operators expect.
-	reg.MustRegister(prometheus.NewGoCollector())
-	reg.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
+	reg.MustRegister(collectors.NewGoCollector())
+	reg.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 
 	m := &metrics{registry: reg}
 	m.httpRequests = prometheus.NewCounterVec(

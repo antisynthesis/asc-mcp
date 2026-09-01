@@ -78,12 +78,3 @@ func stripEmpty(in []string) []string {
 	}
 	return out
 }
-
-// withLimit is a convenience for callers that only need to set Limit.
-// It avoids constructing a one-field ListOptions inline at every call site.
-func withLimit(limit int) *ListOptions {
-	if limit <= 0 {
-		return nil
-	}
-	return &ListOptions{Limit: limit}
-}

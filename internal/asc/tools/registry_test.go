@@ -21,53 +21,6 @@ import (
 	"github.com/antisynthesis/asc-mcp/internal/asc/mcp"
 )
 
-// testClient creates a test API client with a mock server.
-func testClient(t *testing.T, handler http.Handler) *api.Client {
-	t.Helper()
-
-	server := httptest.NewServer(handler)
-	t.Cleanup(server.Close)
-
-	// Create test key
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatalf("failed to generate key: %v", err)
-	}
-
-	keyBytes, err := x509.MarshalPKCS8PrivateKey(privateKey)
-	if err != nil {
-		t.Fatalf("failed to marshal key: %v", err)
-	}
-
-	pemBlock := &pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: keyBytes,
-	}
-
-	tmpDir := t.TempDir()
-	keyPath := filepath.Join(tmpDir, "test_key.p8")
-	if err := os.WriteFile(keyPath, pem.EncodeToMemory(pemBlock), 0600); err != nil {
-		t.Fatalf("failed to write key: %v", err)
-	}
-
-	client, err := api.NewClient("test-issuer", "TESTKEY123", keyPath)
-	if err != nil {
-		t.Fatalf("failed to create client: %v", err)
-	}
-
-	// Use reflection or a test helper to set the baseURL
-	// Since we can't access private fields, we'll create a wrapper
-	return client
-}
-
-// mockHandler creates a simple mock HTTP handler.
-func mockHandler(response interface{}) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	}
-}
-
 func TestNewRegistry(t *testing.T) {
 	// Create minimal mock server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -823,11 +776,6 @@ func BenchmarkNewRegistry(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = NewRegistry(client)
 	}
-}
-
-// Helper to create a mock client for tool handler testing
-type mockClient struct {
-	handler func(ctx context.Context, method, path string) ([]byte, error)
 }
 
 // Context timeout test

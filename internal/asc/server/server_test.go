@@ -55,39 +55,6 @@ func testSetup(t *testing.T) *config.Config {
 	}
 }
 
-// sendRequest sends a JSON-RPC request and returns the response.
-func sendRequest(t *testing.T, s *Server, req mcp.Request) mcp.Response {
-	t.Helper()
-
-	// Create pipes for communication
-	inputReader, inputWriter := io.Pipe()
-	outputReader, outputWriter := io.Pipe()
-
-	// Replace server's reader and writer
-	s.reader = nil // Will be set by writing to inputWriter
-	s.writer = outputWriter
-
-	// Send request in goroutine
-	go func() {
-		data, _ := json.Marshal(req)
-		data = append(data, '\n')
-		inputWriter.Write(data)
-		inputWriter.Close()
-	}()
-
-	// Read response
-	var resp mcp.Response
-	decoder := json.NewDecoder(outputReader)
-	if err := decoder.Decode(&resp); err != nil && err != io.EOF {
-		t.Fatalf("failed to decode response: %v", err)
-	}
-
-	inputReader.Close()
-	outputWriter.Close()
-
-	return resp
-}
-
 func TestNew(t *testing.T) {
 	cfg := testSetup(t)
 
