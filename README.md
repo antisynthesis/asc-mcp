@@ -63,6 +63,9 @@ export ASC_PRIVATE_KEY_PATH="/path/to/AuthKey_XXXXXXXXXX.p8"
 
 See `config/config.sample.env` for a template.
 
+[SETUP.md](SETUP.md) walks through installation and client configuration for
+Claude Desktop, Claude Code, and Codex, including the HTTP transport.
+
 ## Building
 
 ```bash
