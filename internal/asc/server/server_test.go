@@ -485,6 +485,56 @@ func TestServer_SendError(t *testing.T) {
 	}
 }
 
+// TestServer_Run_PipelinedHandshake pins the ordering guarantee the
+// concurrent read loop must preserve: a client may write initialize,
+// notifications/initialized and a first request back to back without
+// waiting, and the gated request must still see an initialized session.
+func TestServer_Run_PipelinedHandshake(t *testing.T) {
+	cfg := testSetup(t)
+
+	var in bytes.Buffer
+	writeRequestLine(t, &in, mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`1`),
+		Method:  "initialize",
+		Params:  json.RawMessage(`{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}`),
+	})
+	writeRequestLine(t, &in, mcp.Request{JSONRPC: mcp.JSONRPCVersion, Method: "notifications/initialized"})
+	writeRequestLine(t, &in, mcp.Request{
+		JSONRPC: mcp.JSONRPCVersion,
+		ID:      json.RawMessage(`2`),
+		Method:  "tools/list",
+	})
+
+	output := &bytes.Buffer{}
+	server, err := New(cfg, bytes.NewReader(in.Bytes()), output)
+	if err != nil {
+		t.Fatalf("failed to create server: %v", err)
+	}
+	if err := server.Run(); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+
+	dec := json.NewDecoder(output)
+	seen := false
+	for {
+		var resp mcp.Response
+		if err := dec.Decode(&resp); err != nil {
+			break
+		}
+		if string(resp.ID) != "2" {
+			continue
+		}
+		seen = true
+		if resp.Error != nil {
+			t.Fatalf("tools/list after pipelined handshake: %+v", resp.Error)
+		}
+	}
+	if !seen {
+		t.Fatal("no response for the pipelined tools/list request")
+	}
+}
+
 func TestServer_Run_ParseError(t *testing.T) {
 	cfg := testSetup(t)
 

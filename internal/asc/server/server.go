@@ -136,6 +136,15 @@ func (s *Server) Run() error {
 			continue
 		}
 
+		// initialize establishes the session state every later request
+		// is gated on, so it runs inline too: a client that pipelines
+		// the handshake without waiting for the response would otherwise
+		// race its own initialize and see "Not initialized".
+		if req.Method == "initialize" {
+			s.handleRequest(&req)
+			continue
+		}
+
 		sem <- struct{}{}
 		wg.Add(1)
 		go func(r *mcp.Request) {
