@@ -36,7 +36,7 @@ upload flow for screenshots, previews, and review attachments:
 
 ## Prerequisites
 
-- Go 1.23 or later
+- Go 1.26.7 or later (older toolchains fetch it automatically)
 - App Store Connect API credentials
 
 ## Getting App Store Connect API Credentials
