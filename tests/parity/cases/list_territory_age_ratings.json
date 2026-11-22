@@ -1,0 +1,17 @@
+[
+  {
+    "name": "limit-over-max",
+    "args": {
+      "app_info_id": "ai1",
+      "limit": 999,
+      "fields": {
+        "territoryAgeRatings": [
+          "appStoreAgeRating"
+        ]
+      }
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

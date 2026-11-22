@@ -1,0 +1,9 @@
+[
+  {
+    "name": "not-interruptable",
+    "args": {
+      "tester_id": "t1",
+      "interruptable": false
+    }
+  }
+]

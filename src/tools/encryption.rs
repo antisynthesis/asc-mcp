@@ -185,7 +185,26 @@ async fn handle_list_encryption_declarations(c: Arc<Client>, args: Args) -> Hand
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListEncryptionDeclarations from internal/asc/tools/encryption.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_encryption_declarations(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list encryption declarations: {e}"))),
+    };
+
+    Ok(list_result(&format_encryption_declarations(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetEncryptionDeclaration`.
@@ -195,7 +214,21 @@ async fn handle_get_encryption_declaration(c: Arc<Client>, args: Args) -> Handle
         declaration_id: String => "declaration_id";
     }
     }
-    todo!("port handleGetEncryptionDeclaration from internal/asc/tools/encryption.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.declaration_id.is_empty() {
+        return Ok(error_result("declaration_id is required"));
+    }
+
+    let resp = match c.get_app_encryption_declaration(&params.declaration_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get encryption declaration: {e}"))),
+    };
+
+    Ok(data_result(&format_encryption_declaration(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateEncryptionDeclaration`.
@@ -212,7 +245,39 @@ async fn handle_create_encryption_declaration(c: Arc<Client>, args: Args) -> Han
         code_value: String => "code_value";
     }
     }
-    todo!("port handleCreateEncryptionDeclaration from internal/asc/tools/encryption.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let req = AppEncryptionDeclarationCreateRequest {
+        data: AppEncryptionDeclarationCreateData {
+            type_: "appEncryptionDeclarations".into(),
+            attributes: AppEncryptionDeclarationCreateAttributes {
+                uses_encryption: params.uses_encryption,
+                exempt: params.exempt,
+                contains_proprietary_cryptography: params.contains_proprietary_cryptography,
+                contains_third_party_cryptography: params.contains_third_party_cryptography,
+                available_on_french_store: params.available_on_french_store,
+                app_description: params.app_description.clone(),
+                code_value: params.code_value.clone(),
+            },
+            relationships: AppEncryptionDeclarationCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+            },
+        },
+    };
+
+    let resp = match c.create_app_encryption_declaration(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create encryption declaration: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created encryption declaration: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleAssignBuildToEncryptionDeclaration`.
@@ -223,6 +288,62 @@ async fn handle_assign_build_to_encryption_declaration(c: Arc<Client>, args: Arg
         build_id: String => "build_id";
     }
     }
-    todo!("port handleAssignBuildToEncryptionDeclaration from internal/asc/tools/encryption.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.declaration_id.is_empty() {
+        return Ok(error_result("declaration_id is required"));
+    }
+    if params.build_id.is_empty() {
+        return Ok(error_result("build_id is required"));
+    }
+
+    if let Err(e) = c.assign_build_to_encryption_declaration(&params.declaration_id, &params.build_id).await {
+        return Ok(error_result(format!("Failed to assign build to encryption declaration: {e}")));
+    }
+
+    Ok(CallToolResult::success("Build assigned to encryption declaration successfully"))
 }
 
+/// Ported from `formatEncryptionDeclarations`.
+fn format_encryption_declarations(declarations: &[AppEncryptionDeclaration]) -> String {
+    if declarations.is_empty() {
+        return "No encryption declarations found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} encryption declarations:\n\n", declarations.len());
+
+    for decl in declarations {
+        sb.push_str(&format_encryption_declaration(decl));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatEncryptionDeclaration`.
+fn format_encryption_declaration(decl: &AppEncryptionDeclaration) -> String {
+    let a = &decl.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", decl.id);
+    let _ = write!(sb, "Uses Encryption: {}\n", a.uses_encryption);
+    let _ = write!(sb, "Exempt: {}\n", a.exempt);
+    let _ = write!(sb, "Contains Proprietary Cryptography: {}\n", a.contains_proprietary_cryptography);
+    let _ = write!(sb, "Contains Third-Party Cryptography: {}\n", a.contains_third_party_cryptography);
+    let _ = write!(sb, "Available on French Store: {}\n", a.available_on_french_store);
+    let _ = write!(sb, "Platform: {}\n", a.platform);
+    let _ = write!(sb, "State: {}\n", a.app_encryption_declaration_state);
+    if !a.app_description.is_empty() {
+        let _ = write!(sb, "Description: {}\n", a.app_description);
+    }
+    if !a.code_value.is_empty() {
+        let _ = write!(sb, "CCATS Code: {}\n", a.code_value);
+    }
+    if !a.document_url.is_empty() {
+        let _ = write!(sb, "Document URL: {}\n", a.document_url);
+    }
+    sb
+}

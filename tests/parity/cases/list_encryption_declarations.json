@@ -1,0 +1,19 @@
+[
+  {
+    "name": "app-filter-and-filter",
+    "args": {
+      "app_id": "a1",
+      "filter": {
+        "app": [
+          "other"
+        ],
+        "platform": [
+          "IOS"
+        ]
+      }
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

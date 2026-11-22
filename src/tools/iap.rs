@@ -215,7 +215,30 @@ async fn handle_list_in_app_purchases(c: Arc<Client>, args: Args) -> HandlerResu
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListInAppPurchases from internal/asc/tools/iap.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_in_app_purchases(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list in-app purchases: {e}"))),
+    };
+
+    Ok(list_result(&format_in_app_purchases(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetInAppPurchase`.
@@ -225,7 +248,21 @@ async fn handle_get_in_app_purchase(c: Arc<Client>, args: Args) -> HandlerResult
         iap_id: String => "iap_id";
     }
     }
-    todo!("port handleGetInAppPurchase from internal/asc/tools/iap.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.iap_id.is_empty() {
+        return Ok(error_result("iap_id is required"));
+    }
+
+    let resp = match c.get_in_app_purchase(&params.iap_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get in-app purchase: {e}"))),
+    };
+
+    Ok(data_result(&format_in_app_purchase(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateInAppPurchase`.
@@ -240,7 +277,52 @@ async fn handle_create_in_app_purchase(c: Arc<Client>, args: Args) -> HandlerRes
         family_sharable: bool => "family_sharable";
     }
     }
-    todo!("port handleCreateInAppPurchase from internal/asc/tools/iap.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+    if params.name.is_empty() {
+        return Ok(error_result("name is required"));
+    }
+    if params.product_id.is_empty() {
+        return Ok(error_result("product_id is required"));
+    }
+    if params.iap_type.is_empty() {
+        return Ok(error_result("iap_type is required"));
+    }
+
+    let req = InAppPurchaseCreateRequest {
+        data: InAppPurchaseCreateData {
+            type_: "inAppPurchases".into(),
+            attributes: InAppPurchaseCreateAttributes {
+                name: params.name.clone(),
+                product_id: params.product_id.clone(),
+                in_app_purchase_type: params.iap_type.clone(),
+                review_note: params.review_note.clone(),
+                family_sharable: params.family_sharable,
+                ..Default::default()
+            },
+            relationships: InAppPurchaseCreateRelationships {
+                app: RelationshipData {
+                    data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_in_app_purchase(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create in-app purchase: {e}"))),
+    };
+
+    Ok(data_result(
+        &format!("Created in-app purchase: {} (ID: {})", resp.data.attributes.name, resp.data.id),
+        &resp.data,
+    ))
 }
 
 /// Ported from `Registry.handleUpdateInAppPurchase`.
@@ -253,7 +335,34 @@ async fn handle_update_in_app_purchase(c: Arc<Client>, args: Args) -> HandlerRes
         family_sharable: Option<bool> => "family_sharable";
     }
     }
-    todo!("port handleUpdateInAppPurchase from internal/asc/tools/iap.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.iap_id.is_empty() {
+        return Ok(error_result("iap_id is required"));
+    }
+
+    let req = InAppPurchaseUpdateRequest {
+        data: InAppPurchaseUpdateData {
+            type_: "inAppPurchases".into(),
+            id: params.iap_id.clone(),
+            attributes: InAppPurchaseUpdateAttributes {
+                name: params.name.clone(),
+                review_note: params.review_note.clone(),
+                family_sharable: params.family_sharable,
+                ..Default::default()
+            },
+        },
+    };
+
+    let resp = match c.update_in_app_purchase(&params.iap_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update in-app purchase: {e}"))),
+    };
+
+    Ok(data_result(&format!("Updated in-app purchase: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteInAppPurchase`.
@@ -263,6 +372,50 @@ async fn handle_delete_in_app_purchase(c: Arc<Client>, args: Args) -> HandlerRes
         iap_id: String => "iap_id";
     }
     }
-    todo!("port handleDeleteInAppPurchase from internal/asc/tools/iap.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.iap_id.is_empty() {
+        return Ok(error_result("iap_id is required"));
+    }
+
+    if let Err(e) = c.delete_in_app_purchase(&params.iap_id).await {
+        return Ok(error_result(format!("Failed to delete in-app purchase: {e}")));
+    }
+
+    Ok(CallToolResult::success("In-app purchase deleted successfully"))
 }
 
+/// Ported from `formatInAppPurchases`.
+fn format_in_app_purchases(iaps: &[InAppPurchase]) -> String {
+    if iaps.is_empty() {
+        return "No in-app purchases found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} in-app purchases:\n\n", iaps.len());
+
+    for iap in iaps {
+        sb.push_str(&format_in_app_purchase(iap));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatInAppPurchase`.
+fn format_in_app_purchase(iap: &InAppPurchase) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", iap.id);
+    let _ = write!(sb, "Name: {}\n", iap.attributes.name);
+    let _ = write!(sb, "Product ID: {}\n", iap.attributes.product_id);
+    let _ = write!(sb, "Type: {}\n", iap.attributes.in_app_purchase_type);
+    let _ = write!(sb, "State: {}\n", iap.attributes.state);
+    let _ = write!(sb, "Family Sharable: {}\n", iap.attributes.family_sharable);
+    if !iap.attributes.review_note.is_empty() {
+        let _ = write!(sb, "Review Note: {}\n", iap.attributes.review_note);
+    }
+    sb
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "name": "not-sharable",
+    "args": {
+      "iap_id": "i1",
+      "family_sharable": false
+    }
+  }
+]
