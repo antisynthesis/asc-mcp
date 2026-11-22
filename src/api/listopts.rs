@@ -76,4 +76,52 @@ mod tests {
         o.apply(&mut q);
         assert_eq!(q.encode(), "filter%5Bplatform%5D=IOS%2CMAC_OS&include=app&limit=25&sort=-createdDate");
     }
+
+    fn strings(v: &[&str]) -> GoSlice<String> {
+        v.iter().map(|s| s.to_string()).collect()
+    }
+
+    // Go: TestListOptions_Apply_Empty (Go's nil receiver is Option::None
+    // at the call sites, which skip apply).
+    #[test]
+    fn apply_empty() {
+        let mut q = Values::new();
+        ListOptions::default().apply(&mut q);
+        assert!(q.is_empty(), "empty opts should write nothing, got {}", q.encode());
+    }
+
+    // Go: TestListOptions_Apply_AllFields
+    #[test]
+    fn apply_all_fields() {
+        let mut o = ListOptions { limit: 25, ..Default::default() };
+        o.filter.insert("platform", strings(&["IOS", "MAC_OS"]));
+        o.filter.insert("appStoreState", strings(&["READY_FOR_SALE"]));
+        o.sort = strings(&["-uploadedDate", "name"]);
+        o.fields.insert("apps", strings(&["name", "bundleId"]));
+        o.include = strings(&["builds", "appStoreVersions"]);
+        let mut q = Values::new();
+        o.apply(&mut q);
+        assert_eq!(q.get("limit"), "25");
+        assert_eq!(q.get("filter[platform]"), "IOS,MAC_OS");
+        assert_eq!(q.get("filter[appStoreState]"), "READY_FOR_SALE");
+        assert_eq!(q.get("sort"), "-uploadedDate,name");
+        assert_eq!(q.get("fields[apps]"), "name,bundleId");
+        assert_eq!(q.get("include"), "builds,appStoreVersions");
+    }
+
+    // Go: TestListOptions_StripsEmptyValues
+    #[test]
+    fn strips_empty_values() {
+        let mut o = ListOptions::default();
+        o.filter.insert("x", strings(&["", "  ", "real"]));
+        o.filter.insert("y", strings(&[""]));
+        o.sort = strings(&["", " ", "field"]);
+        o.include = strings(&[""]);
+        let mut q = Values::new();
+        o.apply(&mut q);
+        assert_eq!(q.get("filter[x]"), "real");
+        assert!(!q.has("filter[y]"), "filter[y] should be absent when all values empty");
+        assert_eq!(q.get("sort"), "field");
+        assert!(!q.has("include"), "include should be absent when all values empty");
+    }
 }
