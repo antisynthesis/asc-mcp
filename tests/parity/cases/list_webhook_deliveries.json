@@ -1,0 +1,14 @@
+[
+  {
+    "webhook_id": "w1",
+    "filter": {
+      "deliveryState": [
+        "FAILED"
+      ]
+    },
+    "include": [
+      "event"
+    ],
+    "limit": 3
+  }
+]

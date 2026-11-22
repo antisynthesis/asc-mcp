@@ -1,0 +1,19 @@
+[
+  {
+    "vendor_number": "8",
+    "region_code": "US",
+    "report_type": "FINANCIAL",
+    "report_date": "2024-01"
+  },
+  {
+    "name": "missing-date",
+    "args": {
+      "vendor_number": "8",
+      "region_code": "US",
+      "report_type": "FINANCIAL"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

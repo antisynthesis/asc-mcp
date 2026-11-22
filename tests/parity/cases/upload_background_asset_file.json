@@ -1,0 +1,47 @@
+[
+  {
+    "version_id": "v1",
+    "file_name": "Manifest.plist",
+    "asset_type": "MANIFEST",
+    "file_data_base64": "$B64"
+  },
+  {
+    "version_id": "v1",
+    "file_name": "pack.aar",
+    "file_path": "$FILE"
+  },
+  {
+    "name": "both-sources",
+    "args": {
+      "version_id": "v1",
+      "file_name": "f",
+      "file_path": "$FILE",
+      "file_data_base64": "$B64"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "bad-b64",
+    "args": {
+      "version_id": "v1",
+      "file_name": "f",
+      "file_data_base64": "!!!"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "missing-file",
+    "args": {
+      "version_id": "v1",
+      "file_name": "f",
+      "file_path": "/nonexistent/x.bin"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

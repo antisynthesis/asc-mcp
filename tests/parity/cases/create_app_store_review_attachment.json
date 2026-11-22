@@ -1,0 +1,18 @@
+[
+  {
+    "name": "zero-size",
+    "args": {
+      "review_detail_id": "r",
+      "file_name": "f",
+      "file_size": 0
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "review_detail_id": "r",
+    "file_name": "f.png",
+    "file_size": 12345
+  }
+]

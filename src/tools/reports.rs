@@ -105,7 +105,43 @@ async fn handle_get_sales_report(c: Arc<Client>, args: Args) -> HandlerResult {
         report_date: String => "report_date";
     }
     }
-    todo!("port handleGetSalesReport from internal/asc/tools/reports.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.vendor_number.is_empty() {
+        return Ok(error_result("vendor_number is required"));
+    }
+    if params.report_type.is_empty() {
+        return Ok(error_result("report_type is required"));
+    }
+    if params.report_sub_type.is_empty() {
+        return Ok(error_result("report_sub_type is required"));
+    }
+    if params.frequency.is_empty() {
+        return Ok(error_result("frequency is required"));
+    }
+    if params.report_date.is_empty() {
+        return Ok(error_result("report_date is required"));
+    }
+
+    let data = match c
+        .get_sales_report(&params.vendor_number, &params.report_type, &params.report_sub_type, &params.frequency, &params.report_date)
+        .await
+    {
+        Ok(d) => d,
+        Err(e) => return Ok(error_result(format!("Failed to get sales report: {e}"))),
+    };
+
+    // Sales reports are typically gzip-compressed TSV files
+    let mut text = format!(
+        "Sales report downloaded ({} bytes). Data is gzip-compressed TSV format.\n\nFirst 1000 bytes:\n",
+        data.len()
+    )
+    .into_bytes();
+    text.extend_from_slice(&truncate_bytes(&data, 1000));
+    Ok(CallToolResult::success(go_string(&text)))
 }
 
 /// Ported from `Registry.handleGetFinanceReport`.
@@ -118,6 +154,95 @@ async fn handle_get_finance_report(c: Arc<Client>, args: Args) -> HandlerResult 
         report_date: String => "report_date";
     }
     }
-    todo!("port handleGetFinanceReport from internal/asc/tools/reports.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.vendor_number.is_empty() {
+        return Ok(error_result("vendor_number is required"));
+    }
+    if params.region_code.is_empty() {
+        return Ok(error_result("region_code is required"));
+    }
+    if params.report_type.is_empty() {
+        return Ok(error_result("report_type is required"));
+    }
+    if params.report_date.is_empty() {
+        return Ok(error_result("report_date is required"));
+    }
+
+    let data = match c
+        .get_finance_report(&params.vendor_number, &params.region_code, &params.report_type, &params.report_date)
+        .await
+    {
+        Ok(d) => d,
+        Err(e) => return Ok(error_result(format!("Failed to get finance report: {e}"))),
+    };
+
+    // Finance reports are typically gzip-compressed TSV files
+    let mut text = format!(
+        "Finance report downloaded ({} bytes). Data is gzip-compressed TSV format.\n\nFirst 1000 bytes:\n",
+        data.len()
+    )
+    .into_bytes();
+    text.extend_from_slice(&truncate_bytes(&data, 1000));
+    Ok(CallToolResult::success(go_string(&text)))
 }
 
+/// Ported from `truncateString`, on the raw bytes of a Go string: slices at
+/// a byte offset (which may split a UTF-8 sequence, as Go's `s[:maxLen]`
+/// does).
+fn truncate_bytes(s: &[u8], max_len: usize) -> Vec<u8> {
+    if s.len() <= max_len {
+        return s.to_vec();
+    }
+    let mut out = s[..max_len].to_vec();
+    out.extend_from_slice(b"...");
+    out
+}
+
+/// Converts Go string bytes to the text Go's JSON encoder emits for them:
+/// every byte that does not start a valid UTF-8 sequence becomes one
+/// U+FFFD (Go's `utf8.DecodeRuneInString` reports width 1 for invalid
+/// input), unlike `String::from_utf8_lossy`, which folds a truncated
+/// sequence into a single replacement character.
+pub(super) fn go_string(b: &[u8]) -> String {
+    let mut out = String::with_capacity(b.len());
+    let mut rest = b;
+    while !rest.is_empty() {
+        match std::str::from_utf8(rest) {
+            Ok(s) => {
+                out.push_str(s);
+                break;
+            }
+            Err(e) => {
+                let valid = e.valid_up_to();
+                out.push_str(std::str::from_utf8(&rest[..valid]).unwrap_or_default());
+                out.push('\u{FFFD}');
+                rest = &rest[valid + 1..];
+            }
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn go_string_replaces_each_invalid_byte() {
+        assert_eq!(go_string(b"ab"), "ab");
+        assert_eq!(go_string(&[0x1f, 0x8b, 0x08]), "\u{1f}\u{FFFD}\u{8}");
+        // A truncated 3-byte sequence is two replacement characters in Go.
+        assert_eq!(go_string(&[b'x', 0xe2, 0x82]), "x\u{FFFD}\u{FFFD}");
+        assert_eq!(go_string("é".as_bytes()), "é");
+    }
+
+    #[test]
+    fn truncate_bytes_matches_go() {
+        assert_eq!(truncate_bytes(b"abc", 3), b"abc");
+        assert_eq!(truncate_bytes(b"abcd", 3), b"abc...");
+    }
+}

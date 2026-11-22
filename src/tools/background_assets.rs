@@ -386,7 +386,24 @@ async fn handle_list_background_assets(c: Arc<Client>, args: Args) -> HandlerRes
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListBackgroundAssets from internal/asc/tools/background_assets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &GoMap::nil(), &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_background_assets(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list background assets: {e}"))),
+    };
+
+    Ok(list_result(&format_background_assets(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetBackgroundAsset`.
@@ -397,7 +414,22 @@ async fn handle_get_background_asset(c: Arc<Client>, args: Args) -> HandlerResul
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleGetBackgroundAsset from internal/asc/tools/background_assets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.background_asset_id.is_empty() {
+        return Ok(error_result("background_asset_id is required"));
+    }
+
+    let opts = list_opts(0, &GoMap::nil(), &GoSlice::nil(), &GoMap::nil(), &params.include);
+    let resp = match c.get_background_asset(&params.background_asset_id, opts.as_ref()).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get background asset: {e}"))),
+    };
+
+    Ok(data_result(&format_background_asset(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateBackgroundAsset`.
@@ -408,7 +440,42 @@ async fn handle_create_background_asset(c: Arc<Client>, args: Args) -> HandlerRe
         asset_pack_identifier: String => "asset_pack_identifier";
     }
     }
-    todo!("port handleCreateBackgroundAsset from internal/asc/tools/background_assets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    if params.asset_pack_identifier.is_empty() {
+        return Ok(error_result("asset_pack_identifier is required"));
+    }
+
+    let req = BackgroundAssetCreateRequest {
+        data: BackgroundAssetCreateData {
+            type_: "backgroundAssets".into(),
+            attributes: BackgroundAssetCreateAttributes { asset_pack_identifier: params.asset_pack_identifier.clone() },
+            relationships: BackgroundAssetCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+            },
+        },
+    };
+
+    let resp = match c.create_background_asset(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create background asset: {e}"))),
+    };
+
+    Ok(data_result(
+        &format!(
+            "Created background asset:\n{}\nNext, call create_background_asset_version with background_asset_id={} to open a version for upload.",
+            format_background_asset(&resp.data),
+            resp.data.id
+        ),
+        &resp.data,
+    ))
 }
 
 /// Ported from `Registry.handleUpdateBackgroundAsset`.
@@ -419,7 +486,33 @@ async fn handle_update_background_asset(c: Arc<Client>, args: Args) -> HandlerRe
         archived: Option<bool> => "archived";
     }
     }
-    todo!("port handleUpdateBackgroundAsset from internal/asc/tools/background_assets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.background_asset_id.is_empty() {
+        return Ok(error_result("background_asset_id is required"));
+    }
+
+    if params.archived.is_none() {
+        return Ok(error_result("archived is required"));
+    }
+
+    let req = BackgroundAssetUpdateRequest {
+        data: BackgroundAssetUpdateData {
+            type_: "backgroundAssets".into(),
+            id: params.background_asset_id.clone(),
+            attributes: Some(BackgroundAssetUpdateAttributes { archived: params.archived }),
+        },
+    };
+
+    let resp = match c.update_background_asset(&params.background_asset_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update background asset: {e}"))),
+    };
+
+    Ok(data_result(&format!("Background asset updated:\n{}", format_background_asset(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleListBackgroundAssetVersions`.
@@ -434,7 +527,24 @@ async fn handle_list_background_asset_versions(c: Arc<Client>, args: Args) -> Ha
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListBackgroundAssetVersions from internal/asc/tools/background_assets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.background_asset_id.is_empty() {
+        return Ok(error_result("background_asset_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &GoMap::nil(), &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_background_asset_versions(&params.background_asset_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list background asset versions: {e}"))),
+    };
+
+    Ok(list_result(&format_background_asset_versions(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetBackgroundAssetVersion`.
@@ -445,7 +555,22 @@ async fn handle_get_background_asset_version(c: Arc<Client>, args: Args) -> Hand
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleGetBackgroundAssetVersion from internal/asc/tools/background_assets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let opts = list_opts(0, &GoMap::nil(), &GoSlice::nil(), &GoMap::nil(), &params.include);
+    let resp = match c.get_background_asset_version(&params.version_id, opts.as_ref()).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get background asset version: {e}"))),
+    };
+
+    Ok(data_result(&format_background_asset_version(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateBackgroundAssetVersion`.
@@ -455,7 +580,39 @@ async fn handle_create_background_asset_version(c: Arc<Client>, args: Args) -> H
         background_asset_id: String => "background_asset_id";
     }
     }
-    todo!("port handleCreateBackgroundAssetVersion from internal/asc/tools/background_assets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.background_asset_id.is_empty() {
+        return Ok(error_result("background_asset_id is required"));
+    }
+
+    let req = BackgroundAssetVersionCreateRequest {
+        data: BackgroundAssetVersionCreateData {
+            type_: "backgroundAssetVersions".into(),
+            relationships: BackgroundAssetVersionCreateRelationships {
+                background_asset: RelationshipData {
+                    data: ResourceIdentifier { type_: "backgroundAssets".into(), id: params.background_asset_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_background_asset_version(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create background asset version: {e}"))),
+    };
+
+    Ok(data_result(
+        &format!(
+            "Created background asset version:\n{}\nNext, call upload_background_asset_file with version_id={} to deliver the asset pack (ASSET) and its manifest (MANIFEST).",
+            format_background_asset_version(&resp.data),
+            resp.data.id
+        ),
+        &resp.data,
+    ))
 }
 
 /// Ported from `Registry.handleUploadBackgroundAssetFile`.
@@ -469,7 +626,41 @@ async fn handle_upload_background_asset_file(c: Arc<Client>, args: Args) -> Hand
         file_data_base64: String => "file_data_base64";
     }
     }
-    todo!("port handleUploadBackgroundAssetFile from internal/asc/tools/background_assets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Ok(error_result(format!("invalid arguments: {e}")));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    if params.file_name.is_empty() {
+        return Ok(error_result("file_name is required"));
+    }
+    let mut asset_type = params.asset_type.clone();
+    if asset_type.is_empty() {
+        asset_type = "ASSET".into();
+    }
+    let body = match super::uploads::load_upload_body(&params.file_path, &params.file_data_base64) {
+        Ok(b) => b,
+        Err(e) => return Ok(error_result(e)),
+    };
+
+    let resp = match c.upload_background_asset_file(&params.version_id, &params.file_name, &asset_type, &body).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to upload background asset file: {e}"))),
+    };
+
+    let text = format!(
+        "Uploaded background asset file {} ({}, {}, {} bytes) to version {}. Poll get_background_asset_version for processing status.",
+        resp.data.id,
+        params.file_name,
+        asset_type,
+        body.len(),
+        params.version_id
+    );
+    Ok(data_result(&text, &resp.data))
 }
 
 /// Ported from `Registry.handleListBackgroundAssetUploadFiles`.
@@ -481,7 +672,24 @@ async fn handle_list_background_asset_upload_files(c: Arc<Client>, args: Args) -
         cursor: String => "cursor";
     }
     }
-    todo!("port handleListBackgroundAssetUploadFiles from internal/asc/tools/background_assets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = limit_opts(limit);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_background_asset_upload_files(&params.version_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list background asset upload files: {e}"))),
+    };
+
+    Ok(list_result(&format_background_asset_upload_files(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetBackgroundAssetVersionRelease`.
@@ -492,6 +700,203 @@ async fn handle_get_background_asset_version_release(c: Arc<Client>, args: Args)
         release_id: String => "release_id";
     }
     }
-    todo!("port handleGetBackgroundAssetVersionRelease from internal/asc/tools/background_assets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.release_type.is_empty() {
+        return Ok(error_result("release_type is required"));
+    }
+
+    if params.release_id.is_empty() {
+        return Ok(error_result("release_id is required"));
+    }
+
+    let result = match params.release_type.as_str() {
+        "INTERNAL_BETA" => c.get_background_asset_version_internal_beta_release(&params.release_id).await,
+        "EXTERNAL_BETA" => c.get_background_asset_version_external_beta_release(&params.release_id).await,
+        "APP_STORE" => c.get_background_asset_version_app_store_release(&params.release_id).await,
+        _ => return Ok(error_result("release_type must be INTERNAL_BETA, EXTERNAL_BETA, or APP_STORE")),
+    };
+    let resp = match result {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get background asset version release: {e}"))),
+    };
+
+    Ok(data_result(&format_background_asset_version_release(&resp.data), &resp.data))
 }
 
+/// The `limit <= 0 → 50; limit > 200 → 200` clamp the Go handlers inline.
+fn clamp_limit(limit: i64) -> i64 {
+    let mut limit = limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+    limit
+}
+
+/// Ported from `formatBackgroundAssets`.
+fn format_background_assets(assets: &[BackgroundAsset]) -> String {
+    if assets.is_empty() {
+        return "No background assets found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} background assets:\n\n", assets.len());
+
+    for asset in assets {
+        sb.push_str(&format_background_asset(asset));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// `rel != nil && rel.Data.ID != ""` for an optional relationship.
+fn rel_id(rel: &Option<RelationshipData>) -> Option<&str> {
+    rel.as_ref().map(|r| r.data.id.as_str()).filter(|id| !id.is_empty())
+}
+
+/// Ported from `formatBackgroundAsset`.
+fn format_background_asset(asset: &BackgroundAsset) -> String {
+    let a = &asset.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "Background Asset ID: {}\n", asset.id);
+    if !a.asset_pack_identifier.is_empty() {
+        let _ = write!(sb, "Asset Pack Identifier: {}\n", a.asset_pack_identifier);
+    }
+    let _ = write!(sb, "Archived: {}\n", a.archived);
+    if a.used_bytes > 0 {
+        let _ = write!(sb, "Used Bytes: {}\n", a.used_bytes);
+    }
+    if let Some(d) = &a.created_date {
+        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02 15:04:05"));
+    }
+    if let Some(rel) = &asset.relationships {
+        if let Some(id) = rel_id(&rel.app_store_version) {
+            let _ = write!(sb, "App Store Version ID: {}\n", id);
+        }
+        if let Some(id) = rel_id(&rel.internal_beta_version) {
+            let _ = write!(sb, "Internal Beta Version ID: {}\n", id);
+        }
+        if let Some(id) = rel_id(&rel.external_beta_version) {
+            let _ = write!(sb, "External Beta Version ID: {}\n", id);
+        }
+    }
+    sb
+}
+
+/// Ported from `formatBackgroundAssetVersions`.
+fn format_background_asset_versions(versions: &[BackgroundAssetVersion]) -> String {
+    if versions.is_empty() {
+        return "No background asset versions found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} background asset versions:\n\n", versions.len());
+
+    for version in versions {
+        sb.push_str(&format_background_asset_version(version));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatBackgroundAssetVersion`.
+fn format_background_asset_version(version: &BackgroundAssetVersion) -> String {
+    let a = &version.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "Background Asset Version ID: {}\n", version.id);
+    if !a.version.is_empty() {
+        let _ = write!(sb, "Version: {}\n", a.version);
+    }
+    if !a.locale.is_empty() {
+        let _ = write!(sb, "Locale: {}\n", a.locale);
+    }
+    if !a.platforms.is_empty() {
+        let _ = write!(sb, "Platforms: {}\n", a.platforms.join(", "));
+    }
+    if !a.state.is_empty() {
+        let _ = write!(sb, "State: {}\n", a.state);
+    }
+    if let Some(details) = &a.state_details {
+        for detail in details.errors.iter() {
+            let _ = write!(sb, "Error [{}]: {}\n", detail.code, detail.description);
+        }
+        for detail in details.warnings.iter() {
+            let _ = write!(sb, "Warning [{}]: {}\n", detail.code, detail.description);
+        }
+        for detail in details.infos.iter() {
+            let _ = write!(sb, "Info [{}]: {}\n", detail.code, detail.description);
+        }
+    }
+    if let Some(d) = &a.created_date {
+        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02 15:04:05"));
+    }
+    if let Some(rel) = &version.relationships {
+        if let Some(id) = rel_id(&rel.internal_beta_release) {
+            let _ = write!(sb, "Internal Beta Release ID: {}\n", id);
+        }
+        if let Some(id) = rel_id(&rel.external_beta_release) {
+            let _ = write!(sb, "External Beta Release ID: {}\n", id);
+        }
+        if let Some(id) = rel_id(&rel.app_store_release) {
+            let _ = write!(sb, "App Store Release ID: {}\n", id);
+        }
+        if let Some(id) = rel_id(&rel.asset_file) {
+            let _ = write!(sb, "Asset File ID: {}\n", id);
+        }
+        if let Some(id) = rel_id(&rel.manifest_file) {
+            let _ = write!(sb, "Manifest File ID: {}\n", id);
+        }
+    }
+    sb
+}
+
+/// Ported from `formatBackgroundAssetUploadFiles`.
+fn format_background_asset_upload_files(files: &[BackgroundAssetUploadFile]) -> String {
+    if files.is_empty() {
+        return "No background asset upload files found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} background asset upload files:\n\n", files.len());
+
+    for file in files {
+        let a = &file.attributes;
+        let _ = write!(sb, "File ID: {}\n", file.id);
+        if !a.file_name.is_empty() {
+            let _ = write!(sb, "Name: {} ({} bytes)\n", a.file_name, a.file_size);
+        }
+        if !a.asset_type.is_empty() {
+            let _ = write!(sb, "Asset Type: {}\n", a.asset_type);
+        }
+        if let Some(st) = a.asset_delivery_state.as_ref().filter(|s| !s.state.is_empty()) {
+            let _ = write!(sb, "Delivery State: {}\n", st.state);
+        }
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatBackgroundAssetVersionRelease`.
+fn format_background_asset_version_release(release: &BackgroundAssetVersionRelease) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "Release ID: {}\n", release.id);
+    if !release.type_.is_empty() {
+        let _ = write!(sb, "Type: {}\n", release.type_);
+    }
+    if !release.attributes.state.is_empty() {
+        let _ = write!(sb, "State: {}\n", release.attributes.state);
+    }
+    if let Some(id) = release.relationships.as_ref().and_then(|r| rel_id(&r.background_asset_version)) {
+        let _ = write!(sb, "Background Asset Version ID: {}\n", id);
+    }
+    sb
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "app_id": "a1",
+    "name": "n",
+    "url": "https://e.com/h",
+    "secret": "s",
+    "event_types": [
+      "A",
+      "B"
+    ],
+    "enabled": false
+  },
+  {
+    "app_id": "a1",
+    "name": "n",
+    "url": "https://e.com/h",
+    "secret": "s",
+    "event_types": [
+      "A"
+    ]
+  },
+  {
+    "name": "empty-events",
+    "args": {
+      "app_id": "a1",
+      "name": "n",
+      "url": "u",
+      "secret": "s",
+      "event_types": []
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

@@ -412,7 +412,24 @@ async fn handle_list_perf_power_metrics(c: Arc<Client>, args: Args) -> HandlerRe
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListPerfPowerMetrics from internal/asc/tools/diagnostics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_perf_power_metrics(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list performance metrics: {e}"))),
+    };
+
+    Ok(list_result(&format_perf_power_metrics(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListDiagnosticSignatures`.
@@ -428,7 +445,24 @@ async fn handle_list_diagnostic_signatures(c: Arc<Client>, args: Args) -> Handle
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListDiagnosticSignatures from internal/asc/tools/diagnostics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.build_id.is_empty() {
+        return Ok(error_result("build_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_diagnostic_signatures(&params.build_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list diagnostic signatures: {e}"))),
+    };
+
+    Ok(list_result(&format_diagnostic_signatures(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListDiagnosticLogs`.
@@ -444,7 +478,24 @@ async fn handle_list_diagnostic_logs(c: Arc<Client>, args: Args) -> HandlerResul
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListDiagnosticLogs from internal/asc/tools/diagnostics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.signature_id.is_empty() {
+        return Ok(error_result("signature_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_diagnostic_logs(&params.signature_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list diagnostic logs: {e}"))),
+    };
+
+    Ok(list_result(&format_diagnostic_logs(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListAppStoreReviewAttachments`.
@@ -460,7 +511,24 @@ async fn handle_list_app_store_review_attachments(c: Arc<Client>, args: Args) ->
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAppStoreReviewAttachments from internal/asc/tools/diagnostics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_store_review_attachments(&params.version_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list review attachments: {e}"))),
+    };
+
+    Ok(list_result(&format_app_store_review_attachments(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetAppStoreReviewAttachment`.
@@ -470,7 +538,21 @@ async fn handle_get_app_store_review_attachment(c: Arc<Client>, args: Args) -> H
         attachment_id: String => "attachment_id";
     }
     }
-    todo!("port handleGetAppStoreReviewAttachment from internal/asc/tools/diagnostics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.attachment_id.is_empty() {
+        return Ok(error_result("attachment_id is required"));
+    }
+
+    let resp = match c.get_app_store_review_attachment(&params.attachment_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get review attachment: {e}"))),
+    };
+
+    Ok(data_result(&format_app_store_review_attachment(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateAppStoreReviewAttachment`.
@@ -482,7 +564,33 @@ async fn handle_create_app_store_review_attachment(c: Arc<Client>, args: Args) -
         file_size: i64 => "file_size";
     }
     }
-    todo!("port handleCreateAppStoreReviewAttachment from internal/asc/tools/diagnostics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.review_detail_id.is_empty() || params.file_name.is_empty() || params.file_size <= 0 {
+        return Ok(error_result("review_detail_id, file_name, and file_size are required"));
+    }
+
+    let req = AppStoreReviewAttachmentCreateRequest {
+        data: AppStoreReviewAttachmentCreateData {
+            type_: "appStoreReviewAttachments".into(),
+            attributes: AppStoreReviewAttachmentCreateAttributes { file_name: params.file_name.clone(), file_size: params.file_size },
+            relationships: AppStoreReviewAttachmentCreateRelationships {
+                app_store_review_detail: RelationshipData {
+                    data: ResourceIdentifier { type_: "appStoreReviewDetails".into(), id: params.review_detail_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_app_store_review_attachment(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create review attachment: {e}"))),
+    };
+
+    Ok(data_result(&format!("Review attachment reservation created:\n{}", format_app_store_review_attachment(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteAppStoreReviewAttachment`.
@@ -492,7 +600,20 @@ async fn handle_delete_app_store_review_attachment(c: Arc<Client>, args: Args) -
         attachment_id: String => "attachment_id";
     }
     }
-    todo!("port handleDeleteAppStoreReviewAttachment from internal/asc/tools/diagnostics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.attachment_id.is_empty() {
+        return Ok(error_result("attachment_id is required"));
+    }
+
+    if let Err(e) = c.delete_app_store_review_attachment(&params.attachment_id).await {
+        return Ok(error_result(format!("Failed to delete review attachment: {e}")));
+    }
+
+    Ok(CallToolResult::success("Review attachment deleted"))
 }
 
 /// Ported from `Registry.handleGetRoutingAppCoverage`.
@@ -502,7 +623,21 @@ async fn handle_get_routing_app_coverage(c: Arc<Client>, args: Args) -> HandlerR
         version_id: String => "version_id";
     }
     }
-    todo!("port handleGetRoutingAppCoverage from internal/asc/tools/diagnostics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let resp = match c.get_routing_app_coverage(&params.version_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get routing app coverage: {e}"))),
+    };
+
+    Ok(data_result(&format_routing_app_coverage(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateRoutingAppCoverage`.
@@ -514,7 +649,33 @@ async fn handle_create_routing_app_coverage(c: Arc<Client>, args: Args) -> Handl
         file_size: i64 => "file_size";
     }
     }
-    todo!("port handleCreateRoutingAppCoverage from internal/asc/tools/diagnostics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() || params.file_name.is_empty() || params.file_size <= 0 {
+        return Ok(error_result("version_id, file_name, and file_size are required"));
+    }
+
+    let req = RoutingAppCoverageCreateRequest {
+        data: RoutingAppCoverageCreateData {
+            type_: "routingAppCoverages".into(),
+            attributes: RoutingAppCoverageCreateAttributes { file_name: params.file_name.clone(), file_size: params.file_size },
+            relationships: RoutingAppCoverageCreateRelationships {
+                app_store_version: RelationshipData {
+                    data: ResourceIdentifier { type_: "appStoreVersions".into(), id: params.version_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_routing_app_coverage(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create routing app coverage: {e}"))),
+    };
+
+    Ok(data_result(&format!("Routing app coverage reservation created:\n{}", format_routing_app_coverage(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteRoutingAppCoverage`.
@@ -524,6 +685,128 @@ async fn handle_delete_routing_app_coverage(c: Arc<Client>, args: Args) -> Handl
         coverage_id: String => "coverage_id";
     }
     }
-    todo!("port handleDeleteRoutingAppCoverage from internal/asc/tools/diagnostics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.coverage_id.is_empty() {
+        return Ok(error_result("coverage_id is required"));
+    }
+
+    if let Err(e) = c.delete_routing_app_coverage(&params.coverage_id).await {
+        return Ok(error_result(format!("Failed to delete routing app coverage: {e}")));
+    }
+
+    Ok(CallToolResult::success("Routing app coverage deleted"))
 }
 
+/// The `limit <= 0 → 50; limit > 200 → 200` clamp the Go handlers inline.
+fn clamp_limit(limit: i64) -> i64 {
+    let mut limit = limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+    limit
+}
+
+/// Ported from `formatPerfPowerMetrics`.
+fn format_perf_power_metrics(metrics: &[PerfPowerMetric]) -> String {
+    if metrics.is_empty() {
+        return "No performance metrics found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} performance metrics:\n\n", metrics.len());
+
+    for m in metrics {
+        let _ = write!(sb, "ID: {}\n", m.id);
+        let _ = write!(sb, "Device Type: {}\n", m.attributes.device_type);
+        let _ = write!(sb, "Metric Type: {}\n", m.attributes.metric_type);
+        let _ = write!(sb, "Platform: {}\n", m.attributes.platform);
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatDiagnosticSignatures`.
+fn format_diagnostic_signatures(signatures: &[DiagnosticSignature]) -> String {
+    if signatures.is_empty() {
+        return "No diagnostic signatures found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} diagnostic signatures:\n\n", signatures.len());
+
+    for s in signatures {
+        let _ = write!(sb, "ID: {}\n", s.id);
+        let _ = write!(sb, "Diagnostic Type: {}\n", s.attributes.diagnostic_type);
+        let _ = write!(sb, "Signature: {}\n", s.attributes.signature);
+        let _ = write!(sb, "Weight: {:.2}\n", s.attributes.weight);
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatDiagnosticLogs`.
+fn format_diagnostic_logs(logs: &[DiagnosticLog]) -> String {
+    if logs.is_empty() {
+        return "No diagnostic logs found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} diagnostic logs:\n\n", logs.len());
+
+    for l in logs {
+        let _ = write!(sb, "ID: {}\n", l.id);
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAppStoreReviewAttachments`.
+fn format_app_store_review_attachments(attachments: &[AppStoreReviewAttachment]) -> String {
+    if attachments.is_empty() {
+        return "No review attachments found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} review attachments:\n\n", attachments.len());
+
+    for a in attachments {
+        sb.push_str(&format_app_store_review_attachment(a));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAppStoreReviewAttachment`.
+fn format_app_store_review_attachment(a: &AppStoreReviewAttachment) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", a.id);
+    let _ = write!(sb, "File Name: {}\n", a.attributes.file_name);
+    let _ = write!(sb, "File Size: {} bytes\n", a.attributes.file_size);
+    if let Some(st) = &a.attributes.asset_delivery_state {
+        let _ = write!(sb, "State: {}\n", st.state);
+    }
+    sb
+}
+
+/// Ported from `formatRoutingAppCoverage`.
+fn format_routing_app_coverage(coverage: &RoutingAppCoverage) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", coverage.id);
+    let _ = write!(sb, "File Name: {}\n", coverage.attributes.file_name);
+    let _ = write!(sb, "File Size: {} bytes\n", coverage.attributes.file_size);
+    if let Some(st) = &coverage.attributes.asset_delivery_state {
+        let _ = write!(sb, "State: {}\n", st.state);
+    }
+    sb
+}

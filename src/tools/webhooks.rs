@@ -308,7 +308,24 @@ async fn handle_list_webhooks(c: Arc<Client>, args: Args) -> HandlerResult {
         fields: GoMap<GoSlice<String>> => "fields";
     }
     }
-    todo!("port handleListWebhooks from internal/asc/tools/webhooks.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &GoMap::nil(), &GoSlice::nil(), &params.fields, &GoSlice::nil());
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_webhooks(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list webhooks: {e}"))),
+    };
+
+    Ok(list_result(&format_webhooks(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetWebhook`.
@@ -318,7 +335,21 @@ async fn handle_get_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
         webhook_id: String => "webhook_id";
     }
     }
-    todo!("port handleGetWebhook from internal/asc/tools/webhooks.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.webhook_id.is_empty() {
+        return Ok(error_result("webhook_id is required"));
+    }
+
+    let resp = match c.get_webhook(&params.webhook_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get webhook: {e}"))),
+    };
+
+    Ok(data_result(&format_webhook(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateWebhook`.
@@ -333,7 +364,58 @@ async fn handle_create_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
         enabled: Option<bool> => "enabled";
     }
     }
-    todo!("port handleCreateWebhook from internal/asc/tools/webhooks.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    if params.name.is_empty() {
+        return Ok(error_result("name is required"));
+    }
+
+    if params.url.is_empty() {
+        return Ok(error_result("url is required"));
+    }
+
+    if params.secret.is_empty() {
+        return Ok(error_result("secret is required"));
+    }
+
+    if params.event_types.is_empty() {
+        return Ok(error_result("event_types is required"));
+    }
+
+    let mut enabled = true;
+    if let Some(v) = params.enabled {
+        enabled = v;
+    }
+
+    let req = WebhookCreateRequest {
+        data: WebhookCreateData {
+            type_: "webhooks".into(),
+            attributes: WebhookCreateAttributes {
+                enabled,
+                event_types: params.event_types.clone(),
+                name: params.name.clone(),
+                secret: params.secret.clone(),
+                url: params.url.clone(),
+            },
+            relationships: WebhookCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+            },
+        },
+    };
+
+    let resp = match c.create_webhook(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create webhook: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created webhook:\n{}", format_webhook(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateWebhook`.
@@ -348,7 +430,35 @@ async fn handle_update_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
         enabled: Option<bool> => "enabled";
     }
     }
-    todo!("port handleUpdateWebhook from internal/asc/tools/webhooks.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.webhook_id.is_empty() {
+        return Ok(error_result("webhook_id is required"));
+    }
+
+    let req = WebhookUpdateRequest {
+        data: WebhookUpdateData {
+            type_: "webhooks".into(),
+            id: params.webhook_id.clone(),
+            attributes: Some(WebhookUpdateAttributes {
+                enabled: params.enabled,
+                event_types: params.event_types.clone(),
+                name: params.name.clone(),
+                secret: params.secret.clone(),
+                url: params.url.clone(),
+            }),
+        },
+    };
+
+    let resp = match c.update_webhook(&params.webhook_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update webhook: {e}"))),
+    };
+
+    Ok(data_result(&format!("Webhook updated:\n{}", format_webhook(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteWebhook`.
@@ -358,7 +468,20 @@ async fn handle_delete_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
         webhook_id: String => "webhook_id";
     }
     }
-    todo!("port handleDeleteWebhook from internal/asc/tools/webhooks.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.webhook_id.is_empty() {
+        return Ok(error_result("webhook_id is required"));
+    }
+
+    if let Err(e) = c.delete_webhook(&params.webhook_id).await {
+        return Ok(error_result(format!("Failed to delete webhook: {e}")));
+    }
+
+    Ok(CallToolResult::success("Webhook deleted successfully"))
 }
 
 /// Ported from `Registry.handleListWebhookDeliveries`.
@@ -373,7 +496,24 @@ async fn handle_list_webhook_deliveries(c: Arc<Client>, args: Args) -> HandlerRe
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListWebhookDeliveries from internal/asc/tools/webhooks.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.webhook_id.is_empty() {
+        return Ok(error_result("webhook_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &GoSlice::nil(), &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_webhook_deliveries(&params.webhook_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list webhook deliveries: {e}"))),
+    };
+
+    Ok(list_result(&format_webhook_deliveries(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handlePingWebhook`.
@@ -383,7 +523,30 @@ async fn handle_ping_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
         webhook_id: String => "webhook_id";
     }
     }
-    todo!("port handlePingWebhook from internal/asc/tools/webhooks.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.webhook_id.is_empty() {
+        return Ok(error_result("webhook_id is required"));
+    }
+
+    let req = WebhookPingCreateRequest {
+        data: WebhookPingCreateData {
+            type_: "webhookPings".into(),
+            relationships: WebhookPingCreateRelationships {
+                webhook: RelationshipData { data: ResourceIdentifier { type_: "webhooks".into(), id: params.webhook_id.clone() } },
+            },
+        },
+    };
+
+    let resp = match c.create_webhook_ping(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to ping webhook: {e}"))),
+    };
+
+    Ok(data_result(&format!("Ping event sent: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleRedeliverWebhookDelivery`.
@@ -393,6 +556,121 @@ async fn handle_redeliver_webhook_delivery(c: Arc<Client>, args: Args) -> Handle
         delivery_id: String => "delivery_id";
     }
     }
-    todo!("port handleRedeliverWebhookDelivery from internal/asc/tools/webhooks.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.delivery_id.is_empty() {
+        return Ok(error_result("delivery_id is required"));
+    }
+
+    let req = WebhookDeliveryCreateRequest {
+        data: WebhookDeliveryCreateData {
+            type_: "webhookDeliveries".into(),
+            relationships: WebhookDeliveryCreateRelationships {
+                template: RelationshipData {
+                    data: ResourceIdentifier { type_: "webhookDeliveries".into(), id: params.delivery_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_webhook_redelivery(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to request redelivery: {e}"))),
+    };
+
+    Ok(data_result(&format!("Redelivery requested:\n{}", format_webhook_delivery(&resp.data)), &resp.data))
 }
 
+/// The `limit <= 0 → 50; limit > 200 → 200` clamp the Go handlers inline.
+fn clamp_limit(limit: i64) -> i64 {
+    let mut limit = limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+    limit
+}
+
+/// Ported from `formatWebhooks`.
+fn format_webhooks(webhooks: &[Webhook]) -> String {
+    if webhooks.is_empty() {
+        return "No webhooks found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} webhooks:\n\n", webhooks.len());
+
+    for webhook in webhooks {
+        sb.push_str(&format_webhook(webhook));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatWebhook`.
+fn format_webhook(webhook: &Webhook) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "Webhook ID: {}\n", webhook.id);
+    if !webhook.attributes.name.is_empty() {
+        let _ = write!(sb, "Name: {}\n", webhook.attributes.name);
+    }
+    if !webhook.attributes.url.is_empty() {
+        let _ = write!(sb, "URL: {}\n", webhook.attributes.url);
+    }
+    let _ = write!(sb, "Enabled: {}\n", webhook.attributes.enabled);
+    if !webhook.attributes.event_types.is_empty() {
+        let _ = write!(sb, "Event Types: {}\n", webhook.attributes.event_types.join(", "));
+    }
+    sb
+}
+
+/// Ported from `formatWebhookDeliveries`.
+fn format_webhook_deliveries(deliveries: &[WebhookDelivery]) -> String {
+    if deliveries.is_empty() {
+        return "No webhook deliveries found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} webhook deliveries:\n\n", deliveries.len());
+
+    for delivery in deliveries {
+        sb.push_str(&format_webhook_delivery(delivery));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatWebhookDelivery`.
+fn format_webhook_delivery(delivery: &WebhookDelivery) -> String {
+    let a = &delivery.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "Delivery ID: {}\n", delivery.id);
+    if !a.delivery_state.is_empty() {
+        let _ = write!(sb, "State: {}\n", a.delivery_state);
+    }
+    if a.redelivery {
+        sb.push_str("Redelivery: Yes\n");
+    }
+    if let Some(d) = &a.created_date {
+        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02 15:04:05"));
+    }
+    if let Some(d) = &a.sent_date {
+        let _ = write!(sb, "Sent: {}\n", d.format("2006-01-02 15:04:05"));
+    }
+    if !a.error_message.is_empty() {
+        let _ = write!(sb, "Error: {}\n", a.error_message);
+    }
+    if let Some(r) = &a.response {
+        if r.http_status_code != 0 {
+            let _ = write!(sb, "Response Status: {}\n", r.http_status_code);
+        }
+    }
+    sb
+}

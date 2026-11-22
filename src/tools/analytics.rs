@@ -321,7 +321,24 @@ async fn handle_list_analytics_report_requests(c: Arc<Client>, args: Args) -> Ha
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAnalyticsReportRequests from internal/asc/tools/analytics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_analytics_report_requests(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list analytics report requests: {e}"))),
+    };
+
+    Ok(list_result(&format_analytics_report_requests(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetAnalyticsReportRequest`.
@@ -331,7 +348,21 @@ async fn handle_get_analytics_report_request(c: Arc<Client>, args: Args) -> Hand
         request_id: String => "request_id";
     }
     }
-    todo!("port handleGetAnalyticsReportRequest from internal/asc/tools/analytics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.request_id.is_empty() {
+        return Ok(error_result("request_id is required"));
+    }
+
+    let resp = match c.get_analytics_report_request(&params.request_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get analytics report request: {e}"))),
+    };
+
+    Ok(data_result(&format_analytics_report_request(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateAnalyticsReportRequest`.
@@ -342,7 +373,34 @@ async fn handle_create_analytics_report_request(c: Arc<Client>, args: Args) -> H
         access_type: String => "access_type";
     }
     }
-    todo!("port handleCreateAnalyticsReportRequest from internal/asc/tools/analytics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+    if params.access_type.is_empty() {
+        return Ok(error_result("access_type is required"));
+    }
+
+    let req = AnalyticsReportRequestCreateRequest {
+        data: AnalyticsReportRequestCreateData {
+            type_: "analyticsReportRequests".into(),
+            attributes: AnalyticsReportRequestCreateAttributes { access_type: params.access_type.clone() },
+            relationships: AnalyticsReportRequestCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+            },
+        },
+    };
+
+    let resp = match c.create_analytics_report_request(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create analytics report request: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created analytics report request: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteAnalyticsReportRequest`.
@@ -352,7 +410,20 @@ async fn handle_delete_analytics_report_request(c: Arc<Client>, args: Args) -> H
         request_id: String => "request_id";
     }
     }
-    todo!("port handleDeleteAnalyticsReportRequest from internal/asc/tools/analytics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.request_id.is_empty() {
+        return Ok(error_result("request_id is required"));
+    }
+
+    if let Err(e) = c.delete_analytics_report_request(&params.request_id).await {
+        return Ok(error_result(format!("Failed to delete analytics report request: {e}")));
+    }
+
+    Ok(CallToolResult::success("Analytics report request deleted successfully"))
 }
 
 /// Ported from `Registry.handleListAnalyticsReports`.
@@ -368,7 +439,24 @@ async fn handle_list_analytics_reports(c: Arc<Client>, args: Args) -> HandlerRes
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAnalyticsReports from internal/asc/tools/analytics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.request_id.is_empty() {
+        return Ok(error_result("request_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_analytics_reports(&params.request_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list analytics reports: {e}"))),
+    };
+
+    Ok(list_result(&format_analytics_reports(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListAnalyticsReportInstances`.
@@ -384,7 +472,24 @@ async fn handle_list_analytics_report_instances(c: Arc<Client>, args: Args) -> H
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAnalyticsReportInstances from internal/asc/tools/analytics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.report_id.is_empty() {
+        return Ok(error_result("report_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_analytics_report_instances(&params.report_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list analytics report instances: {e}"))),
+    };
+
+    Ok(list_result(&format_analytics_report_instances(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListAnalyticsReportSegments`.
@@ -400,6 +505,120 @@ async fn handle_list_analytics_report_segments(c: Arc<Client>, args: Args) -> Ha
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAnalyticsReportSegments from internal/asc/tools/analytics.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.instance_id.is_empty() {
+        return Ok(error_result("instance_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_analytics_report_segments(&params.instance_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list analytics report segments: {e}"))),
+    };
+
+    Ok(list_result(&format_analytics_report_segments(&resp.data), &resp.data, &resp.links))
 }
 
+/// The `limit <= 0 → 50; limit > 200 → 200` clamp the Go handlers inline.
+fn clamp_limit(limit: i64) -> i64 {
+    let mut limit = limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+    limit
+}
+
+/// Ported from `formatAnalyticsReportRequests`.
+fn format_analytics_report_requests(requests: &[AnalyticsReportRequest]) -> String {
+    if requests.is_empty() {
+        return "No analytics report requests found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} analytics report requests:\n\n", requests.len());
+
+    for req in requests {
+        sb.push_str(&format_analytics_report_request(req));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAnalyticsReportRequest`.
+fn format_analytics_report_request(req: &AnalyticsReportRequest) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", req.id);
+    let _ = write!(sb, "Access Type: {}\n", req.attributes.access_type);
+    let _ = write!(sb, "Stoppable: {}\n", req.attributes.stoppable);
+    sb
+}
+
+/// Ported from `formatAnalyticsReports`.
+fn format_analytics_reports(reports: &[AnalyticsReport]) -> String {
+    if reports.is_empty() {
+        return "No analytics reports found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} analytics reports:\n\n", reports.len());
+
+    for report in reports {
+        let _ = write!(sb, "ID: {}\n", report.id);
+        let _ = write!(sb, "Category: {}\n", report.attributes.category);
+        let _ = write!(sb, "Name: {}\n", report.attributes.name);
+        sb.push_str("---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAnalyticsReportInstances`.
+fn format_analytics_report_instances(instances: &[AnalyticsReportInstance]) -> String {
+    if instances.is_empty() {
+        return "No analytics report instances found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} analytics report instances:\n\n", instances.len());
+
+    for instance in instances {
+        let _ = write!(sb, "ID: {}\n", instance.id);
+        let _ = write!(sb, "Granularity: {}\n", instance.attributes.granularity);
+        let _ = write!(sb, "Processing Date: {}\n", instance.attributes.processing_date);
+        sb.push_str("---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAnalyticsReportSegments`.
+fn format_analytics_report_segments(segments: &[AnalyticsReportSegment]) -> String {
+    if segments.is_empty() {
+        return "No analytics report segments found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} analytics report segments:\n\n", segments.len());
+
+    for segment in segments {
+        let _ = write!(sb, "ID: {}\n", segment.id);
+        let _ = write!(sb, "Size: {} bytes\n", segment.attributes.size_in_bytes);
+        let _ = write!(sb, "Checksum: {}\n", segment.attributes.checksum);
+        if !segment.attributes.url.is_empty() {
+            let _ = write!(sb, "Download URL: {}\n", segment.attributes.url);
+        }
+        sb.push_str("---\n");
+    }
+
+    sb
+}

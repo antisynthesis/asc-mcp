@@ -467,7 +467,21 @@ async fn handle_get_end_user_license_agreement(c: Arc<Client>, args: Args) -> Ha
         app_id: String => "app_id";
     }
     }
-    todo!("port handleGetEndUserLicenseAgreement from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let resp = match c.get_end_user_license_agreement(&params.app_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get EULA: {e}"))),
+    };
+
+    Ok(data_result(&format_end_user_license_agreement(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateEndUserLicenseAgreement`.
@@ -479,7 +493,37 @@ async fn handle_create_end_user_license_agreement(c: Arc<Client>, args: Args) ->
         territory_ids: GoSlice<String> => "territory_ids";
     }
     }
-    todo!("port handleCreateEndUserLicenseAgreement from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() || params.agreement_text.is_empty() {
+        return Ok(error_result("app_id and agreement_text are required"));
+    }
+
+    let mut territories: GoSlice<ResourceIdentifier> = GoSlice::nil();
+    for tid in params.territory_ids.iter() {
+        territories.push(ResourceIdentifier { type_: "territories".into(), id: tid.clone() });
+    }
+
+    let req = EndUserLicenseAgreementCreateRequest {
+        data: EndUserLicenseAgreementCreateData {
+            type_: "endUserLicenseAgreements".into(),
+            attributes: EndUserLicenseAgreementCreateAttributes { agreement_text: params.agreement_text.clone() },
+            relationships: EndUserLicenseAgreementCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+                territories: RelationshipDataList { data: territories },
+            },
+        },
+    };
+
+    let resp = match c.create_end_user_license_agreement(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create EULA: {e}"))),
+    };
+
+    Ok(data_result(&format!("EULA created:\n{}", format_end_user_license_agreement(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateEndUserLicenseAgreement`.
@@ -490,7 +534,30 @@ async fn handle_update_end_user_license_agreement(c: Arc<Client>, args: Args) ->
         agreement_text: String => "agreement_text";
     }
     }
-    todo!("port handleUpdateEndUserLicenseAgreement from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.eula_id.is_empty() || params.agreement_text.is_empty() {
+        return Ok(error_result("eula_id and agreement_text are required"));
+    }
+
+    let req = EndUserLicenseAgreementUpdateRequest {
+        data: EndUserLicenseAgreementUpdateData {
+            type_: "endUserLicenseAgreements".into(),
+            id: params.eula_id.clone(),
+            attributes: EndUserLicenseAgreementUpdateAttributes { agreement_text: params.agreement_text.clone() },
+            relationships: None,
+        },
+    };
+
+    let resp = match c.update_end_user_license_agreement(&params.eula_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update EULA: {e}"))),
+    };
+
+    Ok(data_result(&format!("EULA updated:\n{}", format_end_user_license_agreement(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteEndUserLicenseAgreement`.
@@ -500,7 +567,20 @@ async fn handle_delete_end_user_license_agreement(c: Arc<Client>, args: Args) ->
         eula_id: String => "eula_id";
     }
     }
-    todo!("port handleDeleteEndUserLicenseAgreement from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.eula_id.is_empty() {
+        return Ok(error_result("eula_id is required"));
+    }
+
+    if let Err(e) = c.delete_end_user_license_agreement(&params.eula_id).await {
+        return Ok(error_result(format!("Failed to delete EULA: {e}")));
+    }
+
+    Ok(CallToolResult::success("EULA deleted (reverted to standard Apple EULA)"))
 }
 
 /// Ported from `Registry.handleListAppCategories`.
@@ -515,7 +595,26 @@ async fn handle_list_app_categories(c: Arc<Client>, args: Args) -> HandlerResult
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAppCategories from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 100;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_categories(opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list app categories: {e}"))),
+    };
+
+    Ok(list_result(&format_app_categories(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetAppCategory`.
@@ -525,7 +624,21 @@ async fn handle_get_app_category(c: Arc<Client>, args: Args) -> HandlerResult {
         category_id: String => "category_id";
     }
     }
-    todo!("port handleGetAppCategory from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.category_id.is_empty() {
+        return Ok(error_result("category_id is required"));
+    }
+
+    let resp = match c.get_app_category(&params.category_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get app category: {e}"))),
+    };
+
+    Ok(data_result(&format_app_category(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleListAlternativeDistributionKeys`.
@@ -540,7 +653,20 @@ async fn handle_list_alternative_distribution_keys(c: Arc<Client>, args: Args) -
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAlternativeDistributionKeys from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_alternative_distribution_keys(opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list alternative distribution keys: {e}"))),
+    };
+
+    Ok(list_result(&format_alternative_distribution_keys(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetAlternativeDistributionKey`.
@@ -550,7 +676,21 @@ async fn handle_get_alternative_distribution_key(c: Arc<Client>, args: Args) -> 
         key_id: String => "key_id";
     }
     }
-    todo!("port handleGetAlternativeDistributionKey from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.key_id.is_empty() {
+        return Ok(error_result("key_id is required"));
+    }
+
+    let resp = match c.get_alternative_distribution_key(&params.key_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get alternative distribution key: {e}"))),
+    };
+
+    Ok(data_result(&format_alternative_distribution_key(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateAlternativeDistributionKey`.
@@ -560,7 +700,31 @@ async fn handle_create_alternative_distribution_key(c: Arc<Client>, args: Args) 
         app_id: String => "app_id";
     }
     }
-    todo!("port handleCreateAlternativeDistributionKey from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let req = AlternativeDistributionKeyCreateRequest {
+        data: AlternativeDistributionKeyCreateData {
+            type_: "alternativeDistributionKeys".into(),
+            attributes: AlternativeDistributionKeyCreateAttributes::default(),
+            relationships: AlternativeDistributionKeyCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+            },
+        },
+    };
+
+    let resp = match c.create_alternative_distribution_key(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create alternative distribution key: {e}"))),
+    };
+
+    Ok(data_result(&format!("Alternative distribution key created:\n{}", format_alternative_distribution_key(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteAlternativeDistributionKey`.
@@ -570,7 +734,20 @@ async fn handle_delete_alternative_distribution_key(c: Arc<Client>, args: Args) 
         key_id: String => "key_id";
     }
     }
-    todo!("port handleDeleteAlternativeDistributionKey from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.key_id.is_empty() {
+        return Ok(error_result("key_id is required"));
+    }
+
+    if let Err(e) = c.delete_alternative_distribution_key(&params.key_id).await {
+        return Ok(error_result(format!("Failed to delete alternative distribution key: {e}")));
+    }
+
+    Ok(CallToolResult::success("Alternative distribution key deleted"))
 }
 
 /// Ported from `Registry.handleGetAlternativeDistributionPackage`.
@@ -580,7 +757,21 @@ async fn handle_get_alternative_distribution_package(c: Arc<Client>, args: Args)
         version_id: String => "version_id";
     }
     }
-    todo!("port handleGetAlternativeDistributionPackage from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let resp = match c.get_alternative_distribution_package_for_version(&params.version_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get alternative distribution package: {e}"))),
+    };
+
+    Ok(data_result(&format!("Alternative Distribution Package ID: {}\n", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleGetMarketplaceSearchDetail`.
@@ -590,7 +781,21 @@ async fn handle_get_marketplace_search_detail(c: Arc<Client>, args: Args) -> Han
         app_id: String => "app_id";
     }
     }
-    todo!("port handleGetMarketplaceSearchDetail from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let resp = match c.get_marketplace_search_detail(&params.app_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get marketplace search detail: {e}"))),
+    };
+
+    Ok(data_result(&format_marketplace_search_detail(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateMarketplaceSearchDetail`.
@@ -601,7 +806,31 @@ async fn handle_create_marketplace_search_detail(c: Arc<Client>, args: Args) -> 
         catalog_url: String => "catalog_url";
     }
     }
-    todo!("port handleCreateMarketplaceSearchDetail from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() || params.catalog_url.is_empty() {
+        return Ok(error_result("app_id and catalog_url are required"));
+    }
+
+    let req = MarketplaceSearchDetailCreateRequest {
+        data: MarketplaceSearchDetailCreateData {
+            type_: "marketplaceSearchDetails".into(),
+            attributes: MarketplaceSearchDetailCreateAttributes { catalog_url: params.catalog_url.clone() },
+            relationships: MarketplaceSearchDetailCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+            },
+        },
+    };
+
+    let resp = match c.create_marketplace_search_detail(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create marketplace search detail: {e}"))),
+    };
+
+    Ok(data_result(&format!("Marketplace search detail created:\n{}", format_marketplace_search_detail(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateMarketplaceSearchDetail`.
@@ -612,7 +841,29 @@ async fn handle_update_marketplace_search_detail(c: Arc<Client>, args: Args) -> 
         catalog_url: String => "catalog_url";
     }
     }
-    todo!("port handleUpdateMarketplaceSearchDetail from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.detail_id.is_empty() || params.catalog_url.is_empty() {
+        return Ok(error_result("detail_id and catalog_url are required"));
+    }
+
+    let req = MarketplaceSearchDetailUpdateRequest {
+        data: MarketplaceSearchDetailUpdateData {
+            type_: "marketplaceSearchDetails".into(),
+            id: params.detail_id.clone(),
+            attributes: MarketplaceSearchDetailUpdateAttributes { catalog_url: params.catalog_url.clone() },
+        },
+    };
+
+    let resp = match c.update_marketplace_search_detail(&params.detail_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update marketplace search detail: {e}"))),
+    };
+
+    Ok(data_result(&format!("Marketplace search detail updated:\n{}", format_marketplace_search_detail(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteMarketplaceSearchDetail`.
@@ -622,6 +873,117 @@ async fn handle_delete_marketplace_search_detail(c: Arc<Client>, args: Args) -> 
         detail_id: String => "detail_id";
     }
     }
-    todo!("port handleDeleteMarketplaceSearchDetail from internal/asc/tools/misc.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.detail_id.is_empty() {
+        return Ok(error_result("detail_id is required"));
+    }
+
+    if let Err(e) = c.delete_marketplace_search_detail(&params.detail_id).await {
+        return Ok(error_result(format!("Failed to delete marketplace search detail: {e}")));
+    }
+
+    Ok(CallToolResult::success("Marketplace search detail deleted"))
 }
 
+/// The `limit <= 0 → 50; limit > 200 → 200` clamp the Go handlers inline.
+fn clamp_limit(limit: i64) -> i64 {
+    let mut limit = limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+    limit
+}
+
+/// Go `s[:n] + "..."` on a string: slices bytes (possibly mid-rune) and
+/// renders the result the way Go's JSON encoder would.
+fn go_truncate(s: &str, n: usize) -> String {
+    let mut b = s.as_bytes()[..n].to_vec();
+    b.extend_from_slice(b"...");
+    super::reports::go_string(&b)
+}
+
+/// Ported from `formatEndUserLicenseAgreement`.
+fn format_end_user_license_agreement(eula: &EndUserLicenseAgreement) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", eula.id);
+    let mut text = eula.attributes.agreement_text.clone();
+    if text.len() > 500 {
+        text = go_truncate(&text, 500);
+    }
+    let _ = write!(sb, "Agreement Text:\n{}\n", text);
+    sb
+}
+
+/// Ported from `formatAppCategories`.
+fn format_app_categories(categories: &[AppCategory]) -> String {
+    if categories.is_empty() {
+        return "No app categories found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} app categories:\n\n", categories.len());
+
+    for c in categories {
+        sb.push_str(&format_app_category(c));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAppCategory`.
+fn format_app_category(c: &AppCategory) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", c.id);
+    if !c.attributes.platforms.is_empty() {
+        let _ = write!(sb, "Platforms: {}\n", c.attributes.platforms.join(", "));
+    }
+    sb
+}
+
+/// Ported from `formatAlternativeDistributionKeys`.
+fn format_alternative_distribution_keys(keys: &[AlternativeDistributionKey]) -> String {
+    if keys.is_empty() {
+        return "No alternative distribution keys found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} alternative distribution keys:\n\n", keys.len());
+
+    for k in keys {
+        sb.push_str(&format_alternative_distribution_key(k));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAlternativeDistributionKey`.
+fn format_alternative_distribution_key(k: &AlternativeDistributionKey) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", k.id);
+    if !k.attributes.public_key.is_empty() {
+        // Show truncated public key
+        let mut pk = k.attributes.public_key.clone();
+        if pk.len() > 100 {
+            pk = go_truncate(&pk, 100);
+        }
+        let _ = write!(sb, "Public Key: {}\n", pk);
+    }
+    sb
+}
+
+/// Ported from `formatMarketplaceSearchDetail`.
+fn format_marketplace_search_detail(d: &MarketplaceSearchDetail) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", d.id);
+    let _ = write!(sb, "Catalog URL: {}\n", d.attributes.catalog_url);
+    sb
+}
