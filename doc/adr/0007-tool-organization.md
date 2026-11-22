@@ -6,7 +6,7 @@ Accepted (revised)
 
 ## Context
 
-The MCP server exposes ~200 tools spanning the public App Store Connect
+The MCP server exposes 356 tools spanning the public App Store Connect
 API surface. The tool catalog grew well beyond the original four-category
 sketch, so the organization needs to:
 
@@ -17,54 +17,48 @@ sketch, so the organization needs to:
 
 ## Decision
 
-Tools live under `internal/asc/tools/`. Each domain has a `<domain>.go`
-file with:
+Tools live under `src/tools/`, one module per App Store Connect domain.
+Each module has:
 
-1. A `register<Domain>Tools()` method on `*Registry` that wires every
-   tool in that domain via `r.register(mcp.Tool{...}, r.handle<Name>)`.
-2. One `handle<Name>(ctx context.Context, args json.RawMessage) (*mcp.ToolsCallResult, error)`
-   per tool, owning argument parsing, validation, API invocation, and
-   response formatting.
+1. A `register_<domain>_tools(r: &mut Registry)` function. It registers
+   every tool in the domain with `r.register(tool(r##"{...}"##), handler!(handle_<name>))`.
+   The JSON literal is the tool's exact definition: name, description,
+   `inputSchema` and annotations.
+2. One `async fn handle_<name>(c: Arc<Client>, args: Args) -> HandlerResult`
+   per tool. It owns argument decoding (a local `json_struct!` params type),
+   validation, the API call and response formatting.
 
-The central `NewRegistry` constructor in `internal/asc/tools/registry.go`
-invokes every `register*Tools()` method, so a new domain is added by:
+`src/tools/all.rs` calls every `register_*` function in a fixed order, so
+`tools/list` is deterministic. A new domain is added by:
 
-1. Creating `internal/asc/tools/<domain>.go` with the `register<Domain>Tools()`
-   method and handlers.
-2. Adding `r.register<Domain>Tools()` to `NewRegistry`.
+1. Creating `src/tools/<domain>.rs` with its register function and
+   handlers. List it in `src/tools/modules.rs`.
+2. Calling the register function from `src/tools/all.rs`.
 
-Current domain files (each owning a related group of tools):
+API endpoint methods live in `src/api/endpoints/<area>.rs` as `impl Client`
+blocks. Resource and request models live in `src/api/model/`.
 
-| File | Domain |
+Domain modules (each owning a related group of tools):
+
+| Module | Domain |
 | --- | --- |
-| `apps.go` | App management |
-| `builds.go` | Builds |
-| `testflight.go` | Beta groups, testers |
-| `provisioning.go` | Bundle IDs, certificates, devices, profiles |
-| `localizations.go` | App info & version localizations |
-| `reviews.go` | Customer reviews and responses |
-| `iap.go` / `subscriptions.go` | In-app purchases and subscriptions |
-| `versions.go` | App Store versions, submissions |
-| `phased_release.go` | Phased releases |
-| `screenshots.go` | Screenshots and previews |
-| `preorders.go` | Pre-orders |
-| `events.go` | App events |
-| `analytics.go` | Analytics report requests/data |
-| `appclips.go` | App Clips |
-| `gamecenter.go` | Game Center configuration |
-| `xcode_cloud.go` | Xcode Cloud |
-| `reports.go` | Sales and finance reports |
-| `encryption.go` | Encryption declarations |
-| `users.go` | Users, roles, invitations |
-| `pricing.go` | Pricing |
-| `availability.go` | Territory availability |
-| `age_rating.go` | Age rating and IDFA |
-| `beta_review.go` | Beta review and agreements |
-| `sandbox.go` | Sandbox testers |
-| `promoted_purchases.go` | Promoted IAPs and offer codes |
-| `product_pages.go` | Custom product pages and experiments |
-| `diagnostics.go` | Diagnostics and metrics |
-| `misc.go` | EULA, categories, alternative distribution |
+| `apps` | App management |
+| `builds`, `build_uploads` | Builds and build uploads |
+| `testflight`, `beta_review`, `beta_feedback` | TestFlight groups, testers, review, localizations, feedback |
+| `provisioning` | Bundle IDs, certificates, devices, profiles |
+| `localizations` | App info and version localizations |
+| `reviews` | Customer reviews, responses, summarizations |
+| `iap`, `subscriptions`, `promoted_purchases`, `iap_offer_codes` | In-app purchases, subscriptions, offers |
+| `commerce_versions`, `commerce_pricing`, `pricing` | Product versions, localizations, images, prices, availability |
+| `versions`, `review_submissions`, `phased_release` | App Store versions and submissions |
+| `screenshots`, `uploads` | Screenshots, previews and asset uploads |
+| `events`, `appclips`, `product_pages` | In-app events, App Clips, custom product pages and experiments |
+| `analytics`, `reports`, `diagnostics` | Analytics, sales/finance reports, diagnostics |
+| `gamecenter*` | Game Center detail, achievements, leaderboards, sets, activities, challenges, submissions |
+| `xcode_cloud` | Xcode Cloud |
+| `encryption`, `age_rating`, `availability`, `preorders` | Compliance, ratings, availability |
+| `users`, `sandbox` | Users, invitations, sandbox testers |
+| `webhooks`, `accessibility`, `app_tags`, `android_mapping`, `background_assets`, `misc` | Other App Store Connect areas |
 
 Conventions:
 
@@ -72,28 +66,28 @@ Conventions:
   `create_beta_group`), and are globally unique.
 - Required parameters are declared in the `inputSchema.required` list.
 - Validation failures (missing or invalid arguments) return
-  `(mcp.NewErrorResult(...), nil)` so the model sees the error and can
+  `Ok(error_result(...))` so the model sees the error and can
   self-correct, per the MCP spec guidance for `CallToolResult`.
-- Handlers accept a `context.Context` and forward it to the API client,
-  allowing the per-call timeout from the server to propagate.
+- Handlers run on their own task. The server's 60 s per-call timeout and
+  client cancellation abort them by dropping the future.
 
 ## Consequences
 
 ### Positive
 
-- New tools are additive — one file edit plus one registration line.
+- New tools are additive: one module edit, plus one registration line for a new domain.
 - Domain boundaries match the App Store Connect API surface, making
   related tools easy to locate.
 - A uniform handler signature makes mechanical refactors safe.
-- `tools list` CLI subcommand can group output by file/domain.
+- The `asc-mcp tools` subcommand lists the catalog without credentials.
 
 ### Negative
 
-- 200 tools means a long `tools/list` response; clients should treat the
+- 356 tools means a long `tools/list` response; clients should treat the
   catalog as paginated in their UI.
 - Some resources are accessed via more than one domain (for example,
-  versions appear under both `versions.go` and `localizations.go`).
-- Adding a tool requires touching the domain file and `NewRegistry`.
+  versions appear under both `versions` and `localizations`).
+- Adding a domain requires touching `all.rs` and `modules.rs`.
 
 ### Mitigations
 

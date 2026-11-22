@@ -34,7 +34,8 @@ run: build
 e2e: build
 	@./e2e/e2e.zsh
 
-# Differential parity check against the original Go server (needs Go).
+# Deprecated: differential check against the historical reference build
+# reconstructed from git history (needs a Go toolchain).
 parity:
 	@./tests/parity/build-go-reference.sh "" target/asc-mcp-go
 	@$(CARGO) build

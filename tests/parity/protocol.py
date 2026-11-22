@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Protocol-level differential check: Go reference vs Rust server.
+"""DEPRECATED: scheduled for removal with the handshake protocol revisions.
+
+Protocol-level differential check: Go reference vs Rust server.
 
 Runs scripted JSON-RPC conversations over stdio and scripted HTTP exchanges
 against `serve-http`, on both binaries, and compares the responses

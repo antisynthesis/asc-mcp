@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# DEPRECATED: scheduled for removal with the handshake protocol revisions.
 # Builds the original Go server from git history as the parity reference.
 #
 #   tests/parity/build-go-reference.sh [GIT_REV] [OUT_BINARY]

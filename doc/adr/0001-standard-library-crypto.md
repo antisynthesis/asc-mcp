@@ -2,7 +2,8 @@
 
 ## Status
 
-Superseded by [ADR-0009](0009-rust-rewrite.md)
+Deprecated. This record describes an earlier implementation and no longer
+applies. ES256 signing now uses the RustCrypto `p256` crate (ADR-0005, ADR-0009).
 
 ## Context
 

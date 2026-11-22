@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Differential parity harness: Go reference server vs Rust server.
+"""DEPRECATED: scheduled for removal with the handshake protocol revisions.
+
+Differential parity harness: Go reference server vs Rust server.
 
 For every tool (optionally filtered), this script runs a matrix of argument
 variants against a mock App Store Connect API in several response modes,

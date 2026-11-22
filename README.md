@@ -763,14 +763,16 @@ make lint
 
 `asc-mcp` is written in Rust on Tokio. The App Store Connect client uses
 `reqwest` (rustls); the HTTP transport uses `axum`; ES256 JWTs are signed
-with the RustCrypto `p256` crate (see ADR-0009 for the rewrite from Go and
-the parity guarantees it keeps).
+with the RustCrypto `p256` crate. Wire types use an explicit JSON
+wire-format layer (`src/wire/`) so request bodies, results and error text
+stay byte-stable (ADR-0009).
 
-The server is dual-era. It speaks the stateless MCP protocol revision
-`2026-07-28`: per-request `_meta` version and capabilities,
-`server/discover`, `subscriptions/listen`, and no sessions. It still serves
+The server speaks MCP revision `2026-07-28`: stateless, with per-request
+`_meta` version and capabilities, `server/discover`,
+`subscriptions/listen`, and no sessions. For compatibility it also serves
 handshake-based clients, negotiating `2025-11-25`, `2025-06-18`,
-`2025-03-26`, or `2024-11-05` via `initialize`. Each request picks its
+`2025-03-26` or `2024-11-05` via `initialize`. **Those handshake revisions
+are deprecated** and will be removed in the next major release. Each request picks its
 era. A `_meta` `io.modelcontextprotocol/protocolVersion` key, a
 `server/discover` call, or (over HTTP) a modern `MCP-Protocol-Version`
 header selects the modern path. `initialize` and everything else take the
@@ -786,8 +788,9 @@ Two transports are supported, sharing the same dispatcher and tool registry:
   - Modern (`2026-07-28`) requests are sessionless. They must carry
     `MCP-Protocol-Version` and `Mcp-Method` headers that match the body,
     plus `Mcp-Name` on `tools/call`.
-  - Legacy clients get an `Mcp-Session-Id` on initialize, echo it on every
-    subsequent request, and may `DELETE /mcp` to end the session.
+  - Deprecated handshake clients get an `Mcp-Session-Id` on initialize,
+    echo it on every subsequent request, and may `DELETE /mcp` to end the
+    session.
 
   Useful flags:
   - `--addr`: bind address, loopback by default. Use `0.0.0.0:8080` in
@@ -817,24 +820,22 @@ asc-mcp/
 │   ├── server/           # Dispatcher, stdio and Streamable HTTP transports, metrics
 │   ├── api/              # App Store Connect client, auth, models, endpoints
 │   ├── tools/            # Tool definitions and handlers, one file per area
-│   └── go/               # Go-compatible JSON/format/time/url semantics (wire parity)
-├── tests/                # Integration tests and the Go parity harness
+│   └── wire/             # JSON wire format, text formatting, timestamps, URL escaping
+├── tests/                # Integration tests (tests/parity: deprecated reference check)
 ├── config/               # Configuration templates
 ├── script/               # Build and test scripts
 ├── ops/k8s/              # Kubernetes manifests
 └── doc/                  # Documentation and ADRs
 ```
 
-### Parity with the original Go server
+### Deprecated: reference comparison
 
-The server was rewritten from Go to Rust with the original's observable
-behaviour preserved: the same tool names, schemas and annotations, the
-same requests to App Store Connect, and the same text and structured
-tool results. `tests/parity/parity.py` checks this against the Go
-implementation, rebuilt from git history by
-`tests/parity/build-go-reference.sh`. It runs every tool through a matrix
-of argument variants and mock API responses synthesized from Apple's
-OpenAPI document. Run it with `make parity`.
+`tests/parity/` holds a deprecated differential check. It runs every tool,
+and the stdio and HTTP protocol paths, against a historical reference build
+reconstructed from git history (`make parity`; needs a Go toolchain). It
+runs only on manual CI dispatch and will be removed with the handshake
+protocol revisions. The integration tests in `tests/` are the supported
+test suite.
 
 ## License
 

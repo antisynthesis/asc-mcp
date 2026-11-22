@@ -2,7 +2,8 @@
 
 ## Status
 
-Superseded by [ADR-0009](0009-rust-rewrite.md)
+Deprecated. This record describes an earlier implementation and no longer
+applies. The CLI is built with `clap` (ADR-0009).
 
 ## Context
 

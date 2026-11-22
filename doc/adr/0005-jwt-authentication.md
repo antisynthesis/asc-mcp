@@ -24,13 +24,13 @@ We will implement JWT generation with the following approach:
 
 1. **Token Generation**:
    - Build header: `{"alg":"ES256","kid":"<key_id>","typ":"JWT"}`
-   - Build claims: `{"iss":"<issuer_id>","iat":<now>,"exp":<now+10min>,"aud":"appstoreconnect-v1"}`
-   - Sign with ES256 using standard library crypto
+   - Build claims: `{"iss":"<issuer_id>","iat":<now>,"exp":<now+15min>,"aud":"appstoreconnect-v1"}`
+   - Sign with ES256 (P-256 / SHA-256) using the RustCrypto `p256` crate
 
 2. **Token Caching**:
    - Cache tokens for their lifetime (minus buffer)
    - Regenerate automatically before expiration
-   - Use 10-minute lifetime (well under 20-min max)
+   - Use a 15-minute lifetime (under the 20-minute maximum), refreshed 2 minutes before expiry
 
 3. **Configuration**:
    - Environment variables for all credentials

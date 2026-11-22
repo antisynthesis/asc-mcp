@@ -6,15 +6,15 @@ This directory contains Architecture Decision Records (ADRs) for the asc-mcp pro
 
 | ADR | Title | Status |
 |-----|-------|--------|
-| [0001](0001-standard-library-crypto.md) | Standard Library for Cryptographic Operations | Superseded by 0009 |
+| [0001](0001-standard-library-crypto.md) | Standard Library for Cryptographic Operations | Deprecated |
 | [0002](0002-mcp-protocol-implementation.md) | Model Context Protocol Implementation | Accepted |
-| [0003](0003-project-structure.md) | Project Structure | Superseded by 0009 |
-| [0004](0004-cobra-cli.md) | Cobra CLI Framework | Superseded by 0009 |
+| [0003](0003-project-structure.md) | Project Structure | Deprecated |
+| [0004](0004-cobra-cli.md) | Cobra CLI Framework | Deprecated |
 | [0005](0005-jwt-authentication.md) | JWT Authentication for App Store Connect | Accepted |
 | [0006](0006-kubernetes-deployment.md) | Kubernetes Deployment Model | Accepted |
 | [0007](0007-tool-organization.md) | MCP Tool Organization | Accepted |
 | [0008](0008-error-handling.md) | Error Handling Strategy | Accepted |
-| [0009](0009-rust-rewrite.md) | Rewrite in Rust with Wire Parity | Accepted |
+| [0009](0009-rust-implementation.md) | Rust Implementation and JSON Wire Format | Accepted |
 
 ## About ADRs
 
@@ -29,7 +29,7 @@ Architecture Decision Records capture important architectural decisions along wi
 
 Each ADR follows this structure:
 
-- **Status**: Proposed, Accepted, Deprecated, Superseded
+- **Status**: Proposed, Accepted, Deprecated (no longer applies; kept for history), Superseded
 - **Context**: The circumstances and constraints
 - **Decision**: What was decided and why
 - **Consequences**: Positive, negative, and mitigations

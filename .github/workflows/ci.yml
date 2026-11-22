@@ -52,27 +52,31 @@ jobs:
           ./target/release/asc-mcp version
           ./target/release/asc-mcp tools | head -1
 
+  # Deprecated: compares against the historical reference build
+  # reconstructed from git history. Manual dispatch only; scheduled for
+  # removal together with the handshake protocol revisions.
   parity:
-    name: parity with the Go reference
+    name: reference comparison (deprecated)
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # the Go reference is built from git history
+          fetch-depth: 0   # the reference build is reconstructed from git history
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
       - uses: Swatinem/rust-cache@v2
 
-      - name: Set up Go
+      - name: Set up Go (reference build toolchain)
         uses: actions/setup-go@v5
         with:
           go-version: '1.26'
           cache: false
 
-      - name: Build Go reference
+      - name: Build reference
         run: tests/parity/build-go-reference.sh "" target/asc-mcp-go
 
       - name: Build Rust server

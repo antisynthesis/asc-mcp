@@ -10,37 +10,37 @@ from the commit history. Hand-maintained notes live under
 
 ## [Unreleased]
 
-### Changed
-- Rewrote the server in Rust (Tokio, reqwest, axum, RustCrypto). All 356
-  tools keep their names, schemas, annotations, App Store Connect requests
-  and result text; a differential harness (`make parity`) checks every tool
-  against the Go implementation, which is rebuilt from git history. Build
-  with `cargo`/`make`; the Go module, goreleaser config and Go CI jobs are
-  removed.
-- `serve-http` binds `127.0.0.1:8080` by default (the spec says local
-  servers SHOULD bind to localhost). The release container image passes
-  `--addr 0.0.0.0:8080`. A Go-style `:8080` is still accepted.
-- HTTP `Origin` validation is always on, as the 2026-07-28 transport
-  requires. Loopback origins and the server's own origin are accepted;
-  `--allowed-origins` adds more; any other present `Origin` gets 403.
-- `asc-mcp version` reports the Rust toolchain instead of the Go version.
-  `/metrics` no longer has Go runtime (`go_*`) series; the
-  `asc_mcp_*` and `process_*` series are unchanged.
+### Deprecated
+- The handshake-based MCP revisions: 2025-11-25, 2025-06-18, 2025-03-26
+  and 2024-11-05. This covers:
+  - `initialize`, `notifications/initialized` and `ping`;
+  - HTTP `Mcp-Session-Id` sessions and `DELETE /mcp`;
+  - the session metrics `asc_mcp_session_*`.
+
+  These keep working but will be removed in the next major release.
+  Clients should move to the stateless 2026-07-28 revision.
+- `tests/parity/`, the differential check against the historical
+  reference build reconstructed from git history. It runs only on manual CI dispatch and will be removed with the
+  handshake revisions.
 
 ### Fixed
 - MCP 2026-07-28 conformance:
   - `server/discover` rejects an explicitly unsupported `_meta` protocol
     version with -32022.
-  - Over HTTP, `MCP-Protocol-Version` is validated on every modern
+  - Over HTTP, `MCP-Protocol-Version` is validated on every 2026-07-28
     request, discover included. `Mcp-Method` and `MCP-Protocol-Version`
-    are compared byte-exactly (only `Mcp-Name` accepts the base64
-    sentinel). A request whose header names 2026-07-28 always takes the
-    modern path and gets JSON-RPC errors, never legacy session errors.
-    `initialize` is always legacy.
+    are compared byte-exactly; only `Mcp-Name` accepts the base64
+    sentinel.
+  - A request whose header names 2026-07-28 always takes the stateless
+    path and gets JSON-RPC errors, never session errors. `initialize`
+    is always a handshake request.
   - Malformed `_meta`, a non-string tool name, non-object tool arguments,
-    or a `cursor` on `tools/list` return -32602.
-  - `subscriptions/listen` is implemented: it acknowledges with an empty
-    filter and then ends gracefully, because the tool set never changes.
+    and a `cursor` on `tools/list` return -32602.
+  - `subscriptions/listen` is implemented. It acknowledges with an empty
+    filter, then ends gracefully, because the tool set never changes.
+- The HTTP transport:
+  - answers oversized bodies with 413;
+  - stops a tool call's API work when the client cancels or disconnects.
 
 ### Added
 - MCP 2026-07-28 protocol support alongside the existing handshake era.
@@ -64,16 +64,25 @@ from the commit history. Hand-maintained notes live under
 - Native TLS support on the HTTP transport via `--tls-cert` /
   `--tls-key` flags (TLS 1.2 minimum). Missing one of the pair is
   rejected so the listener cannot silently downgrade to plain HTTP.
-- GitHub Actions CI workflow that runs gofmt, `go mod tidy` drift,
-  `go vet`, race-enabled tests, a release-style static build,
-  staticcheck, and govulncheck on every push and pull request.
-- GitHub Actions release workflow driven by goreleaser, triggered by
-  `vX.Y.Z` tags. Produces darwin/linux × amd64/arm64 archives, a
-  checksum file, a GitHub release with grouped notes, and a
-  multi-arch container image published to GHCR.
+- GitHub Actions CI workflow that runs on every push and pull request:
+  formatting, lint, tests, a release-style static build, and a
+  dependency vulnerability audit.
+- GitHub Actions release workflow triggered by `vX.Y.Z` tags. It
+  produces darwin/linux × x86_64/arm64 archives, a checksum file, a
+  GitHub release with generated notes, and a multi-arch container image
+  published to GHCR.
 - `CHANGELOG.md` (this file).
 
 ### Changed
+- `serve-http` binds `127.0.0.1:8080` by default; local servers SHOULD
+  bind to loopback. The release container image passes
+  `--addr 0.0.0.0:8080`. A bare `:8080` is still accepted.
+- `Origin` validation on the HTTP transport is always on:
+  - loopback origins and the server's own origin are accepted;
+  - `--allowed-origins` adds more;
+  - any other `Origin` is rejected with 403.
+- `asc-mcp version` reports the toolchain that built the binary.
+  `/metrics` exposes the `asc_mcp_*` and `process_*` series.
 - Bundled App Store Connect OpenAPI reference updated from 4.2 to 4.4.1.
 - App availability now uses the v2 endpoints and `appAvailabilityV2`.
 - Game Center achievements and leaderboards, and app store version
@@ -128,10 +137,10 @@ from the commit history. Hand-maintained notes live under
   for rotation, SHA-256 digest comparison via constant-time compare),
   Origin allowlist, 4 MiB request body cap, request timeouts, idle
   session reaping, Prometheus metrics on `/metrics`, and structured
-  JSON logs through `log/slog`.
+  JSON or logfmt logs.
 - HTTP client hardening: bounded retry with backoff on 429/5xx,
-  `Retry-After` honoured, response size capped at 25 MiB, typed
-  `*APIError` with `IsAuth` / `IsNotFound` / `IsRateLimited`
-  classifiers, `url.PathEscape` on every interpolated ID.
+  `Retry-After` honoured, response size capped at 25 MiB, typed API
+  errors with auth / not-found / rate-limited classifiers, and path
+  escaping of every interpolated ID.
 - Kubernetes manifests with exec liveness/readiness/startup probes
   driven by `asc-mcp validate`.
