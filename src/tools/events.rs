@@ -233,7 +233,30 @@ async fn handle_list_app_events(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAppEvents from internal/asc/tools/events.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_events(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list app events: {e}"))),
+    };
+
+    Ok(list_result(&format_app_events(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetAppEvent`.
@@ -243,7 +266,21 @@ async fn handle_get_app_event(c: Arc<Client>, args: Args) -> HandlerResult {
         event_id: String => "event_id";
     }
     }
-    todo!("port handleGetAppEvent from internal/asc/tools/events.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.event_id.is_empty() {
+        return Ok(error_result("event_id is required"));
+    }
+
+    let resp = match c.get_app_event(&params.event_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get app event: {e}"))),
+    };
+
+    Ok(data_result(&format_app_event(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateAppEvent`.
@@ -260,7 +297,46 @@ async fn handle_create_app_event(c: Arc<Client>, args: Args) -> HandlerResult {
         purpose: String => "purpose";
     }
     }
-    todo!("port handleCreateAppEvent from internal/asc/tools/events.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+    if params.reference_name.is_empty() {
+        return Ok(error_result("reference_name is required"));
+    }
+
+    let req = AppEventCreateRequest {
+        data: AppEventCreateData {
+            type_: "appEvents".into(),
+            attributes: AppEventCreateAttributes {
+                reference_name: params.reference_name.clone(),
+                badge: params.badge.clone(),
+                deep_link: params.deep_link.clone(),
+                purchase_requirement: params.purchase_requirement.clone(),
+                primary_locale: params.primary_locale.clone(),
+                priority: params.priority.clone(),
+                purpose: params.purpose.clone(),
+                ..Default::default()
+            },
+            relationships: AppEventCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+            },
+        },
+    };
+
+    let resp = match c.create_app_event(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create app event: {e}"))),
+    };
+
+    Ok(data_result(
+        &format!("Created app event: {} (ID: {})", resp.data.attributes.reference_name, resp.data.id),
+        &resp.data,
+    ))
 }
 
 /// Ported from `Registry.handleUpdateAppEvent`.
@@ -276,7 +352,37 @@ async fn handle_update_app_event(c: Arc<Client>, args: Args) -> HandlerResult {
         purpose: String => "purpose";
     }
     }
-    todo!("port handleUpdateAppEvent from internal/asc/tools/events.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.event_id.is_empty() {
+        return Ok(error_result("event_id is required"));
+    }
+
+    let req = AppEventUpdateRequest {
+        data: AppEventUpdateData {
+            type_: "appEvents".into(),
+            id: params.event_id.clone(),
+            attributes: AppEventUpdateAttributes {
+                reference_name: params.reference_name.clone(),
+                badge: params.badge.clone(),
+                deep_link: params.deep_link.clone(),
+                purchase_requirement: params.purchase_requirement.clone(),
+                priority: params.priority.clone(),
+                purpose: params.purpose.clone(),
+                ..Default::default()
+            },
+        },
+    };
+
+    let resp = match c.update_app_event(&params.event_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update app event: {e}"))),
+    };
+
+    Ok(data_result(&format!("Updated app event: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteAppEvent`.
@@ -286,6 +392,62 @@ async fn handle_delete_app_event(c: Arc<Client>, args: Args) -> HandlerResult {
         event_id: String => "event_id";
     }
     }
-    todo!("port handleDeleteAppEvent from internal/asc/tools/events.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.event_id.is_empty() {
+        return Ok(error_result("event_id is required"));
+    }
+
+    if let Err(e) = c.delete_app_event(&params.event_id).await {
+        return Ok(error_result(format!("Failed to delete app event: {e}")));
+    }
+
+    Ok(CallToolResult::success("App event deleted successfully"))
 }
 
+/// Ported from `formatAppEvents`.
+fn format_app_events(events: &[AppEvent]) -> String {
+    if events.is_empty() {
+        return "No app events found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} app events:\n\n", events.len());
+
+    for event in events {
+        sb.push_str(&format_app_event(event));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAppEvent`.
+fn format_app_event(event: &AppEvent) -> String {
+    let a = &event.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", event.id);
+    let _ = write!(sb, "Reference Name: {}\n", a.reference_name);
+    if !a.badge.is_empty() {
+        let _ = write!(sb, "Badge: {}\n", a.badge);
+    }
+    if !a.event_state.is_empty() {
+        let _ = write!(sb, "State: {}\n", a.event_state);
+    }
+    if !a.priority.is_empty() {
+        let _ = write!(sb, "Priority: {}\n", a.priority);
+    }
+    if !a.purpose.is_empty() {
+        let _ = write!(sb, "Purpose: {}\n", a.purpose);
+    }
+    if !a.deep_link.is_empty() {
+        let _ = write!(sb, "Deep Link: {}\n", a.deep_link);
+    }
+    if !a.purchase_requirement.is_empty() {
+        let _ = write!(sb, "Purchase Requirement: {}\n", a.purchase_requirement);
+    }
+    sb
+}

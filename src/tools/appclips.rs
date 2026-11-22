@@ -258,7 +258,30 @@ async fn handle_list_app_clips(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAppClips from internal/asc/tools/appclips.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_clips(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list app clips: {e}"))),
+    };
+
+    Ok(list_result(&format_app_clips(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetAppClip`.
@@ -268,7 +291,21 @@ async fn handle_get_app_clip(c: Arc<Client>, args: Args) -> HandlerResult {
         app_clip_id: String => "app_clip_id";
     }
     }
-    todo!("port handleGetAppClip from internal/asc/tools/appclips.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_clip_id.is_empty() {
+        return Ok(error_result("app_clip_id is required"));
+    }
+
+    let resp = match c.get_app_clip(&params.app_clip_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get app clip: {e}"))),
+    };
+
+    Ok(data_result(&format_app_clip(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleListAppClipDefaultExperiences`.
@@ -284,7 +321,30 @@ async fn handle_list_app_clip_default_experiences(c: Arc<Client>, args: Args) ->
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAppClipDefaultExperiences from internal/asc/tools/appclips.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_clip_id.is_empty() {
+        return Ok(error_result("app_clip_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_clip_default_experiences(&params.app_clip_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list app clip default experiences: {e}"))),
+    };
+
+    Ok(list_result(&format_app_clip_default_experiences(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetAppClipDefaultExperience`.
@@ -294,7 +354,21 @@ async fn handle_get_app_clip_default_experience(c: Arc<Client>, args: Args) -> H
         experience_id: String => "experience_id";
     }
     }
-    todo!("port handleGetAppClipDefaultExperience from internal/asc/tools/appclips.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.experience_id.is_empty() {
+        return Ok(error_result("experience_id is required"));
+    }
+
+    let resp = match c.get_app_clip_default_experience(&params.experience_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get app clip default experience: {e}"))),
+    };
+
+    Ok(data_result(&format_app_clip_default_experience(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleListAppClipAdvancedExperiences`.
@@ -310,7 +384,30 @@ async fn handle_list_app_clip_advanced_experiences(c: Arc<Client>, args: Args) -
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAppClipAdvancedExperiences from internal/asc/tools/appclips.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_clip_id.is_empty() {
+        return Ok(error_result("app_clip_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_clip_advanced_experiences(&params.app_clip_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list app clip advanced experiences: {e}"))),
+    };
+
+    Ok(list_result(&format_app_clip_advanced_experiences(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetAppClipAdvancedExperience`.
@@ -320,6 +417,112 @@ async fn handle_get_app_clip_advanced_experience(c: Arc<Client>, args: Args) -> 
         experience_id: String => "experience_id";
     }
     }
-    todo!("port handleGetAppClipAdvancedExperience from internal/asc/tools/appclips.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.experience_id.is_empty() {
+        return Ok(error_result("experience_id is required"));
+    }
+
+    let resp = match c.get_app_clip_advanced_experience(&params.experience_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get app clip advanced experience: {e}"))),
+    };
+
+    Ok(data_result(&format_app_clip_advanced_experience(&resp.data), &resp.data))
 }
 
+/// Ported from `formatAppClips`.
+fn format_app_clips(clips: &[AppClip]) -> String {
+    if clips.is_empty() {
+        return "No app clips found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} app clips:\n\n", clips.len());
+
+    for clip in clips {
+        sb.push_str(&format_app_clip(clip));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAppClip`.
+fn format_app_clip(clip: &AppClip) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", clip.id);
+    let _ = write!(sb, "Bundle ID: {}\n", clip.attributes.bundle_id);
+    sb
+}
+
+/// Ported from `formatAppClipDefaultExperiences`.
+fn format_app_clip_default_experiences(experiences: &[AppClipDefaultExperience]) -> String {
+    if experiences.is_empty() {
+        return "No app clip default experiences found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} default experiences:\n\n", experiences.len());
+
+    for exp in experiences {
+        sb.push_str(&format_app_clip_default_experience(exp));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAppClipDefaultExperience`.
+fn format_app_clip_default_experience(exp: &AppClipDefaultExperience) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", exp.id);
+    if !exp.attributes.action.is_empty() {
+        let _ = write!(sb, "Action: {}\n", exp.attributes.action);
+    }
+    sb
+}
+
+/// Ported from `formatAppClipAdvancedExperiences`.
+fn format_app_clip_advanced_experiences(experiences: &[AppClipAdvancedExperience]) -> String {
+    if experiences.is_empty() {
+        return "No app clip advanced experiences found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} advanced experiences:\n\n", experiences.len());
+
+    for exp in experiences {
+        sb.push_str(&format_app_clip_advanced_experience(exp));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAppClipAdvancedExperience`.
+fn format_app_clip_advanced_experience(exp: &AppClipAdvancedExperience) -> String {
+    let a = &exp.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", exp.id);
+    if !a.action.is_empty() {
+        let _ = write!(sb, "Action: {}\n", a.action);
+    }
+    if !a.link.is_empty() {
+        let _ = write!(sb, "Link: {}\n", a.link);
+    }
+    if !a.status.is_empty() {
+        let _ = write!(sb, "Status: {}\n", a.status);
+    }
+    if !a.business_category.is_empty() {
+        let _ = write!(sb, "Business Category: {}\n", a.business_category);
+    }
+    if !a.default_language.is_empty() {
+        let _ = write!(sb, "Default Language: {}\n", a.default_language);
+    }
+    let _ = write!(sb, "Is Powered By: {}\n", bool_v(a.is_powered_by));
+    sb
+}

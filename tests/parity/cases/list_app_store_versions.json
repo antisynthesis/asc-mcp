@@ -1,0 +1,22 @@
+[
+  {
+    "name": "limit-big",
+    "args": {
+      "app_id": "a",
+      "limit": 1000
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "limit-neg",
+    "args": {
+      "app_id": "a",
+      "limit": -1
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

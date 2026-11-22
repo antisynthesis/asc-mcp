@@ -1,0 +1,11 @@
+[
+  {
+    "name": "missing-locale",
+    "args": {
+      "version_id": "v"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]
