@@ -1,0 +1,32 @@
+[
+  {
+    "name": "missing-type",
+    "args": {
+      "app_id": "a1",
+      "name": "n",
+      "product_id": "p"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "missing-product",
+    "args": {
+      "app_id": "a1",
+      "name": "n"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "missing-name",
+    "args": {
+      "app_id": "a1"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

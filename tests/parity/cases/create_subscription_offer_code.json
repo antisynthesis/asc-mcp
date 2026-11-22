@@ -1,0 +1,22 @@
+[
+  {
+    "name": "missing-name",
+    "args": {
+      "subscription_id": "s1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "empty-eligibilities",
+    "args": {
+      "subscription_id": "s1",
+      "name": "n",
+      "customer_eligibilities": []
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

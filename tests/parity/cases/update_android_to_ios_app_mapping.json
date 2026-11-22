@@ -1,0 +1,11 @@
+[
+  {
+    "name": "id-only",
+    "args": {
+      "mapping_id": "m1"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

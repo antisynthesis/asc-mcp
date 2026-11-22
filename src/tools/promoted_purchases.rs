@@ -563,7 +563,30 @@ async fn handle_list_promoted_purchases(c: Arc<Client>, args: Args) -> HandlerRe
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListPromotedPurchases from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_promoted_purchases(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list promoted purchases: {e}"))),
+    };
+
+    Ok(list_result(&format_promoted_purchases(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetPromotedPurchase`.
@@ -573,7 +596,21 @@ async fn handle_get_promoted_purchase(c: Arc<Client>, args: Args) -> HandlerResu
         promoted_purchase_id: String => "promoted_purchase_id";
     }
     }
-    todo!("port handleGetPromotedPurchase from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.promoted_purchase_id.is_empty() {
+        return Ok(error_result("promoted_purchase_id is required"));
+    }
+
+    let resp = match c.get_promoted_purchase(&params.promoted_purchase_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get promoted purchase: {e}"))),
+    };
+
+    Ok(data_result(&format_promoted_purchase(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreatePromotedPurchase`.
@@ -586,7 +623,37 @@ async fn handle_create_promoted_purchase(c: Arc<Client>, args: Args) -> HandlerR
         visible_for_all_users: Option<bool> => "visible_for_all_users";
     }
     }
-    todo!("port handleCreatePromotedPurchase from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() || params.in_app_purchase_id.is_empty() {
+        return Ok(error_result("app_id and in_app_purchase_id are required"));
+    }
+
+    let enabled = params.enabled.unwrap_or(true);
+    let visible_for_all = params.visible_for_all_users.unwrap_or(true);
+
+    let req = PromotedPurchaseCreateRequest {
+        data: PromotedPurchaseCreateData {
+            type_: "promotedPurchases".into(),
+            attributes: PromotedPurchaseCreateAttributes { enabled, visible_for_all_users: visible_for_all },
+            relationships: PromotedPurchaseCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+                in_app_purchase: RelationshipData {
+                    data: ResourceIdentifier { type_: "inAppPurchases".into(), id: params.in_app_purchase_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_promoted_purchase(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create promoted purchase: {e}"))),
+    };
+
+    Ok(data_result(&format!("Promoted purchase created:\n{}", format_promoted_purchase(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdatePromotedPurchase`.
@@ -598,7 +665,32 @@ async fn handle_update_promoted_purchase(c: Arc<Client>, args: Args) -> HandlerR
         visible_for_all_users: Option<bool> => "visible_for_all_users";
     }
     }
-    todo!("port handleUpdatePromotedPurchase from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.promoted_purchase_id.is_empty() {
+        return Ok(error_result("promoted_purchase_id is required"));
+    }
+
+    let req = PromotedPurchaseUpdateRequest {
+        data: PromotedPurchaseUpdateData {
+            type_: "promotedPurchases".into(),
+            id: params.promoted_purchase_id.clone(),
+            attributes: PromotedPurchaseUpdateAttributes {
+                enabled: params.enabled,
+                visible_for_all_users: params.visible_for_all_users,
+            },
+        },
+    };
+
+    let resp = match c.update_promoted_purchase(&params.promoted_purchase_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update promoted purchase: {e}"))),
+    };
+
+    Ok(data_result(&format!("Promoted purchase updated:\n{}", format_promoted_purchase(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeletePromotedPurchase`.
@@ -608,7 +700,20 @@ async fn handle_delete_promoted_purchase(c: Arc<Client>, args: Args) -> HandlerR
         promoted_purchase_id: String => "promoted_purchase_id";
     }
     }
-    todo!("port handleDeletePromotedPurchase from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.promoted_purchase_id.is_empty() {
+        return Ok(error_result("promoted_purchase_id is required"));
+    }
+
+    if let Err(e) = c.delete_promoted_purchase(&params.promoted_purchase_id).await {
+        return Ok(error_result(format!("Failed to delete promoted purchase: {e}")));
+    }
+
+    Ok(CallToolResult::success("Promoted purchase deleted"))
 }
 
 /// Ported from `Registry.handleListSubscriptionOfferCodes`.
@@ -624,7 +729,30 @@ async fn handle_list_subscription_offer_codes(c: Arc<Client>, args: Args) -> Han
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListSubscriptionOfferCodes from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.subscription_id.is_empty() {
+        return Ok(error_result("subscription_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_subscription_offer_codes(&params.subscription_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list subscription offer codes: {e}"))),
+    };
+
+    Ok(list_result(&format_subscription_offer_codes(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetSubscriptionOfferCode`.
@@ -634,7 +762,21 @@ async fn handle_get_subscription_offer_code(c: Arc<Client>, args: Args) -> Handl
         offer_code_id: String => "offer_code_id";
     }
     }
-    todo!("port handleGetSubscriptionOfferCode from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.offer_code_id.is_empty() {
+        return Ok(error_result("offer_code_id is required"));
+    }
+
+    let resp = match c.get_subscription_offer_code(&params.offer_code_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get subscription offer code: {e}"))),
+    };
+
+    Ok(data_result(&format_subscription_offer_code(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateSubscriptionOfferCode`.
@@ -650,7 +792,40 @@ async fn handle_create_subscription_offer_code(c: Arc<Client>, args: Args) -> Ha
         number_of_periods: i64 => "number_of_periods";
     }
     }
-    todo!("port handleCreateSubscriptionOfferCode from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.subscription_id.is_empty() || params.name.is_empty() {
+        return Ok(error_result("subscription_id and name are required"));
+    }
+
+    let req = SubscriptionOfferCodeCreateRequest {
+        data: SubscriptionOfferCodeCreateData {
+            type_: "subscriptionOfferCodes".into(),
+            attributes: SubscriptionOfferCodeCreateAttributes {
+                name: params.name.clone(),
+                customer_eligibilities: params.customer_eligibilities.clone(),
+                offer_eligibility: params.offer_eligibility.clone(),
+                duration: params.duration.clone(),
+                offer_mode: params.offer_mode.clone(),
+                number_of_periods: params.number_of_periods,
+            },
+            relationships: SubscriptionOfferCodeCreateRelationships {
+                subscription: RelationshipData {
+                    data: ResourceIdentifier { type_: "subscriptions".into(), id: params.subscription_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_subscription_offer_code(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create subscription offer code: {e}"))),
+    };
+
+    Ok(data_result(&format!("Subscription offer code created:\n{}", format_subscription_offer_code(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateSubscriptionOfferCode`.
@@ -661,7 +836,29 @@ async fn handle_update_subscription_offer_code(c: Arc<Client>, args: Args) -> Ha
         active: Option<bool> => "active";
     }
     }
-    todo!("port handleUpdateSubscriptionOfferCode from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.offer_code_id.is_empty() {
+        return Ok(error_result("offer_code_id is required"));
+    }
+
+    let req = SubscriptionOfferCodeUpdateRequest {
+        data: SubscriptionOfferCodeUpdateData {
+            type_: "subscriptionOfferCodes".into(),
+            id: params.offer_code_id.clone(),
+            attributes: SubscriptionOfferCodeUpdateAttributes { active: params.active },
+        },
+    };
+
+    let resp = match c.update_subscription_offer_code(&params.offer_code_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update subscription offer code: {e}"))),
+    };
+
+    Ok(data_result(&format!("Subscription offer code updated:\n{}", format_subscription_offer_code(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleListWinBackOffers`.
@@ -677,7 +874,30 @@ async fn handle_list_win_back_offers(c: Arc<Client>, args: Args) -> HandlerResul
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListWinBackOffers from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.subscription_id.is_empty() {
+        return Ok(error_result("subscription_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_win_back_offers(&params.subscription_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list win-back offers: {e}"))),
+    };
+
+    Ok(list_result(&format_win_back_offers(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetWinBackOffer`.
@@ -687,7 +907,21 @@ async fn handle_get_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResult 
         offer_id: String => "offer_id";
     }
     }
-    todo!("port handleGetWinBackOffer from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.offer_id.is_empty() {
+        return Ok(error_result("offer_id is required"));
+    }
+
+    let resp = match c.get_win_back_offer(&params.offer_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get win-back offer: {e}"))),
+    };
+
+    Ok(data_result(&format_win_back_offer(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateWinBackOffer`.
@@ -705,7 +939,48 @@ async fn handle_create_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResu
         price_ids: GoSlice<String> => "price_ids";
     }
     }
-    todo!("port handleCreateWinBackOffer from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.subscription_id.is_empty() || params.reference_name.is_empty() || params.offer_id.is_empty() {
+        return Ok(error_result("subscription_id, reference_name, and offer_id are required"));
+    }
+
+    let mut prices: GoSlice<ResourceIdentifier> = GoSlice::nil();
+    for pid in params.price_ids.iter() {
+        prices.push(ResourceIdentifier { type_: "winBackOfferPrices".into(), id: pid.clone() });
+    }
+
+    let req = WinBackOfferCreateRequest {
+        data: WinBackOfferCreateData {
+            type_: "winBackOffers".into(),
+            attributes: WinBackOfferCreateAttributes {
+                reference_name: params.reference_name.clone(),
+                offer_id: params.offer_id.clone(),
+                duration: params.duration.clone(),
+                offer_mode: params.offer_mode.clone(),
+                period_count: params.period_count,
+                priority: params.priority.clone(),
+                promotion_intent: params.promotion_intent.clone(),
+                ..Default::default()
+            },
+            relationships: WinBackOfferCreateRelationships {
+                subscription: RelationshipData {
+                    data: ResourceIdentifier { type_: "subscriptions".into(), id: params.subscription_id.clone() },
+                },
+                prices: RelationshipDataList { data: prices },
+            },
+        },
+    };
+
+    let resp = match c.create_win_back_offer(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create win-back offer: {e}"))),
+    };
+
+    Ok(data_result(&format!("Win-back offer created:\n{}", format_win_back_offer(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateWinBackOffer`.
@@ -717,7 +992,33 @@ async fn handle_update_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResu
         promotion_intent: String => "promotion_intent";
     }
     }
-    todo!("port handleUpdateWinBackOffer from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.offer_id.is_empty() {
+        return Ok(error_result("offer_id is required"));
+    }
+
+    let req = WinBackOfferUpdateRequest {
+        data: WinBackOfferUpdateData {
+            type_: "winBackOffers".into(),
+            id: params.offer_id.clone(),
+            attributes: WinBackOfferUpdateAttributes {
+                priority: params.priority.clone(),
+                promotion_intent: params.promotion_intent.clone(),
+                ..Default::default()
+            },
+        },
+    };
+
+    let resp = match c.update_win_back_offer(&params.offer_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update win-back offer: {e}"))),
+    };
+
+    Ok(data_result(&format!("Win-back offer updated:\n{}", format_win_back_offer(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteWinBackOffer`.
@@ -727,6 +1028,126 @@ async fn handle_delete_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResu
         offer_id: String => "offer_id";
     }
     }
-    todo!("port handleDeleteWinBackOffer from internal/asc/tools/promoted_purchases.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.offer_id.is_empty() {
+        return Ok(error_result("offer_id is required"));
+    }
+
+    if let Err(e) = c.delete_win_back_offer(&params.offer_id).await {
+        return Ok(error_result(format!("Failed to delete win-back offer: {e}")));
+    }
+
+    Ok(CallToolResult::success("Win-back offer deleted"))
 }
 
+/// Ported from `formatPromotedPurchases`.
+fn format_promoted_purchases(purchases: &[PromotedPurchase]) -> String {
+    if purchases.is_empty() {
+        return "No promoted purchases found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} promoted purchases:\n\n", purchases.len());
+
+    for p in purchases {
+        sb.push_str(&format_promoted_purchase(p));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatPromotedPurchase`.
+fn format_promoted_purchase(p: &PromotedPurchase) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", p.id);
+    let _ = write!(sb, "Enabled: {}\n", p.attributes.enabled);
+    let _ = write!(sb, "Visible For All Users: {}\n", p.attributes.visible_for_all_users);
+    if !p.attributes.state.is_empty() {
+        let _ = write!(sb, "State: {}\n", p.attributes.state);
+    }
+    sb
+}
+
+/// Ported from `formatSubscriptionOfferCodes`.
+fn format_subscription_offer_codes(codes: &[SubscriptionOfferCode]) -> String {
+    if codes.is_empty() {
+        return "No subscription offer codes found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} subscription offer codes:\n\n", codes.len());
+
+    for c in codes {
+        sb.push_str(&format_subscription_offer_code(c));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatSubscriptionOfferCode`.
+fn format_subscription_offer_code(c: &SubscriptionOfferCode) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", c.id);
+    let _ = write!(sb, "Name: {}\n", c.attributes.name);
+    let _ = write!(sb, "Active: {}\n", c.attributes.active);
+    if !c.attributes.customer_eligibilities.is_empty() {
+        let _ = write!(sb, "Customer Eligibilities: {}\n", c.attributes.customer_eligibilities.join(", "));
+    }
+    if !c.attributes.offer_mode.is_empty() {
+        let _ = write!(sb, "Offer Mode: {}\n", c.attributes.offer_mode);
+    }
+    if c.attributes.number_of_periods > 0 {
+        let _ = write!(sb, "Periods: {}\n", c.attributes.number_of_periods);
+    }
+    if c.attributes.total_number_of_codes > 0 {
+        let _ = write!(sb, "Total Codes: {}\n", c.attributes.total_number_of_codes);
+    }
+    sb
+}
+
+/// Ported from `formatWinBackOffers`.
+fn format_win_back_offers(offers: &[WinBackOffer]) -> String {
+    if offers.is_empty() {
+        return "No win-back offers found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} win-back offers:\n\n", offers.len());
+
+    for o in offers {
+        sb.push_str(&format_win_back_offer(o));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatWinBackOffer`.
+fn format_win_back_offer(o: &WinBackOffer) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", o.id);
+    let _ = write!(sb, "Reference Name: {}\n", o.attributes.reference_name);
+    let _ = write!(sb, "Offer ID: {}\n", o.attributes.offer_id);
+    if !o.attributes.offer_mode.is_empty() {
+        let _ = write!(sb, "Offer Mode: {}\n", o.attributes.offer_mode);
+    }
+    if !o.attributes.duration.is_empty() {
+        let _ = write!(sb, "Duration: {}\n", o.attributes.duration);
+    }
+    if o.attributes.period_count > 0 {
+        let _ = write!(sb, "Period Count: {}\n", o.attributes.period_count);
+    }
+    if !o.attributes.priority.is_empty() {
+        let _ = write!(sb, "Priority: {}\n", o.attributes.priority);
+    }
+    if !o.attributes.promotion_intent.is_empty() {
+        let _ = write!(sb, "Promotion Intent: {}\n", o.attributes.promotion_intent);
+    }
+    sb
+}

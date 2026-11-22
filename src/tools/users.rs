@@ -302,7 +302,26 @@ async fn handle_list_users(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListUsers from internal/asc/tools/users.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_users(opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list users: {e}"))),
+    };
+
+    Ok(list_result(&format_users(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetUser`.
@@ -312,7 +331,21 @@ async fn handle_get_user(c: Arc<Client>, args: Args) -> HandlerResult {
         user_id: String => "user_id";
     }
     }
-    todo!("port handleGetUser from internal/asc/tools/users.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.user_id.is_empty() {
+        return Ok(error_result("user_id is required"));
+    }
+
+    let resp = match c.get_user(&params.user_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get user: {e}"))),
+    };
+
+    Ok(data_result(&format_user(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateUser`.
@@ -324,7 +357,34 @@ async fn handle_update_user(c: Arc<Client>, args: Args) -> HandlerResult {
         all_apps_visible: Option<bool> => "all_apps_visible";
     }
     }
-    todo!("port handleUpdateUser from internal/asc/tools/users.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.user_id.is_empty() {
+        return Ok(error_result("user_id is required"));
+    }
+
+    let req = UserUpdateRequest {
+        data: UserUpdateData {
+            type_: "users".into(),
+            id: params.user_id.clone(),
+            attributes: UserUpdateAttributes {
+                roles: params.roles.clone(),
+                all_apps_visible: params.all_apps_visible,
+                ..Default::default()
+            },
+            relationships: None,
+        },
+    };
+
+    let resp = match c.update_user(&params.user_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update user: {e}"))),
+    };
+
+    Ok(data_result(&format!("User updated successfully:\n{}", format_user(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteUser`.
@@ -334,7 +394,20 @@ async fn handle_delete_user(c: Arc<Client>, args: Args) -> HandlerResult {
         user_id: String => "user_id";
     }
     }
-    todo!("port handleDeleteUser from internal/asc/tools/users.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.user_id.is_empty() {
+        return Ok(error_result("user_id is required"));
+    }
+
+    if let Err(e) = c.delete_user(&params.user_id).await {
+        return Ok(error_result(format!("Failed to delete user: {e}")));
+    }
+
+    Ok(CallToolResult::success("User removed successfully"))
 }
 
 /// Ported from `Registry.handleListUserInvitations`.
@@ -349,7 +422,26 @@ async fn handle_list_user_invitations(c: Arc<Client>, args: Args) -> HandlerResu
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListUserInvitations from internal/asc/tools/users.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_user_invitations(opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list user invitations: {e}"))),
+    };
+
+    Ok(list_result(&format_user_invitations(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetUserInvitation`.
@@ -359,7 +451,21 @@ async fn handle_get_user_invitation(c: Arc<Client>, args: Args) -> HandlerResult
         invitation_id: String => "invitation_id";
     }
     }
-    todo!("port handleGetUserInvitation from internal/asc/tools/users.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.invitation_id.is_empty() {
+        return Ok(error_result("invitation_id is required"));
+    }
+
+    let resp = match c.get_user_invitation(&params.invitation_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get user invitation: {e}"))),
+    };
+
+    Ok(data_result(&format_user_invitation(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateUserInvitation`.
@@ -373,7 +479,42 @@ async fn handle_create_user_invitation(c: Arc<Client>, args: Args) -> HandlerRes
         all_apps_visible: Option<bool> => "all_apps_visible";
     }
     }
-    todo!("port handleCreateUserInvitation from internal/asc/tools/users.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.email.is_empty() || params.first_name.is_empty() || params.last_name.is_empty() {
+        return Ok(error_result("email, first_name, and last_name are required"));
+    }
+
+    if params.roles.is_empty() {
+        return Ok(error_result("at least one role is required"));
+    }
+
+    let all_apps_visible = params.all_apps_visible.unwrap_or(true);
+
+    let req = UserInvitationCreateRequest {
+        data: UserInvitationCreateData {
+            type_: "userInvitations".into(),
+            attributes: UserInvitationCreateAttributes {
+                email: params.email.clone(),
+                first_name: params.first_name.clone(),
+                last_name: params.last_name.clone(),
+                roles: params.roles.clone(),
+                all_apps_visible,
+                ..Default::default()
+            },
+            relationships: None,
+        },
+    };
+
+    let resp = match c.create_user_invitation(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create user invitation: {e}"))),
+    };
+
+    Ok(data_result(&format!("User invitation sent:\n{}", format_user_invitation(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteUserInvitation`.
@@ -383,6 +524,82 @@ async fn handle_delete_user_invitation(c: Arc<Client>, args: Args) -> HandlerRes
         invitation_id: String => "invitation_id";
     }
     }
-    todo!("port handleDeleteUserInvitation from internal/asc/tools/users.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.invitation_id.is_empty() {
+        return Ok(error_result("invitation_id is required"));
+    }
+
+    if let Err(e) = c.delete_user_invitation(&params.invitation_id).await {
+        return Ok(error_result(format!("Failed to delete user invitation: {e}")));
+    }
+
+    Ok(CallToolResult::success("User invitation deleted"))
 }
 
+/// Ported from `formatUsers`.
+fn format_users(users: &[User]) -> String {
+    if users.is_empty() {
+        return "No users found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} users:\n\n", users.len());
+
+    for user in users {
+        sb.push_str(&format_user(user));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatUser`.
+fn format_user(user: &User) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", user.id);
+    let _ = write!(sb, "Username: {}\n", user.attributes.username);
+    let _ = write!(sb, "Name: {} {}\n", user.attributes.first_name, user.attributes.last_name);
+    if !user.attributes.roles.is_empty() {
+        let _ = write!(sb, "Roles: {}\n", user.attributes.roles.join(", "));
+    }
+    let _ = write!(sb, "All Apps Visible: {}\n", user.attributes.all_apps_visible);
+    let _ = write!(sb, "Provisioning Allowed: {}\n", user.attributes.provisioning_allowed);
+    sb
+}
+
+/// Ported from `formatUserInvitations`.
+fn format_user_invitations(invitations: &[UserInvitation]) -> String {
+    if invitations.is_empty() {
+        return "No pending user invitations found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} pending invitations:\n\n", invitations.len());
+
+    for inv in invitations {
+        sb.push_str(&format_user_invitation(inv));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatUserInvitation`.
+fn format_user_invitation(inv: &UserInvitation) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", inv.id);
+    let _ = write!(sb, "Email: {}\n", inv.attributes.email);
+    let _ = write!(sb, "Name: {} {}\n", inv.attributes.first_name, inv.attributes.last_name);
+    if !inv.attributes.roles.is_empty() {
+        let _ = write!(sb, "Roles: {}\n", inv.attributes.roles.join(", "));
+    }
+    let _ = write!(sb, "All Apps Visible: {}\n", inv.attributes.all_apps_visible);
+    if let Some(d) = &inv.attributes.expiration_date {
+        let _ = write!(sb, "Expires: {}\n", d.format("2006-01-02 15:04"));
+    }
+    sb
+}

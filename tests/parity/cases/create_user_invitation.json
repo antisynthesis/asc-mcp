@@ -1,0 +1,40 @@
+[
+  {
+    "name": "no-roles",
+    "args": {
+      "email": "a@b.c",
+      "first_name": "A",
+      "last_name": "B",
+      "roles": []
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "missing-last-name",
+    "args": {
+      "email": "a@b.c",
+      "first_name": "A",
+      "roles": [
+        "ADMIN"
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "not-all-apps",
+    "args": {
+      "email": "a@b.c",
+      "first_name": "A",
+      "last_name": "B",
+      "roles": [
+        "ADMIN",
+        "DEVELOPER"
+      ],
+      "all_apps_visible": false
+    }
+  }
+]

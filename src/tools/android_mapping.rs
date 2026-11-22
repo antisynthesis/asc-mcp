@@ -183,7 +183,30 @@ async fn handle_list_android_to_ios_app_mappings(c: Arc<Client>, args: Args) -> 
         fields: GoMap<GoSlice<String>> => "fields";
     }
     }
-    todo!("port handleListAndroidToIosAppMappings from internal/asc/tools/android_mapping.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &GoMap::nil(), &GoSlice::nil(), &params.fields, &GoSlice::nil());
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_android_to_ios_app_mapping_details(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list Android-to-iOS app mappings: {e}"))),
+    };
+
+    Ok(list_result(&format_android_to_ios_app_mappings(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetAndroidToIosAppMapping`.
@@ -193,7 +216,21 @@ async fn handle_get_android_to_ios_app_mapping(c: Arc<Client>, args: Args) -> Ha
         mapping_id: String => "mapping_id";
     }
     }
-    todo!("port handleGetAndroidToIosAppMapping from internal/asc/tools/android_mapping.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.mapping_id.is_empty() {
+        return Ok(error_result("mapping_id is required"));
+    }
+
+    let resp = match c.get_android_to_ios_app_mapping_detail(&params.mapping_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get Android-to-iOS app mapping: {e}"))),
+    };
+
+    Ok(data_result(&format_android_to_ios_app_mapping(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateAndroidToIosAppMapping`.
@@ -205,7 +242,40 @@ async fn handle_create_android_to_ios_app_mapping(c: Arc<Client>, args: Args) ->
         sha256_fingerprints: GoSlice<String> => "sha256_fingerprints";
     }
     }
-    todo!("port handleCreateAndroidToIosAppMapping from internal/asc/tools/android_mapping.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+    if params.package_name.is_empty() {
+        return Ok(error_result("package_name is required"));
+    }
+    if params.sha256_fingerprints.is_empty() {
+        return Ok(error_result("sha256_fingerprints is required"));
+    }
+
+    let req = AndroidToIosAppMappingDetailCreateRequest {
+        data: AndroidToIosAppMappingDetailCreateData {
+            type_: "androidToIosAppMappingDetails".into(),
+            attributes: AndroidToIosAppMappingDetailCreateAttributes {
+                package_name: params.package_name.clone(),
+                app_signing_key_public_certificate_sha256_fingerprints: params.sha256_fingerprints.clone(),
+            },
+            relationships: AndroidToIosAppMappingDetailCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+            },
+        },
+    };
+
+    let resp = match c.create_android_to_ios_app_mapping_detail(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create Android-to-iOS app mapping: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created Android-to-iOS app mapping:\n{}", format_android_to_ios_app_mapping(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateAndroidToIosAppMapping`.
@@ -217,7 +287,32 @@ async fn handle_update_android_to_ios_app_mapping(c: Arc<Client>, args: Args) ->
         sha256_fingerprints: GoSlice<String> => "sha256_fingerprints";
     }
     }
-    todo!("port handleUpdateAndroidToIosAppMapping from internal/asc/tools/android_mapping.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.mapping_id.is_empty() {
+        return Ok(error_result("mapping_id is required"));
+    }
+
+    let req = AndroidToIosAppMappingDetailUpdateRequest {
+        data: AndroidToIosAppMappingDetailUpdateData {
+            type_: "androidToIosAppMappingDetails".into(),
+            id: params.mapping_id.clone(),
+            attributes: Some(AndroidToIosAppMappingDetailUpdateAttributes {
+                package_name: params.package_name.clone(),
+                app_signing_key_public_certificate_sha256_fingerprints: params.sha256_fingerprints.clone(),
+            }),
+        },
+    };
+
+    let resp = match c.update_android_to_ios_app_mapping_detail(&params.mapping_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update Android-to-iOS app mapping: {e}"))),
+    };
+
+    Ok(data_result(&format!("Android-to-iOS app mapping updated:\n{}", format_android_to_ios_app_mapping(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteAndroidToIosAppMapping`.
@@ -227,6 +322,52 @@ async fn handle_delete_android_to_ios_app_mapping(c: Arc<Client>, args: Args) ->
         mapping_id: String => "mapping_id";
     }
     }
-    todo!("port handleDeleteAndroidToIosAppMapping from internal/asc/tools/android_mapping.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.mapping_id.is_empty() {
+        return Ok(error_result("mapping_id is required"));
+    }
+
+    if let Err(e) = c.delete_android_to_ios_app_mapping_detail(&params.mapping_id).await {
+        return Ok(error_result(format!("Failed to delete Android-to-iOS app mapping: {e}")));
+    }
+
+    Ok(CallToolResult::success("Android-to-iOS app mapping deleted successfully"))
 }
 
+/// Ported from `formatAndroidToIosAppMappings`.
+fn format_android_to_ios_app_mappings(mappings: &[AndroidToIosAppMappingDetail]) -> String {
+    if mappings.is_empty() {
+        return "No Android-to-iOS app mappings found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} Android-to-iOS app mappings:\n\n", mappings.len());
+
+    for mapping in mappings {
+        sb.push_str(&format_android_to_ios_app_mapping(mapping));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAndroidToIosAppMapping`.
+fn format_android_to_ios_app_mapping(mapping: &AndroidToIosAppMappingDetail) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "Mapping ID: {}\n", mapping.id);
+    if !mapping.attributes.package_name.is_empty() {
+        let _ = write!(sb, "Package Name: {}\n", mapping.attributes.package_name);
+    }
+    if !mapping.attributes.app_signing_key_public_certificate_sha256_fingerprints.is_empty() {
+        let _ = write!(
+            sb,
+            "SHA-256 Fingerprints: {}\n",
+            mapping.attributes.app_signing_key_public_certificate_sha256_fingerprints.join(", ")
+        );
+    }
+    sb
+}

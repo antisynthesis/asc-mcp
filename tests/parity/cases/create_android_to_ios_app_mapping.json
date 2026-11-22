@@ -1,0 +1,22 @@
+[
+  {
+    "name": "no-fingerprints",
+    "args": {
+      "app_id": "a1",
+      "package_name": "com.x",
+      "sha256_fingerprints": []
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "missing-package",
+    "args": {
+      "app_id": "a1"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

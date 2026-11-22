@@ -47,6 +47,41 @@ async fn handle_end_app_availability_pre_order(c: Arc<Client>, args: Args) -> Ha
         territory_availability_ids: GoSlice<String> => "territory_availability_ids";
     }
     }
-    todo!("port handleEndAppAvailabilityPreOrder from internal/asc/tools/preorders.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.territory_availability_ids.is_empty() {
+        return Ok(error_result("territory_availability_ids is required"));
+    }
+
+    let mut availabilities: GoSlice<ResourceIdentifier> = GoSlice::nil();
+    for id in params.territory_availability_ids.iter() {
+        availabilities.push(ResourceIdentifier { type_: "territoryAvailabilities".into(), id: id.clone() });
+    }
+
+    let req = EndAppAvailabilityPreOrderCreateRequest {
+        data: EndAppAvailabilityPreOrderCreateData {
+            type_: "endAppAvailabilityPreOrders".into(),
+            relationships: EndAppAvailabilityPreOrderCreateRelationships {
+                territory_availabilities: RelationshipDataList { data: availabilities },
+            },
+        },
+    };
+
+    let resp = match c.end_app_availability_pre_order(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to end pre-order availability: {e}"))),
+    };
+
+    Ok(data_result(
+        &format!(
+            "Pre-order ended for {} territory availabilities (request ID: {})",
+            params.territory_availability_ids.len(),
+            resp.data.id
+        ),
+        &resp.data,
+    ))
 }
 

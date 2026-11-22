@@ -1,0 +1,21 @@
+[
+  {
+    "name": "not-new-no-territories",
+    "args": {
+      "app_id": "app1",
+      "available_in_new_territories": false
+    }
+  },
+  {
+    "name": "one-territory",
+    "args": {
+      "app_id": "app1",
+      "territory_ids": [
+        "USA"
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]
