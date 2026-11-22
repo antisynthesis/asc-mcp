@@ -19,14 +19,17 @@ config file format.
 
 ## 1. Install the binary
 
+You need a stable Rust toolchain (1.85 or newer, via
+[rustup](https://rustup.rs)).
+
 ```bash
 git clone https://github.com/antisynthesis/asc-mcp.git
 cd asc-mcp
 make install
 ```
 
-`make install` builds the binary and copies it to `$GOPATH/bin` (defaults to
-`~/go/bin`). Override the destination with `INSTALL_DIR`:
+`make install` builds a release binary and copies it to `$CARGO_HOME/bin`
+(defaults to `~/.cargo/bin`). Override the destination with `INSTALL_DIR`:
 
 ```bash
 INSTALL_DIR=/usr/local/bin make install
@@ -38,7 +41,7 @@ Confirm the install and note the absolute path — you need it for every client
 config below:
 
 ```bash
-which asc-mcp        # e.g. /Users/you/go/bin/asc-mcp
+which asc-mcp        # e.g. /Users/you/.cargo/bin/asc-mcp
 asc-mcp version
 ```
 
@@ -119,7 +122,7 @@ Create the file if it does not exist:
 {
   "mcpServers": {
     "asc-mcp": {
-      "command": "/Users/you/go/bin/asc-mcp",
+      "command": "/Users/you/.cargo/bin/asc-mcp",
       "args": ["serve"],
       "env": {
         "ASC_ISSUER_ID": "57246542-96fe-1a63-e053-0824d011072a",
@@ -147,7 +150,7 @@ claude mcp add --scope user \
   --env ASC_ISSUER_ID=57246542-96fe-1a63-e053-0824d011072a \
   --env ASC_KEY_ID=2X9R4HXF34 \
   --env ASC_PRIVATE_KEY_PATH=/Users/you/.appstoreconnect/AuthKey_2X9R4HXF34.p8 \
-  asc-mcp -- /Users/you/go/bin/asc-mcp serve
+  asc-mcp -- /Users/you/.cargo/bin/asc-mcp serve
 ```
 
 Everything after `--` is the command Claude Code runs verbatim; that separator
@@ -207,7 +210,7 @@ trusted project):
 
 ```toml
 [mcp_servers.asc-mcp]
-command = "/Users/you/go/bin/asc-mcp"
+command = "/Users/you/.cargo/bin/asc-mcp"
 args = ["serve"]
 
 [mcp_servers.asc-mcp.env]
@@ -229,7 +232,7 @@ codex mcp add asc-mcp \
   --env ASC_ISSUER_ID=57246542-96fe-1a63-e053-0824d011072a \
   --env ASC_KEY_ID=2X9R4HXF34 \
   --env ASC_PRIVATE_KEY_PATH=/Users/you/.appstoreconnect/AuthKey_2X9R4HXF34.p8 \
-  -- /Users/you/go/bin/asc-mcp serve
+  -- /Users/you/.cargo/bin/asc-mcp serve
 ```
 
 As with Claude Code, `--` separates Codex's own flags from the command it
@@ -242,7 +245,7 @@ forward from your environment and omit the `env` table:
 
 ```toml
 [mcp_servers.asc-mcp]
-command = "/Users/you/go/bin/asc-mcp"
+command = "/Users/you/.cargo/bin/asc-mcp"
 args = ["serve"]
 env_vars = ["ASC_ISSUER_ID", "ASC_KEY_ID", "ASC_PRIVATE_KEY_PATH"]
 ```
@@ -268,9 +271,9 @@ Useful flags:
 
 | Flag | Default | Purpose |
 |------|---------|---------|
-| `--addr` | `:8080` | Bind address. Prefer `127.0.0.1:8080` unless remote access is intended |
+| `--addr` | `127.0.0.1:8080` | Bind address. Use `0.0.0.0:8080` only when remote access is intended (e.g. in a container) |
 | `--auth-tokens` | *(empty)* | Comma-separated Bearer tokens. Also read from `ASC_MCP_AUTH_TOKENS` |
-| `--allowed-origins` | *(empty)* | Origin allowlist; defends browser clients against DNS rebinding |
+| `--allowed-origins` | *(empty)* | Extra allowed `Origin` values; loopback and same-origin are always allowed, others get 403 (DNS rebinding defense) |
 | `--tls-cert` / `--tls-key` | *(empty)* | Terminate TLS in process (TLS 1.2 minimum) |
 | `--log-format` | `json` | `json` or `text` |
 | `--log-level` | `info` | `debug`, `info`, `warn`, `error` |

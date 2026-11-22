@@ -36,7 +36,7 @@ upload flow for screenshots, previews, and review attachments:
 
 ## Prerequisites
 
-- Go 1.26.7 or later (older toolchains fetch it automatically)
+- Rust 1.85 or later (stable toolchain via [rustup](https://rustup.rs))
 - App Store Connect API credentials
 
 ## Getting App Store Connect API Credentials
@@ -761,34 +761,42 @@ make lint
 
 ## Architecture
 
-The MCP protocol layer, JWT/ES256 signing, and HTTP client are implemented
-using only the Go standard library. The CLI is built on
-[`spf13/cobra`](https://github.com/spf13/cobra) (see ADR-0004). No other
-runtime dependencies are required.
+`asc-mcp` is written in Rust on Tokio. The App Store Connect client uses
+`reqwest` (rustls); the HTTP transport uses `axum`; ES256 JWTs are signed
+with the RustCrypto `p256` crate (see ADR-0009 for the rewrite from Go and
+the parity guarantees it keeps).
 
-The server is dual-era: it speaks the stateless MCP protocol revision
-`2026-07-28` (per-request `_meta` version/capabilities, `server/discover`,
-no sessions) and still serves handshake-based clients, negotiating
-`2025-11-25`, `2025-06-18`, `2025-03-26`, or `2024-11-05` via `initialize`.
-Each request picks its era: a `_meta` `io.modelcontextprotocol/protocolVersion`
-key (or a `server/discover` call) selects the modern path; everything else
-takes the legacy path unchanged.
+The server is dual-era. It speaks the stateless MCP protocol revision
+`2026-07-28`: per-request `_meta` version and capabilities,
+`server/discover`, `subscriptions/listen`, and no sessions. It still serves
+handshake-based clients, negotiating `2025-11-25`, `2025-06-18`,
+`2025-03-26`, or `2024-11-05` via `initialize`. Each request picks its
+era. A `_meta` `io.modelcontextprotocol/protocolVersion` key, a
+`server/discover` call, or (over HTTP) a modern `MCP-Protocol-Version`
+header selects the modern path. `initialize` and everything else take the
+legacy path.
 
 Two transports are supported, sharing the same dispatcher and tool registry:
 
 - `asc-mcp serve` — stdio. JSON-RPC messages on stdin/stdout. Use this when
   the server is spawned by a desktop client such as Claude Desktop.
-- `asc-mcp serve-http --addr :8080` — Streamable HTTP. `POST /mcp` for
-  JSON-RPC submissions, `GET /healthz` for the K8s probe, `GET /metrics`
-  for Prometheus scraping. Modern (`2026-07-28`) requests are sessionless
-  and must carry the `Mcp-Method` header (plus `Mcp-Name` on `tools/call`);
-  legacy clients get an `Mcp-Session-Id` on initialize, echo it on every
-  subsequent request, and may `DELETE /mcp` to end the session. Useful
-  flags:
+- `asc-mcp serve-http --addr 127.0.0.1:8080` — Streamable HTTP:
+  - `POST /mcp` for JSON-RPC submissions, `GET /healthz` for the K8s
+    probe, `GET /metrics` for Prometheus scraping.
+  - Modern (`2026-07-28`) requests are sessionless. They must carry
+    `MCP-Protocol-Version` and `Mcp-Method` headers that match the body,
+    plus `Mcp-Name` on `tools/call`.
+  - Legacy clients get an `Mcp-Session-Id` on initialize, echo it on every
+    subsequent request, and may `DELETE /mcp` to end the session.
+
+  Useful flags:
+  - `--addr`: bind address, loopback by default. Use `0.0.0.0:8080` in
+    containers.
   - `--auth-tokens` (or `ASC_MCP_AUTH_TOKENS` env): comma-separated
     Bearer tokens. Required for any non-trusted-network deployment.
-  - `--allowed-origins`: comma-separated Origin allowlist (DNS rebinding
-    defense for browser clients).
+  - `--allowed-origins`: additional allowed `Origin` values. Loopback
+    origins and the server's own origin are always accepted; any other
+    browser origin is rejected with 403 (DNS rebinding defense).
   - `--tls-cert` / `--tls-key`: PEM cert+key to terminate TLS in
     process (TLS 1.2 minimum). Omit both to listen plain HTTP behind a
     TLS-terminating reverse proxy.
@@ -802,16 +810,31 @@ the HTTP transport.
 
 ```
 asc-mcp/
-├── cmd/asc-mcp/          # Application entry point
-├── internal/asc/
-│   ├── api/              # App Store Connect API client
-│   ├── config/           # Configuration management
-│   ├── server/           # MCP server implementation
-│   └── tools/            # Tool implementations
+├── src/
+│   ├── main.rs, cli.rs   # Entry point and command-line interface
+│   ├── config.rs         # Environment configuration
+│   ├── mcp.rs            # MCP protocol types and constants
+│   ├── server/           # Dispatcher, stdio and Streamable HTTP transports, metrics
+│   ├── api/              # App Store Connect client, auth, models, endpoints
+│   ├── tools/            # Tool definitions and handlers, one file per area
+│   └── go/               # Go-compatible JSON/format/time/url semantics (wire parity)
+├── tests/                # Integration tests and the Go parity harness
 ├── config/               # Configuration templates
 ├── script/               # Build and test scripts
-└── doc/                  # Documentation
+├── ops/k8s/              # Kubernetes manifests
+└── doc/                  # Documentation and ADRs
 ```
+
+### Parity with the original Go server
+
+The server was rewritten from Go to Rust with the original's observable
+behaviour preserved: the same tool names, schemas and annotations, the
+same requests to App Store Connect, and the same text and structured
+tool results. `tests/parity/parity.py` checks this against the Go
+implementation, rebuilt from git history by
+`tests/parity/build-go-reference.sh`. It runs every tool through a matrix
+of argument variants and mock API responses synthesized from Apple's
+OpenAPI document. Run it with `make parity`.
 
 ## License
 

@@ -1,8 +1,8 @@
-.PHONY: all build clean test lint fmt vet install run e2e
+.PHONY: all build clean test lint fmt clippy install run e2e parity
 
 BINARY_NAME=asc-mcp
 BUILD_DIR=bin
-GO=go
+CARGO=cargo
 
 all: build
 
@@ -11,7 +11,7 @@ build:
 
 clean:
 	@rm -rf $(BUILD_DIR)
-	@$(GO) clean
+	@$(CARGO) clean
 
 test:
 	@./script/test.zsh
@@ -20,10 +20,10 @@ lint:
 	@./script/lint.zsh
 
 fmt:
-	@$(GO) fmt ./...
+	@$(CARGO) fmt
 
-vet:
-	@$(GO) vet ./...
+clippy:
+	@$(CARGO) clippy --all-targets -- -D warnings
 
 install:
 	@./script/install.zsh
@@ -33,5 +33,11 @@ run: build
 
 e2e: build
 	@./e2e/e2e.zsh
+
+# Differential parity check against the original Go server (needs Go).
+parity:
+	@./tests/parity/build-go-reference.sh "" target/asc-mcp-go
+	@$(CARGO) build
+	@python3 tests/parity/parity.py --go target/asc-mcp-go --rust target/debug/$(BINARY_NAME)
 
 .DEFAULT_GOAL := build

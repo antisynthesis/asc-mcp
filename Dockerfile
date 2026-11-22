@@ -1,29 +1,28 @@
-# Build stage
-FROM golang:1.25-alpine AS builder
+# Build stage: a static musl binary.
+FROM rust:1.97-alpine AS builder
+
+RUN apk add --no-cache musl-dev
 
 WORKDIR /app
 
-# Copy go mod files
-COPY go.mod go.sum ./
+# Cache dependency builds: compile a placeholder crate against the real
+# manifest first, then the actual sources.
+COPY Cargo.toml Cargo.lock build.rs ./
+RUN mkdir src && echo 'fn main() {}' > src/main.rs && touch src/lib.rs \
+    && cargo build --release --locked && rm -rf src
 
-# Download dependencies
-RUN go mod download
-
-# Copy source code
-COPY . .
-
-# Build the binary
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /asc-mcp ./cmd/asc-mcp
+COPY src ./src
+RUN touch src/main.rs src/lib.rs && cargo build --release --locked \
+    && cp target/release/asc-mcp /asc-mcp
 
 # Runtime stage
-FROM alpine:3.19
+FROM alpine:3.20
 
-# Add CA certificates for HTTPS
+# CA certificates for HTTPS to the App Store Connect API
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /
 
-# Copy binary from builder
 COPY --from=builder /asc-mcp /asc-mcp
 
 # Run as non-root user

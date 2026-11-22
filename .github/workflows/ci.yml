@@ -14,89 +14,85 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   test:
     name: build & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy
+        run: cargo clippy --all-targets --locked -- -D warnings
+
+      - name: cargo build
+        run: cargo build --locked
+
+      - name: cargo test
+        run: cargo test --locked
+
+      - name: Build release binary (smoke)
+        env:
+          ASC_MCP_VERSION: ${{ github.sha }}
+        run: |
+          cargo build --release --locked
+          ./target/release/asc-mcp version
+          ./target/release/asc-mcp tools | head -1
+
+  parity:
+    name: parity with the Go reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the Go reference is built from git history
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+          cache: false
+
+      - name: Build Go reference
+        run: tests/parity/build-go-reference.sh "" target/asc-mcp-go
+
+      - name: Build Rust server
+        run: cargo build --locked
+
+      - name: Differential parity run
+        run: python3 tests/parity/parity.py --go target/asc-mcp-go --rust target/debug/asc-mcp --jobs 4 --max-diffs 2
+
+  audit:
+    name: cargo audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
 
-      - name: Verify go.mod is tidy
-        run: |
-          go mod tidy
-          if ! git diff --quiet -- go.mod go.sum; then
-            echo "go.mod / go.sum out of date. Run 'go mod tidy' and commit."
-            git --no-pager diff -- go.mod go.sum
-            exit 1
-          fi
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
 
-      - name: Verify gofmt
-        run: |
-          unformatted=$(gofmt -l .)
-          if [ -n "$unformatted" ]; then
-            echo "The following files are not gofmt'ed:"
-            echo "$unformatted"
-            exit 1
-          fi
-
-      - name: go vet
-        run: go vet ./...
-
-      - name: go build
-        run: go build ./...
-
-      - name: go test
-        run: go test -race -count=1 -timeout=2m ./...
-
-      - name: Build release binary (smoke)
-        run: |
-          mkdir -p dist
-          CGO_ENABLED=0 go build -trimpath \
-            -ldflags "-s -w -X github.com/antisynthesis/asc-mcp/internal/asc/cmd.Version=${GITHUB_SHA::8}" \
-            -o dist/asc-mcp ./cmd/asc-mcp
-          ./dist/asc-mcp version
-
-  staticcheck:
-    name: staticcheck
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Install staticcheck
-        run: go install honnef.co/go/tools/cmd/staticcheck@2025.1.1
-
-      - name: staticcheck
-        run: staticcheck ./...
-
-  govulncheck:
-    name: govulncheck
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
-
-      - name: govulncheck
-        run: govulncheck ./...
+      - name: cargo audit
+        run: cargo audit
