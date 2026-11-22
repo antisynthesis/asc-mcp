@@ -13,6 +13,7 @@ if ! git -C "$repo" cat-file -e "$rev:go.mod" 2>/dev/null; then
   rev="$(git -C "$repo" rev-list -n1 "$rev"^ -- go.mod)"
 fi
 out="${2:-$repo/target/asc-mcp-go}"
+case "$out" in /*) ;; *) out="$PWD/$out" ;; esac
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 git -C "$repo" archive "$rev" go.mod go.sum internal cmd | tar -x -C "$work"
