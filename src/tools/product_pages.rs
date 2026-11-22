@@ -376,7 +376,30 @@ async fn handle_list_app_custom_product_pages(c: Arc<Client>, args: Args) -> Han
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAppCustomProductPages from internal/asc/tools/product_pages.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_custom_product_pages(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list custom product pages: {e}"))),
+    };
+
+    Ok(list_result(&format_app_custom_product_pages(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetAppCustomProductPage`.
@@ -386,7 +409,21 @@ async fn handle_get_app_custom_product_page(c: Arc<Client>, args: Args) -> Handl
         page_id: String => "page_id";
     }
     }
-    todo!("port handleGetAppCustomProductPage from internal/asc/tools/product_pages.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.page_id.is_empty() {
+        return Ok(error_result("page_id is required"));
+    }
+
+    let resp = match c.get_app_custom_product_page(&params.page_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get custom product page: {e}"))),
+    };
+
+    Ok(data_result(&format_app_custom_product_page(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateAppCustomProductPage`.
@@ -397,7 +434,32 @@ async fn handle_create_app_custom_product_page(c: Arc<Client>, args: Args) -> Ha
         name: String => "name";
     }
     }
-    todo!("port handleCreateAppCustomProductPage from internal/asc/tools/product_pages.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() || params.name.is_empty() {
+        return Ok(error_result("app_id and name are required"));
+    }
+
+    let req = AppCustomProductPageCreateRequest {
+        data: AppCustomProductPageCreateData {
+            type_: "appCustomProductPages".into(),
+            attributes: AppCustomProductPageCreateAttributes { name: params.name.clone() },
+            relationships: AppCustomProductPageCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+                ..Default::default()
+            },
+        },
+    };
+
+    let resp = match c.create_app_custom_product_page(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create custom product page: {e}"))),
+    };
+
+    Ok(data_result(&format!("Custom product page created:\n{}", format_app_custom_product_page(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateAppCustomProductPage`.
@@ -409,7 +471,29 @@ async fn handle_update_app_custom_product_page(c: Arc<Client>, args: Args) -> Ha
         visible: Option<bool> => "visible";
     }
     }
-    todo!("port handleUpdateAppCustomProductPage from internal/asc/tools/product_pages.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.page_id.is_empty() {
+        return Ok(error_result("page_id is required"));
+    }
+
+    let req = AppCustomProductPageUpdateRequest {
+        data: AppCustomProductPageUpdateData {
+            type_: "appCustomProductPages".into(),
+            id: params.page_id.clone(),
+            attributes: AppCustomProductPageUpdateAttributes { name: params.name.clone(), visible: params.visible },
+        },
+    };
+
+    let resp = match c.update_app_custom_product_page(&params.page_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update custom product page: {e}"))),
+    };
+
+    Ok(data_result(&format!("Custom product page updated:\n{}", format_app_custom_product_page(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteAppCustomProductPage`.
@@ -419,7 +503,20 @@ async fn handle_delete_app_custom_product_page(c: Arc<Client>, args: Args) -> Ha
         page_id: String => "page_id";
     }
     }
-    todo!("port handleDeleteAppCustomProductPage from internal/asc/tools/product_pages.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.page_id.is_empty() {
+        return Ok(error_result("page_id is required"));
+    }
+
+    if let Err(e) = c.delete_app_custom_product_page(&params.page_id).await {
+        return Ok(error_result(format!("Failed to delete custom product page: {e}")));
+    }
+
+    Ok(CallToolResult::success("Custom product page deleted"))
 }
 
 /// Ported from `Registry.handleListAppStoreVersionExperiments`.
@@ -436,7 +533,37 @@ async fn handle_list_app_store_version_experiments(c: Arc<Client>, args: Args) -
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAppStoreVersionExperiments from internal/asc/tools/product_pages.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() && params.version_id.is_empty() {
+        return Ok(error_result("app_id or version_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let resp = match paginated_fetch(&c, &params.cursor, || async {
+        let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+        if !params.version_id.is_empty() {
+            return c.list_app_store_version_experiments(&params.version_id, opts.as_ref()).await;
+        }
+        c.list_app_store_version_experiments_for_app(&params.app_id, opts.as_ref()).await
+    })
+    .await
+    {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list experiments: {e}"))),
+    };
+
+    Ok(list_result(&format_app_store_version_experiments(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetAppStoreVersionExperiment`.
@@ -446,7 +573,21 @@ async fn handle_get_app_store_version_experiment(c: Arc<Client>, args: Args) -> 
         experiment_id: String => "experiment_id";
     }
     }
-    todo!("port handleGetAppStoreVersionExperiment from internal/asc/tools/product_pages.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.experiment_id.is_empty() {
+        return Ok(error_result("experiment_id is required"));
+    }
+
+    let resp = match c.get_app_store_version_experiment(&params.experiment_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get experiment: {e}"))),
+    };
+
+    Ok(data_result(&format_app_store_version_experiment(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateAppStoreVersionExperiment`.
@@ -459,7 +600,40 @@ async fn handle_create_app_store_version_experiment(c: Arc<Client>, args: Args) 
         traffic_proportion: i64 => "traffic_proportion";
     }
     }
-    todo!("port handleCreateAppStoreVersionExperiment from internal/asc/tools/product_pages.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() || params.name.is_empty() || params.platform.is_empty() {
+        return Ok(error_result("app_id, name, and platform are required"));
+    }
+
+    let mut traffic = params.traffic_proportion;
+    if traffic <= 0 {
+        traffic = 50;
+    }
+
+    let req = AppStoreVersionExperimentCreateRequest {
+        data: AppStoreVersionExperimentCreateData {
+            type_: "appStoreVersionExperiments".into(),
+            attributes: AppStoreVersionExperimentCreateAttributes {
+                name: params.name.clone(),
+                platform: params.platform.clone(),
+                traffic_proportion: traffic,
+            },
+            relationships: AppStoreVersionExperimentCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+            },
+        },
+    };
+
+    let resp = match c.create_app_store_version_experiment(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create experiment: {e}"))),
+    };
+
+    Ok(data_result(&format!("Experiment created:\n{}", format_app_store_version_experiment(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateAppStoreVersionExperiment`.
@@ -472,7 +646,33 @@ async fn handle_update_app_store_version_experiment(c: Arc<Client>, args: Args) 
         started: Option<bool> => "started";
     }
     }
-    todo!("port handleUpdateAppStoreVersionExperiment from internal/asc/tools/product_pages.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.experiment_id.is_empty() {
+        return Ok(error_result("experiment_id is required"));
+    }
+
+    let req = AppStoreVersionExperimentUpdateRequest {
+        data: AppStoreVersionExperimentUpdateData {
+            type_: "appStoreVersionExperiments".into(),
+            id: params.experiment_id.clone(),
+            attributes: AppStoreVersionExperimentUpdateAttributes {
+                name: params.name.clone(),
+                traffic_proportion: params.traffic_proportion,
+                started: params.started,
+            },
+        },
+    };
+
+    let resp = match c.update_app_store_version_experiment(&params.experiment_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update experiment: {e}"))),
+    };
+
+    Ok(data_result(&format!("Experiment updated:\n{}", format_app_store_version_experiment(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteAppStoreVersionExperiment`.
@@ -482,6 +682,81 @@ async fn handle_delete_app_store_version_experiment(c: Arc<Client>, args: Args) 
         experiment_id: String => "experiment_id";
     }
     }
-    todo!("port handleDeleteAppStoreVersionExperiment from internal/asc/tools/product_pages.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.experiment_id.is_empty() {
+        return Ok(error_result("experiment_id is required"));
+    }
+
+    if let Err(e) = c.delete_app_store_version_experiment(&params.experiment_id).await {
+        return Ok(error_result(format!("Failed to delete experiment: {e}")));
+    }
+
+    Ok(CallToolResult::success("Experiment deleted"))
 }
 
+/// Ported from `formatAppCustomProductPages`.
+fn format_app_custom_product_pages(pages: &[AppCustomProductPage]) -> String {
+    if pages.is_empty() {
+        return "No custom product pages found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} custom product pages:\n\n", pages.len());
+
+    for page in pages {
+        sb.push_str(&format_app_custom_product_page(page));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAppCustomProductPage`.
+fn format_app_custom_product_page(page: &AppCustomProductPage) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", page.id);
+    let _ = write!(sb, "Name: {}\n", page.attributes.name);
+    if !page.attributes.url.is_empty() {
+        let _ = write!(sb, "URL: {}\n", page.attributes.url);
+    }
+    let _ = write!(sb, "Visible: {}\n", bool_v(page.attributes.visible));
+    sb
+}
+
+/// Ported from `formatAppStoreVersionExperiments`.
+fn format_app_store_version_experiments(experiments: &[AppStoreVersionExperiment]) -> String {
+    if experiments.is_empty() {
+        return "No experiments found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} experiments:\n\n", experiments.len());
+
+    for exp in experiments {
+        sb.push_str(&format_app_store_version_experiment(exp));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAppStoreVersionExperiment`.
+fn format_app_store_version_experiment(exp: &AppStoreVersionExperiment) -> String {
+    let a = &exp.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", exp.id);
+    let _ = write!(sb, "Name: {}\n", a.name);
+    let _ = write!(sb, "State: {}\n", a.state);
+    let _ = write!(sb, "Traffic Proportion: {}%\n", a.traffic_proportion);
+    if let Some(d) = &a.start_date {
+        let _ = write!(sb, "Start Date: {}\n", d.format("2006-01-02"));
+    }
+    if let Some(d) = &a.end_date {
+        let _ = write!(sb, "End Date: {}\n", d.format("2006-01-02"));
+    }
+    sb
+}

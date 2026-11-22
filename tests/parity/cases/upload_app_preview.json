@@ -1,0 +1,88 @@
+[
+  {
+    "name": "neither-source",
+    "args": {
+      "preview_set_id": "s",
+      "file_name": "f.png"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "bad-b64",
+    "args": {
+      "preview_set_id": "s",
+      "file_name": "f.png",
+      "file_data_base64": "!!!not base64!!!"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "missing-file",
+    "args": {
+      "preview_set_id": "s",
+      "file_name": "f.png",
+      "file_path": "/nonexistent/dir/x.png"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "relative-path",
+    "args": {
+      "preview_set_id": "s",
+      "file_name": "f.png",
+      "file_path": "relative/x.png"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "missing-name",
+    "args": {
+      "preview_set_id": "s",
+      "file_path": "$FILE"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "empty-b64",
+    "args": {
+      "preview_set_id": "s",
+      "file_name": "f.png",
+      "file_data_base64": ""
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "wrong-id-type",
+    "args": {
+      "preview_set_id": 5,
+      "file_name": "f.png"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "default-mime",
+    "args": {
+      "preview_set_id": "s",
+      "file_name": "f.mp4",
+      "file_path": "$FILE"
+    },
+    "modes": [
+      "rich",
+      "notfound"
+    ]
+  }
+]

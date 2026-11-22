@@ -340,7 +340,30 @@ async fn handle_list_screenshot_sets(c: Arc<Client>, args: Args) -> HandlerResul
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListScreenshotSets from internal/asc/tools/screenshots.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_screenshot_sets(&params.localization_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list screenshot sets: {e}"))),
+    };
+
+    Ok(list_result(&format_screenshot_sets(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListScreenshots`.
@@ -356,7 +379,30 @@ async fn handle_list_screenshots(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListScreenshots from internal/asc/tools/screenshots.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.screenshot_set_id.is_empty() {
+        return Ok(error_result("screenshot_set_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_screenshots(&params.screenshot_set_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list screenshots: {e}"))),
+    };
+
+    Ok(list_result(&format_screenshots(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetScreenshot`.
@@ -366,7 +412,21 @@ async fn handle_get_screenshot(c: Arc<Client>, args: Args) -> HandlerResult {
         screenshot_id: String => "screenshot_id";
     }
     }
-    todo!("port handleGetScreenshot from internal/asc/tools/screenshots.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.screenshot_id.is_empty() {
+        return Ok(error_result("screenshot_id is required"));
+    }
+
+    let resp = match c.get_app_screenshot(&params.screenshot_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get screenshot: {e}"))),
+    };
+
+    Ok(data_result(&format_screenshot(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteScreenshot`.
@@ -376,7 +436,20 @@ async fn handle_delete_screenshot(c: Arc<Client>, args: Args) -> HandlerResult {
         screenshot_id: String => "screenshot_id";
     }
     }
-    todo!("port handleDeleteScreenshot from internal/asc/tools/screenshots.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.screenshot_id.is_empty() {
+        return Ok(error_result("screenshot_id is required"));
+    }
+
+    if let Err(e) = c.delete_app_screenshot(&params.screenshot_id).await {
+        return Ok(error_result(format!("Failed to delete screenshot: {e}")));
+    }
+
+    Ok(CallToolResult::success("Screenshot deleted successfully"))
 }
 
 /// Ported from `Registry.handleListPreviewSets`.
@@ -392,7 +465,30 @@ async fn handle_list_preview_sets(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListPreviewSets from internal/asc/tools/screenshots.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_preview_sets(&params.localization_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list preview sets: {e}"))),
+    };
+
+    Ok(list_result(&format_preview_sets(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListPreviews`.
@@ -408,7 +504,30 @@ async fn handle_list_previews(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListPreviews from internal/asc/tools/screenshots.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.preview_set_id.is_empty() {
+        return Ok(error_result("preview_set_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_previews(&params.preview_set_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list previews: {e}"))),
+    };
+
+    Ok(list_result(&format_previews(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetPreview`.
@@ -418,7 +537,21 @@ async fn handle_get_preview(c: Arc<Client>, args: Args) -> HandlerResult {
         preview_id: String => "preview_id";
     }
     }
-    todo!("port handleGetPreview from internal/asc/tools/screenshots.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.preview_id.is_empty() {
+        return Ok(error_result("preview_id is required"));
+    }
+
+    let resp = match c.get_app_preview(&params.preview_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get preview: {e}"))),
+    };
+
+    Ok(data_result(&format_preview(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleDeletePreview`.
@@ -428,6 +561,121 @@ async fn handle_delete_preview(c: Arc<Client>, args: Args) -> HandlerResult {
         preview_id: String => "preview_id";
     }
     }
-    todo!("port handleDeletePreview from internal/asc/tools/screenshots.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.preview_id.is_empty() {
+        return Ok(error_result("preview_id is required"));
+    }
+
+    if let Err(e) = c.delete_app_preview(&params.preview_id).await {
+        return Ok(error_result(format!("Failed to delete preview: {e}")));
+    }
+
+    Ok(CallToolResult::success("Preview deleted successfully"))
 }
 
+/// Ported from `formatScreenshotSets`.
+fn format_screenshot_sets(sets: &[AppScreenshotSet]) -> String {
+    if sets.is_empty() {
+        return "No screenshot sets found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} screenshot sets:\n\n", sets.len());
+
+    for set in sets {
+        let _ = write!(sb, "ID: {}\n", set.id);
+        let _ = write!(sb, "Display Type: {}\n", set.attributes.screenshot_display_type);
+        sb.push_str("---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatScreenshots`.
+fn format_screenshots(screenshots: &[AppScreenshot]) -> String {
+    if screenshots.is_empty() {
+        return "No screenshots found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} screenshots:\n\n", screenshots.len());
+
+    for ss in screenshots {
+        sb.push_str(&format_screenshot(ss));
+        sb.push_str("---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatScreenshot`.
+fn format_screenshot(ss: &AppScreenshot) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", ss.id);
+    let _ = write!(sb, "File Name: {}\n", ss.attributes.file_name);
+    let _ = write!(sb, "File Size: {} bytes\n", ss.attributes.file_size);
+    if let Some(img) = &ss.attributes.image_asset {
+        let _ = write!(sb, "Dimensions: {}x{}\n", img.width, img.height);
+    }
+    if let Some(st) = &ss.attributes.asset_delivery_state {
+        let _ = write!(sb, "State: {}\n", st.state);
+    }
+    sb
+}
+
+/// Ported from `formatPreviewSets`.
+fn format_preview_sets(sets: &[AppPreviewSet]) -> String {
+    if sets.is_empty() {
+        return "No preview sets found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} preview sets:\n\n", sets.len());
+
+    for set in sets {
+        let _ = write!(sb, "ID: {}\n", set.id);
+        let _ = write!(sb, "Preview Type: {}\n", set.attributes.preview_type);
+        sb.push_str("---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatPreviews`.
+fn format_previews(previews: &[AppPreview]) -> String {
+    if previews.is_empty() {
+        return "No previews found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} previews:\n\n", previews.len());
+
+    for p in previews {
+        sb.push_str(&format_preview(p));
+        sb.push_str("---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatPreview`.
+fn format_preview(p: &AppPreview) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", p.id);
+    let _ = write!(sb, "File Name: {}\n", p.attributes.file_name);
+    let _ = write!(sb, "File Size: {} bytes\n", p.attributes.file_size);
+    if !p.attributes.mime_type.is_empty() {
+        let _ = write!(sb, "MIME Type: {}\n", p.attributes.mime_type);
+    }
+    if !p.attributes.video_url.is_empty() {
+        let _ = write!(sb, "Video URL: {}\n", p.attributes.video_url);
+    }
+    if let Some(st) = &p.attributes.asset_delivery_state {
+        let _ = write!(sb, "State: {}\n", st.state);
+    }
+    sb
+}

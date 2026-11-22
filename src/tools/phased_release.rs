@@ -129,7 +129,21 @@ async fn handle_get_phased_release(c: Arc<Client>, args: Args) -> HandlerResult 
         version_id: String => "version_id";
     }
     }
-    todo!("port handleGetPhasedRelease from internal/asc/tools/phased_release.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let resp = match c.get_app_store_version_phased_release(&params.version_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get phased release: {e}"))),
+    };
+
+    Ok(data_result(&format_phased_release(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreatePhasedRelease`.
@@ -140,7 +154,36 @@ async fn handle_create_phased_release(c: Arc<Client>, args: Args) -> HandlerResu
         state: String => "state";
     }
     }
-    todo!("port handleCreatePhasedRelease from internal/asc/tools/phased_release.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let req = AppStoreVersionPhasedReleaseCreateRequest {
+        data: AppStoreVersionPhasedReleaseCreateData {
+            type_: "appStoreVersionPhasedReleases".into(),
+            attributes: AppStoreVersionPhasedReleaseCreateAttributes { phased_release_state: params.state.clone() },
+            relationships: AppStoreVersionPhasedReleaseCreateRelationships {
+                app_store_version: RelationshipData {
+                    data: ResourceIdentifier { type_: "appStoreVersions".into(), id: params.version_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_app_store_version_phased_release(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create phased release: {e}"))),
+    };
+
+    Ok(data_result(
+        &format!("Created phased release: {} (state: {})", resp.data.id, resp.data.attributes.phased_release_state),
+        &resp.data,
+    ))
 }
 
 /// Ported from `Registry.handleUpdatePhasedRelease`.
@@ -151,7 +194,35 @@ async fn handle_update_phased_release(c: Arc<Client>, args: Args) -> HandlerResu
         state: String => "state";
     }
     }
-    todo!("port handleUpdatePhasedRelease from internal/asc/tools/phased_release.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.phased_release_id.is_empty() {
+        return Ok(error_result("phased_release_id is required"));
+    }
+    if params.state.is_empty() {
+        return Ok(error_result("state is required"));
+    }
+
+    let req = AppStoreVersionPhasedReleaseUpdateRequest {
+        data: AppStoreVersionPhasedReleaseUpdateData {
+            type_: "appStoreVersionPhasedReleases".into(),
+            id: params.phased_release_id.clone(),
+            attributes: AppStoreVersionPhasedReleaseUpdateAttributes { phased_release_state: params.state.clone() },
+        },
+    };
+
+    let resp = match c.update_app_store_version_phased_release(&params.phased_release_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update phased release: {e}"))),
+    };
+
+    Ok(data_result(
+        &format!("Updated phased release: {} (state: {})", resp.data.id, resp.data.attributes.phased_release_state),
+        &resp.data,
+    ))
 }
 
 /// Ported from `Registry.handleDeletePhasedRelease`.
@@ -161,6 +232,30 @@ async fn handle_delete_phased_release(c: Arc<Client>, args: Args) -> HandlerResu
         phased_release_id: String => "phased_release_id";
     }
     }
-    todo!("port handleDeletePhasedRelease from internal/asc/tools/phased_release.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.phased_release_id.is_empty() {
+        return Ok(error_result("phased_release_id is required"));
+    }
+
+    if let Err(e) = c.delete_app_store_version_phased_release(&params.phased_release_id).await {
+        return Ok(error_result(format!("Failed to delete phased release: {e}")));
+    }
+
+    Ok(CallToolResult::success("Phased release deleted - app will release to all users"))
 }
 
+/// Ported from `formatPhasedRelease`.
+fn format_phased_release(pr: &AppStoreVersionPhasedRelease) -> String {
+    let mut result = format!("Phased Release ID: {}\n", pr.id);
+    let _ = write!(result, "State: {}\n", pr.attributes.phased_release_state);
+    if let Some(d) = &pr.attributes.start_date {
+        let _ = write!(result, "Start Date: {}\n", d.format("2006-01-02"));
+    }
+    let _ = write!(result, "Current Day: {}\n", pr.attributes.current_day_number);
+    let _ = write!(result, "Total Pause Duration: {} days\n", pr.attributes.total_pause_duration);
+    result
+}

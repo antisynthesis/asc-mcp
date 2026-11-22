@@ -1,0 +1,22 @@
+[
+  {
+    "name": "visible-false",
+    "args": {
+      "page_id": "p",
+      "visible": false
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "name-only",
+    "args": {
+      "page_id": "p",
+      "name": "New"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

@@ -240,7 +240,32 @@ async fn handle_upload_app_screenshot(c: Arc<Client>, args: Args) -> HandlerResu
         file_data_base64: String => "file_data_base64";
     }
     }
-    todo!("port handleUploadAppScreenshot from internal/asc/tools/uploads.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Ok(error_result(format!("invalid arguments: {e}")));
+    }
+    if params.screenshot_set_id.is_empty() {
+        return Ok(error_result("screenshot_set_id is required"));
+    }
+    if params.file_name.is_empty() {
+        return Ok(error_result("file_name is required"));
+    }
+    let body = match load_upload_body(&params.file_path, &params.file_data_base64) {
+        Ok(b) => b,
+        Err(e) => return Ok(error_result(e)),
+    };
+    let resp = match c.upload_app_screenshot(&params.screenshot_set_id, &params.file_name, &body).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to upload screenshot: {e}"))),
+    };
+    let text = format!(
+        "Uploaded screenshot {} ({}, {} bytes) to set {}.",
+        resp.data.id,
+        params.file_name,
+        body.len(),
+        params.screenshot_set_id
+    );
+    Ok(data_result(&text, &resp.data))
 }
 
 /// Ported from `Registry.handleUploadAppPreview`.
@@ -254,7 +279,32 @@ async fn handle_upload_app_preview(c: Arc<Client>, args: Args) -> HandlerResult 
         file_data_base64: String => "file_data_base64";
     }
     }
-    todo!("port handleUploadAppPreview from internal/asc/tools/uploads.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Ok(error_result(format!("invalid arguments: {e}")));
+    }
+    if params.preview_set_id.is_empty() {
+        return Ok(error_result("preview_set_id is required"));
+    }
+    if params.file_name.is_empty() {
+        return Ok(error_result("file_name is required"));
+    }
+    let body = match load_upload_body(&params.file_path, &params.file_data_base64) {
+        Ok(b) => b,
+        Err(e) => return Ok(error_result(e)),
+    };
+    let resp = match c.upload_app_preview(&params.preview_set_id, &params.file_name, &params.mime_type, &body).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to upload preview: {e}"))),
+    };
+    let text = format!(
+        "Uploaded preview {} ({}, {} bytes) to set {}.",
+        resp.data.id,
+        params.file_name,
+        body.len(),
+        params.preview_set_id
+    );
+    Ok(data_result(&text, &resp.data))
 }
 
 /// Ported from `Registry.handleUploadReviewAttachment`.
@@ -267,6 +317,31 @@ async fn handle_upload_review_attachment(c: Arc<Client>, args: Args) -> HandlerR
         file_data_base64: String => "file_data_base64";
     }
     }
-    todo!("port handleUploadReviewAttachment from internal/asc/tools/uploads.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Ok(error_result(format!("invalid arguments: {e}")));
+    }
+    if params.review_detail_id.is_empty() {
+        return Ok(error_result("review_detail_id is required"));
+    }
+    if params.file_name.is_empty() {
+        return Ok(error_result("file_name is required"));
+    }
+    let body = match load_upload_body(&params.file_path, &params.file_data_base64) {
+        Ok(b) => b,
+        Err(e) => return Ok(error_result(e)),
+    };
+    let resp = match c.upload_app_store_review_attachment(&params.review_detail_id, &params.file_name, &body).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to upload review attachment: {e}"))),
+    };
+    let text = format!(
+        "Uploaded review attachment {} ({}, {} bytes) to review detail {}.",
+        resp.data.id,
+        params.file_name,
+        body.len(),
+        params.review_detail_id
+    );
+    Ok(data_result(&text, &resp.data))
 }
 

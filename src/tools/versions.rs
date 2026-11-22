@@ -380,7 +380,29 @@ async fn handle_list_app_store_versions(c: Arc<Client>, args: Args) -> HandlerRe
         limit: i64 => "limit";
     }
     }
-    todo!("port handleListAppStoreVersions from internal/asc/tools/versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let resp = match c.get_app_versions(&params.app_id, limit_opts(limit).as_ref()).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list app store versions: {e}"))),
+    };
+
+    Ok(data_result(&format_app_store_versions(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleGetAppStoreVersion`.
@@ -390,7 +412,21 @@ async fn handle_get_app_store_version(c: Arc<Client>, args: Args) -> HandlerResu
         version_id: String => "version_id";
     }
     }
-    todo!("port handleGetAppStoreVersion from internal/asc/tools/versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let resp = match c.get_app_store_version(&params.version_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get app store version: {e}"))),
+    };
+
+    Ok(data_result(&format_app_store_version(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateAppStoreVersion`.
@@ -404,7 +440,47 @@ async fn handle_create_app_store_version(c: Arc<Client>, args: Args) -> HandlerR
         release_type: String => "release_type";
     }
     }
-    todo!("port handleCreateAppStoreVersion from internal/asc/tools/versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+    if params.version_string.is_empty() {
+        return Ok(error_result("version_string is required"));
+    }
+    if params.platform.is_empty() {
+        return Ok(error_result("platform is required"));
+    }
+
+    let req = AppStoreVersionCreateRequest {
+        data: AppStoreVersionCreateData {
+            type_: "appStoreVersions".into(),
+            attributes: AppStoreVersionCreateAttributes {
+                platform: params.platform.clone(),
+                version_string: params.version_string.clone(),
+                copyright: params.copyright.clone(),
+                release_type: params.release_type.clone(),
+                ..Default::default()
+            },
+            relationships: AppStoreVersionCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+                ..Default::default()
+            },
+        },
+    };
+
+    let resp = match c.create_app_store_version(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create app store version: {e}"))),
+    };
+
+    Ok(data_result(
+        &format!("Created app store version: {} (ID: {})", resp.data.attributes.version_string, resp.data.id),
+        &resp.data,
+    ))
 }
 
 /// Ported from `Registry.handleUpdateAppStoreVersion`.
@@ -417,7 +493,34 @@ async fn handle_update_app_store_version(c: Arc<Client>, args: Args) -> HandlerR
         release_type: String => "release_type";
     }
     }
-    todo!("port handleUpdateAppStoreVersion from internal/asc/tools/versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let req = AppStoreVersionUpdateRequest {
+        data: AppStoreVersionUpdateData {
+            type_: "appStoreVersions".into(),
+            id: params.version_id.clone(),
+            attributes: AppStoreVersionUpdateAttributes {
+                version_string: params.version_string.clone(),
+                copyright: params.copyright.clone(),
+                release_type: params.release_type.clone(),
+                ..Default::default()
+            },
+        },
+    };
+
+    let resp = match c.update_app_store_version(&params.version_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update app store version: {e}"))),
+    };
+
+    Ok(data_result(&format!("Updated app store version: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteAppStoreVersion`.
@@ -427,7 +530,20 @@ async fn handle_delete_app_store_version(c: Arc<Client>, args: Args) -> HandlerR
         version_id: String => "version_id";
     }
     }
-    todo!("port handleDeleteAppStoreVersion from internal/asc/tools/versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    if let Err(e) = c.delete_app_store_version(&params.version_id).await {
+        return Ok(error_result(format!("Failed to delete app store version: {e}")));
+    }
+
+    Ok(CallToolResult::success("App store version deleted successfully"))
 }
 
 /// Ported from `Registry.handleSubmitAppForReview`.
@@ -439,7 +555,76 @@ async fn handle_submit_app_for_review(c: Arc<Client>, args: Args) -> HandlerResu
         platform: String => "platform";
     }
     }
-    todo!("port handleSubmitAppForReview from internal/asc/tools/versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let platform = if params.platform.is_empty() { "IOS".to_string() } else { params.platform.clone() };
+
+    // Create a review submission for the app.
+    let create_req = ReviewSubmissionCreateRequest {
+        data: ReviewSubmissionCreateData {
+            type_: "reviewSubmissions".into(),
+            attributes: Some(ReviewSubmissionCreateAttributes { platform }),
+            relationships: ReviewSubmissionCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+            },
+        },
+    };
+
+    let submission = match c.create_review_submission(&create_req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create review submission: {e}"))),
+    };
+
+    // Attach the app store version to the submission.
+    let item_req = ReviewSubmissionItemCreateRequest {
+        data: ReviewSubmissionItemCreateData {
+            type_: "reviewSubmissionItems".into(),
+            relationships: ReviewSubmissionItemCreateRelationships {
+                review_submission: RelationshipData {
+                    data: ResourceIdentifier { type_: "reviewSubmissions".into(), id: submission.data.id.clone() },
+                },
+                app_store_version: Some(RelationshipData {
+                    data: ResourceIdentifier { type_: "appStoreVersions".into(), id: params.version_id.clone() },
+                }),
+                ..Default::default()
+            },
+        },
+    };
+
+    if let Err(e) = c.create_review_submission_item(&item_req).await {
+        return Ok(error_result(format!(
+            "Failed to attach version to review submission {}: {e}",
+            submission.data.id
+        )));
+    }
+
+    // Submit the review submission.
+    let update_req = ReviewSubmissionUpdateRequest {
+        data: ReviewSubmissionUpdateData {
+            type_: "reviewSubmissions".into(),
+            id: submission.data.id.clone(),
+            attributes: ReviewSubmissionUpdateAttributes { submitted: Some(true), ..Default::default() },
+        },
+    };
+
+    let resp = match c.update_review_submission(&submission.data.id, &update_req).await {
+        Ok(r) => r,
+        Err(e) => {
+            return Ok(error_result(format!("Failed to submit review submission {}: {e}", submission.data.id)))
+        }
+    };
+
+    Ok(data_result(&format!("App submitted for review (review submission ID: {})", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleGetAppStoreReviewDetail`.
@@ -449,7 +634,21 @@ async fn handle_get_app_store_review_detail(c: Arc<Client>, args: Args) -> Handl
         version_id: String => "version_id";
     }
     }
-    todo!("port handleGetAppStoreReviewDetail from internal/asc/tools/versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let resp = match c.get_app_store_review_detail(&params.version_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get review detail: {e}"))),
+    };
+
+    Ok(data_result(&format_review_detail(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateAppStoreReviewDetail`.
@@ -467,7 +666,42 @@ async fn handle_create_app_store_review_detail(c: Arc<Client>, args: Args) -> Ha
         notes: String => "notes";
     }
     }
-    todo!("port handleCreateAppStoreReviewDetail from internal/asc/tools/versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let req = AppStoreReviewDetailCreateRequest {
+        data: AppStoreReviewDetailCreateData {
+            type_: "appStoreReviewDetails".into(),
+            attributes: AppStoreReviewDetailCreateAttributes {
+                contact_first_name: params.contact_first_name.clone(),
+                contact_last_name: params.contact_last_name.clone(),
+                contact_phone: params.contact_phone.clone(),
+                contact_email: params.contact_email.clone(),
+                demo_account_name: params.demo_account_name.clone(),
+                demo_account_password: params.demo_account_password.clone(),
+                demo_account_required: params.demo_account_required,
+                notes: params.notes.clone(),
+            },
+            relationships: AppStoreReviewDetailCreateRelationships {
+                app_store_version: RelationshipData {
+                    data: ResourceIdentifier { type_: "appStoreVersions".into(), id: params.version_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_app_store_review_detail(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create review detail: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created review detail: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateAppStoreReviewDetail`.
@@ -485,6 +719,96 @@ async fn handle_update_app_store_review_detail(c: Arc<Client>, args: Args) -> Ha
         notes: String => "notes";
     }
     }
-    todo!("port handleUpdateAppStoreReviewDetail from internal/asc/tools/versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.detail_id.is_empty() {
+        return Ok(error_result("detail_id is required"));
+    }
+
+    let req = AppStoreReviewDetailUpdateRequest {
+        data: AppStoreReviewDetailUpdateData {
+            type_: "appStoreReviewDetails".into(),
+            id: params.detail_id.clone(),
+            attributes: AppStoreReviewDetailUpdateAttributes {
+                contact_first_name: params.contact_first_name.clone(),
+                contact_last_name: params.contact_last_name.clone(),
+                contact_phone: params.contact_phone.clone(),
+                contact_email: params.contact_email.clone(),
+                demo_account_name: params.demo_account_name.clone(),
+                demo_account_password: params.demo_account_password.clone(),
+                demo_account_required: params.demo_account_required,
+                notes: params.notes.clone(),
+            },
+        },
+    };
+
+    let resp = match c.update_app_store_review_detail(&params.detail_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update review detail: {e}"))),
+    };
+
+    Ok(data_result(&format!("Updated review detail: {}", resp.data.id), &resp.data))
 }
 
+/// Ported from `formatAppStoreVersions`.
+fn format_app_store_versions(versions: &[AppStoreVersion]) -> String {
+    if versions.is_empty() {
+        return "No app store versions found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} app store versions:\n\n", versions.len());
+
+    for version in versions {
+        sb.push_str(&format_app_store_version(version));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAppStoreVersion`.
+fn format_app_store_version(version: &AppStoreVersion) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", version.id);
+    let _ = write!(sb, "Version: {}\n", version.attributes.version_string);
+    let _ = write!(sb, "Platform: {}\n", version.attributes.platform);
+    let _ = write!(sb, "State: {}\n", version.attributes.app_store_state);
+    if !version.attributes.copyright.is_empty() {
+        let _ = write!(sb, "Copyright: {}\n", version.attributes.copyright);
+    }
+    if !version.attributes.release_type.is_empty() {
+        let _ = write!(sb, "Release Type: {}\n", version.attributes.release_type);
+    }
+    if let Some(created) = &version.attributes.created_date {
+        let _ = write!(sb, "Created: {}\n", created.format("2006-01-02"));
+    }
+    sb
+}
+
+/// Ported from `formatReviewDetail`.
+fn format_review_detail(detail: &AppStoreReviewDetail) -> String {
+    let a = &detail.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", detail.id);
+    if !a.contact_first_name.is_empty() || !a.contact_last_name.is_empty() {
+        let _ = write!(sb, "Contact: {} {}\n", a.contact_first_name, a.contact_last_name);
+    }
+    if !a.contact_email.is_empty() {
+        let _ = write!(sb, "Email: {}\n", a.contact_email);
+    }
+    if !a.contact_phone.is_empty() {
+        let _ = write!(sb, "Phone: {}\n", a.contact_phone);
+    }
+    let _ = write!(sb, "Demo Account Required: {}\n", bool_v(a.demo_account_required));
+    if !a.demo_account_name.is_empty() {
+        let _ = write!(sb, "Demo Account: {}\n", a.demo_account_name);
+    }
+    if !a.notes.is_empty() {
+        let _ = write!(sb, "Notes: {}\n", a.notes);
+    }
+    sb
+}

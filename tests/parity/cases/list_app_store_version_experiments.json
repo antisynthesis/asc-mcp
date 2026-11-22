@@ -1,0 +1,36 @@
+[
+  {
+    "name": "version-only",
+    "args": {
+      "version_id": "ver-1",
+      "limit": 500
+    }
+  },
+  {
+    "name": "app-only",
+    "args": {
+      "app_id": "app-1",
+      "limit": -3
+    }
+  },
+  {
+    "name": "app-filter",
+    "args": {
+      "app_id": "app-1",
+      "filter": {
+        "state": [
+          "IN_REVIEW"
+        ]
+      },
+      "sort": [
+        "-name"
+      ],
+      "include": [
+        "app"
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

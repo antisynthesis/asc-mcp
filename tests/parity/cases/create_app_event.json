@@ -1,0 +1,11 @@
+[
+  {
+    "name": "missing-reference",
+    "args": {
+      "app_id": "a"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

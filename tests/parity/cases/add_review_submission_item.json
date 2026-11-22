@@ -1,0 +1,143 @@
+[
+  {
+    "name": "only-app_store_version_id",
+    "args": {
+      "review_submission_id": "sub-1",
+      "app_store_version_id": "app_store_version_id-1"
+    },
+    "modes": [
+      "rich",
+      "notfound"
+    ]
+  },
+  {
+    "name": "only-app_custom_product_page_version_id",
+    "args": {
+      "review_submission_id": "sub-1",
+      "app_custom_product_page_version_id": "app_custom_product_page_version_id-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "only-app_store_version_experiment_id",
+    "args": {
+      "review_submission_id": "sub-1",
+      "app_store_version_experiment_id": "app_store_version_experiment_id-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "only-app_event_id",
+    "args": {
+      "review_submission_id": "sub-1",
+      "app_event_id": "app_event_id-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "only-game_center_achievement_version_id",
+    "args": {
+      "review_submission_id": "sub-1",
+      "game_center_achievement_version_id": "game_center_achievement_version_id-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "only-game_center_leaderboard_version_id",
+    "args": {
+      "review_submission_id": "sub-1",
+      "game_center_leaderboard_version_id": "game_center_leaderboard_version_id-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "only-game_center_leaderboard_set_version_id",
+    "args": {
+      "review_submission_id": "sub-1",
+      "game_center_leaderboard_set_version_id": "game_center_leaderboard_set_version_id-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "only-game_center_activity_version_id",
+    "args": {
+      "review_submission_id": "sub-1",
+      "game_center_activity_version_id": "game_center_activity_version_id-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "only-game_center_challenge_version_id",
+    "args": {
+      "review_submission_id": "sub-1",
+      "game_center_challenge_version_id": "game_center_challenge_version_id-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "only-in_app_purchase_version_id",
+    "args": {
+      "review_submission_id": "sub-1",
+      "in_app_purchase_version_id": "in_app_purchase_version_id-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "only-subscription_version_id",
+    "args": {
+      "review_submission_id": "sub-1",
+      "subscription_version_id": "subscription_version_id-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "only-subscription_group_version_id",
+    "args": {
+      "review_submission_id": "sub-1",
+      "subscription_group_version_id": "subscription_group_version_id-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "two-ids",
+    "args": {
+      "review_submission_id": "sub-1",
+      "app_store_version_id": "a",
+      "app_event_id": "b"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-ids",
+    "args": {
+      "review_submission_id": "sub-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

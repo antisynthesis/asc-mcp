@@ -258,7 +258,30 @@ async fn handle_list_review_submissions(c: Arc<Client>, args: Args) -> HandlerRe
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListReviewSubmissions from internal/asc/tools/review_submissions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_review_submissions(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list review submissions: {e}"))),
+    };
+
+    Ok(list_result(&format_review_submissions(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetReviewSubmission`.
@@ -268,7 +291,34 @@ async fn handle_get_review_submission(c: Arc<Client>, args: Args) -> HandlerResu
         review_submission_id: String => "review_submission_id";
     }
     }
-    todo!("port handleGetReviewSubmission from internal/asc/tools/review_submissions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.review_submission_id.is_empty() {
+        return Ok(error_result("review_submission_id is required"));
+    }
+
+    let resp = match c.get_review_submission(&params.review_submission_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get review submission: {e}"))),
+    };
+
+    let mut sb = String::new();
+    sb.push_str(&format_review_submission(&resp.data));
+
+    // Best-effort: also show the attached items.
+    if let Ok(items) = c.list_review_submission_items(&params.review_submission_id, None).await {
+        if !items.data.is_empty() {
+            let _ = write!(sb, "\nItems ({}):\n", items.data.len());
+            for item in items.data.iter() {
+                let _ = write!(sb, "- {} (state: {})\n", item.id, item.attributes.state);
+            }
+        }
+    }
+
+    Ok(data_result(&sb, &resp.data))
 }
 
 /// Ported from `Registry.handleCreateReviewSubmission`.
@@ -279,7 +329,33 @@ async fn handle_create_review_submission(c: Arc<Client>, args: Args) -> HandlerR
         platform: String => "platform";
     }
     }
-    todo!("port handleCreateReviewSubmission from internal/asc/tools/review_submissions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let platform = if params.platform.is_empty() { "IOS".to_string() } else { params.platform.clone() };
+
+    let req = ReviewSubmissionCreateRequest {
+        data: ReviewSubmissionCreateData {
+            type_: "reviewSubmissions".into(),
+            attributes: Some(ReviewSubmissionCreateAttributes { platform }),
+            relationships: ReviewSubmissionCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+            },
+        },
+    };
+
+    let resp = match c.create_review_submission(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create review submission: {e}"))),
+    };
+
+    Ok(data_result(&format!("Review submission created:\n{}", format_review_submission(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleAddReviewSubmissionItem`.
@@ -301,16 +377,180 @@ async fn handle_add_review_submission_item(c: Arc<Client>, args: Args) -> Handle
         subscription_group_version_id: String => "subscription_group_version_id";
     }
     }
-    todo!("port handleAddReviewSubmissionItem from internal/asc/tools/review_submissions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.review_submission_id.is_empty() {
+        return Ok(error_result("review_submission_id is required"));
+    }
+
+    let rel = |t: &str, id: &str| Some(RelationshipData { data: ResourceIdentifier { type_: t.into(), id: id.into() } });
+
+    let mut rels = ReviewSubmissionItemCreateRelationships {
+        review_submission: RelationshipData {
+            data: ResourceIdentifier { type_: "reviewSubmissions".into(), id: params.review_submission_id.clone() },
+        },
+        ..Default::default()
+    };
+
+    let mut item_count = 0;
+    if !params.app_store_version_id.is_empty() {
+        rels.app_store_version = rel("appStoreVersions", &params.app_store_version_id);
+        item_count += 1;
+    }
+    if !params.app_custom_product_page_version_id.is_empty() {
+        rels.app_custom_product_page_version = rel("appCustomProductPageVersions", &params.app_custom_product_page_version_id);
+        item_count += 1;
+    }
+    if !params.app_store_version_experiment_id.is_empty() {
+        rels.app_store_version_experiment_v2 = rel("appStoreVersionExperiments", &params.app_store_version_experiment_id);
+        item_count += 1;
+    }
+    if !params.app_event_id.is_empty() {
+        rels.app_event = rel("appEvents", &params.app_event_id);
+        item_count += 1;
+    }
+    // Game Center content is submitted for review by attaching the
+    // content's version resource (App Store Connect API 4.2+).
+    if !params.game_center_achievement_version_id.is_empty() {
+        rels.game_center_achievement_version = rel("gameCenterAchievementVersions", &params.game_center_achievement_version_id);
+        item_count += 1;
+    }
+    if !params.game_center_leaderboard_version_id.is_empty() {
+        rels.game_center_leaderboard_version = rel("gameCenterLeaderboardVersions", &params.game_center_leaderboard_version_id);
+        item_count += 1;
+    }
+    if !params.game_center_leaderboard_set_version_id.is_empty() {
+        rels.game_center_leaderboard_set_version =
+            rel("gameCenterLeaderboardSetVersions", &params.game_center_leaderboard_set_version_id);
+        item_count += 1;
+    }
+    if !params.game_center_activity_version_id.is_empty() {
+        rels.game_center_activity_version = rel("gameCenterActivityVersions", &params.game_center_activity_version_id);
+        item_count += 1;
+    }
+    if !params.game_center_challenge_version_id.is_empty() {
+        rels.game_center_challenge_version = rel("gameCenterChallengeVersions", &params.game_center_challenge_version_id);
+        item_count += 1;
+    }
+
+    // In-app purchases, subscriptions and subscription groups are
+    // submitted for review by attaching the product's version resource
+    // (App Store Connect API 4.4.1).
+    if !params.in_app_purchase_version_id.is_empty() {
+        rels.in_app_purchase_version = rel("inAppPurchaseVersions", &params.in_app_purchase_version_id);
+        item_count += 1;
+    }
+    if !params.subscription_version_id.is_empty() {
+        rels.subscription_version = rel("subscriptionVersions", &params.subscription_version_id);
+        item_count += 1;
+    }
+    if !params.subscription_group_version_id.is_empty() {
+        rels.subscription_group_version = rel("subscriptionGroupVersions", &params.subscription_group_version_id);
+        item_count += 1;
+    }
+
+    if item_count != 1 {
+        return Ok(error_result("exactly one of app_store_version_id, app_custom_product_page_version_id, app_store_version_experiment_id, app_event_id, game_center_achievement_version_id, game_center_leaderboard_version_id, game_center_leaderboard_set_version_id, game_center_activity_version_id, game_center_challenge_version_id, in_app_purchase_version_id, subscription_version_id, or subscription_group_version_id is required"));
+    }
+
+    let req = ReviewSubmissionItemCreateRequest {
+        data: ReviewSubmissionItemCreateData { type_: "reviewSubmissionItems".into(), relationships: rels },
+    };
+
+    let resp = match c.create_review_submission_item(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to add review submission item: {e}"))),
+    };
+
+    Ok(data_result(&format!("Review submission item added: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleSubmitReviewSubmission`.
 async fn handle_submit_review_submission(c: Arc<Client>, args: Args) -> HandlerResult {
-    todo!("port handleSubmitReviewSubmission from internal/asc/tools/review_submissions.go")
+    update_review_submission_state(c, args, "submit").await
 }
 
 /// Ported from `Registry.handleCancelReviewSubmission`.
 async fn handle_cancel_review_submission(c: Arc<Client>, args: Args) -> HandlerResult {
-    todo!("port handleCancelReviewSubmission from internal/asc/tools/review_submissions.go")
+    update_review_submission_state(c, args, "cancel").await
 }
 
+/// Ported from `Registry.updateReviewSubmissionState`: patches a review
+/// submission with submitted=true or canceled=true depending on the action.
+async fn update_review_submission_state(c: Arc<Client>, args: Args, action: &str) -> HandlerResult {
+    go_struct! {
+    struct Params ("struct { ReviewSubmissionID string \"json:\\\"review_submission_id\\\"\" }", "") {
+        review_submission_id: String => "review_submission_id";
+    }
+    }
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.review_submission_id.is_empty() {
+        return Ok(error_result("review_submission_id is required"));
+    }
+
+    let flag = true;
+    let mut attrs = ReviewSubmissionUpdateAttributes::default();
+    if action == "submit" {
+        attrs.submitted = Some(flag);
+    } else {
+        attrs.canceled = Some(flag);
+    }
+
+    let req = ReviewSubmissionUpdateRequest {
+        data: ReviewSubmissionUpdateData {
+            type_: "reviewSubmissions".into(),
+            id: params.review_submission_id.clone(),
+            attributes: attrs,
+        },
+    };
+
+    let resp = match c.update_review_submission(&params.review_submission_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to {action} review submission: {e}"))),
+    };
+
+    if action == "submit" {
+        return Ok(data_result(&format!("Review submission submitted:\n{}", format_review_submission(&resp.data)), &resp.data));
+    }
+    Ok(data_result(&format!("Review submission canceled:\n{}", format_review_submission(&resp.data)), &resp.data))
+}
+
+/// Ported from `formatReviewSubmissions`.
+fn format_review_submissions(submissions: &[ReviewSubmission]) -> String {
+    if submissions.is_empty() {
+        return "No review submissions found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} review submissions:\n\n", submissions.len());
+
+    for submission in submissions {
+        sb.push_str(&format_review_submission(submission));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatReviewSubmission`.
+fn format_review_submission(submission: &ReviewSubmission) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", submission.id);
+    if !submission.attributes.platform.is_empty() {
+        let _ = write!(sb, "Platform: {}\n", submission.attributes.platform);
+    }
+    if !submission.attributes.state.is_empty() {
+        let _ = write!(sb, "State: {}\n", submission.attributes.state);
+    }
+    if let Some(d) = &submission.attributes.submitted_date {
+        let _ = write!(sb, "Submitted: {}\n", d.format("2006-01-02 15:04:05"));
+    }
+    sb
+}
