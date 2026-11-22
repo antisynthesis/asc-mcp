@@ -1060,7 +1060,24 @@ async fn handle_create_in_app_purchase_version(c: Arc<Client>, args: Args) -> Ha
         iap_id: String => "iap_id";
     }
     }
-    todo!("port handleCreateInAppPurchaseVersion from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.iap_id.is_empty() {
+        return Ok(error_result("iap_id is required"));
+    }
+    let req = InAppPurchaseVersionCreateRequest {
+        data: InAppPurchaseVersionCreateData {
+            type_: "inAppPurchaseVersions".into(),
+            relationships: InAppPurchaseVersionCreateRelationships { in_app_purchase: rel("inAppPurchases", &params.iap_id) },
+        },
+    };
+    let resp = match c.create_in_app_purchase_version(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create in-app purchase version: {e}"))),
+    };
+    Ok(data_result(&format!("In-app purchase version created:\n{}", format_commerce_version(&resp.data.id, &resp.data.attributes)), &resp.data))
 }
 
 /// Ported from `Registry.handleGetInAppPurchaseVersion`.
@@ -1070,7 +1087,18 @@ async fn handle_get_in_app_purchase_version(c: Arc<Client>, args: Args) -> Handl
         version_id: String => "version_id";
     }
     }
-    todo!("port handleGetInAppPurchaseVersion from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    let resp = match c.get_in_app_purchase_version(&params.version_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get in-app purchase version: {e}"))),
+    };
+    Ok(data_result(&format_commerce_version(&resp.data.id, &resp.data.attributes), &resp.data))
 }
 
 /// Ported from `Registry.handleListInAppPurchaseVersions`.
@@ -1081,7 +1109,20 @@ async fn handle_list_in_app_purchase_versions(c: Arc<Client>, args: Args) -> Han
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListInAppPurchaseVersions from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.iap_id.is_empty() {
+        return Ok(error_result("iap_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(50);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_in_app_purchase_versions(&params.iap_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list in-app purchase versions: {e}"))),
+    };
+    let versions = version_rows(resp.data.iter().map(|v| (&v.id, &v.attributes)));
+    Ok(list_result(&format_commerce_versions(&versions), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListInAppPurchaseVersionLocalizations`.
@@ -1092,7 +1133,19 @@ async fn handle_list_in_app_purchase_version_localizations(c: Arc<Client>, args:
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListInAppPurchaseVersionLocalizations from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(50);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_in_app_purchase_version_localizations(&params.version_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list in-app purchase version localizations: {e}"))),
+    };
+    Ok(list_result(&format_commerce_localizations(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleCreateInAppPurchaseLocalization`.
@@ -1105,7 +1158,35 @@ async fn handle_create_in_app_purchase_localization(c: Arc<Client>, args: Args) 
         description: String => "description";
     }
     }
-    todo!("port handleCreateInAppPurchaseLocalization from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    if params.locale.is_empty() {
+        return Ok(error_result("locale is required"));
+    }
+    if params.name.is_empty() {
+        return Ok(error_result("name is required"));
+    }
+    let req = InAppPurchaseLocalizationCreateRequest {
+        data: InAppPurchaseLocalizationCreateData {
+            type_: "inAppPurchaseLocalizations".into(),
+            attributes: InAppPurchaseLocalizationCreateAttributes {
+                name: params.name.clone(),
+                locale: params.locale.clone(),
+                description: params.description.clone(),
+            },
+            relationships: InAppPurchaseLocalizationCreateRelationships { version: rel("inAppPurchaseVersions", &params.version_id) },
+        },
+    };
+    let resp = match c.create_in_app_purchase_localization(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create in-app purchase localization: {e}"))),
+    };
+    Ok(data_result(&format!("In-app purchase localization created:\n{}", format_commerce_localization(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateInAppPurchaseLocalization`.
@@ -1117,7 +1198,25 @@ async fn handle_update_in_app_purchase_localization(c: Arc<Client>, args: Args) 
         description: String => "description";
     }
     }
-    todo!("port handleUpdateInAppPurchaseLocalization from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+    let req = InAppPurchaseLocalizationUpdateRequest {
+        data: InAppPurchaseLocalizationUpdateData {
+            type_: "inAppPurchaseLocalizations".into(),
+            id: params.localization_id.clone(),
+            attributes: InAppPurchaseLocalizationUpdateAttributes { name: params.name.clone(), description: params.description.clone() },
+        },
+    };
+    let resp = match c.update_in_app_purchase_localization(&params.localization_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update in-app purchase localization: {e}"))),
+    };
+    Ok(data_result(&format!("In-app purchase localization updated:\n{}", format_commerce_localization(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteInAppPurchaseLocalization`.
@@ -1127,7 +1226,17 @@ async fn handle_delete_in_app_purchase_localization(c: Arc<Client>, args: Args) 
         localization_id: String => "localization_id";
     }
     }
-    todo!("port handleDeleteInAppPurchaseLocalization from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+    if let Err(e) = c.delete_in_app_purchase_localization(&params.localization_id).await {
+        return Ok(error_result(format!("Failed to delete in-app purchase localization: {e}")));
+    }
+    Ok(CallToolResult::success("In-app purchase localization deleted successfully"))
 }
 
 /// Ported from `Registry.handleListInAppPurchaseVersionImages`.
@@ -1138,17 +1247,60 @@ async fn handle_list_in_app_purchase_version_images(c: Arc<Client>, args: Args) 
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListInAppPurchaseVersionImages from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(50);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_in_app_purchase_version_images(&params.version_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list in-app purchase version images: {e}"))),
+    };
+    let images: Vec<CommerceImageRow> = resp.data.iter().map(|img| image_row(&img.id, &img.attributes)).collect();
+    Ok(list_result(&format_commerce_images(&images), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleCreateInAppPurchaseImage`.
 async fn handle_create_in_app_purchase_image(c: Arc<Client>, args: Args) -> HandlerResult {
-    todo!("port handleCreateInAppPurchaseImage from internal/asc/tools/commerce_versions.go")
+    let params = match parse_commerce_image_create(&args) {
+        Ok(p) => p,
+        Err(r) => return Ok(r),
+    };
+    let req = InAppPurchaseImageCreateRequest {
+        data: InAppPurchaseImageCreateData {
+            type_: "inAppPurchaseImages".into(),
+            attributes: CommerceImageCreateAttributes { file_name: params.file_name.clone(), file_size: params.file_size },
+            relationships: InAppPurchaseImageCreateRelationships { version: rel("inAppPurchaseVersions", &params.version_id) },
+        },
+    };
+    let resp = match c.create_in_app_purchase_image(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create in-app purchase image: {e}"))),
+    };
+    Ok(data_result(&format!("In-app purchase image reserved:\n{}", format_commerce_image(&image_row(&resp.data.id, &resp.data.attributes))), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateInAppPurchaseImage`.
 async fn handle_update_in_app_purchase_image(c: Arc<Client>, args: Args) -> HandlerResult {
-    todo!("port handleUpdateInAppPurchaseImage from internal/asc/tools/commerce_versions.go")
+    let (image_id, uploaded) = match parse_commerce_image_update(&args) {
+        Ok(p) => p,
+        Err(r) => return Ok(r),
+    };
+    let req = InAppPurchaseImageUpdateRequest {
+        data: InAppPurchaseImageUpdateData {
+            type_: "inAppPurchaseImages".into(),
+            id: image_id.clone(),
+            attributes: CommerceImageUpdateAttributes { uploaded },
+        },
+    };
+    let resp = match c.update_in_app_purchase_image(&image_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update in-app purchase image: {e}"))),
+    };
+    Ok(data_result(&format!("In-app purchase image updated:\n{}", format_commerce_image(&image_row(&resp.data.id, &resp.data.attributes))), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteInAppPurchaseImage`.
@@ -1158,7 +1310,17 @@ async fn handle_delete_in_app_purchase_image(c: Arc<Client>, args: Args) -> Hand
         image_id: String => "image_id";
     }
     }
-    todo!("port handleDeleteInAppPurchaseImage from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.image_id.is_empty() {
+        return Ok(error_result("image_id is required"));
+    }
+    if let Err(e) = c.delete_in_app_purchase_image(&params.image_id).await {
+        return Ok(error_result(format!("Failed to delete in-app purchase image: {e}")));
+    }
+    Ok(CallToolResult::success("In-app purchase image deleted successfully"))
 }
 
 /// Ported from `Registry.handleCreateSubscriptionVersion`.
@@ -1168,7 +1330,24 @@ async fn handle_create_subscription_version(c: Arc<Client>, args: Args) -> Handl
         subscription_id: String => "subscription_id";
     }
     }
-    todo!("port handleCreateSubscriptionVersion from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.subscription_id.is_empty() {
+        return Ok(error_result("subscription_id is required"));
+    }
+    let req = SubscriptionVersionCreateRequest {
+        data: SubscriptionVersionCreateData {
+            type_: "subscriptionVersions".into(),
+            relationships: SubscriptionVersionCreateRelationships { subscription: rel("subscriptions", &params.subscription_id) },
+        },
+    };
+    let resp = match c.create_subscription_version(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create subscription version: {e}"))),
+    };
+    Ok(data_result(&format!("Subscription version created:\n{}", format_commerce_version(&resp.data.id, &resp.data.attributes)), &resp.data))
 }
 
 /// Ported from `Registry.handleGetSubscriptionVersion`.
@@ -1178,7 +1357,18 @@ async fn handle_get_subscription_version(c: Arc<Client>, args: Args) -> HandlerR
         version_id: String => "version_id";
     }
     }
-    todo!("port handleGetSubscriptionVersion from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    let resp = match c.get_subscription_version(&params.version_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get subscription version: {e}"))),
+    };
+    Ok(data_result(&format_commerce_version(&resp.data.id, &resp.data.attributes), &resp.data))
 }
 
 /// Ported from `Registry.handleListSubscriptionVersions`.
@@ -1189,7 +1379,20 @@ async fn handle_list_subscription_versions(c: Arc<Client>, args: Args) -> Handle
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListSubscriptionVersions from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.subscription_id.is_empty() {
+        return Ok(error_result("subscription_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(50);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_subscription_versions(&params.subscription_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list subscription versions: {e}"))),
+    };
+    let versions = version_rows(resp.data.iter().map(|v| (&v.id, &v.attributes)));
+    Ok(list_result(&format_commerce_versions(&versions), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListSubscriptionVersionLocalizations`.
@@ -1200,7 +1403,24 @@ async fn handle_list_subscription_version_localizations(c: Arc<Client>, args: Ar
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListSubscriptionVersionLocalizations from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(50);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_subscription_version_localizations(&params.version_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list subscription version localizations: {e}"))),
+    };
+    let locs: Vec<InAppPurchaseLocalization> = resp
+        .data
+        .iter()
+        .map(|loc| InAppPurchaseLocalization { id: loc.id.clone(), attributes: loc.attributes.clone(), ..Default::default() })
+        .collect();
+    Ok(list_result(&format_commerce_localizations(&locs), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleCreateSubscriptionLocalization`.
@@ -1213,7 +1433,36 @@ async fn handle_create_subscription_localization(c: Arc<Client>, args: Args) -> 
         description: String => "description";
     }
     }
-    todo!("port handleCreateSubscriptionLocalization from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    if params.locale.is_empty() {
+        return Ok(error_result("locale is required"));
+    }
+    if params.name.is_empty() {
+        return Ok(error_result("name is required"));
+    }
+    let req = SubscriptionLocalizationCreateRequest {
+        data: SubscriptionLocalizationCreateData {
+            type_: "subscriptionLocalizations".into(),
+            attributes: InAppPurchaseLocalizationCreateAttributes {
+                name: params.name.clone(),
+                locale: params.locale.clone(),
+                description: params.description.clone(),
+            },
+            relationships: SubscriptionLocalizationRelationships { version: rel("subscriptionVersions", &params.version_id) },
+        },
+    };
+    let resp = match c.create_subscription_localization(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create subscription localization: {e}"))),
+    };
+    let row = InAppPurchaseLocalization { id: resp.data.id.clone(), attributes: resp.data.attributes.clone(), ..Default::default() };
+    Ok(data_result(&format!("Subscription localization created:\n{}", format_commerce_localization(&row)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateSubscriptionLocalization`.
@@ -1225,7 +1474,26 @@ async fn handle_update_subscription_localization(c: Arc<Client>, args: Args) -> 
         description: String => "description";
     }
     }
-    todo!("port handleUpdateSubscriptionLocalization from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+    let req = SubscriptionLocalizationUpdateRequest {
+        data: SubscriptionLocalizationUpdateData {
+            type_: "subscriptionLocalizations".into(),
+            id: params.localization_id.clone(),
+            attributes: InAppPurchaseLocalizationUpdateAttributes { name: params.name.clone(), description: params.description.clone() },
+        },
+    };
+    let resp = match c.update_subscription_localization(&params.localization_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update subscription localization: {e}"))),
+    };
+    let row = InAppPurchaseLocalization { id: resp.data.id.clone(), attributes: resp.data.attributes.clone(), ..Default::default() };
+    Ok(data_result(&format!("Subscription localization updated:\n{}", format_commerce_localization(&row)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteSubscriptionLocalization`.
@@ -1235,7 +1503,17 @@ async fn handle_delete_subscription_localization(c: Arc<Client>, args: Args) -> 
         localization_id: String => "localization_id";
     }
     }
-    todo!("port handleDeleteSubscriptionLocalization from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+    if let Err(e) = c.delete_subscription_localization(&params.localization_id).await {
+        return Ok(error_result(format!("Failed to delete subscription localization: {e}")));
+    }
+    Ok(CallToolResult::success("Subscription localization deleted successfully"))
 }
 
 /// Ported from `Registry.handleListSubscriptionVersionImages`.
@@ -1246,17 +1524,60 @@ async fn handle_list_subscription_version_images(c: Arc<Client>, args: Args) -> 
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListSubscriptionVersionImages from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(50);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_subscription_version_images(&params.version_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list subscription version images: {e}"))),
+    };
+    let images: Vec<CommerceImageRow> = resp.data.iter().map(|img| image_row(&img.id, &img.attributes)).collect();
+    Ok(list_result(&format_commerce_images(&images), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleCreateSubscriptionImage`.
 async fn handle_create_subscription_image(c: Arc<Client>, args: Args) -> HandlerResult {
-    todo!("port handleCreateSubscriptionImage from internal/asc/tools/commerce_versions.go")
+    let params = match parse_commerce_image_create(&args) {
+        Ok(p) => p,
+        Err(r) => return Ok(r),
+    };
+    let req = SubscriptionImageCreateRequest {
+        data: SubscriptionImageCreateData {
+            type_: "subscriptionImages".into(),
+            attributes: CommerceImageCreateAttributes { file_name: params.file_name.clone(), file_size: params.file_size },
+            relationships: SubscriptionLocalizationRelationships { version: rel("subscriptionVersions", &params.version_id) },
+        },
+    };
+    let resp = match c.create_subscription_image(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create subscription image: {e}"))),
+    };
+    Ok(data_result(&format!("Subscription image reserved:\n{}", format_commerce_image(&image_row(&resp.data.id, &resp.data.attributes))), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateSubscriptionImage`.
 async fn handle_update_subscription_image(c: Arc<Client>, args: Args) -> HandlerResult {
-    todo!("port handleUpdateSubscriptionImage from internal/asc/tools/commerce_versions.go")
+    let (image_id, uploaded) = match parse_commerce_image_update(&args) {
+        Ok(p) => p,
+        Err(r) => return Ok(r),
+    };
+    let req = SubscriptionImageUpdateRequest {
+        data: SubscriptionImageUpdateData {
+            type_: "subscriptionImages".into(),
+            id: image_id.clone(),
+            attributes: CommerceImageUpdateAttributes { uploaded },
+        },
+    };
+    let resp = match c.update_subscription_image(&image_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update subscription image: {e}"))),
+    };
+    Ok(data_result(&format!("Subscription image updated:\n{}", format_commerce_image(&image_row(&resp.data.id, &resp.data.attributes))), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteSubscriptionImage`.
@@ -1266,7 +1587,17 @@ async fn handle_delete_subscription_image(c: Arc<Client>, args: Args) -> Handler
         image_id: String => "image_id";
     }
     }
-    todo!("port handleDeleteSubscriptionImage from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.image_id.is_empty() {
+        return Ok(error_result("image_id is required"));
+    }
+    if let Err(e) = c.delete_subscription_image(&params.image_id).await {
+        return Ok(error_result(format!("Failed to delete subscription image: {e}")));
+    }
+    Ok(CallToolResult::success("Subscription image deleted successfully"))
 }
 
 /// Ported from `Registry.handleCreateSubscriptionGroupVersion`.
@@ -1276,7 +1607,24 @@ async fn handle_create_subscription_group_version(c: Arc<Client>, args: Args) ->
         group_id: String => "group_id";
     }
     }
-    todo!("port handleCreateSubscriptionGroupVersion from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.group_id.is_empty() {
+        return Ok(error_result("group_id is required"));
+    }
+    let req = SubscriptionGroupVersionCreateRequest {
+        data: SubscriptionGroupVersionCreateData {
+            type_: "subscriptionGroupVersions".into(),
+            relationships: SubscriptionGroupVersionCreateRelationships { subscription_group: rel("subscriptionGroups", &params.group_id) },
+        },
+    };
+    let resp = match c.create_subscription_group_version(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create subscription group version: {e}"))),
+    };
+    Ok(data_result(&format!("Subscription group version created:\n{}", format_commerce_version(&resp.data.id, &resp.data.attributes)), &resp.data))
 }
 
 /// Ported from `Registry.handleGetSubscriptionGroupVersion`.
@@ -1286,7 +1634,18 @@ async fn handle_get_subscription_group_version(c: Arc<Client>, args: Args) -> Ha
         version_id: String => "version_id";
     }
     }
-    todo!("port handleGetSubscriptionGroupVersion from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    let resp = match c.get_subscription_group_version(&params.version_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get subscription group version: {e}"))),
+    };
+    Ok(data_result(&format_commerce_version(&resp.data.id, &resp.data.attributes), &resp.data))
 }
 
 /// Ported from `Registry.handleListSubscriptionGroupVersions`.
@@ -1297,7 +1656,20 @@ async fn handle_list_subscription_group_versions(c: Arc<Client>, args: Args) -> 
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListSubscriptionGroupVersions from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.group_id.is_empty() {
+        return Ok(error_result("group_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(50);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_subscription_group_versions(&params.group_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list subscription group versions: {e}"))),
+    };
+    let versions = version_rows(resp.data.iter().map(|v| (&v.id, &v.attributes)));
+    Ok(list_result(&format_commerce_versions(&versions), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListSubscriptionGroupVersionLocalizations`.
@@ -1308,7 +1680,19 @@ async fn handle_list_subscription_group_version_localizations(c: Arc<Client>, ar
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListSubscriptionGroupVersionLocalizations from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(50);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_subscription_group_version_localizations(&params.version_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list subscription group version localizations: {e}"))),
+    };
+    Ok(list_result(&format_subscription_group_localizations(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleCreateSubscriptionGroupLocalization`.
@@ -1321,7 +1705,35 @@ async fn handle_create_subscription_group_localization(c: Arc<Client>, args: Arg
         custom_app_name: String => "custom_app_name";
     }
     }
-    todo!("port handleCreateSubscriptionGroupLocalization from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    if params.locale.is_empty() {
+        return Ok(error_result("locale is required"));
+    }
+    if params.name.is_empty() {
+        return Ok(error_result("name is required"));
+    }
+    let req = SubscriptionGroupLocalizationCreateRequest {
+        data: SubscriptionGroupLocalizationCreateData {
+            type_: "subscriptionGroupLocalizations".into(),
+            attributes: SubscriptionGroupLocalizationCreateAttributes {
+                name: params.name.clone(),
+                locale: params.locale.clone(),
+                custom_app_name: params.custom_app_name.clone(),
+            },
+            relationships: SubscriptionLocalizationRelationships { version: rel("subscriptionGroupVersions", &params.version_id) },
+        },
+    };
+    let resp = match c.create_subscription_group_localization(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create subscription group localization: {e}"))),
+    };
+    Ok(data_result(&format!("Subscription group localization created:\n{}", format_subscription_group_localization(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateSubscriptionGroupLocalization`.
@@ -1333,7 +1745,28 @@ async fn handle_update_subscription_group_localization(c: Arc<Client>, args: Arg
         custom_app_name: String => "custom_app_name";
     }
     }
-    todo!("port handleUpdateSubscriptionGroupLocalization from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+    let req = SubscriptionGroupLocalizationUpdateRequest {
+        data: SubscriptionGroupLocalizationUpdateData {
+            type_: "subscriptionGroupLocalizations".into(),
+            id: params.localization_id.clone(),
+            attributes: SubscriptionGroupLocalizationUpdateAttributes {
+                name: params.name.clone(),
+                custom_app_name: params.custom_app_name.clone(),
+            },
+        },
+    };
+    let resp = match c.update_subscription_group_localization(&params.localization_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update subscription group localization: {e}"))),
+    };
+    Ok(data_result(&format!("Subscription group localization updated:\n{}", format_subscription_group_localization(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteSubscriptionGroupLocalization`.
@@ -1343,6 +1776,198 @@ async fn handle_delete_subscription_group_localization(c: Arc<Client>, args: Arg
         localization_id: String => "localization_id";
     }
     }
-    todo!("port handleDeleteSubscriptionGroupLocalization from internal/asc/tools/commerce_versions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+    if let Err(e) = c.delete_subscription_group_localization(&params.localization_id).await {
+        return Ok(error_result(format!("Failed to delete subscription group localization: {e}")));
+    }
+    Ok(CallToolResult::success("Subscription group localization deleted successfully"))
 }
 
+impl CommerceListParams {
+    /// Go `commerceListParams.opts`: clamps the limit the same way every
+    /// other list tool does and assembles the query options.
+    pub(crate) fn opts(&self, default_limit: i64) -> Option<ListOptions> {
+        let mut limit = self.limit;
+        if limit <= 0 {
+            limit = default_limit;
+        }
+        if limit > 200 {
+            limit = 200;
+        }
+        list_opts(limit, &self.filter, &GoSlice::nil(), &self.fields, &self.include)
+    }
+}
+
+/// `api.RelationshipData{Data: api.ResourceIdentifier{Type: t, ID: id}}`.
+pub(crate) fn rel(t: &str, id: &str) -> RelationshipData {
+    RelationshipData { data: ResourceIdentifier { type_: t.to_string(), id: id.to_string() } }
+}
+
+/// Go `parseCommerceImageCreate`.
+fn parse_commerce_image_create(args: &Args) -> Result<CommerceImageCreateParams, CallToolResult> {
+    let mut params = CommerceImageCreateParams::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(error_result(format!("invalid arguments: {e}")));
+    }
+    if params.version_id.is_empty() {
+        return Err(error_result("version_id is required"));
+    }
+    if params.file_name.is_empty() {
+        return Err(error_result("file_name is required"));
+    }
+    if params.file_size <= 0 {
+        return Err(error_result("file_size is required"));
+    }
+    Ok(params)
+}
+
+/// Go `parseCommerceImageUpdate`.
+fn parse_commerce_image_update(args: &Args) -> Result<(String, Option<bool>), CallToolResult> {
+    go_struct! {
+    struct Params ("struct { ImageID string \"json:\\\"image_id\\\"\"; Uploaded *bool \"json:\\\"uploaded\\\"\" }", "") {
+        image_id: String => "image_id";
+        uploaded: Option<bool> => "uploaded";
+    }
+    }
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(error_result(format!("invalid arguments: {e}")));
+    }
+    if params.image_id.is_empty() {
+        return Err(error_result("image_id is required"));
+    }
+    let uploaded = params.uploaded.or(Some(true));
+    Ok((params.image_id, uploaded))
+}
+
+/// Go `formatCommerceVersions`.
+fn format_commerce_versions(versions: &[CommerceVersionRow]) -> String {
+    if versions.is_empty() {
+        return "No versions found".to_string();
+    }
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} versions:\n\n", versions.len());
+    for v in versions {
+        sb.push_str(&format_commerce_version(&v.id, &v.attributes));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Go `formatCommerceVersion`.
+fn format_commerce_version(id: &str, attrs: &CommerceVersionAttributes) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", id);
+    if attrs.version > 0 {
+        let _ = write!(sb, "Version: {}\n", attrs.version);
+    }
+    if !attrs.state.is_empty() {
+        let _ = write!(sb, "State: {}\n", attrs.state);
+    }
+    sb
+}
+
+/// Go `formatCommerceLocalizations`.
+fn format_commerce_localizations(locs: &[InAppPurchaseLocalization]) -> String {
+    if locs.is_empty() {
+        return "No localizations found".to_string();
+    }
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} localizations:\n\n", locs.len());
+    for loc in locs {
+        sb.push_str(&format_commerce_localization(loc));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Go `formatCommerceLocalization`.
+fn format_commerce_localization(loc: &InAppPurchaseLocalization) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", loc.id);
+    let _ = write!(sb, "Locale: {}\n", loc.attributes.locale);
+    let _ = write!(sb, "Name: {}\n", loc.attributes.name);
+    if !loc.attributes.description.is_empty() {
+        let _ = write!(sb, "Description: {}\n", loc.attributes.description);
+    }
+    if !loc.attributes.state.is_empty() {
+        let _ = write!(sb, "State: {}\n", loc.attributes.state);
+    }
+    sb
+}
+
+/// Go `formatSubscriptionGroupLocalizations`.
+fn format_subscription_group_localizations(locs: &[SubscriptionGroupLocalization]) -> String {
+    if locs.is_empty() {
+        return "No subscription group localizations found".to_string();
+    }
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} subscription group localizations:\n\n", locs.len());
+    for loc in locs {
+        sb.push_str(&format_subscription_group_localization(loc));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Go `formatSubscriptionGroupLocalization`.
+fn format_subscription_group_localization(loc: &SubscriptionGroupLocalization) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", loc.id);
+    let _ = write!(sb, "Locale: {}\n", loc.attributes.locale);
+    let _ = write!(sb, "Name: {}\n", loc.attributes.name);
+    if !loc.attributes.custom_app_name.is_empty() {
+        let _ = write!(sb, "Custom App Name: {}\n", loc.attributes.custom_app_name);
+    }
+    if !loc.attributes.state.is_empty() {
+        let _ = write!(sb, "State: {}\n", loc.attributes.state);
+    }
+    sb
+}
+
+/// Go `formatCommerceImages`.
+fn format_commerce_images(images: &[CommerceImageRow]) -> String {
+    if images.is_empty() {
+        return "No images found".to_string();
+    }
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} images:\n\n", images.len());
+    for img in images {
+        sb.push_str(&format_commerce_image(img));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Go `formatCommerceImage`.
+fn format_commerce_image(img: &CommerceImageRow) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", img.id);
+    if !img.attributes.file_name.is_empty() {
+        let _ = write!(sb, "File Name: {}\n", img.attributes.file_name);
+    }
+    if img.attributes.file_size > 0 {
+        let _ = write!(sb, "File Size: {} bytes\n", img.attributes.file_size);
+    }
+    if !img.attributes.state.is_empty() {
+        let _ = write!(sb, "State: {}\n", img.attributes.state);
+    }
+    if !img.attributes.upload_operations.is_empty() {
+        let _ = write!(sb, "Upload Operations: {}\n", img.attributes.upload_operations.len());
+    }
+    sb
+}
+
+fn image_row(id: &str, attributes: &CommerceImageAttributes) -> CommerceImageRow {
+    CommerceImageRow { id: id.to_string(), attributes: attributes.clone() }
+}
+
+fn version_rows<'a>(it: impl Iterator<Item = (&'a String, &'a CommerceVersionAttributes)>) -> Vec<CommerceVersionRow> {
+    it.map(|(id, a)| CommerceVersionRow { id: id.clone(), attributes: a.clone() }).collect()
+}

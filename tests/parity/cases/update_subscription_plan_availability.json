@@ -1,0 +1,28 @@
+[
+  {
+    "name": "territories-only",
+    "args": {
+      "availability_id": "a1",
+      "territory_ids": [
+        "USA"
+      ]
+    }
+  },
+  {
+    "name": "flag-only",
+    "args": {
+      "availability_id": "a1",
+      "available_in_new_territories": false
+    }
+  },
+  {
+    "name": "neither",
+    "args": {
+      "availability_id": "a1",
+      "territory_ids": []
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "name": "automatic",
+    "args": {
+      "price_schedule_id": "s1",
+      "price_type": "AUTOMATIC"
+    }
+  },
+  {
+    "name": "automatic-lower",
+    "args": {
+      "price_schedule_id": "s1",
+      "price_type": "automatic",
+      "limit": 500
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "manual",
+    "args": {
+      "price_schedule_id": "s1",
+      "price_type": "MANUAL"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

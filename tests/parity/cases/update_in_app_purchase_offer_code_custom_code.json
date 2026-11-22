@@ -1,0 +1,9 @@
+[
+  {
+    "name": "inactive",
+    "args": {
+      "custom_code_id": "x1",
+      "active": false
+    }
+  }
+]

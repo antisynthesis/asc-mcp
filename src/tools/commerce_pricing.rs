@@ -6,6 +6,8 @@
 #![allow(unused_imports)]
 
 use super::prelude::*;
+use super::commerce_versions::rel;
+use super::pricing::{format_app_price_point, format_app_price_points, format_subscription_price_point, format_subscription_price_points, format_territories};
 
 /// Ported from `Registry.registerCommercePricingTools`.
 pub(super) fn register_commerce_pricing_tools(r: &mut Registry) {
@@ -730,7 +732,19 @@ async fn handle_list_in_app_purchase_price_points(c: Arc<Client>, args: Args) ->
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListInAppPurchasePricePoints from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.iap_id.is_empty() {
+        return Ok(error_result("iap_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(100);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_in_app_purchase_price_points(&params.iap_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list in-app purchase price points: {e}"))),
+    };
+    Ok(list_result(&format_in_app_purchase_price_points(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetInAppPurchasePriceSchedule`.
@@ -740,7 +754,18 @@ async fn handle_get_in_app_purchase_price_schedule(c: Arc<Client>, args: Args) -
         iap_id: String => "iap_id";
     }
     }
-    todo!("port handleGetInAppPurchasePriceSchedule from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.iap_id.is_empty() {
+        return Ok(error_result("iap_id is required"));
+    }
+    let resp = match c.get_in_app_purchase_price_schedule(&params.iap_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get in-app purchase price schedule: {e}"))),
+    };
+    Ok(data_result(&format!("In-App Purchase Price Schedule ID: {}\n", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleSetInAppPurchasePriceSchedule`.
@@ -752,7 +777,52 @@ async fn handle_set_in_app_purchase_price_schedule(c: Arc<Client>, args: Args) -
         prices: GoSlice<InlinePriceParams> => "prices";
     }
     }
-    todo!("port handleSetInAppPurchasePriceSchedule from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.iap_id.is_empty() {
+        return Ok(error_result("iap_id is required"));
+    }
+    if params.base_territory_id.is_empty() {
+        return Ok(error_result("base_territory_id is required"));
+    }
+    if params.prices.is_empty() {
+        return Ok(error_result("prices is required"));
+    }
+    let mut price_refs: Vec<ResourceIdentifier> = Vec::with_capacity(params.prices.len());
+    let mut included: Vec<InAppPurchasePriceInlineCreate> = Vec::with_capacity(params.prices.len());
+    for (i, price) in params.prices.iter().enumerate() {
+        if price.price_point_id.is_empty() {
+            return Ok(error_result("each price requires price_point_id"));
+        }
+        let id = format!("price-{}", i + 1);
+        price_refs.push(ResourceIdentifier { type_: "inAppPurchasePrices".into(), id: id.clone() });
+        included.push(InAppPurchasePriceInlineCreate {
+            type_: "inAppPurchasePrices".into(),
+            id,
+            attributes: inline_price_attributes(price),
+            relationships: Some(InAppPurchasePriceInlineCreateRelationships {
+                in_app_purchase_price_point: rel("inAppPurchasePricePoints", &price.price_point_id),
+            }),
+        });
+    }
+    let req = InAppPurchasePriceScheduleCreateRequest {
+        data: InAppPurchasePriceScheduleCreateData {
+            type_: "inAppPurchasePriceSchedules".into(),
+            relationships: InAppPurchasePriceScheduleCreateRelationships {
+                in_app_purchase: rel("inAppPurchases", &params.iap_id),
+                base_territory: rel("territories", &params.base_territory_id),
+                manual_prices: RelationshipDataList { data: GoSlice::from(price_refs) },
+            },
+        },
+        included: GoSlice::from(included),
+    };
+    let resp = match c.create_in_app_purchase_price_schedule(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to set in-app purchase price schedule: {e}"))),
+    };
+    Ok(data_result(&format!("In-app purchase price schedule set: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleListInAppPurchasePriceSchedulePrices`.
@@ -764,7 +834,22 @@ async fn handle_list_in_app_purchase_price_schedule_prices(c: Arc<Client>, args:
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListInAppPurchasePriceSchedulePrices from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.price_schedule_id.is_empty() {
+        return Ok(error_result("price_schedule_id is required"));
+    }
+    // strings.EqualFold against an all-ASCII target with no special fold
+    // orbits reduces to an ASCII case-insensitive comparison.
+    let automatic = params.price_type.eq_ignore_ascii_case("AUTOMATIC");
+    let opts = params.commerce_list_params.opts(100);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_in_app_purchase_price_schedule_prices(&params.price_schedule_id, automatic, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list in-app purchase price schedule prices: {e}"))),
+    };
+    Ok(list_result(&format_in_app_purchase_prices(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetInAppPurchaseAvailability`.
@@ -774,7 +859,27 @@ async fn handle_get_in_app_purchase_availability(c: Arc<Client>, args: Args) -> 
         iap_id: String => "iap_id";
     }
     }
-    todo!("port handleGetInAppPurchaseAvailability from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.iap_id.is_empty() {
+        return Ok(error_result("iap_id is required"));
+    }
+    let resp = match c.get_in_app_purchase_availability(&params.iap_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get in-app purchase availability: {e}"))),
+    };
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", resp.data.id);
+    let _ = write!(sb, "Available In New Territories: {}\n", resp.data.attributes.available_in_new_territories);
+    // Best-effort: also show the territories the availability covers.
+    if let Ok(territories) = c.list_in_app_purchase_available_territories(&resp.data.id, None).await {
+        if !territories.data.is_empty() {
+            let _ = write!(sb, "\n{}", format_territories(&territories.data));
+        }
+    }
+    Ok(data_result(&sb, &resp.data))
 }
 
 /// Ported from `Registry.handleSetInAppPurchaseAvailability`.
@@ -786,7 +891,31 @@ async fn handle_set_in_app_purchase_availability(c: Arc<Client>, args: Args) -> 
         available_in_new_territories: bool => "available_in_new_territories";
     }
     }
-    todo!("port handleSetInAppPurchaseAvailability from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.iap_id.is_empty() {
+        return Ok(error_result("iap_id is required"));
+    }
+    if params.territory_ids.is_empty() {
+        return Ok(error_result("territory_ids is required"));
+    }
+    let req = InAppPurchaseAvailabilityCreateRequest {
+        data: InAppPurchaseAvailabilityCreateData {
+            type_: "inAppPurchaseAvailabilities".into(),
+            attributes: InAppPurchaseAvailabilityAttributes { available_in_new_territories: params.available_in_new_territories },
+            relationships: InAppPurchaseAvailabilityCreateRelationships {
+                in_app_purchase: rel("inAppPurchases", &params.iap_id),
+                available_territories: RelationshipDataList { data: territory_identifiers(&params.territory_ids) },
+            },
+        },
+    };
+    let resp = match c.create_in_app_purchase_availability(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to set in-app purchase availability: {e}"))),
+    };
+    Ok(data_result(&format!("In-app purchase availability set: {} ({} territories)", resp.data.id, params.territory_ids.len()), &resp.data))
 }
 
 /// Ported from `Registry.handleListInAppPurchaseAvailableTerritories`.
@@ -797,7 +926,19 @@ async fn handle_list_in_app_purchase_available_territories(c: Arc<Client>, args:
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListInAppPurchaseAvailableTerritories from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.availability_id.is_empty() {
+        return Ok(error_result("availability_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(200);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_in_app_purchase_available_territories(&params.availability_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list in-app purchase available territories: {e}"))),
+    };
+    Ok(list_result(&format_territories(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListSubscriptionPlanAvailabilities`.
@@ -808,7 +949,19 @@ async fn handle_list_subscription_plan_availabilities(c: Arc<Client>, args: Args
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListSubscriptionPlanAvailabilities from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.subscription_id.is_empty() {
+        return Ok(error_result("subscription_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(50);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_subscription_plan_availabilities(&params.subscription_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list subscription plan availabilities: {e}"))),
+    };
+    Ok(list_result(&format_subscription_plan_availabilities(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetSubscriptionPlanAvailability`.
@@ -818,7 +971,25 @@ async fn handle_get_subscription_plan_availability(c: Arc<Client>, args: Args) -
         availability_id: String => "availability_id";
     }
     }
-    todo!("port handleGetSubscriptionPlanAvailability from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.availability_id.is_empty() {
+        return Ok(error_result("availability_id is required"));
+    }
+    let resp = match c.get_subscription_plan_availability(&params.availability_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get subscription plan availability: {e}"))),
+    };
+    let mut sb = format_subscription_plan_availability(&resp.data);
+    // Best-effort: also show the territories the plan is available in.
+    if let Ok(territories) = c.list_subscription_plan_available_territories(&resp.data.id, None).await {
+        if !territories.data.is_empty() {
+            let _ = write!(sb, "\n{}", format_territories(&territories.data));
+        }
+    }
+    Ok(data_result(&sb, &resp.data))
 }
 
 /// Ported from `Registry.handleCreateSubscriptionPlanAvailability`.
@@ -831,7 +1002,37 @@ async fn handle_create_subscription_plan_availability(c: Arc<Client>, args: Args
         available_in_new_territories: Option<bool> => "available_in_new_territories";
     }
     }
-    todo!("port handleCreateSubscriptionPlanAvailability from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.subscription_id.is_empty() {
+        return Ok(error_result("subscription_id is required"));
+    }
+    if params.plan_type.is_empty() {
+        return Ok(error_result("plan_type is required"));
+    }
+    if params.territory_ids.is_empty() {
+        return Ok(error_result("territory_ids is required"));
+    }
+    let req = SubscriptionPlanAvailabilityCreateRequest {
+        data: SubscriptionPlanAvailabilityCreateData {
+            type_: "subscriptionPlanAvailabilities".into(),
+            attributes: SubscriptionPlanAvailabilityAttributes {
+                plan_type: params.plan_type.clone(),
+                available_in_new_territories: params.available_in_new_territories,
+            },
+            relationships: SubscriptionPlanAvailabilityCreateRelationships {
+                subscription: rel("subscriptions", &params.subscription_id),
+                available_territories: RelationshipDataList { data: territory_identifiers(&params.territory_ids) },
+            },
+        },
+    };
+    let resp = match c.create_subscription_plan_availability(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create subscription plan availability: {e}"))),
+    };
+    Ok(data_result(&format!("Subscription plan availability created:\n{}", format_subscription_plan_availability(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateSubscriptionPlanAvailability`.
@@ -843,7 +1044,37 @@ async fn handle_update_subscription_plan_availability(c: Arc<Client>, args: Args
         available_in_new_territories: Option<bool> => "available_in_new_territories";
     }
     }
-    todo!("port handleUpdateSubscriptionPlanAvailability from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.availability_id.is_empty() {
+        return Ok(error_result("availability_id is required"));
+    }
+    if params.territory_ids.is_empty() && params.available_in_new_territories.is_none() {
+        return Ok(error_result("one of territory_ids or available_in_new_territories is required"));
+    }
+    let mut data = SubscriptionPlanAvailabilityUpdateData {
+        type_: "subscriptionPlanAvailabilities".into(),
+        id: params.availability_id.clone(),
+        ..Default::default()
+    };
+    if params.available_in_new_territories.is_some() {
+        data.attributes = Some(SubscriptionPlanAvailabilityUpdateAttributes {
+            available_in_new_territories: params.available_in_new_territories,
+        });
+    }
+    if !params.territory_ids.is_empty() {
+        data.relationships = Some(SubscriptionPlanAvailabilityUpdateRelationships {
+            available_territories: Some(RelationshipDataList { data: territory_identifiers(&params.territory_ids) }),
+        });
+    }
+    let req = SubscriptionPlanAvailabilityUpdateRequest { data };
+    let resp = match c.update_subscription_plan_availability(&params.availability_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update subscription plan availability: {e}"))),
+    };
+    Ok(data_result(&format!("Subscription plan availability updated:\n{}", format_subscription_plan_availability(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleListSubscriptionPlanAvailableTerritories`.
@@ -854,7 +1085,19 @@ async fn handle_list_subscription_plan_available_territories(c: Arc<Client>, arg
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListSubscriptionPlanAvailableTerritories from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.availability_id.is_empty() {
+        return Ok(error_result("availability_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(200);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_subscription_plan_available_territories(&params.availability_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list subscription plan available territories: {e}"))),
+    };
+    Ok(list_result(&format_territories(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetSubscriptionPricePoint`.
@@ -864,7 +1107,18 @@ async fn handle_get_subscription_price_point(c: Arc<Client>, args: Args) -> Hand
         price_point_id: String => "price_point_id";
     }
     }
-    todo!("port handleGetSubscriptionPricePoint from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.price_point_id.is_empty() {
+        return Ok(error_result("price_point_id is required"));
+    }
+    let resp = match c.get_subscription_price_point(&params.price_point_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get subscription price point: {e}"))),
+    };
+    Ok(data_result(&format_subscription_price_point(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleListSubscriptionPricePointEqualizations`.
@@ -875,7 +1129,19 @@ async fn handle_list_subscription_price_point_equalizations(c: Arc<Client>, args
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListSubscriptionPricePointEqualizations from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.price_point_id.is_empty() {
+        return Ok(error_result("price_point_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(100);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_subscription_price_point_equalizations(&params.price_point_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list subscription price point equalizations: {e}"))),
+    };
+    Ok(list_result(&format_subscription_price_points(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListSubscriptionPricePointAdjustedEqualizations`.
@@ -888,7 +1154,29 @@ async fn handle_list_subscription_price_point_adjusted_equalizations(c: Arc<Clie
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListSubscriptionPricePointAdjustedEqualizations from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.price_point_id.is_empty() {
+        return Ok(error_result("price_point_id is required"));
+    }
+    // upfrontPricePointId and planType are ordinary JSON:API filters; fold
+    // the dedicated arguments into whatever filter map the caller supplied.
+    let mut filter: GoMap<GoSlice<String>> = GoMap::from_map(params.commerce_list_params.filter.iter().map(|(k, v)| (k.clone(), v.clone())).collect());
+    if !params.upfront_price_point_id.is_empty() {
+        filter.insert("upfrontPricePointId", GoSlice::from(vec![params.upfront_price_point_id.clone()]));
+    }
+    if !params.plan_type.is_empty() {
+        filter.insert("planType", GoSlice::from(vec![params.plan_type.clone()]));
+    }
+    params.commerce_list_params.filter = filter;
+    let opts = params.commerce_list_params.opts(100);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_subscription_price_point_adjusted_equalizations(&params.price_point_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list subscription price point adjusted equalizations: {e}"))),
+    };
+    Ok(list_result(&format_subscription_price_points(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleSetAppPriceSchedule`.
@@ -900,7 +1188,47 @@ async fn handle_set_app_price_schedule(c: Arc<Client>, args: Args) -> HandlerRes
         prices: GoSlice<InlinePriceParams> => "prices";
     }
     }
-    todo!("port handleSetAppPriceSchedule from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+    if params.base_territory_id.is_empty() {
+        return Ok(error_result("base_territory_id is required"));
+    }
+    let mut price_refs: Vec<ResourceIdentifier> = Vec::with_capacity(params.prices.len());
+    let mut included: Vec<AppPriceInlineCreate> = Vec::with_capacity(params.prices.len());
+    for (i, price) in params.prices.iter().enumerate() {
+        if price.price_point_id.is_empty() {
+            return Ok(error_result("each price requires price_point_id"));
+        }
+        let id = format!("price-{}", i + 1);
+        price_refs.push(ResourceIdentifier { type_: "appPrices".into(), id: id.clone() });
+        included.push(AppPriceInlineCreate {
+            type_: "appPrices".into(),
+            id,
+            attributes: inline_price_attributes(price),
+            relationships: Some(AppPriceInlineCreateRelationships { app_price_point: rel("appPricePoints", &price.price_point_id) }),
+        });
+    }
+    let req = AppPriceScheduleCreateRequest {
+        data: AppPriceScheduleCreateData {
+            type_: "appPriceSchedules".into(),
+            relationships: AppPriceScheduleCreateRelationships {
+                app: rel("apps", &params.app_id),
+                base_territory: rel("territories", &params.base_territory_id),
+                manual_prices: RelationshipDataList { data: GoSlice::from(price_refs) },
+            },
+        },
+        included: GoSlice::from(included),
+    };
+    let resp = match c.create_app_price_schedule(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to set app price schedule: {e}"))),
+    };
+    Ok(data_result(&format!("App price schedule set: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleGetAppPricePoint`.
@@ -910,7 +1238,18 @@ async fn handle_get_app_price_point(c: Arc<Client>, args: Args) -> HandlerResult
         price_point_id: String => "price_point_id";
     }
     }
-    todo!("port handleGetAppPricePoint from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.price_point_id.is_empty() {
+        return Ok(error_result("price_point_id is required"));
+    }
+    let resp = match c.get_app_price_point(&params.price_point_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get app price point: {e}"))),
+    };
+    Ok(data_result(&format_app_price_point(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleListAppPricePointEqualizations`.
@@ -921,6 +1260,95 @@ async fn handle_list_app_price_point_equalizations(c: Arc<Client>, args: Args) -
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
     }
     }
-    todo!("port handleListAppPricePointEqualizations from internal/asc/tools/commerce_pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.price_point_id.is_empty() {
+        return Ok(error_result("price_point_id is required"));
+    }
+    let opts = params.commerce_list_params.opts(100);
+    let resp = match paginated_fetch(&c, &params.commerce_list_params.cursor, || c.list_app_price_point_equalizations(&params.price_point_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list app price point equalizations: {e}"))),
+    };
+    Ok(list_result(&format_app_price_points(&resp.data), &resp.data, &resp.links))
 }
 
+/// Go `inlinePriceAttributes`: the optional scheduling window of an inline
+/// price, `None` when the caller gave neither date.
+fn inline_price_attributes(price: &InlinePriceParams) -> Option<CommercePriceInlineAttributes> {
+    if price.start_date.is_empty() && price.end_date.is_empty() {
+        return None;
+    }
+    Some(CommercePriceInlineAttributes { start_date: price.start_date.clone(), end_date: price.end_date.clone() })
+}
+
+/// Go `territoryIdentifiers`.
+fn territory_identifiers(ids: &[String]) -> GoSlice<ResourceIdentifier> {
+    ids.iter().map(|id| ResourceIdentifier { type_: "territories".into(), id: id.clone() }).collect()
+}
+
+/// Go `formatInAppPurchasePricePoints`.
+fn format_in_app_purchase_price_points(price_points: &[InAppPurchasePricePoint]) -> String {
+    if price_points.is_empty() {
+        return "No in-app purchase price points found".to_string();
+    }
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} in-app purchase price points:\n\n", price_points.len());
+    for pp in price_points {
+        let _ = write!(sb, "ID: {}\n", pp.id);
+        let _ = write!(sb, "Customer Price: {}\n", pp.attributes.customer_price);
+        let _ = write!(sb, "Proceeds: {}\n", pp.attributes.proceeds);
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Go `formatInAppPurchasePrices`.
+fn format_in_app_purchase_prices(prices: &[InAppPurchasePrice]) -> String {
+    if prices.is_empty() {
+        return "No prices found".to_string();
+    }
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} prices:\n\n", prices.len());
+    for p in prices {
+        let _ = write!(sb, "ID: {}\n", p.id);
+        if !p.attributes.start_date.is_empty() {
+            let _ = write!(sb, "Start Date: {}\n", p.attributes.start_date);
+        }
+        if !p.attributes.end_date.is_empty() {
+            let _ = write!(sb, "End Date: {}\n", p.attributes.end_date);
+        }
+        let _ = write!(sb, "Manual: {}\n", p.attributes.manual);
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Go `formatSubscriptionPlanAvailabilities`.
+fn format_subscription_plan_availabilities(availabilities: &[SubscriptionPlanAvailability]) -> String {
+    if availabilities.is_empty() {
+        return "No subscription plan availabilities found".to_string();
+    }
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} subscription plan availabilities:\n\n", availabilities.len());
+    for a in availabilities {
+        sb.push_str(&format_subscription_plan_availability(a));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Go `formatSubscriptionPlanAvailability`.
+fn format_subscription_plan_availability(a: &SubscriptionPlanAvailability) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", a.id);
+    if !a.attributes.plan_type.is_empty() {
+        let _ = write!(sb, "Plan Type: {}\n", a.attributes.plan_type);
+    }
+    if let Some(v) = a.attributes.available_in_new_territories {
+        let _ = write!(sb, "Available In New Territories: {}\n", v);
+    }
+    sb
+}

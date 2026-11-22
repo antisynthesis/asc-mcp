@@ -1,0 +1,9 @@
+[
+  {
+    "name": "false",
+    "args": {
+      "app_tag_id": "t1",
+      "visible_in_app_store": false
+    }
+  }
+]
