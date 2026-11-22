@@ -1,0 +1,41 @@
+[
+  {
+    "name": "some-empty",
+    "args": {
+      "leaderboard_set_id": "s-1",
+      "leaderboard_ids": [
+        "a",
+        "",
+        "b"
+      ]
+    },
+    "modes": [
+      "rich",
+      "rawerror",
+      "notfound"
+    ]
+  },
+  {
+    "name": "all-empty",
+    "args": {
+      "leaderboard_set_id": "s-1",
+      "leaderboard_ids": [
+        ""
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-set",
+    "args": {
+      "leaderboard_ids": [
+        "a"
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

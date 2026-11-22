@@ -1,0 +1,22 @@
+[
+  {
+    "name": "no-file",
+    "args": {
+      "localization_id": "l-1",
+      "file_name": "a.png"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-loc",
+    "args": {
+      "file_name": "a.png",
+      "file_path": "$FILE"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

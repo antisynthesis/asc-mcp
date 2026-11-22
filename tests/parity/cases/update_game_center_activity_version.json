@@ -1,0 +1,11 @@
+[
+  {
+    "name": "no-fallback",
+    "args": {
+      "version_id": "v-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "name": "loc-path",
+    "args": {
+      "localization_id": "l-1",
+      "file_name": "a.png",
+      "file_path": "$FILE"
+    }
+  },
+  {
+    "name": "ver-b64",
+    "args": {
+      "version_id": "v-1",
+      "file_name": "a.png",
+      "file_data_base64": "$B64"
+    }
+  },
+  {
+    "name": "loc-missing-file",
+    "args": {
+      "localization_id": "l-1",
+      "file_name": "a.png",
+      "file_path": "/nonexistent/x.png"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

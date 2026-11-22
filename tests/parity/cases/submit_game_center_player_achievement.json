@@ -1,0 +1,115 @@
+[
+  {
+    "name": "pct-50",
+    "args": {
+      "bundle_id": "com.b",
+      "vendor_identifier": "v",
+      "scoped_player_id": "p",
+      "percentage_achieved": 50,
+      "challenge_ids": [
+        "c1",
+        "c2"
+      ],
+      "pre_released": true,
+      "submitted_date": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "name": "pct-0",
+    "args": {
+      "bundle_id": "com.b",
+      "vendor_identifier": "v",
+      "scoped_player_id": "p",
+      "percentage_achieved": 0
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  },
+  {
+    "name": "pct-100",
+    "args": {
+      "bundle_id": "com.b",
+      "vendor_identifier": "v",
+      "scoped_player_id": "p",
+      "percentage_achieved": 100
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "pct-neg",
+    "args": {
+      "bundle_id": "com.b",
+      "vendor_identifier": "v",
+      "scoped_player_id": "p",
+      "percentage_achieved": -1
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "pct-101",
+    "args": {
+      "bundle_id": "com.b",
+      "vendor_identifier": "v",
+      "scoped_player_id": "p",
+      "percentage_achieved": 101
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "pct-missing",
+    "args": {
+      "bundle_id": "com.b",
+      "vendor_identifier": "v",
+      "scoped_player_id": "p"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "pct-null",
+    "args": {
+      "bundle_id": "com.b",
+      "vendor_identifier": "v",
+      "scoped_player_id": "p",
+      "percentage_achieved": null
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "pct-float",
+    "args": {
+      "bundle_id": "com.b",
+      "vendor_identifier": "v",
+      "scoped_player_id": "p",
+      "percentage_achieved": 5.5
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "empty-challenges",
+    "args": {
+      "bundle_id": "com.b",
+      "vendor_identifier": "v",
+      "scoped_player_id": "p",
+      "percentage_achieved": 10,
+      "challenge_ids": []
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

@@ -445,7 +445,21 @@ async fn handle_get_game_center_detail(c: Arc<Client>, args: Args) -> HandlerRes
         app_id: String => "app_id";
     }
     }
-    todo!("port handleGetGameCenterDetail from internal/asc/tools/gamecenter.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let resp = match c.get_game_center_detail(&params.app_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get Game Center detail: {e}"))),
+    };
+
+    Ok(data_result(&format_game_center_detail(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleListGameCenterAchievements`.
@@ -461,7 +475,30 @@ async fn handle_list_game_center_achievements(c: Arc<Client>, args: Args) -> Han
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListGameCenterAchievements from internal/asc/tools/gamecenter.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.game_center_detail_id.is_empty() {
+        return Ok(error_result("game_center_detail_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_game_center_achievements(&params.game_center_detail_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list achievements: {e}"))),
+    };
+
+    Ok(list_result(&format_game_center_achievements(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetGameCenterAchievement`.
@@ -471,7 +508,21 @@ async fn handle_get_game_center_achievement(c: Arc<Client>, args: Args) -> Handl
         achievement_id: String => "achievement_id";
     }
     }
-    todo!("port handleGetGameCenterAchievement from internal/asc/tools/gamecenter.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.achievement_id.is_empty() {
+        return Ok(error_result("achievement_id is required"));
+    }
+
+    let resp = match c.get_game_center_achievement(&params.achievement_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get achievement: {e}"))),
+    };
+
+    Ok(data_result(&format_game_center_achievement(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateGameCenterAchievement`.
@@ -486,7 +537,51 @@ async fn handle_create_game_center_achievement(c: Arc<Client>, args: Args) -> Ha
         repeatable: bool => "repeatable";
     }
     }
-    todo!("port handleCreateGameCenterAchievement from internal/asc/tools/gamecenter.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.game_center_detail_id.is_empty() {
+        return Ok(error_result("game_center_detail_id is required"));
+    }
+    if params.reference_name.is_empty() {
+        return Ok(error_result("reference_name is required"));
+    }
+    if params.vendor_identifier.is_empty() {
+        return Ok(error_result("vendor_identifier is required"));
+    }
+
+    // The v2 API requires an initial achievement version, created inline with a
+    // client-chosen temporary ID.
+    let req = GameCenterAchievementCreateRequest {
+        data: GameCenterAchievementCreateData {
+            type_: "gameCenterAchievements".into(),
+            attributes: GameCenterAchievementCreateAttributes {
+                reference_name: params.reference_name.clone(),
+                vendor_identifier: params.vendor_identifier.clone(),
+                points: params.points,
+                show_before_earned: params.show_before_earned,
+                repeatable: params.repeatable,
+            },
+            relationships: GameCenterAchievementCreateRelationships {
+                game_center_detail: RelationshipData {
+                    data: ResourceIdentifier { type_: "gameCenterDetails".into(), id: params.game_center_detail_id.clone() },
+                },
+                versions: RelationshipDataList {
+                    data: GoSlice::from(vec![ResourceIdentifier { type_: "gameCenterAchievementVersions".into(), id: "${new-version}".into() }]),
+                },
+            },
+        },
+        included: GoSlice::from(vec![GameCenterVersionInlineCreate { type_: "gameCenterAchievementVersions".into(), id: "${new-version}".into() }]),
+    };
+
+    let resp = match c.create_game_center_achievement(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create achievement: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created achievement: {} (ID: {})", resp.data.attributes.reference_name, resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateGameCenterAchievement`.
@@ -501,7 +596,35 @@ async fn handle_update_game_center_achievement(c: Arc<Client>, args: Args) -> Ha
         archived: Option<bool> => "archived";
     }
     }
-    todo!("port handleUpdateGameCenterAchievement from internal/asc/tools/gamecenter.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.achievement_id.is_empty() {
+        return Ok(error_result("achievement_id is required"));
+    }
+
+    let req = GameCenterAchievementUpdateRequest {
+        data: GameCenterAchievementUpdateData {
+            type_: "gameCenterAchievements".into(),
+            id: params.achievement_id.clone(),
+            attributes: GameCenterAchievementUpdateAttributes {
+                reference_name: params.reference_name.clone(),
+                points: params.points,
+                show_before_earned: params.show_before_earned,
+                repeatable: params.repeatable,
+                archived: params.archived,
+            },
+        },
+    };
+
+    let resp = match c.update_game_center_achievement(&params.achievement_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update achievement: {e}"))),
+    };
+
+    Ok(data_result(&format!("Updated achievement: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteGameCenterAchievement`.
@@ -511,7 +634,20 @@ async fn handle_delete_game_center_achievement(c: Arc<Client>, args: Args) -> Ha
         achievement_id: String => "achievement_id";
     }
     }
-    todo!("port handleDeleteGameCenterAchievement from internal/asc/tools/gamecenter.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.achievement_id.is_empty() {
+        return Ok(error_result("achievement_id is required"));
+    }
+
+    if let Err(e) = c.delete_game_center_achievement(&params.achievement_id).await {
+        return Ok(error_result(format!("Failed to delete achievement: {e}")));
+    }
+
+    Ok(CallToolResult::success("Achievement deleted successfully"))
 }
 
 /// Ported from `Registry.handleListGameCenterLeaderboards`.
@@ -527,7 +663,30 @@ async fn handle_list_game_center_leaderboards(c: Arc<Client>, args: Args) -> Han
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListGameCenterLeaderboards from internal/asc/tools/gamecenter.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.game_center_detail_id.is_empty() {
+        return Ok(error_result("game_center_detail_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_game_center_leaderboards(&params.game_center_detail_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list leaderboards: {e}"))),
+    };
+
+    Ok(list_result(&format_game_center_leaderboards(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetGameCenterLeaderboard`.
@@ -537,7 +696,21 @@ async fn handle_get_game_center_leaderboard(c: Arc<Client>, args: Args) -> Handl
         leaderboard_id: String => "leaderboard_id";
     }
     }
-    todo!("port handleGetGameCenterLeaderboard from internal/asc/tools/gamecenter.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.leaderboard_id.is_empty() {
+        return Ok(error_result("leaderboard_id is required"));
+    }
+
+    let resp = match c.get_game_center_leaderboard(&params.leaderboard_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get leaderboard: {e}"))),
+    };
+
+    Ok(data_result(&format_game_center_leaderboard(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateGameCenterLeaderboard`.
@@ -554,7 +727,66 @@ async fn handle_create_game_center_leaderboard(c: Arc<Client>, args: Args) -> Ha
         default_formatter: String => "default_formatter";
     }
     }
-    todo!("port handleCreateGameCenterLeaderboard from internal/asc/tools/gamecenter.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.game_center_detail_id.is_empty() {
+        return Ok(error_result("game_center_detail_id is required"));
+    }
+    if params.reference_name.is_empty() {
+        return Ok(error_result("reference_name is required"));
+    }
+    if params.vendor_identifier.is_empty() {
+        return Ok(error_result("vendor_identifier is required"));
+    }
+    if params.submission_type.is_empty() {
+        return Ok(error_result("submission_type is required"));
+    }
+    if params.score_sort_type.is_empty() {
+        return Ok(error_result("score_sort_type is required"));
+    }
+
+    // The v2 API requires a default formatter for score display.
+    let mut formatter = params.default_formatter.clone();
+    if formatter.is_empty() {
+        formatter = "INTEGER".into();
+    }
+
+    // The v2 API requires an initial leaderboard version, created inline with a
+    // client-chosen temporary ID.
+    let req = GameCenterLeaderboardCreateRequest {
+        data: GameCenterLeaderboardCreateData {
+            type_: "gameCenterLeaderboards".into(),
+            attributes: GameCenterLeaderboardCreateAttributes {
+                default_formatter: formatter,
+                reference_name: params.reference_name.clone(),
+                vendor_identifier: params.vendor_identifier.clone(),
+                submission_type: params.submission_type.clone(),
+                score_sort_type: params.score_sort_type.clone(),
+                score_range_start: params.score_range_start.clone(),
+                score_range_end: params.score_range_end.clone(),
+                ..Default::default()
+            },
+            relationships: GameCenterLeaderboardCreateRelationships {
+                game_center_detail: RelationshipData {
+                    data: ResourceIdentifier { type_: "gameCenterDetails".into(), id: params.game_center_detail_id.clone() },
+                },
+                versions: RelationshipDataList {
+                    data: GoSlice::from(vec![ResourceIdentifier { type_: "gameCenterLeaderboardVersions".into(), id: "${new-version}".into() }]),
+                },
+            },
+        },
+        included: GoSlice::from(vec![GameCenterVersionInlineCreate { type_: "gameCenterLeaderboardVersions".into(), id: "${new-version}".into() }]),
+    };
+
+    let resp = match c.create_game_center_leaderboard(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create leaderboard: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created leaderboard: {} (ID: {})", resp.data.attributes.reference_name, resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateGameCenterLeaderboard`.
@@ -568,7 +800,35 @@ async fn handle_update_game_center_leaderboard(c: Arc<Client>, args: Args) -> Ha
         archived: Option<bool> => "archived";
     }
     }
-    todo!("port handleUpdateGameCenterLeaderboard from internal/asc/tools/gamecenter.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.leaderboard_id.is_empty() {
+        return Ok(error_result("leaderboard_id is required"));
+    }
+
+    let req = GameCenterLeaderboardUpdateRequest {
+        data: GameCenterLeaderboardUpdateData {
+            type_: "gameCenterLeaderboards".into(),
+            id: params.leaderboard_id.clone(),
+            attributes: GameCenterLeaderboardUpdateAttributes {
+                reference_name: params.reference_name.clone(),
+                submission_type: params.submission_type.clone(),
+                score_sort_type: params.score_sort_type.clone(),
+                archived: params.archived,
+                ..Default::default()
+            },
+        },
+    };
+
+    let resp = match c.update_game_center_leaderboard(&params.leaderboard_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update leaderboard: {e}"))),
+    };
+
+    Ok(data_result(&format!("Updated leaderboard: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteGameCenterLeaderboard`.
@@ -578,6 +838,91 @@ async fn handle_delete_game_center_leaderboard(c: Arc<Client>, args: Args) -> Ha
         leaderboard_id: String => "leaderboard_id";
     }
     }
-    todo!("port handleDeleteGameCenterLeaderboard from internal/asc/tools/gamecenter.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.leaderboard_id.is_empty() {
+        return Ok(error_result("leaderboard_id is required"));
+    }
+
+    if let Err(e) = c.delete_game_center_leaderboard(&params.leaderboard_id).await {
+        return Ok(error_result(format!("Failed to delete leaderboard: {e}")));
+    }
+
+    Ok(CallToolResult::success("Leaderboard deleted successfully"))
 }
 
+/// Ported from `formatGameCenterDetail`.
+fn format_game_center_detail(detail: &GameCenterDetail) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "Game Center Detail ID: {}\n", detail.id);
+    let _ = write!(sb, "Arcade Enabled: {}\n", detail.attributes.arcade_enabled);
+    let _ = write!(sb, "Challenge Enabled: {}\n", detail.attributes.challenge_enabled);
+    sb
+}
+
+/// Ported from `formatGameCenterAchievements`.
+fn format_game_center_achievements(achievements: &[GameCenterAchievement]) -> String {
+    if achievements.is_empty() {
+        return "No Game Center achievements found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} achievements:\n\n", achievements.len());
+
+    for achievement in achievements {
+        sb.push_str(&format_game_center_achievement(achievement));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatGameCenterAchievement`.
+fn format_game_center_achievement(achievement: &GameCenterAchievement) -> String {
+    let a = &achievement.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", achievement.id);
+    let _ = write!(sb, "Reference Name: {}\n", a.reference_name);
+    let _ = write!(sb, "Vendor ID: {}\n", a.vendor_identifier);
+    let _ = write!(sb, "Points: {}\n", a.points);
+    let _ = write!(sb, "Show Before Earned: {}\n", a.show_before_earned);
+    let _ = write!(sb, "Repeatable: {}\n", a.repeatable);
+    let _ = write!(sb, "Archived: {}\n", a.archived);
+    sb
+}
+
+/// Ported from `formatGameCenterLeaderboards`.
+pub(super) fn format_game_center_leaderboards(leaderboards: &[GameCenterLeaderboard]) -> String {
+    if leaderboards.is_empty() {
+        return "No Game Center leaderboards found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} leaderboards:\n\n", leaderboards.len());
+
+    for leaderboard in leaderboards {
+        sb.push_str(&format_game_center_leaderboard(leaderboard));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatGameCenterLeaderboard`.
+fn format_game_center_leaderboard(leaderboard: &GameCenterLeaderboard) -> String {
+    let a = &leaderboard.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", leaderboard.id);
+    let _ = write!(sb, "Reference Name: {}\n", a.reference_name);
+    let _ = write!(sb, "Vendor ID: {}\n", a.vendor_identifier);
+    let _ = write!(sb, "Submission Type: {}\n", a.submission_type);
+    let _ = write!(sb, "Score Sort Type: {}\n", a.score_sort_type);
+    if !a.score_range_start.is_empty() {
+        let _ = write!(sb, "Score Range: {} - {}\n", a.score_range_start, a.score_range_end);
+    }
+    let _ = write!(sb, "Archived: {}\n", a.archived);
+    sb
+}

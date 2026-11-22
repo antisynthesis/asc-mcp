@@ -25,3 +25,22 @@ pub(crate) struct GcListParams ("tools.gcListParams", "gcListParams") {
 }
 }
 
+
+/// Go `gcLimit`: clamps a caller-supplied page size to the range the App
+/// Store Connect API accepts, defaulting to 50.
+pub(crate) fn gc_limit(limit: i64) -> i64 {
+    if limit <= 0 {
+        return 50;
+    }
+    if limit > 200 {
+        return 200;
+    }
+    limit
+}
+
+impl GcListParams {
+    /// Go `gcListParams.opts`: list options with the limit already clamped.
+    pub(crate) fn opts(&self) -> Option<ListOptions> {
+        list_opts(gc_limit(self.limit), &self.filter, &GoSlice::nil(), &self.fields, &self.include)
+    }
+}

@@ -1,0 +1,11 @@
+[
+  {
+    "name": "escape",
+    "args": {
+      "app_id": "a b/c?d"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "name": "partial",
+    "args": {
+      "activity_id": "act-1",
+      "archived": false,
+      "minimum_players_count": 0
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  },
+  {
+    "name": "props-null",
+    "args": {
+      "activity_id": "act-1",
+      "properties": null,
+      "supports_party_code": null
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

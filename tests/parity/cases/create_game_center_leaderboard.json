@@ -1,0 +1,30 @@
+[
+  {
+    "name": "formatter",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v",
+      "submission_type": "BEST_SCORE",
+      "score_sort_type": "ASC",
+      "default_formatter": "ELAPSED_TIME_SECOND"
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  },
+  {
+    "name": "no-sort",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v",
+      "submission_type": "BEST_SCORE"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

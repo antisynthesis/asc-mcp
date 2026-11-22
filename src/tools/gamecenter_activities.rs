@@ -554,7 +554,22 @@ async fn handle_list_game_center_activities(c: Arc<Client>, args: Args) -> Handl
         gc_list_params: GcListParams => "gcListParams", flatten;
     }
     }
-    todo!("port handleListGameCenterActivities from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.game_center_detail_id.is_empty() {
+        return Ok(error_result("game_center_detail_id is required"));
+    }
+
+    let opts = params.gc_list_params.opts();
+    let resp = match paginated_fetch(&c, &params.gc_list_params.cursor, || c.list_game_center_activities(&params.game_center_detail_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list activities: {e}"))),
+    };
+
+    Ok(list_result(&format_game_center_activities(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetGameCenterActivity`.
@@ -564,7 +579,21 @@ async fn handle_get_game_center_activity(c: Arc<Client>, args: Args) -> HandlerR
         activity_id: String => "activity_id";
     }
     }
-    todo!("port handleGetGameCenterActivity from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.activity_id.is_empty() {
+        return Ok(error_result("activity_id is required"));
+    }
+
+    let resp = match c.get_game_center_activity(&params.activity_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get activity: {e}"))),
+    };
+
+    Ok(data_result(&format_game_center_activity(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateGameCenterActivity`.
@@ -583,7 +612,71 @@ async fn handle_create_game_center_activity(c: Arc<Client>, args: Args) -> Handl
         fallback_url: String => "fallback_url";
     }
     }
-    todo!("port handleCreateGameCenterActivity from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.reference_name.is_empty() {
+        return Ok(error_result("reference_name is required"));
+    }
+    if params.vendor_identifier.is_empty() {
+        return Ok(error_result("vendor_identifier is required"));
+    }
+    if params.game_center_detail_id.is_empty() == params.game_center_group_id.is_empty() {
+        return Ok(error_result("exactly one of game_center_detail_id or game_center_group_id is required"));
+    }
+
+    // The initial activity version is declared inline with a
+    // client-chosen temporary ID; it carries the fallback URL.
+    let mut rels = GameCenterActivityCreateRelationships {
+        versions: Some(RelationshipDataList {
+            data: GoSlice::from(vec![ResourceIdentifier { type_: "gameCenterActivityVersions".into(), id: "${new-version}".into() }]),
+        }),
+        ..Default::default()
+    };
+    if !params.game_center_detail_id.is_empty() {
+        rels.game_center_detail = Some(RelationshipData {
+            data: ResourceIdentifier { type_: "gameCenterDetails".into(), id: params.game_center_detail_id.clone() },
+        });
+    } else {
+        rels.game_center_group = Some(RelationshipData {
+            data: ResourceIdentifier { type_: "gameCenterGroups".into(), id: params.game_center_group_id.clone() },
+        });
+    }
+
+    let mut inline = GameCenterActivityVersionInlineCreate {
+        type_: "gameCenterActivityVersions".into(),
+        id: "${new-version}".into(),
+        ..Default::default()
+    };
+    if !params.fallback_url.is_empty() {
+        inline.attributes = Some(GameCenterActivityVersionInlineCreateAttributes { fallback_url: params.fallback_url.clone() });
+    }
+
+    let req = GameCenterActivityCreateRequest {
+        data: GameCenterActivityCreateData {
+            type_: "gameCenterActivities".into(),
+            attributes: GameCenterActivityCreateAttributes {
+                reference_name: params.reference_name.clone(),
+                vendor_identifier: params.vendor_identifier.clone(),
+                play_style: params.play_style.clone(),
+                minimum_players_count: params.minimum_players_count,
+                maximum_players_count: params.maximum_players_count,
+                supports_party_code: params.supports_party_code,
+                properties: params.properties.clone(),
+            },
+            relationships: rels,
+        },
+        included: GoSlice::from(vec![inline]),
+    };
+
+    let resp = match c.create_game_center_activity(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create activity: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created activity: {} (ID: {})", resp.data.attributes.reference_name, resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateGameCenterActivity`.
@@ -600,7 +693,37 @@ async fn handle_update_game_center_activity(c: Arc<Client>, args: Args) -> Handl
         archived: Option<bool> => "archived";
     }
     }
-    todo!("port handleUpdateGameCenterActivity from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.activity_id.is_empty() {
+        return Ok(error_result("activity_id is required"));
+    }
+
+    let req = GameCenterActivityUpdateRequest {
+        data: GameCenterActivityUpdateData {
+            type_: "gameCenterActivities".into(),
+            id: params.activity_id.clone(),
+            attributes: GameCenterActivityUpdateAttributes {
+                reference_name: params.reference_name.clone(),
+                play_style: params.play_style.clone(),
+                minimum_players_count: params.minimum_players_count,
+                maximum_players_count: params.maximum_players_count,
+                supports_party_code: params.supports_party_code,
+                properties: params.properties.clone(),
+                archived: params.archived,
+            },
+        },
+    };
+
+    let resp = match c.update_game_center_activity(&params.activity_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update activity: {e}"))),
+    };
+
+    Ok(data_result(&format!("Updated activity: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteGameCenterActivity`.
@@ -610,7 +733,20 @@ async fn handle_delete_game_center_activity(c: Arc<Client>, args: Args) -> Handl
         activity_id: String => "activity_id";
     }
     }
-    todo!("port handleDeleteGameCenterActivity from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.activity_id.is_empty() {
+        return Ok(error_result("activity_id is required"));
+    }
+
+    if let Err(e) = c.delete_game_center_activity(&params.activity_id).await {
+        return Ok(error_result(format!("Failed to delete activity: {e}")));
+    }
+
+    Ok(CallToolResult::success("Activity deleted successfully"))
 }
 
 /// Ported from `Registry.handleListGameCenterActivityVersions`.
@@ -621,7 +757,22 @@ async fn handle_list_game_center_activity_versions(c: Arc<Client>, args: Args) -
         gc_list_params: GcListParams => "gcListParams", flatten;
     }
     }
-    todo!("port handleListGameCenterActivityVersions from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.activity_id.is_empty() {
+        return Ok(error_result("activity_id is required"));
+    }
+
+    let opts = params.gc_list_params.opts();
+    let resp = match paginated_fetch(&c, &params.gc_list_params.cursor, || c.list_game_center_activity_versions(&params.activity_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list activity versions: {e}"))),
+    };
+
+    Ok(list_result(&format_game_center_activity_versions(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetGameCenterActivityVersion`.
@@ -631,7 +782,21 @@ async fn handle_get_game_center_activity_version(c: Arc<Client>, args: Args) -> 
         version_id: String => "version_id";
     }
     }
-    todo!("port handleGetGameCenterActivityVersion from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let resp = match c.get_game_center_activity_version(&params.version_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get activity version: {e}"))),
+    };
+
+    Ok(data_result(&format_game_center_activity_version(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateGameCenterActivityVersion`.
@@ -642,7 +807,36 @@ async fn handle_create_game_center_activity_version(c: Arc<Client>, args: Args) 
         fallback_url: String => "fallback_url";
     }
     }
-    todo!("port handleCreateGameCenterActivityVersion from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.activity_id.is_empty() {
+        return Ok(error_result("activity_id is required"));
+    }
+
+    let mut req = GameCenterActivityVersionCreateRequest {
+        data: GameCenterActivityVersionCreateData {
+            type_: "gameCenterActivityVersions".into(),
+            relationships: GameCenterActivityVersionCreateRelationships {
+                activity: RelationshipData {
+                    data: ResourceIdentifier { type_: "gameCenterActivities".into(), id: params.activity_id.clone() },
+                },
+            },
+            ..Default::default()
+        },
+    };
+    if !params.fallback_url.is_empty() {
+        req.data.attributes = Some(GameCenterActivityVersionCreateAttributes { fallback_url: params.fallback_url.clone() });
+    }
+
+    let resp = match c.create_game_center_activity_version(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create activity version: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created activity version: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateGameCenterActivityVersion`.
@@ -653,7 +847,32 @@ async fn handle_update_game_center_activity_version(c: Arc<Client>, args: Args) 
         fallback_url: String => "fallback_url";
     }
     }
-    todo!("port handleUpdateGameCenterActivityVersion from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    if params.fallback_url.is_empty() {
+        return Ok(error_result("fallback_url is required"));
+    }
+
+    let req = GameCenterActivityVersionUpdateRequest {
+        data: GameCenterActivityVersionUpdateData {
+            type_: "gameCenterActivityVersions".into(),
+            id: params.version_id.clone(),
+            attributes: GameCenterActivityVersionUpdateAttributes { fallback_url: params.fallback_url.clone() },
+        },
+    };
+
+    let resp = match c.update_game_center_activity_version(&params.version_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update activity version: {e}"))),
+    };
+
+    Ok(data_result(&format!("Updated activity version: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleListGameCenterActivityLocalizations`.
@@ -664,7 +883,22 @@ async fn handle_list_game_center_activity_localizations(c: Arc<Client>, args: Ar
         gc_list_params: GcListParams => "gcListParams", flatten;
     }
     }
-    todo!("port handleListGameCenterActivityLocalizations from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let opts = params.gc_list_params.opts();
+    let resp = match paginated_fetch(&c, &params.gc_list_params.cursor, || c.list_game_center_activity_localizations(&params.version_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list activity localizations: {e}"))),
+    };
+
+    Ok(list_result(&format_game_center_activity_localizations(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleCreateGameCenterActivityLocalization`.
@@ -677,7 +911,43 @@ async fn handle_create_game_center_activity_localization(c: Arc<Client>, args: A
         description: String => "description";
     }
     }
-    todo!("port handleCreateGameCenterActivityLocalization from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    if params.locale.is_empty() {
+        return Ok(error_result("locale is required"));
+    }
+    if params.name.is_empty() {
+        return Ok(error_result("name is required"));
+    }
+
+    let req = GameCenterActivityLocalizationCreateRequest {
+        data: GameCenterActivityLocalizationCreateData {
+            type_: "gameCenterActivityLocalizations".into(),
+            attributes: GameCenterActivityLocalizationCreateAttributes {
+                locale: params.locale.clone(),
+                name: params.name.clone(),
+                description: params.description.clone(),
+            },
+            relationships: GameCenterActivityLocalizationCreateRelationships {
+                version: RelationshipData {
+                    data: ResourceIdentifier { type_: "gameCenterActivityVersions".into(), id: params.version_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_game_center_activity_localization(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create activity localization: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created activity localization {} for {}", resp.data.id, params.locale), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateGameCenterActivityLocalization`.
@@ -689,7 +959,35 @@ async fn handle_update_game_center_activity_localization(c: Arc<Client>, args: A
         description: String => "description";
     }
     }
-    todo!("port handleUpdateGameCenterActivityLocalization from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+    if params.name.is_empty() && params.description.is_empty() {
+        return Ok(error_result("at least one of name or description is required"));
+    }
+
+    let req = GameCenterActivityLocalizationUpdateRequest {
+        data: GameCenterActivityLocalizationUpdateData {
+            type_: "gameCenterActivityLocalizations".into(),
+            id: params.localization_id.clone(),
+            attributes: GameCenterActivityLocalizationUpdateAttributes {
+                name: params.name.clone(),
+                description: params.description.clone(),
+            },
+        },
+    };
+
+    let resp = match c.update_game_center_activity_localization(&params.localization_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update activity localization: {e}"))),
+    };
+
+    Ok(data_result(&format!("Updated activity localization: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteGameCenterActivityLocalization`.
@@ -699,7 +997,20 @@ async fn handle_delete_game_center_activity_localization(c: Arc<Client>, args: A
         localization_id: String => "localization_id";
     }
     }
-    todo!("port handleDeleteGameCenterActivityLocalization from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+
+    if let Err(e) = c.delete_game_center_activity_localization(&params.localization_id).await {
+        return Ok(error_result(format!("Failed to delete activity localization: {e}")));
+    }
+
+    Ok(CallToolResult::success("Activity localization deleted successfully"))
 }
 
 /// Ported from `Registry.handleUploadGameCenterActivityImage`.
@@ -713,6 +1024,116 @@ async fn handle_upload_game_center_activity_image(c: Arc<Client>, args: Args) ->
         file_data_base64: String => "file_data_base64";
     }
     }
-    todo!("port handleUploadGameCenterActivityImage from internal/asc/tools/gamecenter_activities.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.file_name.is_empty() {
+        return Ok(error_result("file_name is required"));
+    }
+    if params.localization_id.is_empty() == params.version_id.is_empty() {
+        return Ok(error_result("exactly one of localization_id or version_id is required"));
+    }
+
+    let body = match super::uploads::load_upload_body(&params.file_path, &params.file_data_base64) {
+        Ok(b) => b,
+        Err(e) => return Ok(error_result(e)),
+    };
+
+    let resp = match c.upload_game_center_activity_image(&params.localization_id, &params.version_id, &params.file_name, &body).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to upload activity image: {e}"))),
+    };
+
+    let text = format!("Uploaded activity image {} ({}, {} bytes).", resp.data.id, params.file_name, body.len());
+    Ok(data_result(&text, &resp.data))
 }
 
+/// Ported from `formatGameCenterActivities`.
+fn format_game_center_activities(activities: &[GameCenterActivity]) -> String {
+    if activities.is_empty() {
+        return "No Game Center activities found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} activities:\n\n", activities.len());
+
+    for activity in activities {
+        sb.push_str(&format_game_center_activity(activity));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatGameCenterActivity`.
+fn format_game_center_activity(activity: &GameCenterActivity) -> String {
+    let a = &activity.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", activity.id);
+    let _ = write!(sb, "Reference Name: {}\n", a.reference_name);
+    let _ = write!(sb, "Vendor ID: {}\n", a.vendor_identifier);
+    if !a.play_style.is_empty() {
+        let _ = write!(sb, "Play Style: {}\n", a.play_style);
+    }
+    if a.minimum_players_count > 0 || a.maximum_players_count > 0 {
+        let _ = write!(sb, "Players: {} - {}\n", a.minimum_players_count, a.maximum_players_count);
+    }
+    let _ = write!(sb, "Supports Party Code: {}\n", a.supports_party_code);
+    let _ = write!(sb, "Archived: {}\n", a.archived);
+    sb
+}
+
+/// Ported from `formatGameCenterActivityVersions`.
+fn format_game_center_activity_versions(versions: &[GameCenterActivityVersion]) -> String {
+    if versions.is_empty() {
+        return "No Game Center activity versions found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} activity versions:\n\n", versions.len());
+
+    for version in versions {
+        sb.push_str(&format_game_center_activity_version(version));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatGameCenterActivityVersion`.
+fn format_game_center_activity_version(version: &GameCenterActivityVersion) -> String {
+    let a = &version.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", version.id);
+    let _ = write!(sb, "Version: {}\n", a.version);
+    let _ = write!(sb, "State: {}\n", a.state);
+    if !a.fallback_url.is_empty() {
+        let _ = write!(sb, "Fallback URL: {}\n", a.fallback_url);
+    }
+    sb
+}
+
+/// Ported from `formatGameCenterActivityLocalizations`.
+fn format_game_center_activity_localizations(localizations: &[GameCenterActivityLocalization]) -> String {
+    if localizations.is_empty() {
+        return "No Game Center activity localizations found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} activity localizations:\n\n", localizations.len());
+
+    for localization in localizations {
+        let a = &localization.attributes;
+        let _ = write!(sb, "ID: {}\n", localization.id);
+        let _ = write!(sb, "Locale: {}\n", a.locale);
+        let _ = write!(sb, "Name: {}\n", a.name);
+        if !a.description.is_empty() {
+            let _ = write!(sb, "Description: {}\n", a.description);
+        }
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}

@@ -1,0 +1,25 @@
+[
+  {
+    "name": "no-name",
+    "args": {
+      "version_id": "v-1",
+      "locale": "en-US"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-desc",
+    "args": {
+      "version_id": "v-1",
+      "locale": "en-US",
+      "name": "N"
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  }
+]
