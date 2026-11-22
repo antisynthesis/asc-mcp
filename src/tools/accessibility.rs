@@ -259,7 +259,24 @@ async fn handle_list_accessibility_declarations(c: Arc<Client>, args: Args) -> H
         fields: GoMap<GoSlice<String>> => "fields";
     }
     }
-    todo!("port handleListAccessibilityDeclarations from internal/asc/tools/accessibility.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let limit = clamp_limit(params.limit);
+
+    let opts = list_opts(limit, &params.filter, &GoSlice::nil(), &params.fields, &GoSlice::nil());
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_accessibility_declarations(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list accessibility declarations: {e}"))),
+    };
+
+    Ok(list_result(&format_accessibility_declarations(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetAccessibilityDeclaration`.
@@ -269,7 +286,21 @@ async fn handle_get_accessibility_declaration(c: Arc<Client>, args: Args) -> Han
         declaration_id: String => "declaration_id";
     }
     }
-    todo!("port handleGetAccessibilityDeclaration from internal/asc/tools/accessibility.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.declaration_id.is_empty() {
+        return Ok(error_result("declaration_id is required"));
+    }
+
+    let resp = match c.get_accessibility_declaration(&params.declaration_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get accessibility declaration: {e}"))),
+    };
+
+    Ok(data_result(&format_accessibility_declaration(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateAccessibilityDeclaration`.
@@ -281,7 +312,47 @@ async fn handle_create_accessibility_declaration(c: Arc<Client>, args: Args) -> 
         accessibility_support_params: AccessibilitySupportParams => "accessibilitySupportParams", flatten;
     }
     }
-    todo!("port handleCreateAccessibilityDeclaration from internal/asc/tools/accessibility.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    if params.device_family.is_empty() {
+        return Ok(error_result("device_family is required"));
+    }
+
+    let s = &params.accessibility_support_params;
+    let req = AccessibilityDeclarationCreateRequest {
+        data: AccessibilityDeclarationCreateData {
+            type_: "accessibilityDeclarations".into(),
+            attributes: AccessibilityDeclarationCreateAttributes {
+                device_family: params.device_family.clone(),
+                supports_audio_descriptions: s.supports_audio_descriptions,
+                supports_captions: s.supports_captions,
+                supports_dark_interface: s.supports_dark_interface,
+                supports_differentiate_without_color_alone: s.supports_differentiate_without_color_alone,
+                supports_larger_text: s.supports_larger_text,
+                supports_reduced_motion: s.supports_reduced_motion,
+                supports_sufficient_contrast: s.supports_sufficient_contrast,
+                supports_voice_control: s.supports_voice_control,
+                supports_voiceover: s.supports_voiceover,
+            },
+            relationships: AccessibilityDeclarationCreateRelationships {
+                app: RelationshipData { data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() } },
+            },
+        },
+    };
+
+    let resp = match c.create_accessibility_declaration(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create accessibility declaration: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created accessibility declaration:\n{}", format_accessibility_declaration(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateAccessibilityDeclaration`.
@@ -293,7 +364,41 @@ async fn handle_update_accessibility_declaration(c: Arc<Client>, args: Args) -> 
         accessibility_support_params: AccessibilitySupportParams => "accessibilitySupportParams", flatten;
     }
     }
-    todo!("port handleUpdateAccessibilityDeclaration from internal/asc/tools/accessibility.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.declaration_id.is_empty() {
+        return Ok(error_result("declaration_id is required"));
+    }
+
+    let s = &params.accessibility_support_params;
+    let req = AccessibilityDeclarationUpdateRequest {
+        data: AccessibilityDeclarationUpdateData {
+            type_: "accessibilityDeclarations".into(),
+            id: params.declaration_id.clone(),
+            attributes: Some(AccessibilityDeclarationUpdateAttributes {
+                publish: params.publish,
+                supports_audio_descriptions: s.supports_audio_descriptions,
+                supports_captions: s.supports_captions,
+                supports_dark_interface: s.supports_dark_interface,
+                supports_differentiate_without_color_alone: s.supports_differentiate_without_color_alone,
+                supports_larger_text: s.supports_larger_text,
+                supports_reduced_motion: s.supports_reduced_motion,
+                supports_sufficient_contrast: s.supports_sufficient_contrast,
+                supports_voice_control: s.supports_voice_control,
+                supports_voiceover: s.supports_voiceover,
+            }),
+        },
+    };
+
+    let resp = match c.update_accessibility_declaration(&params.declaration_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update accessibility declaration: {e}"))),
+    };
+
+    Ok(data_result(&format!("Accessibility declaration updated:\n{}", format_accessibility_declaration(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteAccessibilityDeclaration`.
@@ -303,6 +408,80 @@ async fn handle_delete_accessibility_declaration(c: Arc<Client>, args: Args) -> 
         declaration_id: String => "declaration_id";
     }
     }
-    todo!("port handleDeleteAccessibilityDeclaration from internal/asc/tools/accessibility.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.declaration_id.is_empty() {
+        return Ok(error_result("declaration_id is required"));
+    }
+
+    if let Err(e) = c.delete_accessibility_declaration(&params.declaration_id).await {
+        return Ok(error_result(format!("Failed to delete accessibility declaration: {e}")));
+    }
+
+    Ok(CallToolResult::success("Accessibility declaration deleted successfully"))
 }
 
+/// The `limit <= 0 → 50; limit > 200 → 200` clamp the Go handlers inline.
+fn clamp_limit(limit: i64) -> i64 {
+    let mut limit = limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+    limit
+}
+
+/// Ported from `formatAccessibilityDeclarations`.
+fn format_accessibility_declarations(declarations: &[AccessibilityDeclaration]) -> String {
+    if declarations.is_empty() {
+        return "No accessibility declarations found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} accessibility declarations:\n\n", declarations.len());
+
+    for decl in declarations {
+        sb.push_str(&format_accessibility_declaration(decl));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatAccessibilityDeclaration`.
+fn format_accessibility_declaration(decl: &AccessibilityDeclaration) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "Declaration ID: {}\n", decl.id);
+
+    let attrs = &decl.attributes;
+    if !attrs.device_family.is_empty() {
+        let _ = write!(sb, "Device Family: {}\n", attrs.device_family);
+    }
+    if !attrs.state.is_empty() {
+        let _ = write!(sb, "State: {}\n", attrs.state);
+    }
+
+    let features: [(&str, Option<bool>); 9] = [
+        ("Audio Descriptions", attrs.supports_audio_descriptions),
+        ("Captions", attrs.supports_captions),
+        ("Dark Interface", attrs.supports_dark_interface),
+        ("Differentiate Without Color Alone", attrs.supports_differentiate_without_color_alone),
+        ("Larger Text", attrs.supports_larger_text),
+        ("Reduced Motion", attrs.supports_reduced_motion),
+        ("Sufficient Contrast", attrs.supports_sufficient_contrast),
+        ("Voice Control", attrs.supports_voice_control),
+        ("VoiceOver", attrs.supports_voiceover),
+    ];
+    for (label, value) in features {
+        if let Some(v) = value {
+            let _ = write!(sb, "{}: {}\n", label, v);
+        }
+    }
+
+    sb
+}

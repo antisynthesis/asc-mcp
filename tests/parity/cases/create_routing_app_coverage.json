@@ -1,0 +1,18 @@
+[
+  {
+    "name": "neg-size",
+    "args": {
+      "version_id": "v",
+      "file_name": "f",
+      "file_size": -1
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "version_id": "v",
+    "file_name": "f.geojson",
+    "file_size": 99
+  }
+]

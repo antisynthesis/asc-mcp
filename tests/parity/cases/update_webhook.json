@@ -1,0 +1,20 @@
+[
+  {
+    "webhook_id": "w1",
+    "enabled": false
+  },
+  {
+    "webhook_id": "w1",
+    "enabled": true,
+    "event_types": [],
+    "name": "x"
+  },
+  {
+    "webhook_id": "w1",
+    "event_types": [
+      "A"
+    ],
+    "secret": "s",
+    "url": "u"
+  }
+]

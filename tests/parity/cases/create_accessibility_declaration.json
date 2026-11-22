@@ -1,0 +1,10 @@
+[
+  {
+    "app_id": "a1",
+    "device_family": "IPHONE",
+    "supports_captions": false,
+    "supports_voiceover": true,
+    "supports_larger_text": true,
+    "supports_dark_interface": false
+  }
+]

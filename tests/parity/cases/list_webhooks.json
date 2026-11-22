@@ -1,0 +1,12 @@
+[
+  {
+    "app_id": "a1",
+    "limit": 999,
+    "fields": {
+      "webhooks": [
+        "name",
+        "url"
+      ]
+    }
+  }
+]

@@ -1,0 +1,13 @@
+[
+  {
+    "limit": 500
+  },
+  {
+    "limit": -3,
+    "filter": {
+      "platforms": [
+        "IOS"
+      ]
+    }
+  }
+]
