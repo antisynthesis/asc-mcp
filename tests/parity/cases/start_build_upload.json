@@ -1,0 +1,23 @@
+[
+  {
+    "name": "missing-version",
+    "args": {
+      "app_id": "A1"
+    }
+  },
+  {
+    "name": "missing-build",
+    "args": {
+      "app_id": "A1",
+      "cf_bundle_short_version_string": "1.0"
+    }
+  },
+  {
+    "name": "missing-platform",
+    "args": {
+      "app_id": "A1",
+      "cf_bundle_short_version_string": "1.0",
+      "cf_bundle_version": "7"
+    }
+  }
+]

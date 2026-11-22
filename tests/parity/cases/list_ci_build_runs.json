@@ -1,0 +1,16 @@
+[
+  {
+    "name": "clamp",
+    "args": {
+      "workflow_id": "W1",
+      "limit": 300,
+      "sort": [
+        "-number"
+      ]
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

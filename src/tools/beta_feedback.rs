@@ -260,7 +260,36 @@ async fn handle_list_beta_feedback_crashes(c: Arc<Client>, args: Args) -> Handle
         sort: GoSlice<String> => "sort";
     }
     }
-    todo!("port handleListBetaFeedbackCrashes from internal/asc/tools/beta_feedback.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &GoMap::nil(), &GoSlice::nil());
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_beta_feedback_crash_submissions(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list beta feedback crashes: {e}"))),
+    };
+
+    let content = format_beta_feedback_list("crash feedback submissions", resp.data.len(), |sb| {
+        for submission in resp.data.iter() {
+            sb.push_str(&format_beta_feedback_submission(&submission.id, &submission.attributes));
+            sb.push_str("\n---\n");
+        }
+    });
+    Ok(list_result(&content, &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetBetaFeedbackCrash`.
@@ -270,7 +299,21 @@ async fn handle_get_beta_feedback_crash(c: Arc<Client>, args: Args) -> HandlerRe
         submission_id: String => "submission_id";
     }
     }
-    todo!("port handleGetBetaFeedbackCrash from internal/asc/tools/beta_feedback.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.submission_id.is_empty() {
+        return Ok(error_result("submission_id is required"));
+    }
+
+    let resp = match c.get_beta_feedback_crash_submission(&params.submission_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get beta feedback crash: {e}"))),
+    };
+
+    Ok(data_result(&format_beta_feedback_submission(&resp.data.id, &resp.data.attributes), &resp.data))
 }
 
 /// Ported from `Registry.handleGetBetaFeedbackCrashLog`.
@@ -280,7 +323,27 @@ async fn handle_get_beta_feedback_crash_log(c: Arc<Client>, args: Args) -> Handl
         submission_id: String => "submission_id";
     }
     }
-    todo!("port handleGetBetaFeedbackCrashLog from internal/asc/tools/beta_feedback.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.submission_id.is_empty() {
+        return Ok(error_result("submission_id is required"));
+    }
+
+    let resp = match c.get_beta_feedback_crash_log(&params.submission_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get crash log: {e}"))),
+    };
+
+    if resp.data.attributes.log_text.is_empty() {
+        return Ok(data_result("Crash log is empty", &resp.data));
+    }
+    Ok(data_result(
+        &format!("Crash log for submission {}:\n\n{}", params.submission_id, resp.data.attributes.log_text),
+        &resp.data,
+    ))
 }
 
 /// Ported from `Registry.handleDeleteBetaFeedbackCrash`.
@@ -290,7 +353,20 @@ async fn handle_delete_beta_feedback_crash(c: Arc<Client>, args: Args) -> Handle
         submission_id: String => "submission_id";
     }
     }
-    todo!("port handleDeleteBetaFeedbackCrash from internal/asc/tools/beta_feedback.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.submission_id.is_empty() {
+        return Ok(error_result("submission_id is required"));
+    }
+
+    if let Err(e) = c.delete_beta_feedback_crash_submission(&params.submission_id).await {
+        return Ok(error_result(format!("Failed to delete beta feedback crash: {e}")));
+    }
+
+    Ok(CallToolResult::success("Beta feedback crash submission deleted successfully"))
 }
 
 /// Ported from `Registry.handleListBetaFeedbackScreenshots`.
@@ -304,7 +380,36 @@ async fn handle_list_beta_feedback_screenshots(c: Arc<Client>, args: Args) -> Ha
         sort: GoSlice<String> => "sort";
     }
     }
-    todo!("port handleListBetaFeedbackScreenshots from internal/asc/tools/beta_feedback.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &GoMap::nil(), &GoSlice::nil());
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_beta_feedback_screenshot_submissions(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list beta feedback screenshots: {e}"))),
+    };
+
+    let content = format_beta_feedback_list("screenshot feedback submissions", resp.data.len(), |sb| {
+        for submission in resp.data.iter() {
+            sb.push_str(&format_beta_feedback_submission(&submission.id, &submission.attributes));
+            sb.push_str("\n---\n");
+        }
+    });
+    Ok(list_result(&content, &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetBetaFeedbackScreenshot`.
@@ -314,7 +419,21 @@ async fn handle_get_beta_feedback_screenshot(c: Arc<Client>, args: Args) -> Hand
         submission_id: String => "submission_id";
     }
     }
-    todo!("port handleGetBetaFeedbackScreenshot from internal/asc/tools/beta_feedback.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.submission_id.is_empty() {
+        return Ok(error_result("submission_id is required"));
+    }
+
+    let resp = match c.get_beta_feedback_screenshot_submission(&params.submission_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get beta feedback screenshot: {e}"))),
+    };
+
+    Ok(data_result(&format_beta_feedback_submission(&resp.data.id, &resp.data.attributes), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteBetaFeedbackScreenshot`.
@@ -324,7 +443,20 @@ async fn handle_delete_beta_feedback_screenshot(c: Arc<Client>, args: Args) -> H
         submission_id: String => "submission_id";
     }
     }
-    todo!("port handleDeleteBetaFeedbackScreenshot from internal/asc/tools/beta_feedback.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.submission_id.is_empty() {
+        return Ok(error_result("submission_id is required"));
+    }
+
+    if let Err(e) = c.delete_beta_feedback_screenshot_submission(&params.submission_id).await {
+        return Ok(error_result(format!("Failed to delete beta feedback screenshot: {e}")));
+    }
+
+    Ok(CallToolResult::success("Beta feedback screenshot submission deleted successfully"))
 }
 
 /// Ported from `Registry.handleGetBetaBuildUsageMetrics`.
@@ -335,6 +467,106 @@ async fn handle_get_beta_build_usage_metrics(c: Arc<Client>, args: Args) -> Hand
         limit: i64 => "limit";
     }
     }
-    todo!("port handleGetBetaBuildUsageMetrics from internal/asc/tools/beta_feedback.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.build_id.is_empty() {
+        return Ok(error_result("build_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let resp = match c.get_beta_build_usage_metrics(&params.build_id, limit).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get beta build usage metrics: {e}"))),
+    };
+
+    Ok(list_result(&format_beta_build_usages(&params.build_id, &resp.data), &resp.data, &resp.links))
 }
 
+/// Ported from `formatBetaFeedbackList`: shares the "Found N ..." framing
+/// between the two feedback list tools.
+fn format_beta_feedback_list(noun: &str, count: usize, write: impl FnOnce(&mut String)) -> String {
+    if count == 0 {
+        return format!("No {noun} found");
+    }
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} {}:\n\n", count, noun);
+    write(&mut sb);
+    sb
+}
+
+/// Ported from `formatBetaFeedbackSubmission`.
+fn format_beta_feedback_submission(id: &str, attrs: &BetaFeedbackDeviceAttributes) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "Submission ID: {}\n", id);
+    if let Some(d) = &attrs.created_date {
+        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02 15:04:05"));
+    }
+    if !attrs.comment.is_empty() {
+        let _ = write!(sb, "Comment: {}\n", attrs.comment);
+    }
+    if !attrs.email.is_empty() {
+        let _ = write!(sb, "Tester Email: {}\n", attrs.email);
+    }
+    if !attrs.device_model.is_empty() {
+        let _ = write!(sb, "Device: {} ({} {})\n", attrs.device_model, attrs.device_platform, attrs.os_version);
+    }
+    if !attrs.app_platform.is_empty() {
+        let _ = write!(sb, "App Platform: {}\n", attrs.app_platform);
+    }
+    if !attrs.locale.is_empty() {
+        let _ = write!(sb, "Locale: {}\n", attrs.locale);
+    }
+    if !attrs.architecture.is_empty() {
+        let _ = write!(sb, "Architecture: {}\n", attrs.architecture);
+    }
+    if !attrs.connection_type.is_empty() {
+        let _ = write!(sb, "Connection: {}\n", attrs.connection_type);
+    }
+    if !attrs.build_bundle_id.is_empty() {
+        let _ = write!(sb, "Build Bundle ID: {}\n", attrs.build_bundle_id);
+    }
+    for (i, shot) in attrs.screenshots.iter().enumerate() {
+        let _ = write!(sb, "Screenshot {}: {} ({}x{}", i + 1, shot.url, shot.width, shot.height);
+        if let Some(d) = &shot.expiration_date {
+            let _ = write!(sb, ", URL expires {}", d.format("2006-01-02 15:04:05"));
+        }
+        sb.push_str(")\n");
+    }
+    sb
+}
+
+/// Ported from `formatBetaBuildUsages`.
+fn format_beta_build_usages(build_id: &str, groups: &[BetaBuildUsageGroup]) -> String {
+    let mut points = 0usize;
+    for group in groups {
+        points += group.data_points.len();
+    }
+    if points == 0 {
+        return format!("No usage metrics found for build {build_id}");
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "TestFlight usage metrics for build {}:\n\n", build_id);
+    for group in groups {
+        for point in group.data_points.iter() {
+            if let (Some(start), Some(end)) = (&point.start, &point.end) {
+                let _ = write!(sb, "{} to {}:\n", start.format("2006-01-02"), end.format("2006-01-02"));
+            }
+            let v = &point.values;
+            let _ = write!(
+                sb,
+                "Installs: {}, Sessions: {}, Crashes: {}, Feedback: {}, Invites: {}\n",
+                v.install_count, v.session_count, v.crash_count, v.feedback_count, v.invite_count
+            );
+            sb.push('\n');
+        }
+    }
+    sb
+}

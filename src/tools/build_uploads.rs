@@ -252,7 +252,53 @@ async fn handle_start_build_upload(c: Arc<Client>, args: Args) -> HandlerResult 
         platform: String => "platform";
     }
     }
-    todo!("port handleStartBuildUpload from internal/asc/tools/build_uploads.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+    if params.cf_bundle_short_version_string.is_empty() {
+        return Ok(error_result("cf_bundle_short_version_string is required"));
+    }
+    if params.cf_bundle_version.is_empty() {
+        return Ok(error_result("cf_bundle_version is required"));
+    }
+    if params.platform.is_empty() {
+        return Ok(error_result("platform is required"));
+    }
+
+    let req = BuildUploadCreateRequest {
+        data: BuildUploadCreateData {
+            type_: "buildUploads".into(),
+            attributes: BuildUploadCreateAttributes {
+                cf_bundle_short_version_string: params.cf_bundle_short_version_string.clone(),
+                cf_bundle_version: params.cf_bundle_version.clone(),
+                platform: params.platform.clone(),
+            },
+            relationships: BuildUploadCreateRelationships {
+                app: RelationshipData {
+                    data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_build_upload(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to start build upload: {e}"))),
+    };
+
+    Ok(data_result(
+        &format!(
+            "Started build upload:\n{}\nNext, call upload_build_file with build_upload_id={} to deliver the binary.",
+            format_build_upload(&resp.data),
+            resp.data.id
+        ),
+        &resp.data,
+    ))
 }
 
 /// Ported from `Registry.handleUploadBuildFile`.
@@ -267,7 +313,43 @@ async fn handle_upload_build_file(c: Arc<Client>, args: Args) -> HandlerResult {
         file_data_base64: String => "file_data_base64";
     }
     }
-    todo!("port handleUploadBuildFile from internal/asc/tools/build_uploads.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Ok(error_result(format!("invalid arguments: {e}")));
+    }
+
+    if params.build_upload_id.is_empty() {
+        return Ok(error_result("build_upload_id is required"));
+    }
+    if params.file_name.is_empty() {
+        return Ok(error_result("file_name is required"));
+    }
+    let mut asset_type = params.asset_type.clone();
+    if asset_type.is_empty() {
+        asset_type = "ASSET".into();
+    }
+    let mut uti = params.uti.clone();
+    if uti.is_empty() {
+        uti = "com.apple.ipa".into();
+    }
+    let body = match super::uploads::load_upload_body(&params.file_path, &params.file_data_base64) {
+        Ok(b) => b,
+        Err(e) => return Ok(error_result(e)),
+    };
+
+    let resp = match c.upload_build_file(&params.build_upload_id, &params.file_name, &asset_type, &uti, &body).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to upload build file: {e}"))),
+    };
+
+    let text = format!(
+        "Uploaded build file {} ({}, {} bytes) to build upload {}. Poll get_build_upload for processing status.",
+        resp.data.id,
+        params.file_name,
+        body.len(),
+        params.build_upload_id
+    );
+    Ok(data_result(&text, &resp.data))
 }
 
 /// Ported from `Registry.handleGetBuildUpload`.
@@ -277,7 +359,21 @@ async fn handle_get_build_upload(c: Arc<Client>, args: Args) -> HandlerResult {
         build_upload_id: String => "build_upload_id";
     }
     }
-    todo!("port handleGetBuildUpload from internal/asc/tools/build_uploads.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.build_upload_id.is_empty() {
+        return Ok(error_result("build_upload_id is required"));
+    }
+
+    let resp = match c.get_build_upload(&params.build_upload_id, None).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get build upload: {e}"))),
+    };
+
+    Ok(data_result(&format_build_upload(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleListBuildUploads`.
@@ -291,7 +387,30 @@ async fn handle_list_build_uploads(c: Arc<Client>, args: Args) -> HandlerResult 
         sort: GoSlice<String> => "sort";
     }
     }
-    todo!("port handleListBuildUploads from internal/asc/tools/build_uploads.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &GoMap::nil(), &GoSlice::nil());
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_build_uploads(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list build uploads: {e}"))),
+    };
+
+    Ok(list_result(&format_build_uploads(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListBuildUploadFiles`.
@@ -303,7 +422,30 @@ async fn handle_list_build_upload_files(c: Arc<Client>, args: Args) -> HandlerRe
         cursor: String => "cursor";
     }
     }
-    todo!("port handleListBuildUploadFiles from internal/asc/tools/build_uploads.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.build_upload_id.is_empty() {
+        return Ok(error_result("build_upload_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = limit_opts(limit);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_build_upload_files(&params.build_upload_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list build upload files: {e}"))),
+    };
+
+    Ok(list_result(&format_build_upload_files(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleDeleteBuildUpload`.
@@ -313,6 +455,99 @@ async fn handle_delete_build_upload(c: Arc<Client>, args: Args) -> HandlerResult
         build_upload_id: String => "build_upload_id";
     }
     }
-    todo!("port handleDeleteBuildUpload from internal/asc/tools/build_uploads.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.build_upload_id.is_empty() {
+        return Ok(error_result("build_upload_id is required"));
+    }
+
+    if let Err(e) = c.delete_build_upload(&params.build_upload_id).await {
+        return Ok(error_result(format!("Failed to delete build upload: {e}")));
+    }
+
+    Ok(CallToolResult::success("Build upload deleted successfully"))
 }
 
+/// Ported from `formatBuildUploads`.
+fn format_build_uploads(uploads: &[BuildUpload]) -> String {
+    if uploads.is_empty() {
+        return "No build uploads found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} build uploads:\n\n", uploads.len());
+    for upload in uploads {
+        sb.push_str(&format_build_upload(upload));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Ported from `formatBuildUpload`.
+fn format_build_upload(upload: &BuildUpload) -> String {
+    let a = &upload.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "Build Upload ID: {}\n", upload.id);
+    if !a.cf_bundle_short_version_string.is_empty() {
+        let _ = write!(sb, "Version: {} ({})\n", a.cf_bundle_short_version_string, a.cf_bundle_version);
+    }
+    if !a.platform.is_empty() {
+        let _ = write!(sb, "Platform: {}\n", a.platform);
+    }
+    if let Some(state) = &a.state {
+        let _ = write!(sb, "State: {}\n", state.state);
+        for detail in state.errors.iter() {
+            let _ = write!(sb, "Error [{}]: {}\n", detail.code, detail.description);
+        }
+        for detail in state.warnings.iter() {
+            let _ = write!(sb, "Warning [{}]: {}\n", detail.code, detail.description);
+        }
+    }
+    if let Some(d) = &a.created_date {
+        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02 15:04:05"));
+    }
+    if let Some(d) = &a.uploaded_date {
+        let _ = write!(sb, "Uploaded: {}\n", d.format("2006-01-02 15:04:05"));
+    }
+    if let Some(rel) = &upload.relationships {
+        if let Some(build) = &rel.build {
+            if !build.data.id.is_empty() {
+                let _ = write!(sb, "Build ID: {}\n", build.data.id);
+            }
+        }
+    }
+    sb
+}
+
+/// Ported from `formatBuildUploadFiles`.
+fn format_build_upload_files(files: &[BuildUploadFile]) -> String {
+    if files.is_empty() {
+        return "No build upload files found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} build upload files:\n\n", files.len());
+    for file in files {
+        let a = &file.attributes;
+        let _ = write!(sb, "File ID: {}\n", file.id);
+        if !a.file_name.is_empty() {
+            let _ = write!(sb, "Name: {} ({} bytes)\n", a.file_name, a.file_size);
+        }
+        if !a.asset_type.is_empty() {
+            let _ = write!(sb, "Asset Type: {}\n", a.asset_type);
+        }
+        if !a.uti.is_empty() {
+            let _ = write!(sb, "UTI: {}\n", a.uti);
+        }
+        if let Some(ds) = &a.asset_delivery_state {
+            if !ds.state.is_empty() {
+                let _ = write!(sb, "Delivery State: {}\n", ds.state);
+            }
+        }
+        sb.push_str("\n---\n");
+    }
+    sb
+}

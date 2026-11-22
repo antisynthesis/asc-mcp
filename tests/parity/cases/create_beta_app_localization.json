@@ -1,0 +1,19 @@
+[
+  {
+    "name": "missing-locale",
+    "args": {
+      "app_id": "A1"
+    }
+  },
+  {
+    "name": "only-required",
+    "args": {
+      "app_id": "A1",
+      "locale": "de-DE"
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

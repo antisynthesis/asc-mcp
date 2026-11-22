@@ -281,7 +281,26 @@ async fn handle_list_ci_products(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListCiProducts from internal/asc/tools/xcode_cloud.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_ci_products(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list CI products: {e}"))),
+    };
+
+    Ok(list_result(&format_ci_products(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetCiProduct`.
@@ -291,7 +310,21 @@ async fn handle_get_ci_product(c: Arc<Client>, args: Args) -> HandlerResult {
         product_id: String => "product_id";
     }
     }
-    todo!("port handleGetCiProduct from internal/asc/tools/xcode_cloud.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.product_id.is_empty() {
+        return Ok(error_result("product_id is required"));
+    }
+
+    let resp = match c.get_ci_product(&params.product_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get CI product: {e}"))),
+    };
+
+    Ok(data_result(&format_ci_product(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleListCiWorkflows`.
@@ -307,7 +340,30 @@ async fn handle_list_ci_workflows(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListCiWorkflows from internal/asc/tools/xcode_cloud.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.product_id.is_empty() {
+        return Ok(error_result("product_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_ci_workflows(&params.product_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list CI workflows: {e}"))),
+    };
+
+    Ok(list_result(&format_ci_workflows(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetCiWorkflow`.
@@ -317,7 +373,21 @@ async fn handle_get_ci_workflow(c: Arc<Client>, args: Args) -> HandlerResult {
         workflow_id: String => "workflow_id";
     }
     }
-    todo!("port handleGetCiWorkflow from internal/asc/tools/xcode_cloud.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.workflow_id.is_empty() {
+        return Ok(error_result("workflow_id is required"));
+    }
+
+    let resp = match c.get_ci_workflow(&params.workflow_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get CI workflow: {e}"))),
+    };
+
+    Ok(data_result(&format_ci_workflow(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleListCiBuildRuns`.
@@ -333,7 +403,30 @@ async fn handle_list_ci_build_runs(c: Arc<Client>, args: Args) -> HandlerResult 
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListCiBuildRuns from internal/asc/tools/xcode_cloud.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.workflow_id.is_empty() {
+        return Ok(error_result("workflow_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_ci_build_runs(&params.workflow_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list CI build runs: {e}"))),
+    };
+
+    Ok(list_result(&format_ci_build_runs(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetCiBuildRun`.
@@ -343,7 +436,21 @@ async fn handle_get_ci_build_run(c: Arc<Client>, args: Args) -> HandlerResult {
         build_run_id: String => "build_run_id";
     }
     }
-    todo!("port handleGetCiBuildRun from internal/asc/tools/xcode_cloud.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.build_run_id.is_empty() {
+        return Ok(error_result("build_run_id is required"));
+    }
+
+    let resp = match c.get_ci_build_run(&params.build_run_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get CI build run: {e}"))),
+    };
+
+    Ok(data_result(&format_ci_build_run(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleStartCiBuildRun`.
@@ -353,6 +460,130 @@ async fn handle_start_ci_build_run(c: Arc<Client>, args: Args) -> HandlerResult 
         workflow_id: String => "workflow_id";
     }
     }
-    todo!("port handleStartCiBuildRun from internal/asc/tools/xcode_cloud.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.workflow_id.is_empty() {
+        return Ok(error_result("workflow_id is required"));
+    }
+
+    let resp = match c.start_ci_build_run(&params.workflow_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to start CI build run: {e}"))),
+    };
+
+    Ok(data_result(
+        &format!("Started build run: {} (build #{})", resp.data.id, resp.data.attributes.number),
+        &resp.data,
+    ))
 }
 
+/// Ported from `formatCiProducts`.
+fn format_ci_products(products: &[CiProduct]) -> String {
+    if products.is_empty() {
+        return "No CI products found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} CI products:\n\n", products.len());
+    for product in products {
+        sb.push_str(&format_ci_product(product));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Ported from `formatCiProduct`.
+fn format_ci_product(product: &CiProduct) -> String {
+    let a = &product.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", product.id);
+    let _ = write!(sb, "Name: {}\n", a.name);
+    let _ = write!(sb, "Product Type: {}\n", a.product_type);
+    if let Some(d) = &a.created_date {
+        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02"));
+    }
+    sb
+}
+
+/// Ported from `formatCiWorkflows`.
+fn format_ci_workflows(workflows: &[CiWorkflow]) -> String {
+    if workflows.is_empty() {
+        return "No CI workflows found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} CI workflows:\n\n", workflows.len());
+    for workflow in workflows {
+        sb.push_str(&format_ci_workflow(workflow));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Ported from `formatCiWorkflow`.
+fn format_ci_workflow(workflow: &CiWorkflow) -> String {
+    let a = &workflow.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", workflow.id);
+    let _ = write!(sb, "Name: {}\n", a.name);
+    if !a.description.is_empty() {
+        let _ = write!(sb, "Description: {}\n", a.description);
+    }
+    let _ = write!(sb, "Enabled: {}\n", a.is_enabled);
+    let _ = write!(sb, "Clean Build: {}\n", a.clean);
+    if !a.container_file_path.is_empty() {
+        let _ = write!(sb, "Container File: {}\n", a.container_file_path);
+    }
+    if let Some(d) = &a.last_modified_date {
+        let _ = write!(sb, "Last Modified: {}\n", d.format("2006-01-02 15:04"));
+    }
+    sb
+}
+
+/// Ported from `formatCiBuildRuns`.
+fn format_ci_build_runs(runs: &[CiBuildRun]) -> String {
+    if runs.is_empty() {
+        return "No CI build runs found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} CI build runs:\n\n", runs.len());
+    for run in runs {
+        sb.push_str(&format_ci_build_run(run));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Ported from `formatCiBuildRun`.
+fn format_ci_build_run(run: &CiBuildRun) -> String {
+    let a = &run.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", run.id);
+    let _ = write!(sb, "Build #{}\n", a.number);
+    let _ = write!(sb, "Progress: {}\n", a.execution_progress);
+    if !a.completion_status.is_empty() {
+        let _ = write!(sb, "Status: {}\n", a.completion_status);
+    }
+    let _ = write!(sb, "Start Reason: {}\n", a.start_reason);
+    let _ = write!(sb, "Pull Request Build: {}\n", a.is_pull_request_build);
+    if let Some(sc) = &a.source_commit {
+        let _ = write!(sb, "Commit: {}\n", sc.commit_sha);
+        if !sc.message.is_empty() {
+            let _ = write!(sb, "Message: {}\n", sc.message);
+        }
+    }
+    if let Some(d) = &a.created_date {
+        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02 15:04"));
+    }
+    if let Some(d) = &a.started_date {
+        let _ = write!(sb, "Started: {}\n", d.format("2006-01-02 15:04"));
+    }
+    if let Some(d) = &a.finished_date {
+        let _ = write!(sb, "Finished: {}\n", d.format("2006-01-02 15:04"));
+    }
+    sb
+}

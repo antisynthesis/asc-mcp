@@ -1,0 +1,17 @@
+[
+  {
+    "name": "clamp",
+    "args": {
+      "limit": 999,
+      "filter": {
+        "build": [
+          "B1"
+        ]
+      }
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

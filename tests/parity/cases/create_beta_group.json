@@ -1,0 +1,21 @@
+[
+  {
+    "name": "feedback-off-public-on",
+    "args": {
+      "app_id": "A1",
+      "name": "Ext",
+      "feedback_enabled": false,
+      "public_link_enabled": true
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  },
+  {
+    "name": "missing-name",
+    "args": {
+      "app_id": "A1"
+    }
+  }
+]

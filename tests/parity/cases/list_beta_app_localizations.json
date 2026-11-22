@@ -1,0 +1,21 @@
+[
+  {
+    "name": "app-and-filter-app",
+    "args": {
+      "app_id": "A1",
+      "filter": {
+        "app": [
+          "A2"
+        ],
+        "locale": [
+          "en-US"
+        ]
+      },
+      "limit": 250
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

@@ -291,7 +291,43 @@ async fn handle_list_beta_groups(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListBetaGroups from internal/asc/tools/testflight.go")
+    let mut params = Params { limit: 50, ..Default::default() };
+    if args.is_some() {
+        if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+            return Err(format!("invalid arguments: {e}"));
+        }
+    }
+
+    let opts = list_opts(params.limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_beta_groups(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list beta groups: {e}"))),
+    };
+
+    if resp.data.is_empty() {
+        return Ok(list_result("No beta groups found.", &resp.data, &resp.links));
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} beta groups:\n\n", resp.data.len());
+    for group in resp.data.iter() {
+        let a = &group.attributes;
+        let _ = write!(sb, "**{}**\n", a.name);
+        let _ = write!(sb, "  - ID: {}\n", group.id);
+        let _ = write!(sb, "  - Internal Group: {}\n", a.is_internal_group);
+        let _ = write!(sb, "  - Has Access to All Builds: {}\n", a.has_access_to_all_builds);
+        let _ = write!(sb, "  - Feedback Enabled: {}\n", a.feedback_enabled);
+        let _ = write!(sb, "  - Public Link Enabled: {}\n", a.public_link_enabled);
+        if !a.public_link.is_empty() {
+            let _ = write!(sb, "  - Public Link: {}\n", a.public_link);
+        }
+        if let Some(d) = &a.created_date {
+            let _ = write!(sb, "  - Created: {}\n", d.format("2006-01-02"));
+        }
+        sb.push('\n');
+    }
+
+    Ok(list_result(&sb, &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleCreateBetaGroup`.
@@ -304,7 +340,47 @@ async fn handle_create_beta_group(c: Arc<Client>, args: Args) -> HandlerResult {
         feedback_enabled: bool => "feedback_enabled";
     }
     }
-    todo!("port handleCreateBetaGroup from internal/asc/tools/testflight.go")
+    let mut params = Params { feedback_enabled: true, ..Default::default() };
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+    if params.name.is_empty() {
+        return Ok(error_result("name is required"));
+    }
+
+    let req = BetaGroupCreateRequest {
+        data: BetaGroupCreateData {
+            type_: "betaGroups".into(),
+            attributes: BetaGroupCreateAttributes {
+                name: params.name.clone(),
+                public_link_enabled: params.public_link_enabled,
+                feedback_enabled: params.feedback_enabled,
+                ..Default::default()
+            },
+            relationships: BetaGroupCreateRelationships {
+                app: RelationshipData {
+                    data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_beta_group(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create beta group: {e}"))),
+    };
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Successfully created beta group **{}**\n\n", resp.data.attributes.name);
+    let _ = write!(sb, "- ID: {}\n", resp.data.id);
+    let _ = write!(sb, "- Public Link Enabled: {}\n", resp.data.attributes.public_link_enabled);
+    let _ = write!(sb, "- Feedback Enabled: {}\n", resp.data.attributes.feedback_enabled);
+
+    Ok(data_result(&sb, &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteBetaGroup`.
@@ -314,7 +390,20 @@ async fn handle_delete_beta_group(c: Arc<Client>, args: Args) -> HandlerResult {
         beta_group_id: String => "beta_group_id";
     }
     }
-    todo!("port handleDeleteBetaGroup from internal/asc/tools/testflight.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.beta_group_id.is_empty() {
+        return Ok(error_result("beta_group_id is required"));
+    }
+
+    if let Err(e) = c.delete_beta_group(&params.beta_group_id).await {
+        return Ok(error_result(format!("Failed to delete beta group: {e}")));
+    }
+
+    Ok(CallToolResult::success(format!("Successfully deleted beta group {}", params.beta_group_id)))
 }
 
 /// Ported from `Registry.handleListBetaTesters`.
@@ -330,7 +419,39 @@ async fn handle_list_beta_testers(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListBetaTesters from internal/asc/tools/testflight.go")
+    let mut params = Params { limit: 50, ..Default::default() };
+    if args.is_some() {
+        if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+            return Err(format!("invalid arguments: {e}"));
+        }
+    }
+
+    let opts = list_opts(params.limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_beta_testers(&params.beta_group_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list beta testers: {e}"))),
+    };
+
+    if resp.data.is_empty() {
+        return Ok(list_result("No beta testers found.", &resp.data, &resp.links));
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} beta testers:\n\n", resp.data.len());
+    for tester in resp.data.iter() {
+        let a = &tester.attributes;
+        let mut name = a.email.clone();
+        if !a.first_name.is_empty() || !a.last_name.is_empty() {
+            name = format!("{} {} ({})", a.first_name, a.last_name, a.email);
+        }
+        let _ = write!(sb, "**{}**\n", name);
+        let _ = write!(sb, "  - ID: {}\n", tester.id);
+        let _ = write!(sb, "  - State: {}\n", a.state);
+        let _ = write!(sb, "  - Invite Type: {}\n", a.invite_type);
+        sb.push('\n');
+    }
+
+    Ok(list_result(&sb, &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleInviteBetaTester`.
@@ -343,7 +464,49 @@ async fn handle_invite_beta_tester(c: Arc<Client>, args: Args) -> HandlerResult 
         beta_group_ids: GoSlice<String> => "beta_group_ids";
     }
     }
-    todo!("port handleInviteBetaTester from internal/asc/tools/testflight.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.email.is_empty() {
+        return Ok(error_result("email is required"));
+    }
+
+    let mut req = BetaTesterCreateRequest {
+        data: BetaTesterCreateData {
+            type_: "betaTesters".into(),
+            attributes: BetaTesterCreateAttributes {
+                email: params.email.clone(),
+                first_name: params.first_name.clone(),
+                last_name: params.last_name.clone(),
+            },
+            relationships: None,
+        },
+    };
+
+    if !params.beta_group_ids.is_empty() {
+        let mut groups: Vec<ResourceIdentifier> = Vec::with_capacity(params.beta_group_ids.len());
+        for id in params.beta_group_ids.iter() {
+            groups.push(ResourceIdentifier { type_: "betaGroups".into(), id: id.clone() });
+        }
+        req.data.relationships = Some(BetaTesterCreateRelationships {
+            beta_groups: Some(RelationshipDataList { data: GoSlice::from(groups) }),
+            ..Default::default()
+        });
+    }
+
+    let resp = match c.create_beta_tester(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to invite beta tester: {e}"))),
+    };
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Successfully invited beta tester **{}**\n\n", resp.data.attributes.email);
+    let _ = write!(sb, "- ID: {}\n", resp.data.id);
+    let _ = write!(sb, "- State: {}\n", resp.data.attributes.state);
+
+    Ok(data_result(&sb, &resp.data))
 }
 
 /// Ported from `Registry.handleRemoveBetaTester`.
@@ -353,7 +516,20 @@ async fn handle_remove_beta_tester(c: Arc<Client>, args: Args) -> HandlerResult 
         beta_tester_id: String => "beta_tester_id";
     }
     }
-    todo!("port handleRemoveBetaTester from internal/asc/tools/testflight.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.beta_tester_id.is_empty() {
+        return Ok(error_result("beta_tester_id is required"));
+    }
+
+    if let Err(e) = c.delete_beta_tester(&params.beta_tester_id).await {
+        return Ok(error_result(format!("Failed to remove beta tester: {e}")));
+    }
+
+    Ok(CallToolResult::success(format!("Successfully removed beta tester {}", params.beta_tester_id)))
 }
 
 /// Ported from `Registry.handleAddTesterToGroup`.
@@ -364,6 +540,25 @@ async fn handle_add_tester_to_group(c: Arc<Client>, args: Args) -> HandlerResult
         beta_tester_id: String => "beta_tester_id";
     }
     }
-    todo!("port handleAddTesterToGroup from internal/asc/tools/testflight.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.beta_group_id.is_empty() {
+        return Ok(error_result("beta_group_id is required"));
+    }
+    if params.beta_tester_id.is_empty() {
+        return Ok(error_result("beta_tester_id is required"));
+    }
+
+    if let Err(e) = c.add_beta_tester_to_group(&params.beta_group_id, &params.beta_tester_id).await {
+        return Ok(error_result(format!("Failed to add tester to group: {e}")));
+    }
+
+    Ok(CallToolResult::success(format!(
+        "Successfully added beta tester {} to group {}",
+        params.beta_tester_id, params.beta_group_id
+    )))
 }
 

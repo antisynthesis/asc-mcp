@@ -1,0 +1,17 @@
+[
+  {
+    "name": "filter",
+    "args": {
+      "filter": {
+        "platform": [
+          "IOS"
+        ]
+      },
+      "limit": 0
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]
