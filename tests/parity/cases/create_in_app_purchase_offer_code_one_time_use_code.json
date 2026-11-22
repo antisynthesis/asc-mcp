@@ -1,0 +1,20 @@
+[
+  {
+    "name": "no-expiry",
+    "args": {
+      "offer_code_id": "o1",
+      "number_of_codes": 5
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-env",
+    "args": {
+      "offer_code_id": "o1",
+      "number_of_codes": 5,
+      "expiration_date": "2026-01-01"
+    }
+  }
+]

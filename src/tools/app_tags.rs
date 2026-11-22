@@ -6,6 +6,7 @@
 #![allow(unused_imports)]
 
 use super::prelude::*;
+use super::pricing::format_territories;
 
 /// Ported from `Registry.registerAppTagTools`.
 pub(super) fn register_app_tag_tools(r: &mut Registry) {
@@ -141,7 +142,26 @@ async fn handle_list_app_tags(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAppTags from internal/asc/tools/app_tags.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_tags(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list app tags: {e}"))),
+    };
+    Ok(list_result(&format_app_tags(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleUpdateAppTag`.
@@ -152,7 +172,28 @@ async fn handle_update_app_tag(c: Arc<Client>, args: Args) -> HandlerResult {
         visible_in_app_store: Option<bool> => "visible_in_app_store";
     }
     }
-    todo!("port handleUpdateAppTag from internal/asc/tools/app_tags.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.app_tag_id.is_empty() {
+        return Ok(error_result("app_tag_id is required"));
+    }
+    if params.visible_in_app_store.is_none() {
+        return Ok(error_result("visible_in_app_store is required"));
+    }
+    let req = AppTagUpdateRequest {
+        data: AppTagUpdateData {
+            type_: "appTags".into(),
+            id: params.app_tag_id.clone(),
+            attributes: AppTagUpdateAttributes { visible_in_app_store: params.visible_in_app_store },
+        },
+    };
+    let resp = match c.update_app_tag(&params.app_tag_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update app tag: {e}"))),
+    };
+    Ok(data_result(&format!("App tag updated:\n{}", format_app_tag(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleListAppTagTerritories`.
@@ -164,6 +205,51 @@ async fn handle_list_app_tag_territories(c: Arc<Client>, args: Args) -> HandlerR
         cursor: String => "cursor";
     }
     }
-    todo!("port handleListAppTagTerritories from internal/asc/tools/app_tags.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.app_tag_id.is_empty() {
+        return Ok(error_result("app_tag_id is required"));
+    }
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+    let opts = limit_opts(limit);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_tag_territories(&params.app_tag_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list app tag territories: {e}"))),
+    };
+    Ok(list_result(&format_territories(&resp.data), &resp.data, &resp.links))
 }
 
+/// Go `formatAppTags`.
+fn format_app_tags(tags: &[AppTag]) -> String {
+    if tags.is_empty() {
+        return "No app tags found".to_string();
+    }
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} app tags:\n\n", tags.len());
+    for tag in tags {
+        sb.push_str(&format_app_tag(tag));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Go `formatAppTag`.
+fn format_app_tag(tag: &AppTag) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "App Tag ID: {}\n", tag.id);
+    if !tag.attributes.name.is_empty() {
+        let _ = write!(sb, "Name: {}\n", tag.attributes.name);
+    }
+    if let Some(v) = tag.attributes.visible_in_app_store {
+        let _ = write!(sb, "Visible In App Store: {}\n", v);
+    }
+    sb
+}

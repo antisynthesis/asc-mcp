@@ -1,0 +1,9 @@
+[
+  {
+    "name": "inactive",
+    "args": {
+      "offer_code_id": "x1",
+      "active": false
+    }
+  }
+]

@@ -1,0 +1,75 @@
+[
+  {
+    "name": "prices",
+    "args": {
+      "iap_id": "iap1",
+      "name": "Spring",
+      "customer_eligibilities": [
+        "NON_SPENDER",
+        "ACTIVE_SPENDER"
+      ],
+      "prices": [
+        {
+          "territory_id": "USA",
+          "price_point_id": "pp1"
+        },
+        {
+          "territory_id": "GBR",
+          "price_point_id": "pp2"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing-territory",
+    "args": {
+      "iap_id": "iap1",
+      "name": "Spring",
+      "customer_eligibilities": [
+        "NON_SPENDER"
+      ],
+      "prices": [
+        {
+          "price_point_id": "pp1"
+        }
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "missing-pp",
+    "args": {
+      "iap_id": "iap1",
+      "name": "Spring",
+      "customer_eligibilities": [
+        "NON_SPENDER"
+      ],
+      "prices": [
+        {
+          "territory_id": "USA"
+        }
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-elig",
+    "args": {
+      "iap_id": "iap1",
+      "name": "Spring",
+      "prices": [
+        {
+          "territory_id": "USA",
+          "price_point_id": "pp1"
+        }
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

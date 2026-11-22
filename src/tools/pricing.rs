@@ -197,7 +197,18 @@ async fn handle_get_app_price_schedule(c: Arc<Client>, args: Args) -> HandlerRes
         app_id: String => "app_id";
     }
     }
-    todo!("port handleGetAppPriceSchedule from internal/asc/tools/pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+    let resp = match c.get_app_price_schedule(&params.app_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get app price schedule: {e}"))),
+    };
+    Ok(data_result(&format_app_price_schedule(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleListAppPricePoints`.
@@ -213,7 +224,26 @@ async fn handle_list_app_price_points(c: Arc<Client>, args: Args) -> HandlerResu
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListAppPricePoints from internal/asc/tools/pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 100;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_app_price_points(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list app price points: {e}"))),
+    };
+    Ok(list_result(&format_app_price_points(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListTerritories`.
@@ -228,7 +258,23 @@ async fn handle_list_territories(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListTerritories from internal/asc/tools/pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 200;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_territories(opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list territories: {e}"))),
+    };
+    Ok(list_result(&format_territories(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleListSubscriptionPricePoints`.
@@ -244,6 +290,89 @@ async fn handle_list_subscription_price_points(c: Arc<Client>, args: Args) -> Ha
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListSubscriptionPricePoints from internal/asc/tools/pricing.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+    if params.subscription_id.is_empty() {
+        return Ok(error_result("subscription_id is required"));
+    }
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 100;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_subscription_price_points(&params.subscription_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list subscription price points: {e}"))),
+    };
+    Ok(list_result(&format_subscription_price_points(&resp.data), &resp.data, &resp.links))
 }
 
+/// Go `formatAppPriceSchedule`.
+fn format_app_price_schedule(schedule: &AppPriceSchedule) -> String {
+    format!("App Price Schedule ID: {}\n", schedule.id)
+}
+
+/// Go `formatAppPricePoints`.
+pub(crate) fn format_app_price_points(price_points: &[AppPricePoint]) -> String {
+    if price_points.is_empty() {
+        return "No price points found".to_string();
+    }
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} price points:\n\n", price_points.len());
+    for pp in price_points {
+        sb.push_str(&format_app_price_point(pp));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Go `formatAppPricePoint`.
+pub(crate) fn format_app_price_point(pp: &AppPricePoint) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", pp.id);
+    let _ = write!(sb, "Customer Price: {}\n", pp.attributes.customer_price);
+    let _ = write!(sb, "Proceeds: {}\n", pp.attributes.proceeds);
+    sb
+}
+
+/// Go `formatTerritories`.
+pub(crate) fn format_territories(territories: &[Territory]) -> String {
+    if territories.is_empty() {
+        return "No territories found".to_string();
+    }
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} territories:\n\n", territories.len());
+    for t in territories {
+        let _ = write!(sb, "ID: {} - Currency: {}\n", t.id, t.attributes.currency);
+    }
+    sb
+}
+
+/// Go `formatSubscriptionPricePoints`.
+pub(crate) fn format_subscription_price_points(price_points: &[SubscriptionPricePoint]) -> String {
+    if price_points.is_empty() {
+        return "No subscription price points found".to_string();
+    }
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} subscription price points:\n\n", price_points.len());
+    for pp in price_points {
+        sb.push_str(&format_subscription_price_point(pp));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Go `formatSubscriptionPricePoint`.
+pub(crate) fn format_subscription_price_point(pp: &SubscriptionPricePoint) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", pp.id);
+    let _ = write!(sb, "Customer Price: {}\n", pp.attributes.customer_price);
+    let _ = write!(sb, "Proceeds: {}\n", pp.attributes.proceeds);
+    let _ = write!(sb, "Proceeds Year 2: {}\n", pp.attributes.proceeds_year2);
+    sb
+}

@@ -1,0 +1,83 @@
+[
+  {
+    "name": "prices",
+    "args": {
+      "iap_id": "iap1",
+      "base_territory_id": "USA",
+      "prices": [
+        {
+          "price_point_id": "pp1"
+        },
+        {
+          "price_point_id": "pp2",
+          "start_date": "2025-01-01"
+        },
+        {
+          "price_point_id": "pp3",
+          "start_date": "2025-01-01",
+          "end_date": "2025-06-01"
+        },
+        {
+          "price_point_id": "pp4",
+          "end_date": "2026-01-01"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing-pp",
+    "args": {
+      "iap_id": "iap1",
+      "base_territory_id": "USA",
+      "prices": [
+        {
+          "price_point_id": "pp1"
+        },
+        {
+          "start_date": "2025-01-01"
+        }
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-prices",
+    "args": {
+      "iap_id": "iap1",
+      "base_territory_id": "USA",
+      "prices": []
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-base",
+    "args": {
+      "iap_id": "iap1",
+      "prices": [
+        {
+          "price_point_id": "pp1"
+        },
+        {
+          "price_point_id": "pp2",
+          "start_date": "2025-01-01"
+        },
+        {
+          "price_point_id": "pp3",
+          "start_date": "2025-01-01",
+          "end_date": "2025-06-01"
+        },
+        {
+          "price_point_id": "pp4",
+          "end_date": "2026-01-01"
+        }
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]
