@@ -1,0 +1,15 @@
+[
+  {
+    "name": "missing-udid",
+    "args": {
+      "name": "n"
+    }
+  },
+  {
+    "name": "missing-platform",
+    "args": {
+      "name": "n",
+      "udid": "u"
+    }
+  }
+]

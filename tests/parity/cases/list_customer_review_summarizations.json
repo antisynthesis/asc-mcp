@@ -1,0 +1,21 @@
+[
+  {
+    "name": "filter-sort-ignored",
+    "args": {
+      "app_id": "A1",
+      "filter": {
+        "platform": [
+          "IOS"
+        ]
+      },
+      "sort": [
+        "x"
+      ],
+      "limit": 0
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

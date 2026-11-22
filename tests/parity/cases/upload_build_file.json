@@ -1,0 +1,38 @@
+[
+  {
+    "name": "bad-b64",
+    "args": {
+      "build_upload_id": "U1",
+      "file_name": "a.ipa",
+      "file_data_base64": "!!!notbase64"
+    }
+  },
+  {
+    "name": "missing-file",
+    "args": {
+      "build_upload_id": "U1",
+      "file_name": "a.ipa",
+      "file_path": "/nonexistent/x.ipa"
+    }
+  },
+  {
+    "name": "custom-type",
+    "args": {
+      "build_upload_id": "U1",
+      "file_name": "a.pkg",
+      "asset_type": "ASSET_SPI",
+      "uti": "com.apple.pkg",
+      "file_data_base64": "$B64"
+    },
+    "modes": [
+      "empty"
+    ]
+  },
+  {
+    "name": "missing-name",
+    "args": {
+      "build_upload_id": "U1",
+      "file_data_base64": "$B64"
+    }
+  }
+]

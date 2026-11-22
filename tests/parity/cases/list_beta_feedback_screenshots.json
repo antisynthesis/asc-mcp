@@ -1,0 +1,21 @@
+[
+  {
+    "name": "filter-sort",
+    "args": {
+      "app_id": "A1",
+      "filter": {
+        "devicePlatform": [
+          "IOS"
+        ]
+      },
+      "sort": [
+        "createdDate"
+      ],
+      "limit": -5
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

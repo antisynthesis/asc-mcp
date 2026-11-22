@@ -1,0 +1,16 @@
+[
+  {
+    "name": "one-group",
+    "args": {
+      "email": "a@b.c",
+      "first_name": "Only",
+      "beta_group_ids": [
+        "G1"
+      ]
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

@@ -1,0 +1,13 @@
+[
+  {
+    "name": "clamp",
+    "args": {
+      "build_upload_id": "U1",
+      "limit": 900
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

@@ -206,7 +206,30 @@ async fn handle_list_customer_reviews(c: Arc<Client>, args: Args) -> HandlerResu
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListCustomerReviews from internal/asc/tools/reviews.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_customer_reviews(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list customer reviews: {e}"))),
+    };
+
+    Ok(list_result(&format_customer_reviews(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetCustomerReview`.
@@ -216,7 +239,21 @@ async fn handle_get_customer_review(c: Arc<Client>, args: Args) -> HandlerResult
         review_id: String => "review_id";
     }
     }
-    todo!("port handleGetCustomerReview from internal/asc/tools/reviews.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.review_id.is_empty() {
+        return Ok(error_result("review_id is required"));
+    }
+
+    let resp = match c.get_customer_review(&params.review_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get customer review: {e}"))),
+    };
+
+    Ok(data_result(&format_customer_review(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateCustomerReviewResponse`.
@@ -227,7 +264,36 @@ async fn handle_create_customer_review_response(c: Arc<Client>, args: Args) -> H
         response_body: String => "response_body";
     }
     }
-    todo!("port handleCreateCustomerReviewResponse from internal/asc/tools/reviews.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.review_id.is_empty() {
+        return Ok(error_result("review_id is required"));
+    }
+    if params.response_body.is_empty() {
+        return Ok(error_result("response_body is required"));
+    }
+
+    let req = CustomerReviewResponseCreateRequest {
+        data: CustomerReviewResponseCreateData {
+            type_: "customerReviewResponses".into(),
+            attributes: CustomerReviewResponseCreateAttributes { response_body: params.response_body.clone() },
+            relationships: CustomerReviewResponseCreateRelationships {
+                review: RelationshipData {
+                    data: ResourceIdentifier { type_: "customerReviews".into(), id: params.review_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_customer_review_response(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create review response: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created review response: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteCustomerReviewResponse`.
@@ -237,7 +303,20 @@ async fn handle_delete_customer_review_response(c: Arc<Client>, args: Args) -> H
         response_id: String => "response_id";
     }
     }
-    todo!("port handleDeleteCustomerReviewResponse from internal/asc/tools/reviews.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.response_id.is_empty() {
+        return Ok(error_result("response_id is required"));
+    }
+
+    if let Err(e) = c.delete_customer_review_response(&params.response_id).await {
+        return Ok(error_result(format!("Failed to delete review response: {e}")));
+    }
+
+    Ok(CallToolResult::success("Review response deleted successfully"))
 }
 
 /// Ported from `Registry.handleListCustomerReviewSummarizations`.
@@ -252,6 +331,95 @@ async fn handle_list_customer_review_summarizations(c: Arc<Client>, args: Args) 
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListCustomerReviewSummarizations from internal/asc/tools/reviews.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &GoSlice::nil(), &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_customer_review_summarizations(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list customer review summarizations: {e}"))),
+    };
+
+    Ok(list_result(&format_customer_review_summarizations(&resp.data), &resp.data, &resp.links))
 }
 
+/// Ported from `formatCustomerReviews`.
+fn format_customer_reviews(reviews: &[CustomerReview]) -> String {
+    if reviews.is_empty() {
+        return "No customer reviews found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} customer reviews:\n\n", reviews.len());
+    for review in reviews {
+        sb.push_str(&format_customer_review(review));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Ported from `formatCustomerReview`.
+fn format_customer_review(review: &CustomerReview) -> String {
+    let a = &review.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "Review ID: {}\n", review.id);
+    let _ = write!(sb, "Rating: {}/5\n", a.rating);
+    if !a.title.is_empty() {
+        let _ = write!(sb, "Title: {}\n", a.title);
+    }
+    if !a.body.is_empty() {
+        let _ = write!(sb, "Body: {}\n", a.body);
+    }
+    if !a.reviewer_name.is_empty() {
+        let _ = write!(sb, "Reviewer: {}\n", a.reviewer_name);
+    }
+    if !a.territory.is_empty() {
+        let _ = write!(sb, "Territory: {}\n", a.territory);
+    }
+    if let Some(d) = &a.created_date {
+        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02"));
+    }
+    sb
+}
+
+/// Ported from `formatCustomerReviewSummarizations`.
+fn format_customer_review_summarizations(summaries: &[CustomerReviewSummarization]) -> String {
+    if summaries.is_empty() {
+        return "No customer review summarizations found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} customer review summarizations:\n\n", summaries.len());
+    for summary in summaries {
+        let a = &summary.attributes;
+        let _ = write!(sb, "Summarization ID: {}\n", summary.id);
+        if !a.platform.is_empty() {
+            let _ = write!(sb, "Platform: {}\n", a.platform);
+        }
+        if !a.locale.is_empty() {
+            let _ = write!(sb, "Locale: {}\n", a.locale);
+        }
+        if let Some(d) = &a.created_date {
+            let _ = write!(sb, "Created: {}\n", d.format("2006-01-02"));
+        }
+        if !a.text.is_empty() {
+            let _ = write!(sb, "Summary: {}\n", a.text);
+        }
+        sb.push_str("\n---\n");
+    }
+    sb
+}

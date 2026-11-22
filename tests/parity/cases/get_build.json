@@ -1,0 +1,12 @@
+[
+  {
+    "name": "escaped-id",
+    "args": {
+      "build_id": "a/b c?d"
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

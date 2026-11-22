@@ -591,7 +591,26 @@ async fn handle_list_beta_app_review_submissions(c: Arc<Client>, args: Args) -> 
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListBetaAppReviewSubmissions from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_beta_app_review_submissions(opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list beta app review submissions: {e}"))),
+    };
+
+    Ok(list_result(&format_beta_app_review_submissions(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetBetaAppReviewSubmission`.
@@ -601,7 +620,21 @@ async fn handle_get_beta_app_review_submission(c: Arc<Client>, args: Args) -> Ha
         submission_id: String => "submission_id";
     }
     }
-    todo!("port handleGetBetaAppReviewSubmission from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.submission_id.is_empty() {
+        return Ok(error_result("submission_id is required"));
+    }
+
+    let resp = match c.get_beta_app_review_submission(&params.submission_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get beta app review submission: {e}"))),
+    };
+
+    Ok(data_result(&format_beta_app_review_submission(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateBetaAppReviewSubmission`.
@@ -611,7 +644,35 @@ async fn handle_create_beta_app_review_submission(c: Arc<Client>, args: Args) ->
         build_id: String => "build_id";
     }
     }
-    todo!("port handleCreateBetaAppReviewSubmission from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.build_id.is_empty() {
+        return Ok(error_result("build_id is required"));
+    }
+
+    let req = BetaAppReviewSubmissionCreateRequest {
+        data: BetaAppReviewSubmissionCreateData {
+            type_: "betaAppReviewSubmissions".into(),
+            relationships: BetaAppReviewSubmissionCreateRelationships {
+                build: RelationshipData {
+                    data: ResourceIdentifier { type_: "builds".into(), id: params.build_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_beta_app_review_submission(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create beta app review submission: {e}"))),
+    };
+
+    Ok(data_result(
+        &format!("Beta app review submission created:\n{}", format_beta_app_review_submission(&resp.data)),
+        &resp.data,
+    ))
 }
 
 /// Ported from `Registry.handleGetBetaLicenseAgreement`.
@@ -621,7 +682,21 @@ async fn handle_get_beta_license_agreement(c: Arc<Client>, args: Args) -> Handle
         app_id: String => "app_id";
     }
     }
-    todo!("port handleGetBetaLicenseAgreement from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let resp = match c.get_beta_license_agreement(&params.app_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get beta license agreement: {e}"))),
+    };
+
+    Ok(data_result(&format_beta_license_agreement(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateBetaLicenseAgreement`.
@@ -632,7 +707,29 @@ async fn handle_update_beta_license_agreement(c: Arc<Client>, args: Args) -> Han
         agreement_text: String => "agreement_text";
     }
     }
-    todo!("port handleUpdateBetaLicenseAgreement from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.agreement_id.is_empty() || params.agreement_text.is_empty() {
+        return Ok(error_result("agreement_id and agreement_text are required"));
+    }
+
+    let req = BetaLicenseAgreementUpdateRequest {
+        data: BetaLicenseAgreementUpdateData {
+            type_: "betaLicenseAgreements".into(),
+            id: params.agreement_id.clone(),
+            attributes: BetaLicenseAgreementUpdateAttributes { agreement_text: params.agreement_text.clone() },
+        },
+    };
+
+    let resp = match c.update_beta_license_agreement(&params.agreement_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update beta license agreement: {e}"))),
+    };
+
+    Ok(data_result(&format!("Beta license agreement updated:\n{}", format_beta_license_agreement(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleListBetaAppLocalizations`.
@@ -648,7 +745,30 @@ async fn handle_list_beta_app_localizations(c: Arc<Client>, args: Args) -> Handl
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListBetaAppLocalizations from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() {
+        return Ok(error_result("app_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_beta_app_localizations(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list beta app localizations: {e}"))),
+    };
+
+    Ok(list_result(&format_beta_app_localizations(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetBetaAppLocalization`.
@@ -658,7 +778,21 @@ async fn handle_get_beta_app_localization(c: Arc<Client>, args: Args) -> Handler
         localization_id: String => "localization_id";
     }
     }
-    todo!("port handleGetBetaAppLocalization from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+
+    let resp = match c.get_beta_app_localization(&params.localization_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get beta app localization: {e}"))),
+    };
+
+    Ok(data_result(&format_beta_app_localization(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateBetaAppLocalization`.
@@ -673,7 +807,40 @@ async fn handle_create_beta_app_localization(c: Arc<Client>, args: Args) -> Hand
         privacy_policy_url: String => "privacy_policy_url";
     }
     }
-    todo!("port handleCreateBetaAppLocalization from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.app_id.is_empty() || params.locale.is_empty() {
+        return Ok(error_result("app_id and locale are required"));
+    }
+
+    let req = BetaAppLocalizationCreateRequest {
+        data: BetaAppLocalizationCreateData {
+            type_: "betaAppLocalizations".into(),
+            attributes: BetaAppLocalizationCreateAttributes {
+                locale: params.locale.clone(),
+                description: params.description.clone(),
+                feedback_email: params.feedback_email.clone(),
+                marketing_url: params.marketing_url.clone(),
+                privacy_policy_url: params.privacy_policy_url.clone(),
+                ..Default::default()
+            },
+            relationships: BetaAppLocalizationCreateRelationships {
+                app: RelationshipData {
+                    data: ResourceIdentifier { type_: "apps".into(), id: params.app_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_beta_app_localization(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create beta app localization: {e}"))),
+    };
+
+    Ok(data_result(&format!("Beta app localization created:\n{}", format_beta_app_localization(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateBetaAppLocalization`.
@@ -687,7 +854,35 @@ async fn handle_update_beta_app_localization(c: Arc<Client>, args: Args) -> Hand
         privacy_policy_url: String => "privacy_policy_url";
     }
     }
-    todo!("port handleUpdateBetaAppLocalization from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+
+    let req = BetaAppLocalizationUpdateRequest {
+        data: BetaAppLocalizationUpdateData {
+            type_: "betaAppLocalizations".into(),
+            id: params.localization_id.clone(),
+            attributes: BetaAppLocalizationUpdateAttributes {
+                description: params.description.clone(),
+                feedback_email: params.feedback_email.clone(),
+                marketing_url: params.marketing_url.clone(),
+                privacy_policy_url: params.privacy_policy_url.clone(),
+                ..Default::default()
+            },
+        },
+    };
+
+    let resp = match c.update_beta_app_localization(&params.localization_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update beta app localization: {e}"))),
+    };
+
+    Ok(data_result(&format!("Beta app localization updated:\n{}", format_beta_app_localization(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteBetaAppLocalization`.
@@ -697,7 +892,20 @@ async fn handle_delete_beta_app_localization(c: Arc<Client>, args: Args) -> Hand
         localization_id: String => "localization_id";
     }
     }
-    todo!("port handleDeleteBetaAppLocalization from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+
+    if let Err(e) = c.delete_beta_app_localization(&params.localization_id).await {
+        return Ok(error_result(format!("Failed to delete beta app localization: {e}")));
+    }
+
+    Ok(CallToolResult::success("Beta app localization deleted"))
 }
 
 /// Ported from `Registry.handleListBetaBuildLocalizations`.
@@ -713,7 +921,30 @@ async fn handle_list_beta_build_localizations(c: Arc<Client>, args: Args) -> Han
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListBetaBuildLocalizations from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.build_id.is_empty() {
+        return Ok(error_result("build_id is required"));
+    }
+
+    let mut limit = params.limit;
+    if limit <= 0 {
+        limit = 50;
+    }
+    if limit > 200 {
+        limit = 200;
+    }
+
+    let opts = list_opts(limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_beta_build_localizations(&params.build_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list beta build localizations: {e}"))),
+    };
+
+    Ok(list_result(&format_beta_build_localizations(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetBetaBuildLocalization`.
@@ -723,7 +954,21 @@ async fn handle_get_beta_build_localization(c: Arc<Client>, args: Args) -> Handl
         localization_id: String => "localization_id";
     }
     }
-    todo!("port handleGetBetaBuildLocalization from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+
+    let resp = match c.get_beta_build_localization(&params.localization_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get beta build localization: {e}"))),
+    };
+
+    Ok(data_result(&format_beta_build_localization(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateBetaBuildLocalization`.
@@ -735,7 +980,36 @@ async fn handle_create_beta_build_localization(c: Arc<Client>, args: Args) -> Ha
         whats_new: String => "whats_new";
     }
     }
-    todo!("port handleCreateBetaBuildLocalization from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.build_id.is_empty() || params.locale.is_empty() {
+        return Ok(error_result("build_id and locale are required"));
+    }
+
+    let req = BetaBuildLocalizationCreateRequest {
+        data: BetaBuildLocalizationCreateData {
+            type_: "betaBuildLocalizations".into(),
+            attributes: BetaBuildLocalizationCreateAttributes {
+                locale: params.locale.clone(),
+                whats_new: params.whats_new.clone(),
+            },
+            relationships: BetaBuildLocalizationCreateRelationships {
+                build: RelationshipData {
+                    data: ResourceIdentifier { type_: "builds".into(), id: params.build_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_beta_build_localization(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create beta build localization: {e}"))),
+    };
+
+    Ok(data_result(&format!("Beta build localization created:\n{}", format_beta_build_localization(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateBetaBuildLocalization`.
@@ -746,7 +1020,29 @@ async fn handle_update_beta_build_localization(c: Arc<Client>, args: Args) -> Ha
         whats_new: String => "whats_new";
     }
     }
-    todo!("port handleUpdateBetaBuildLocalization from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+
+    let req = BetaBuildLocalizationUpdateRequest {
+        data: BetaBuildLocalizationUpdateData {
+            type_: "betaBuildLocalizations".into(),
+            id: params.localization_id.clone(),
+            attributes: BetaBuildLocalizationUpdateAttributes { whats_new: params.whats_new.clone() },
+        },
+    };
+
+    let resp = match c.update_beta_build_localization(&params.localization_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update beta build localization: {e}"))),
+    };
+
+    Ok(data_result(&format!("Beta build localization updated:\n{}", format_beta_build_localization(&resp.data)), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteBetaBuildLocalization`.
@@ -756,7 +1052,20 @@ async fn handle_delete_beta_build_localization(c: Arc<Client>, args: Args) -> Ha
         localization_id: String => "localization_id";
     }
     }
-    todo!("port handleDeleteBetaBuildLocalization from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+
+    if let Err(e) = c.delete_beta_build_localization(&params.localization_id).await {
+        return Ok(error_result(format!("Failed to delete beta build localization: {e}")));
+    }
+
+    Ok(CallToolResult::success("Beta build localization deleted"))
 }
 
 /// Ported from `Registry.handleGetBuildBetaDetail`.
@@ -766,7 +1075,21 @@ async fn handle_get_build_beta_detail(c: Arc<Client>, args: Args) -> HandlerResu
         build_id: String => "build_id";
     }
     }
-    todo!("port handleGetBuildBetaDetail from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.build_id.is_empty() {
+        return Ok(error_result("build_id is required"));
+    }
+
+    let resp = match c.get_build_beta_detail(&params.build_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get build beta detail: {e}"))),
+    };
+
+    Ok(data_result(&format_build_beta_detail(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateBuildBetaDetail`.
@@ -777,6 +1100,175 @@ async fn handle_update_build_beta_detail(c: Arc<Client>, args: Args) -> HandlerR
         auto_notify_enabled: Option<bool> => "auto_notify_enabled";
     }
     }
-    todo!("port handleUpdateBuildBetaDetail from internal/asc/tools/beta_review.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.detail_id.is_empty() {
+        return Ok(error_result("detail_id is required"));
+    }
+
+    let req = BuildBetaDetailUpdateRequest {
+        data: BuildBetaDetailUpdateData {
+            type_: "buildBetaDetails".into(),
+            id: params.detail_id.clone(),
+            attributes: BuildBetaDetailUpdateAttributes { auto_notify_enabled: params.auto_notify_enabled },
+        },
+    };
+
+    let resp = match c.update_build_beta_detail(&params.detail_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update build beta detail: {e}"))),
+    };
+
+    Ok(data_result(&format!("Build beta detail updated:\n{}", format_build_beta_detail(&resp.data)), &resp.data))
 }
 
+/// Ported from `formatBetaAppReviewSubmissions`.
+fn format_beta_app_review_submissions(submissions: &[BetaAppReviewSubmission]) -> String {
+    if submissions.is_empty() {
+        return "No beta app review submissions found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} beta app review submissions:\n\n", submissions.len());
+    for sub in submissions {
+        sb.push_str(&format_beta_app_review_submission(sub));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Ported from `formatBetaAppReviewSubmission`.
+fn format_beta_app_review_submission(sub: &BetaAppReviewSubmission) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", sub.id);
+    let _ = write!(sb, "State: {}\n", sub.attributes.beta_review_state);
+    if let Some(d) = &sub.attributes.submitted_date {
+        let _ = write!(sb, "Submitted: {}\n", d.format("2006-01-02 15:04"));
+    }
+    sb
+}
+
+/// Go `s[:n]` on a valid UTF-8 string, rendered the way Go's JSON encoder
+/// emits it: a rune split by the cut leaves invalid trailing bytes, each of
+/// which becomes U+FFFD.
+fn go_byte_prefix(s: &str, n: usize) -> String {
+    if s.len() <= n {
+        return s.to_string();
+    }
+    let mut b = n;
+    while !s.is_char_boundary(b) {
+        b -= 1;
+    }
+    let mut out = s[..b].to_string();
+    for _ in b..n {
+        out.push('\u{FFFD}');
+    }
+    out
+}
+
+/// Ported from `formatBetaLicenseAgreement`.
+fn format_beta_license_agreement(agreement: &BetaLicenseAgreement) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", agreement.id);
+    if !agreement.attributes.agreement_text.is_empty() {
+        let mut text = agreement.attributes.agreement_text.clone();
+        if text.len() > 500 {
+            text = go_byte_prefix(&text, 500) + "...";
+        }
+        let _ = write!(sb, "Agreement Text:\n{}\n", text);
+    } else {
+        sb.push_str("Agreement Text: (empty)\n");
+    }
+    sb
+}
+
+/// Ported from `formatBetaAppLocalizations`.
+fn format_beta_app_localizations(localizations: &[BetaAppLocalization]) -> String {
+    if localizations.is_empty() {
+        return "No beta app localizations found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} beta app localizations:\n\n", localizations.len());
+    for loc in localizations {
+        sb.push_str(&format_beta_app_localization(loc));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Ported from `formatBetaAppLocalization`.
+fn format_beta_app_localization(loc: &BetaAppLocalization) -> String {
+    let a = &loc.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", loc.id);
+    let _ = write!(sb, "Locale: {}\n", a.locale);
+    if !a.description.is_empty() {
+        let _ = write!(sb, "Description: {}\n", a.description);
+    }
+    if !a.feedback_email.is_empty() {
+        let _ = write!(sb, "Feedback Email: {}\n", a.feedback_email);
+    }
+    if !a.marketing_url.is_empty() {
+        let _ = write!(sb, "Marketing URL: {}\n", a.marketing_url);
+    }
+    if !a.privacy_policy_url.is_empty() {
+        let _ = write!(sb, "Privacy Policy URL: {}\n", a.privacy_policy_url);
+    }
+    sb
+}
+
+/// Ported from `formatBetaBuildLocalizations`.
+fn format_beta_build_localizations(localizations: &[BetaBuildLocalization]) -> String {
+    if localizations.is_empty() {
+        return "No beta build localizations found".to_string();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} beta build localizations:\n\n", localizations.len());
+    for loc in localizations {
+        sb.push_str(&format_beta_build_localization(loc));
+        sb.push_str("\n---\n");
+    }
+    sb
+}
+
+/// Ported from `formatBetaBuildLocalization`.
+fn format_beta_build_localization(loc: &BetaBuildLocalization) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", loc.id);
+    let _ = write!(sb, "Locale: {}\n", loc.attributes.locale);
+    if !loc.attributes.whats_new.is_empty() {
+        let _ = write!(sb, "What's New: {}\n", loc.attributes.whats_new);
+    }
+    sb
+}
+
+/// Ported from `formatBuildBetaDetail`.
+fn format_build_beta_detail(detail: &BuildBetaDetail) -> String {
+    let a = &detail.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", detail.id);
+    let _ = write!(sb, "Auto Notify Enabled: {}\n", a.auto_notify_enabled);
+    let _ = write!(sb, "Internal Build State: {}\n", a.internal_build_state);
+    let _ = write!(sb, "External Build State: {}\n", a.external_build_state);
+    sb
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn go_byte_prefix_splits_runes_like_go() {
+        assert_eq!(go_byte_prefix("abc", 5), "abc");
+        // "é" is 2 bytes; cutting after 1 byte leaves one invalid byte.
+        assert_eq!(go_byte_prefix("aé", 2), "a\u{FFFD}");
+        // "€" is 3 bytes; cutting after 2 leaves two invalid bytes.
+        assert_eq!(go_byte_prefix("€x", 2), "\u{FFFD}\u{FFFD}");
+        assert_eq!(go_byte_prefix("€x", 3), "€");
+    }
+}

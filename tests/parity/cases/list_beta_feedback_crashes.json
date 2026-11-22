@@ -1,0 +1,21 @@
+[
+  {
+    "name": "filter-sort-clamp",
+    "args": {
+      "app_id": "A1",
+      "filter": {
+        "build": [
+          "B1"
+        ]
+      },
+      "sort": [
+        "-createdDate"
+      ],
+      "limit": 1000
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

@@ -100,7 +100,48 @@ async fn handle_list_builds(c: Arc<Client>, args: Args) -> HandlerResult {
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListBuilds from internal/asc/tools/builds.go")
+    let mut params = Params { limit: 20, ..Default::default() };
+    if args.is_some() {
+        if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+            return Err(format!("invalid arguments: {e}"));
+        }
+    }
+    if params.limit <= 0 {
+        params.limit = 20;
+    }
+    if params.limit > 200 {
+        params.limit = 200;
+    }
+
+    let opts = list_opts(params.limit, &params.filter, &params.sort, &params.fields, &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_builds(&params.app_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list builds: {e}"))),
+    };
+
+    if resp.data.is_empty() {
+        return Ok(list_result("No builds found.", &resp.data, &resp.links));
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} builds:\n\n", resp.data.len());
+    for build in resp.data.iter() {
+        let a = &build.attributes;
+        let _ = write!(sb, "**Build {}**\n", a.version);
+        let _ = write!(sb, "  - ID: {}\n", build.id);
+        let _ = write!(sb, "  - Processing State: {}\n", a.processing_state);
+        let _ = write!(sb, "  - Min OS Version: {}\n", a.min_os_version);
+        let _ = write!(sb, "  - Expired: {}\n", a.expired);
+        if let Some(d) = &a.uploaded_date {
+            let _ = write!(sb, "  - Uploaded: {}\n", d.format("2006-01-02 15:04"));
+        }
+        if let Some(d) = &a.expiration_date {
+            let _ = write!(sb, "  - Expires: {}\n", d.format("2006-01-02"));
+        }
+        sb.push('\n');
+    }
+
+    Ok(list_result(&sb, &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetBuild`.
@@ -110,6 +151,38 @@ async fn handle_get_build(c: Arc<Client>, args: Args) -> HandlerResult {
         build_id: String => "build_id";
     }
     }
-    todo!("port handleGetBuild from internal/asc/tools/builds.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.build_id.is_empty() {
+        return Ok(error_result("build_id is required"));
+    }
+
+    let resp = match c.get_build(&params.build_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get build: {e}"))),
+    };
+
+    let build = &resp.data;
+    let a = &build.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "**Build {}**\n\n", a.version);
+    let _ = write!(sb, "- ID: {}\n", build.id);
+    let _ = write!(sb, "- Processing State: {}\n", a.processing_state);
+    let _ = write!(sb, "- Min OS Version: {}\n", a.min_os_version);
+    let _ = write!(sb, "- Build Audience Type: {}\n", a.build_audience_type);
+    let _ = write!(sb, "- Uses Non-Exempt Encryption: {}\n", a.uses_non_exempt_encryption);
+    let _ = write!(sb, "- Expired: {}\n", a.expired);
+
+    if let Some(d) = &a.uploaded_date {
+        let _ = write!(sb, "- Uploaded: {}\n", d.format("2006-01-02 15:04:05"));
+    }
+    if let Some(d) = &a.expiration_date {
+        let _ = write!(sb, "- Expires: {}\n", d.format("2006-01-02"));
+    }
+
+    Ok(data_result(&sb, &resp.data))
 }
 

@@ -1,0 +1,24 @@
+[
+  {
+    "name": "clamp",
+    "args": {
+      "build_id": "B1",
+      "limit": 500
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  },
+  {
+    "name": "negative",
+    "args": {
+      "build_id": "B1",
+      "limit": -2
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

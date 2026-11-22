@@ -1,0 +1,52 @@
+[
+  {
+    "name": "clamp-high",
+    "args": {
+      "limit": 500
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  },
+  {
+    "name": "negative-limit",
+    "args": {
+      "limit": -3
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  },
+  {
+    "name": "app-and-filter-app",
+    "args": {
+      "app_id": "A1",
+      "filter": {
+        "app": [
+          "A2"
+        ],
+        "version": [
+          "1.0",
+          " "
+        ]
+      },
+      "sort": [
+        "-uploadedDate"
+      ],
+      "fields": {
+        "builds": [
+          "version"
+        ]
+      },
+      "include": [
+        "app"
+      ]
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]
