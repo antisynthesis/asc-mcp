@@ -5,8 +5,8 @@ mod common;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use asc_mcp::api::testutil::{MockApi, MockResponse};
 use asc_mcp::api::Client;
+use asc_mcp::api::testutil::{MockApi, MockResponse};
 use asc_mcp::mcp::{CallToolResult, Tool};
 use asc_mcp::tools::{CallError, Handler, HandlerFuture, Registry};
 use common::*;
@@ -433,7 +433,10 @@ fn key_client() -> (tempfile::TempDir, Arc<Client>) {
 fn new_registry() {
     let (_dir, client) = key_client();
     let r = Registry::new(Some(client));
-    assert!(!r.list_tools().is_empty(), "expected tools to be registered");
+    assert!(
+        !r.list_tools().is_empty(),
+        "expected tools to be registered"
+    );
     assert!(r.get("list_apps").is_some());
     assert!(r.get("no_such_tool").is_none());
 }
@@ -450,11 +453,24 @@ fn list_tools() {
     let expected: HashSet<&str> = EXPECTED_TOOLS.iter().copied().collect();
     let mut seen = HashSet::new();
     for t in tools {
-        assert!(expected.contains(t.name.as_str()), "unexpected tool: {}", t.name);
+        assert!(
+            expected.contains(t.name.as_str()),
+            "unexpected tool: {}",
+            t.name
+        );
         assert!(seen.insert(t.name.as_str()), "duplicate tool: {}", t.name);
         assert!(!t.name.is_empty(), "tool has empty name");
-        assert!(!t.description().is_empty(), "tool {} has empty description", t.name);
-        assert_eq!(t.input_schema()["type"], "object", "tool {} has invalid input schema type", t.name);
+        assert!(
+            !t.description().is_empty(),
+            "tool {} has empty description",
+            t.name
+        );
+        assert_eq!(
+            t.input_schema()["type"],
+            "object",
+            "tool {} has invalid input schema type",
+            t.name
+        );
         assert_eq!(t.def["name"], t.name.as_str());
     }
     for name in EXPECTED_TOOLS {
@@ -465,8 +481,16 @@ fn list_tools() {
 /// Registration order is deterministic (Go's NewRegistry order).
 #[test]
 fn list_tools_order_is_stable() {
-    let a: Vec<String> = Registry::new(None).list_tools().iter().map(|t| t.name.clone()).collect();
-    let b: Vec<String> = Registry::new(None).list_tools().iter().map(|t| t.name.clone()).collect();
+    let a: Vec<String> = Registry::new(None)
+        .list_tools()
+        .iter()
+        .map(|t| t.name.clone())
+        .collect();
+    let b: Vec<String> = Registry::new(None)
+        .list_tools()
+        .iter()
+        .map(|t| t.name.clone())
+        .collect();
     assert_eq!(a, b);
     assert_eq!(&a[..3], ["list_apps", "get_app", "get_app_versions"]);
 }
@@ -489,7 +513,9 @@ async fn call_tool_without_client() {
     let r = Registry::new(None);
     assert_eq!(
         r.call_tool("list_apps", None).await,
-        Err(CallError::Failed("no App Store Connect client configured".into()))
+        Err(CallError::Failed(
+            "no App Store Connect client configured".into()
+        ))
     );
 }
 
@@ -502,18 +528,62 @@ async fn call_tool_missing_argument_is_tool_error() {
     let (_dir, client) = key_client();
     let r = Registry::new(Some(client));
     for (tool, args, want) in [
-        ("list_analytics_report_requests", json!({}), "app_id is required"),
-        ("get_analytics_report_request", json!({}), "request_id is required"),
-        ("create_analytics_report_request", json!({"app_id":"123"}), "access_type is required"),
+        (
+            "list_analytics_report_requests",
+            json!({}),
+            "app_id is required",
+        ),
+        (
+            "get_analytics_report_request",
+            json!({}),
+            "request_id is required",
+        ),
+        (
+            "create_analytics_report_request",
+            json!({"app_id":"123"}),
+            "access_type is required",
+        ),
         ("get_app_clip", json!({}), "app_clip_id is required"),
-        ("get_age_rating_declaration", json!({}), "app_info_id is required"),
-        ("start_build_upload", json!({"app_id":"123"}), "cf_bundle_short_version_string is required"),
-        ("upload_build_file", json!({}), "build_upload_id is required"),
-        ("get_beta_feedback_crash_log", json!({}), "submission_id is required"),
-        ("get_beta_build_usage_metrics", json!({}), "build_id is required"),
-        ("create_background_asset", json!({"app_id":"123"}), "asset_pack_identifier is required"),
-        ("upload_background_asset_file", json!({}), "version_id is required"),
-        ("update_background_asset", json!({"background_asset_id":"123"}), "archived is required"),
+        (
+            "get_age_rating_declaration",
+            json!({}),
+            "app_info_id is required",
+        ),
+        (
+            "start_build_upload",
+            json!({"app_id":"123"}),
+            "cf_bundle_short_version_string is required",
+        ),
+        (
+            "upload_build_file",
+            json!({}),
+            "build_upload_id is required",
+        ),
+        (
+            "get_beta_feedback_crash_log",
+            json!({}),
+            "submission_id is required",
+        ),
+        (
+            "get_beta_build_usage_metrics",
+            json!({}),
+            "build_id is required",
+        ),
+        (
+            "create_background_asset",
+            json!({"app_id":"123"}),
+            "asset_pack_identifier is required",
+        ),
+        (
+            "upload_background_asset_file",
+            json!({}),
+            "version_id is required",
+        ),
+        (
+            "update_background_asset",
+            json!({"background_asset_id":"123"}),
+            "archived is required",
+        ),
     ] {
         let res = r
             .call_tool(tool, Some(args))
@@ -530,7 +600,10 @@ async fn call_tool_missing_argument_is_tool_error_app_tools() {
     let mock = MockApi::start(|req| panic!("no API call expected, got {}", req.path)).await;
     let r = Registry::new(Some(Arc::new(mock.client())));
     for tool in ["get_app", "get_app_versions"] {
-        let res = r.call_tool(tool, Some(json!({}))).await.unwrap_or_else(|e| panic!("{tool}: {e:?}"));
+        let res = r
+            .call_tool(tool, Some(json!({})))
+            .await
+            .unwrap_or_else(|e| panic!("{tool}: {e:?}"));
         assert!(res.is_error, "{tool}: want isError result, got {res:?}");
         assert_eq!(res.text(), "app_id is required", "{tool}");
     }
@@ -550,24 +623,36 @@ async fn call_tool_list_apps_against_mock() {
     })
     .await;
     let r = Registry::new(Some(Arc::new(mock.client())));
-    let res = r.call_tool("list_apps", Some(json!({"limit": 5}))).await.expect("call");
+    let res = r
+        .call_tool("list_apps", Some(json!({"limit": 5})))
+        .await
+        .expect("call");
     assert!(!res.is_error, "{res:?}");
     assert!(res.text().contains("Demo"), "{}", res.text());
-    assert_eq!(mock.requests()[0].query_param("limit").as_deref(), Some("5"));
+    assert_eq!(
+        mock.requests()[0].query_param("limit").as_deref(),
+        Some("5")
+    );
 }
 
 // Go: TestRegistry_Register
 #[tokio::test]
 async fn register() {
     let mut r = Registry::empty(Some(dummy_client()));
-    let tool = Tool::from_json(r#"{"name":"custom_tool","description":"A custom test tool","inputSchema":{"type":"object"}}"#);
-    let handler: Handler =
-        Arc::new(|_c, _a| Box::pin(async { Ok(CallToolResult::success("custom result")) }) as HandlerFuture);
+    let tool = Tool::from_json(
+        r#"{"name":"custom_tool","description":"A custom test tool","inputSchema":{"type":"object"}}"#,
+    );
+    let handler: Handler = Arc::new(|_c, _a| {
+        Box::pin(async { Ok(CallToolResult::success("custom result")) }) as HandlerFuture
+    });
     r.register(tool, handler);
     assert_eq!(r.list_tools().len(), 1);
     assert_eq!(r.list_tools()[0].name, "custom_tool");
     assert!(r.get("custom_tool").is_some(), "handler not registered");
-    let res = r.call_tool("custom_tool", Some(json!({}))).await.expect("call");
+    let res = r
+        .call_tool("custom_tool", Some(json!({})))
+        .await
+        .expect("call");
     assert_eq!(res.text(), "custom result");
 }
 
@@ -601,7 +686,10 @@ fn tool_input_schemas() {
             .map(|v| v.as_str().unwrap())
             .collect();
         for key in *required {
-            assert!(have.contains(key), "tool {name} missing required field: {key}");
+            assert!(
+                have.contains(key),
+                "tool {name} missing required field: {key}"
+            );
         }
     }
 }

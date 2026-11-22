@@ -48,14 +48,22 @@ impl Registry {
     /// Creates a registry with every built-in tool. `client` may be `None`
     /// when the registry is only used to list tools.
     pub fn new(client: Option<Arc<Client>>) -> Self {
-        let mut r = Self { client, tools: Vec::new(), handlers: HashMap::new() };
+        let mut r = Self {
+            client,
+            tools: Vec::new(),
+            handlers: HashMap::new(),
+        };
         all::register_all(&mut r);
         r
     }
 
     /// Creates a registry with no tools (tests).
     pub fn empty(client: Option<Arc<Client>>) -> Self {
-        Self { client, tools: Vec::new(), handlers: HashMap::new() }
+        Self {
+            client,
+            tools: Vec::new(),
+            handlers: HashMap::new(),
+        }
     }
 
     /// All tool definitions, in deterministic registration order.
@@ -74,7 +82,9 @@ impl Registry {
             return Err(CallError::UnknownTool(format!("unknown tool: {name}")));
         };
         let Some(client) = self.client.clone() else {
-            return Err(CallError::Failed("no App Store Connect client configured".into()));
+            return Err(CallError::Failed(
+                "no App Store Connect client configured".into(),
+            ));
         };
         // Run on its own task so a panicking handler is reported as a tool
         // error instead of tearing down the connection. The task is
@@ -91,7 +101,9 @@ impl Registry {
         let mut task = AbortOnDrop(tokio::spawn(handler(client, args)));
         match (&mut task.0).await {
             Ok(r) => r.map_err(CallError::Failed),
-            Err(e) if e.is_panic() => Err(CallError::Failed("internal error: tool handler panicked".into())),
+            Err(e) if e.is_panic() => Err(CallError::Failed(
+                "internal error: tool handler panicked".into(),
+            )),
             Err(_) => Err(CallError::Failed("context canceled".into())),
         }
     }
@@ -113,8 +125,9 @@ pub(crate) fn tool(json: &str) -> Tool {
 #[doc(hidden)]
 macro_rules! handler {
     ($f:path) => {
-        ::std::sync::Arc::new(|c, a| ::std::boxed::Box::pin($f(c, a)) as $crate::tools::HandlerFuture)
-            as $crate::tools::Handler
+        ::std::sync::Arc::new(|c, a| {
+            ::std::boxed::Box::pin($f(c, a)) as $crate::tools::HandlerFuture
+        }) as $crate::tools::Handler
     };
 }
 pub(crate) use handler;
@@ -125,12 +138,12 @@ pub(crate) mod prelude {
     pub(crate) use std::fmt::Write as _;
     pub(crate) use std::sync::Arc;
 
-    pub(crate) use serde_json::{json, Value};
+    pub(crate) use serde_json::{Value, json};
 
     pub(crate) use super::pagination::*;
-    pub(crate) use super::{handler, tool, Args, HandlerResult, Registry};
+    pub(crate) use super::{Args, HandlerResult, Registry, handler, tool};
     pub(crate) use crate::api::model::*;
-    pub(crate) use crate::api::{self, sha256_hex, Client, ListOptions};
+    pub(crate) use crate::api::{self, Client, ListOptions, sha256_hex};
     pub(crate) use crate::go::fmt::{bool_v, float_prec, float_v, quote, slice_v};
     pub(crate) use crate::go::json::{self as gojson, unmarshal_args};
     pub(crate) use crate::go::url::Values;

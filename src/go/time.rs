@@ -32,7 +32,11 @@ const UNIX_TO_INTERNAL: i64 = 62_135_596_800;
 impl Default for GoTime {
     /// Go's zero time, `0001-01-01T00:00:00Z`.
     fn default() -> Self {
-        Self { secs: 0, nsec: 0, zone: Zone::Utc }
+        Self {
+            secs: 0,
+            nsec: 0,
+            zone: Zone::Utc,
+        }
     }
 }
 
@@ -86,10 +90,28 @@ fn civil_from_days(z: i64) -> (i64, u32, u32) {
 }
 
 const MONTHS: [&str; 12] = [
-    "January", "February", "March", "April", "May", "June", "July", "August", "September",
-    "October", "November", "December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
 ];
-const DAYS: [&str; 7] = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAYS: [&str; 7] = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+];
 
 const RFC3339: &str = "2006-01-02T15:04:05Z07:00";
 
@@ -140,12 +162,20 @@ impl GoTime {
             Zone::Utc => 0,
             Zone::Fixed(o) => o as i64,
         };
-        Self { secs: local - off + UNIX_TO_INTERNAL, nsec, zone }
+        Self {
+            secs: local - off + UNIX_TO_INTERNAL,
+            nsec,
+            zone,
+        }
     }
 
     /// Constructs a UTC time from Unix seconds and nanoseconds.
     pub fn from_unix(secs: i64, nsec: u32) -> Self {
-        Self { secs: secs + UNIX_TO_INTERNAL, nsec, zone: Zone::Utc }
+        Self {
+            secs: secs + UNIX_TO_INTERNAL,
+            nsec,
+            zone: Zone::Utc,
+        }
     }
 
     /// Unix seconds.
@@ -171,7 +201,14 @@ impl GoTime {
         let rem = local.rem_euclid(86_400) as u32;
         let (year, month, day) = civil_from_days(days);
         (
-            Civil { year, month, day, hour: rem / 3600, min: rem / 60 % 60, sec: rem % 60 },
+            Civil {
+                year,
+                month,
+                day,
+                hour: rem / 3600,
+                min: rem / 60 % 60,
+                sec: rem % 60,
+            },
             (days + 4).rem_euclid(7) as u32,
         )
     }
@@ -185,7 +222,8 @@ impl GoTime {
         // apply the strictness checks Go layers on top of it.
         Self::parse_layout(s)?;
         let b = s.as_bytes();
-        let num2 = |x: &[u8]| (x[0].wrapping_sub(b'0')) as u32 * 10 + (x[1].wrapping_sub(b'0')) as u32;
+        let num2 =
+            |x: &[u8]| (x[0].wrapping_sub(b'0')) as u32 * 10 + (x[1].wrapping_sub(b'0')) as u32;
         if b.len() > 12 && b[12] == b':' {
             return Err(format!(
                 "parsing time {} as {}: cannot parse {} as {}",
@@ -206,10 +244,16 @@ impl GoTime {
         }
         if b.last() != Some(&b'Z') && b.len() >= 6 {
             if num2(&b[b.len() - 5..]) >= 24 {
-                return Err(format!("parsing time {}: timezone hour out of range", go_quote(s)));
+                return Err(format!(
+                    "parsing time {}: timezone hour out of range",
+                    go_quote(s)
+                ));
             }
             if num2(&b[b.len() - 2..]) >= 60 {
-                return Err(format!("parsing time {}: timezone minute out of range", go_quote(s)));
+                return Err(format!(
+                    "parsing time {}: timezone minute out of range",
+                    go_quote(s)
+                ));
             }
         }
         Err(format!(
@@ -238,7 +282,13 @@ impl GoTime {
         let hour = digits(&s[11..], 2)?;
         let min = digits(&s[14..], 2)?;
         let sec = digits(&s[17..], 2)?;
-        if !(1..=12).contains(&month) || day < 1 || day > days_in(month, year) || hour > 23 || min > 59 || sec > 59 {
+        if !(1..=12).contains(&month)
+            || day < 1
+            || day > days_in(month, year)
+            || hour > 23
+            || min > 59
+            || sec > 59
+        {
             return None;
         }
         let mut rest = &s[19..];
@@ -251,7 +301,14 @@ impl GoTime {
             nsec = parse_nanos(&rest[..n]);
             rest = &rest[n..];
         }
-        let civil = Civil { year, month, day, hour, min, sec };
+        let civil = Civil {
+            year,
+            month,
+            day,
+            hour,
+            min,
+            sec,
+        };
         match rest {
             [b'Z'] => Some(Self::from_civil(civil, nsec, Zone::Utc)),
             [sign @ (b'+' | b'-'), h1, h2, b':', m1, m2] => {
@@ -266,7 +323,11 @@ impl GoTime {
                 }
                 // An offset of zero lands in Local (UTC in our model) and
                 // formats identically to Z.
-                let zone = if off == 0 { Zone::Utc } else { Zone::Fixed(off) };
+                let zone = if off == 0 {
+                    Zone::Utc
+                } else {
+                    Zone::Fixed(off)
+                };
                 Some(Self::from_civil(civil, nsec, zone))
             }
             _ => None,
@@ -319,7 +380,12 @@ impl GoTime {
             range_err = "month";
         }
         if !range_err.is_empty() {
-            return Err(parse_error(value, "01", rest, &format!(": {range_err} out of range")));
+            return Err(parse_error(
+                value,
+                "01",
+                rest,
+                &format!(": {range_err} out of range"),
+            ));
         }
         lit!("-");
         let day = num!("02", true);
@@ -367,10 +433,20 @@ impl GoTime {
             };
             rest = &rest[6..];
             if hr > 24 {
-                return Err(parse_error(value, "Z07:00", rest, ": time zone offset hour out of range"));
+                return Err(parse_error(
+                    value,
+                    "Z07:00",
+                    rest,
+                    ": time zone offset hour out of range",
+                ));
             }
             if mm > 60 {
-                return Err(parse_error(value, "Z07:00", rest, ": time zone offset minute out of range"));
+                return Err(parse_error(
+                    value,
+                    "Z07:00",
+                    rest,
+                    ": time zone offset minute out of range",
+                ));
             }
             let mut off = (hr * 3600 + mm * 60) as i32;
             match b[0] {
@@ -378,15 +454,37 @@ impl GoTime {
                 b'-' => off = -off,
                 _ => return Err(parse_error(value, "Z07:00", hold, "")),
             }
-            zone = if off == 0 { Zone::Utc } else { Zone::Fixed(off) };
+            zone = if off == 0 {
+                Zone::Utc
+            } else {
+                Zone::Fixed(off)
+            };
         }
         if !rest.is_empty() {
-            return Err(format!("parsing time {}: extra text: {}", go_quote(value), go_quote(rest)));
+            return Err(format!(
+                "parsing time {}: extra text: {}",
+                go_quote(value),
+                go_quote(rest)
+            ));
         }
         if day < 1 || day > days_in(month, year) {
-            return Err(format!("parsing time {}: day out of range", go_quote(value)));
+            return Err(format!(
+                "parsing time {}: day out of range",
+                go_quote(value)
+            ));
         }
-        Ok(Self::from_civil(Civil { year, month, day, hour, min, sec }, nsec, zone))
+        Ok(Self::from_civil(
+            Civil {
+                year,
+                month,
+                day,
+                hour,
+                min,
+                sec,
+            },
+            nsec,
+            zone,
+        ))
     }
 
     /// Formats as Go's `time.RFC3339Nano` (trailing zeros trimmed, `Z`
@@ -403,8 +501,12 @@ impl GoTime {
         let mut l = layout;
         while !l.is_empty() {
             let tokens: &[(&str, &dyn Fn(&mut String))] = &[
-                ("January", &|o: &mut String| o.push_str(MONTHS[c.month as usize - 1])),
-                ("Jan", &|o: &mut String| o.push_str(&MONTHS[c.month as usize - 1][..3])),
+                ("January", &|o: &mut String| {
+                    o.push_str(MONTHS[c.month as usize - 1])
+                }),
+                ("Jan", &|o: &mut String| {
+                    o.push_str(&MONTHS[c.month as usize - 1][..3])
+                }),
                 ("Monday", &|o: &mut String| o.push_str(DAYS[wd as usize])),
                 ("Mon", &|o: &mut String| o.push_str(&DAYS[wd as usize][..3])),
                 ("MST", &|o: &mut String| {
@@ -414,28 +516,59 @@ impl GoTime {
                         o.push_str(&fmt_offset(off, false, false))
                     }
                 }),
-                ("2006", &|o: &mut String| o.push_str(&format!("{:04}", c.year))),
+                ("2006", &|o: &mut String| {
+                    o.push_str(&format!("{:04}", c.year))
+                }),
                 ("Z07:00", &|o: &mut String| {
-                    if off == 0 { o.push('Z') } else { o.push_str(&fmt_offset(off, true, false)) }
+                    if off == 0 {
+                        o.push('Z')
+                    } else {
+                        o.push_str(&fmt_offset(off, true, false))
+                    }
                 }),
                 ("Z0700", &|o: &mut String| {
-                    if off == 0 { o.push('Z') } else { o.push_str(&fmt_offset(off, false, false)) }
+                    if off == 0 {
+                        o.push('Z')
+                    } else {
+                        o.push_str(&fmt_offset(off, false, false))
+                    }
                 }),
-                ("-07:00", &|o: &mut String| o.push_str(&fmt_offset(off, true, false))),
-                ("-0700", &|o: &mut String| o.push_str(&fmt_offset(off, false, false))),
-                ("-07", &|o: &mut String| o.push_str(&fmt_offset(off, false, true))),
-                ("01", &|o: &mut String| o.push_str(&format!("{:02}", c.month))),
+                ("-07:00", &|o: &mut String| {
+                    o.push_str(&fmt_offset(off, true, false))
+                }),
+                ("-0700", &|o: &mut String| {
+                    o.push_str(&fmt_offset(off, false, false))
+                }),
+                ("-07", &|o: &mut String| {
+                    o.push_str(&fmt_offset(off, false, true))
+                }),
+                ("01", &|o: &mut String| {
+                    o.push_str(&format!("{:02}", c.month))
+                }),
                 ("02", &|o: &mut String| o.push_str(&format!("{:02}", c.day))),
-                ("06", &|o: &mut String| o.push_str(&format!("{:02}", c.year.rem_euclid(100)))),
-                ("15", &|o: &mut String| o.push_str(&format!("{:02}", c.hour))),
-                ("03", &|o: &mut String| o.push_str(&format!("{:02}", h12(c.hour)))),
+                ("06", &|o: &mut String| {
+                    o.push_str(&format!("{:02}", c.year.rem_euclid(100)))
+                }),
+                ("15", &|o: &mut String| {
+                    o.push_str(&format!("{:02}", c.hour))
+                }),
+                ("03", &|o: &mut String| {
+                    o.push_str(&format!("{:02}", h12(c.hour)))
+                }),
                 ("04", &|o: &mut String| o.push_str(&format!("{:02}", c.min))),
                 ("05", &|o: &mut String| o.push_str(&format!("{:02}", c.sec))),
-                ("PM", &|o: &mut String| o.push_str(if c.hour >= 12 { "PM" } else { "AM" })),
-                ("pm", &|o: &mut String| o.push_str(if c.hour >= 12 { "pm" } else { "am" })),
+                ("PM", &|o: &mut String| {
+                    o.push_str(if c.hour >= 12 { "PM" } else { "AM" })
+                }),
+                ("pm", &|o: &mut String| {
+                    o.push_str(if c.hour >= 12 { "pm" } else { "am" })
+                }),
             ];
             // Fractional seconds: .000 / .999 (or , separator).
-            if (l.starts_with(".0") || l.starts_with(".9") || l.starts_with(",0") || l.starts_with(",9"))
+            if (l.starts_with(".0")
+                || l.starts_with(".9")
+                || l.starts_with(",0")
+                || l.starts_with(",9"))
                 && !out.is_empty()
             {
                 let ch = l.as_bytes()[1];
@@ -523,10 +656,30 @@ mod tests {
     #[test]
     fn rfc3339_roundtrip_and_format() {
         let cases = [
-            ("2024-03-05T10:20:30.123-07:00", "2024-03-05T10:20:30.123-07:00", "2024-03-05 10:20", "2024-03-05 10:20:30.123 -0700 -0700"),
-            ("2024-03-05T10:20:30Z", "2024-03-05T10:20:30Z", "2024-03-05 10:20", "2024-03-05 10:20:30 +0000 UTC"),
-            ("2024-03-05T10:20:30+00:00", "2024-03-05T10:20:30Z", "2024-03-05 10:20", "2024-03-05 10:20:30 +0000 UTC"),
-            ("2024-03-05T10:20:30.120000+05:30", "2024-03-05T10:20:30.12+05:30", "2024-03-05 10:20", "2024-03-05 10:20:30.12 +0530 +0530"),
+            (
+                "2024-03-05T10:20:30.123-07:00",
+                "2024-03-05T10:20:30.123-07:00",
+                "2024-03-05 10:20",
+                "2024-03-05 10:20:30.123 -0700 -0700",
+            ),
+            (
+                "2024-03-05T10:20:30Z",
+                "2024-03-05T10:20:30Z",
+                "2024-03-05 10:20",
+                "2024-03-05 10:20:30 +0000 UTC",
+            ),
+            (
+                "2024-03-05T10:20:30+00:00",
+                "2024-03-05T10:20:30Z",
+                "2024-03-05 10:20",
+                "2024-03-05 10:20:30 +0000 UTC",
+            ),
+            (
+                "2024-03-05T10:20:30.120000+05:30",
+                "2024-03-05T10:20:30.12+05:30",
+                "2024-03-05 10:20",
+                "2024-03-05 10:20:30.12 +0530 +0530",
+            ),
         ];
         for (input, json, short, string) in cases {
             let t = GoTime::parse_rfc3339(input).unwrap();
@@ -534,17 +687,35 @@ mod tests {
             assert_eq!(t.format("2006-01-02 15:04"), short);
             assert_eq!(t.to_string(), string);
         }
-        assert_eq!(GoTime::default().format_rfc3339_nano(), "0001-01-01T00:00:00Z");
+        assert_eq!(
+            GoTime::default().format_rfc3339_nano(),
+            "0001-01-01T00:00:00Z"
+        );
     }
 
     #[test]
     fn rfc3339_errors() {
         let cases = [
-            ("bad", r#"parsing time "bad" as "2006-01-02T15:04:05Z07:00": cannot parse "bad" as "2006""#),
-            ("2024-01-01", r#"parsing time "2024-01-01" as "2006-01-02T15:04:05Z07:00": cannot parse "" as "T""#),
-            ("2024-01-01T10:00:00+0000", r#"parsing time "2024-01-01T10:00:00+0000" as "2006-01-02T15:04:05Z07:00": cannot parse "+0000" as "Z07:00""#),
-            ("2024-13-01T10:00:00Z", r#"parsing time "2024-13-01T10:00:00Z": month out of range"#),
-            ("2024-02-30T10:00:00Z", r#"parsing time "2024-02-30T10:00:00Z": day out of range"#),
+            (
+                "bad",
+                r#"parsing time "bad" as "2006-01-02T15:04:05Z07:00": cannot parse "bad" as "2006""#,
+            ),
+            (
+                "2024-01-01",
+                r#"parsing time "2024-01-01" as "2006-01-02T15:04:05Z07:00": cannot parse "" as "T""#,
+            ),
+            (
+                "2024-01-01T10:00:00+0000",
+                r#"parsing time "2024-01-01T10:00:00+0000" as "2006-01-02T15:04:05Z07:00": cannot parse "+0000" as "Z07:00""#,
+            ),
+            (
+                "2024-13-01T10:00:00Z",
+                r#"parsing time "2024-13-01T10:00:00Z": month out of range"#,
+            ),
+            (
+                "2024-02-30T10:00:00Z",
+                r#"parsing time "2024-02-30T10:00:00Z": day out of range"#,
+            ),
         ];
         for (input, want) in cases {
             assert_eq!(GoTime::parse_rfc3339(input).unwrap_err(), want, "{input}");

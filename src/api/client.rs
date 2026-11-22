@@ -7,8 +7,8 @@ use reqwest::Method;
 use super::auth::TokenProvider;
 use super::error::{ApiError, Error, Result};
 use super::model::ErrorResponse;
-use crate::go::url::Values;
 use crate::go::GoEncode;
+use crate::go::url::Values;
 
 /// The App Store Connect API base URL.
 pub const BASE_URL: &str = "https://api.appstoreconnect.apple.com";
@@ -49,7 +49,10 @@ impl Client {
     pub fn new(issuer_id: &str, key_id: &str, private_key_path: &str) -> Result<Self> {
         let tokens = TokenProvider::new(issuer_id, key_id, private_key_path)
             .map_err(|e| e.wrap("failed to create token provider"))?;
-        let base = std::env::var(BASE_URL_ENV).ok().filter(|s| !s.is_empty()).unwrap_or_else(|| BASE_URL.into());
+        let base = std::env::var(BASE_URL_ENV)
+            .ok()
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| BASE_URL.into());
         Ok(Self::with_token_provider(tokens, base))
     }
 
@@ -59,7 +62,11 @@ impl Client {
             .timeout(DEFAULT_TIMEOUT)
             .build()
             .unwrap_or_else(|_| reqwest::Client::new());
-        Self { http, tokens, base_url: base_url.into().trim_end_matches('/').to_string() }
+        Self {
+            http,
+            tokens,
+            base_url: base_url.into().trim_end_matches('/').to_string(),
+        }
     }
 
     /// The base URL requests are sent to.
@@ -102,7 +109,10 @@ impl Client {
     }
 
     async fn attempt(&self, method: &Method, url: &str, body: Option<&[u8]>) -> Result<Vec<u8>> {
-        let token = self.tokens.get_token().map_err(|e| e.wrap("failed to get token"))?;
+        let token = self
+            .tokens
+            .get_token()
+            .map_err(|e| e.wrap("failed to get token"))?;
         let mut req = self
             .http
             .request(method.clone(), url)
@@ -113,12 +123,22 @@ impl Client {
         if let Some(b) = body {
             req = req.body(b.to_vec());
         }
-        let resp = req.send().await.map_err(|e| Error::network(format!("request failed: {e}")))?;
+        let resp = req
+            .send()
+            .await
+            .map_err(|e| Error::network(format!("request failed: {e}")))?;
         let status = resp.status().as_u16();
-        let retry_after = resp.headers().get("Retry-After").and_then(|v| v.to_str().ok()).map(str::to_string);
+        let retry_after = resp
+            .headers()
+            .get("Retry-After")
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_string);
         let body = read_limited(resp, MAX_RESPONSE_SIZE).await?;
         if status >= 400 {
-            let mut api = ApiError { status_code: status, ..Default::default() };
+            let mut api = ApiError {
+                status_code: status,
+                ..Default::default()
+            };
             match crate::go::json::from_slice::<ErrorResponse>(&body) {
                 Ok(er) if !er.errors.is_empty() => api.errors = er.errors.into_vec(),
                 _ => api.raw_body = String::from_utf8_lossy(&body).into_owned(),
@@ -139,23 +159,51 @@ impl Client {
     }
 
     /// POST a JSON body.
-    pub async fn post<B: GoEncode + ?Sized>(&self, path: &str, body: Option<&B>) -> Result<Vec<u8>> {
-        self.do_request(Method::POST, path, None, body.map(crate::go::json::marshal)).await
+    pub async fn post<B: GoEncode + ?Sized>(
+        &self,
+        path: &str,
+        body: Option<&B>,
+    ) -> Result<Vec<u8>> {
+        self.do_request(Method::POST, path, None, body.map(crate::go::json::marshal))
+            .await
     }
 
     /// PATCH a JSON body.
-    pub async fn patch<B: GoEncode + ?Sized>(&self, path: &str, body: Option<&B>) -> Result<Vec<u8>> {
-        self.do_request(Method::PATCH, path, None, body.map(crate::go::json::marshal)).await
+    pub async fn patch<B: GoEncode + ?Sized>(
+        &self,
+        path: &str,
+        body: Option<&B>,
+    ) -> Result<Vec<u8>> {
+        self.do_request(
+            Method::PATCH,
+            path,
+            None,
+            body.map(crate::go::json::marshal),
+        )
+        .await
     }
 
     /// DELETE `path`.
     pub async fn delete(&self, path: &str) -> Result<()> {
-        self.do_request(Method::DELETE, path, None, None).await.map(|_| ())
+        self.do_request(Method::DELETE, path, None, None)
+            .await
+            .map(|_| ())
     }
 
     /// DELETE with a JSON body (relationship removals).
-    pub async fn delete_with_body<B: GoEncode + ?Sized>(&self, path: &str, body: Option<&B>) -> Result<()> {
-        self.do_request(Method::DELETE, path, None, body.map(crate::go::json::marshal)).await.map(|_| ())
+    pub async fn delete_with_body<B: GoEncode + ?Sized>(
+        &self,
+        path: &str,
+        body: Option<&B>,
+    ) -> Result<()> {
+        self.do_request(
+            Method::DELETE,
+            path,
+            None,
+            body.map(crate::go::json::marshal),
+        )
+        .await
+        .map(|_| ())
     }
 
     /// GET a fully qualified URL returned by the API (a pagination
@@ -165,8 +213,10 @@ impl Client {
         if full_url.is_empty() {
             return Err(Error::msg("empty URL"));
         }
-        let parsed = GoUrl::parse(full_url).map_err(|e| Error::msg(format!("invalid cursor URL: {e}")))?;
-        let base = GoUrl::parse(&self.base_url).map_err(|e| Error::msg(format!("invalid client base URL: {e}")))?;
+        let parsed =
+            GoUrl::parse(full_url).map_err(|e| Error::msg(format!("invalid cursor URL: {e}")))?;
+        let base = GoUrl::parse(&self.base_url)
+            .map_err(|e| Error::msg(format!("invalid client base URL: {e}")))?;
         if parsed.scheme != base.scheme || parsed.host != base.host {
             return Err(Error::msg(format!(
                 "cursor URL host mismatch: got {}, want {}",
@@ -174,11 +224,17 @@ impl Client {
                 crate::go::fmt::quote(&base.host)
             )));
         }
-        let path = if parsed.path.is_empty() { "/".to_string() } else { parsed.path.clone() };
+        let path = if parsed.path.is_empty() {
+            "/".to_string()
+        } else {
+            parsed.path.clone()
+        };
         match parsed.query {
             Some(q) => {
-                let query = Values::parse(&q).map_err(|e| Error::msg(format!("invalid cursor query: {e}")))?;
-                self.do_request(Method::GET, &path, Some(&query), None).await
+                let query = Values::parse(&q)
+                    .map_err(|e| Error::msg(format!("invalid cursor query: {e}")))?;
+                self.do_request(Method::GET, &path, Some(&query), None)
+                    .await
             }
             None => self.do_request(Method::GET, &path, None, None).await,
         }
@@ -192,7 +248,9 @@ async fn read_limited(mut resp: reqwest::Response, limit: usize) -> Result<Vec<u
             Ok(Some(c)) => {
                 out.extend_from_slice(&c);
                 if out.len() > limit {
-                    return Err(Error::msg(format!("response exceeds max size of {limit} bytes")));
+                    return Err(Error::msg(format!(
+                        "response exceeds max size of {limit} bytes"
+                    )));
                 }
             }
             Ok(None) => return Ok(out),
@@ -207,7 +265,10 @@ fn is_retryable(err: &Error, method: &Method) -> bool {
     if let Some(api) = err.api() {
         return api.status_code == 429 || api.status_code >= 500;
     }
-    matches!(*method, Method::GET | Method::DELETE | Method::PATCH | Method::PUT)
+    matches!(
+        *method,
+        Method::GET | Method::DELETE | Method::PATCH | Method::PUT
+    )
 }
 
 /// Delay before retry `attempt`, honouring a positive `Retry-After`.
@@ -224,7 +285,11 @@ fn backoff_delay(attempt: u32, last: Option<&Error>) -> Duration {
 /// Parses `Retry-After` as delta-seconds or an HTTP date.
 fn parse_retry_after(v: &str) -> Duration {
     if let Ok(secs) = v.trim().parse::<i64>() {
-        return if secs > 0 { Duration::from_secs(secs as u64) } else { Duration::ZERO };
+        return if secs > 0 {
+            Duration::from_secs(secs as u64)
+        } else {
+            Duration::ZERO
+        };
     }
     let fmt = time::format_description::well_known::Rfc2822;
     if let Ok(t) = time::OffsetDateTime::parse(v.trim(), &fmt) {
@@ -251,10 +316,14 @@ impl GoUrl {
         if let Some(i) = raw.find(':') {
             let cand = &raw[..i];
             let valid = cand.chars().enumerate().all(|(j, c)| {
-                c.is_ascii_alphabetic() || (j > 0 && (c.is_ascii_digit() || matches!(c, '+' | '-' | '.')))
+                c.is_ascii_alphabetic()
+                    || (j > 0 && (c.is_ascii_digit() || matches!(c, '+' | '-' | '.')))
             });
             if i == 0 {
-                return Err(format!("parse {}: missing protocol scheme", crate::go::fmt::quote(raw)));
+                return Err(format!(
+                    "parse {}: missing protocol scheme",
+                    crate::go::fmt::quote(raw)
+                ));
             }
             if valid {
                 scheme = cand.to_ascii_lowercase();
@@ -274,7 +343,12 @@ impl GoUrl {
             (String::new(), rest.to_string())
         };
         let query = query.filter(|q| !q.is_empty());
-        Ok(Self { scheme, host, path, query })
+        Ok(Self {
+            scheme,
+            host,
+            path,
+            query,
+        })
     }
 }
 
@@ -293,8 +367,12 @@ mod tests {
 
     #[test]
     fn go_url_parse() {
-        let u = GoUrl::parse("https://api.appstoreconnect.apple.com/v1/apps?cursor=abc&limit=5").unwrap();
-        assert_eq!((u.scheme.as_str(), u.host.as_str(), u.path.as_str()), ("https", "api.appstoreconnect.apple.com", "/v1/apps"));
+        let u = GoUrl::parse("https://api.appstoreconnect.apple.com/v1/apps?cursor=abc&limit=5")
+            .unwrap();
+        assert_eq!(
+            (u.scheme.as_str(), u.host.as_str(), u.path.as_str()),
+            ("https", "api.appstoreconnect.apple.com", "/v1/apps")
+        );
         assert_eq!(u.query.as_deref(), Some("cursor=abc&limit=5"));
         let u = GoUrl::parse("not a url").unwrap();
         assert_eq!((u.scheme.as_str(), u.host.as_str()), ("", ""));

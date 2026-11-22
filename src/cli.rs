@@ -52,10 +52,14 @@ enum Command {
     #[command(long_about = "Print the version, commit hash, and build date of asc-mcp.")]
     Version,
     /// Validate configuration
-    #[command(long_about = "Validate that all required environment variables are set and the\nprivate key file exists and is readable.\n\nThis command does not make any API calls - it only validates local configuration.")]
+    #[command(
+        long_about = "Validate that all required environment variables are set and the\nprivate key file exists and is readable.\n\nThis command does not make any API calls - it only validates local configuration."
+    )]
     Validate,
     /// List available MCP tools
-    #[command(long_about = "List all MCP tools that are available when the server is running.\n\nThis command displays the tool names and descriptions without\nrequiring API credentials.")]
+    #[command(
+        long_about = "List all MCP tools that are available when the server is running.\n\nThis command displays the tool names and descriptions without\nrequiring API credentials."
+    )]
     Tools,
 }
 
@@ -158,11 +162,17 @@ async fn serve() -> Result<(), String> {
     let srv = StdioServer::new(Arc::new(Dispatcher::new(registry)));
     logging::printf("starting MCP server");
     let stdin = tokio::io::BufReader::new(tokio::io::stdin());
-    srv.run(stdin, tokio::io::stdout()).await.map_err(|e| format!("failed to read request: {e}"))
+    srv.run(stdin, tokio::io::stdout())
+        .await
+        .map_err(|e| format!("failed to read request: {e}"))
 }
 
 fn split_csv(s: &str) -> Vec<String> {
-    s.split(',').map(str::trim).filter(|v| !v.is_empty()).map(str::to_string).collect()
+    s.split(',')
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+        .map(str::to_string)
+        .collect()
 }
 
 async fn serve_http(a: ServeHttpArgs) -> Result<(), String> {
@@ -175,7 +185,10 @@ async fn serve_http(a: ServeHttpArgs) -> Result<(), String> {
     } else {
         a.auth_tokens.clone()
     };
-    let opts = HttpOptions { allowed_origins: split_csv(&a.allowed_origins), auth_tokens: split_csv(&tokens) };
+    let opts = HttpOptions {
+        allowed_origins: split_csv(&a.allowed_origins),
+        auth_tokens: split_csv(&tokens),
+    };
     if opts.auth_tokens.is_empty() {
         logging::warn(
             "serve-http running without auth tokens; the /mcp endpoint is open to anyone who can reach it",
@@ -193,7 +206,8 @@ async fn serve_http(a: ServeHttpArgs) -> Result<(), String> {
             a.addr
         ));
     }
-    srv.listen_and_serve(&a.addr, &a.tls_cert, &a.tls_key, shutdown_signal()).await
+    srv.listen_and_serve(&a.addr, &a.tls_cert, &a.tls_key, shutdown_signal())
+        .await
 }
 
 async fn shutdown_signal() {
@@ -202,7 +216,8 @@ async fn shutdown_signal() {
     };
     #[cfg(unix)]
     let term = async {
-        if let Ok(mut s) = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+        if let Ok(mut s) = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+        {
             s.recv().await;
         }
     };
@@ -219,14 +234,22 @@ fn version() {
     println!("  Commit:     {COMMIT}");
     println!("  Built:      {BUILD_DATE}");
     println!("  Rust:       {}", env!("ASC_MCP_RUSTC_VERSION"));
-    println!("  OS/Arch:    {}/{}", std::env::consts::OS, std::env::consts::ARCH);
+    println!(
+        "  OS/Arch:    {}/{}",
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    );
 }
 
 fn validate() -> Result<(), String> {
     println!("Validating configuration...");
     println!();
     let get = |k: &str| std::env::var(k).unwrap_or_default();
-    let (issuer, key_id, key_path) = (get("ASC_ISSUER_ID"), get("ASC_KEY_ID"), get("ASC_PRIVATE_KEY_PATH"));
+    let (issuer, key_id, key_path) = (
+        get("ASC_ISSUER_ID"),
+        get("ASC_KEY_ID"),
+        get("ASC_PRIVATE_KEY_PATH"),
+    );
     let mut has_errors = false;
     if issuer.is_empty() {
         println!("[FAIL] ASC_ISSUER_ID is not set");
@@ -251,7 +274,10 @@ fn validate() -> Result<(), String> {
                 has_errors = true;
             }
             Err(e) => {
-                println!("[FAIL] ASC_PRIVATE_KEY_PATH error: {}", crate::go::os::path_error("stat", &key_path, &e));
+                println!(
+                    "[FAIL] ASC_PRIVATE_KEY_PATH error: {}",
+                    crate::go::os::path_error("stat", &key_path, &e)
+                );
                 has_errors = true;
             }
             Ok(_) => println!("[OK]   ASC_PRIVATE_KEY_PATH exists ({key_path})"),
@@ -269,7 +295,9 @@ fn validate() -> Result<(), String> {
         }
     };
     // Parse the key too, so a malformed .p8 is caught without an API call.
-    if let Err(e) = crate::api::auth::TokenProvider::new(&cfg.issuer_id, &cfg.key_id, &cfg.private_key_path) {
+    if let Err(e) =
+        crate::api::auth::TokenProvider::new(&cfg.issuer_id, &cfg.key_id, &cfg.private_key_path)
+    {
         println!("[FAIL] Private key error: {e}");
         return Err(e.to_string());
     }
@@ -281,15 +309,24 @@ fn tools() {
     let registry = Registry::new(None);
     let list = registry.list_tools();
     println!("Available MCP Tools ({} total):\n", list.len());
-    let mut cats: [(&str, Vec<String>); 4] =
-        [("App Management", vec![]), ("Builds", vec![]), ("TestFlight", vec![]), ("Provisioning", vec![])];
+    let mut cats: [(&str, Vec<String>); 4] = [
+        ("App Management", vec![]),
+        ("Builds", vec![]),
+        ("TestFlight", vec![]),
+        ("Provisioning", vec![]),
+    ];
     for t in list {
         let line = format!("  {} - {}", t.name, t.description());
         let idx = match t.name.as_str() {
             "list_apps" | "get_app" | "get_app_versions" => 0,
             "list_builds" | "get_build" => 1,
-            "list_beta_groups" | "create_beta_group" | "delete_beta_group" | "list_beta_testers"
-            | "invite_beta_tester" | "remove_beta_tester" | "add_tester_to_group" => 2,
+            "list_beta_groups"
+            | "create_beta_group"
+            | "delete_beta_group"
+            | "list_beta_testers"
+            | "invite_beta_tester"
+            | "remove_beta_tester"
+            | "add_tester_to_group" => 2,
             _ => 3,
         };
         cats[idx].1.push(line);

@@ -6,7 +6,7 @@ mod common;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use asc_mcp::server::http::{validate_tls_pair, HttpOptions, HttpServer};
+use asc_mcp::server::http::{HttpOptions, HttpServer, validate_tls_pair};
 use asc_mcp::tools::Registry;
 use serde_json::json;
 
@@ -42,11 +42,19 @@ fn write_cert() -> (tempfile::TempDir, String, String) {
     let key = dir.path().join("k.pem");
     std::fs::write(&cert, TEST_CERT).unwrap();
     std::fs::write(&key, TEST_KEY).unwrap();
-    (dir, cert.to_string_lossy().into_owned(), key.to_string_lossy().into_owned())
+    (
+        dir,
+        cert.to_string_lossy().into_owned(),
+        key.to_string_lossy().into_owned(),
+    )
 }
 
 fn plain_client() -> reqwest::Client {
-    reqwest::Client::builder().no_proxy().timeout(Duration::from_secs(2)).build().unwrap()
+    reqwest::Client::builder()
+        .no_proxy()
+        .timeout(Duration::from_secs(2))
+        .build()
+        .unwrap()
 }
 
 fn server() -> HttpServer {
@@ -65,7 +73,10 @@ fn validate_tls_pair_cases() {
     // missing cert file
     let missing = dir.path().join("nope.pem").to_string_lossy().into_owned();
     let err = validate_tls_pair(&missing, &key).unwrap_err();
-    assert!(err.contains("tls cert"), "error {err:?} does not mention tls cert");
+    assert!(
+        err.contains("tls cert"),
+        "error {err:?} does not mention tls cert"
+    );
     // both set and readable
     assert_eq!(validate_tls_pair(&cert, &key), Ok(true));
 }
@@ -111,16 +122,33 @@ async fn listen_and_serve_tls() {
     };
     assert_eq!(resp.status(), 200);
     // Plain HTTP against the TLS port must not be served.
-    assert!(plain_client().get(format!("http://{addr}/healthz")).send().await.map(|r| r.status() != 200).unwrap_or(true));
+    assert!(
+        plain_client()
+            .get(format!("http://{addr}/healthz"))
+            .send()
+            .await
+            .map(|r| r.status() != 200)
+            .unwrap_or(true)
+    );
 
     let body = json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":common::init_params("2025-06-18")});
-    let mcp = client.post(format!("https://{addr}/mcp")).json(&body).send().await.expect("post");
+    let mcp = client
+        .post(format!("https://{addr}/mcp"))
+        .json(&body)
+        .send()
+        .await
+        .expect("post");
     assert_eq!(mcp.status(), 200);
     let text = mcp.text().await.unwrap();
-    assert!(text.contains("2025-06-18"), "response body does not include negotiated protocol: {text}");
+    assert!(
+        text.contains("2025-06-18"),
+        "response body does not include negotiated protocol: {text}"
+    );
 
     stop_tx.send(()).unwrap();
-    let res = tokio::time::timeout(Duration::from_secs(15), serve).await.expect("server did not shut down in time");
+    let res = tokio::time::timeout(Duration::from_secs(15), serve)
+        .await
+        .expect("server did not shut down in time");
     res.unwrap().expect("shutdown error");
 }
 
@@ -128,10 +156,18 @@ async fn listen_and_serve_tls() {
 #[tokio::test]
 async fn listen_and_serve_tls_config_error() {
     let err = server()
-        .listen_and_serve("127.0.0.1:0", "/does/not/matter.pem", "", std::future::pending())
+        .listen_and_serve(
+            "127.0.0.1:0",
+            "/does/not/matter.pem",
+            "",
+            std::future::pending(),
+        )
         .await
         .unwrap_err();
-    assert!(err.contains("tls config invalid"), "error {err:?} does not mention tls config");
+    assert!(
+        err.contains("tls config invalid"),
+        "error {err:?} does not mention tls config"
+    );
 }
 
 /// Go-style ":port" addresses are accepted (difference 4 keeps them valid
@@ -152,7 +188,11 @@ async fn listen_accepts_go_style_port_only_addr() {
     });
     let deadline = Instant::now() + Duration::from_secs(5);
     loop {
-        match plain_client().get(format!("http://127.0.0.1:{port}/healthz")).send().await {
+        match plain_client()
+            .get(format!("http://127.0.0.1:{port}/healthz"))
+            .send()
+            .await
+        {
             Ok(r) => {
                 assert_eq!(r.status(), 200);
                 break;
@@ -162,5 +202,9 @@ async fn listen_accepts_go_style_port_only_addr() {
         }
     }
     stop_tx.send(()).unwrap();
-    tokio::time::timeout(Duration::from_secs(15), serve).await.expect("shutdown").unwrap().unwrap();
+    tokio::time::timeout(Duration::from_secs(15), serve)
+        .await
+        .expect("shutdown")
+        .unwrap()
+        .unwrap();
 }

@@ -5,13 +5,13 @@
 
 #![allow(missing_docs)]
 
-use crate::go_struct;
-#[allow(unused_imports)]
-use crate::go::{GoBytes, GoMap, GoSlice, GoTime, RawMessage};
-#[allow(unused_imports)]
-use serde_json::Value;
 #[allow(unused_imports)]
 use super::*;
+#[allow(unused_imports)]
+use crate::go::{GoBytes, GoMap, GoSlice, GoTime, RawMessage};
+use crate::go_struct;
+#[allow(unused_imports)]
+use serde_json::Value;
 
 go_struct! {
 /// PagedDocumentLinks contains pagination links.
@@ -4847,4 +4847,3 @@ pub struct PagingInformationPaging ("struct { Total int \"json:\\\"total\\\"\"; 
     pub limit: i64 => "limit";
 }
 }
-

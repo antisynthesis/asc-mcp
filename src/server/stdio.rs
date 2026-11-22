@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use serde_json::Value;
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncWrite, AsyncWriteExt};
-use tokio::sync::{oneshot, Mutex as AsyncMutex, Semaphore};
+use tokio::sync::{Mutex as AsyncMutex, Semaphore, oneshot};
 
 use super::dispatch::{Dispatcher, Outcome, Session};
 use crate::logging;
@@ -28,7 +28,11 @@ pub struct StdioServer {
 impl StdioServer {
     /// Creates a server around `dispatcher`.
     pub fn new(dispatcher: Arc<Dispatcher>) -> Self {
-        Self { dispatcher, session: Arc::new(Session::new()), inflight: Arc::new(Mutex::new(HashMap::new())) }
+        Self {
+            dispatcher,
+            session: Arc::new(Session::new()),
+            inflight: Arc::new(Mutex::new(HashMap::new())),
+        }
     }
 
     /// Serves until EOF on `reader`, then waits for in-flight requests.
@@ -63,7 +67,11 @@ impl StdioServer {
             let req = match crate::go::json::parse(&line).and_then(|v| Request::from_value(&v)) {
                 Ok(r) => r,
                 Err(e) => {
-                    send(&writer, &Response::error(None, mcp::ERR_PARSE, "Parse error", e).into()).await;
+                    send(
+                        &writer,
+                        &Response::error(None, mcp::ERR_PARSE, "Parse error", e).into(),
+                    )
+                    .await;
                     continue;
                 }
             };
@@ -79,8 +87,12 @@ impl StdioServer {
                 continue;
             }
             let permit = sem.clone().acquire_owned().await.expect("semaphore open");
-            let (dispatcher, session, inflight, writer) =
-                (self.dispatcher.clone(), self.session.clone(), self.inflight.clone(), writer.clone());
+            let (dispatcher, session, inflight, writer) = (
+                self.dispatcher.clone(),
+                self.session.clone(),
+                self.inflight.clone(),
+                writer.clone(),
+            );
             tasks.spawn(async move {
                 let _permit = permit;
                 handle_request(&dispatcher, &session, &inflight, req, writer).await;
@@ -99,10 +111,16 @@ impl StdioServer {
     /// Cancels the in-flight request named by `params.requestId`. Unknown,
     /// completed or malformed cancellations are ignored.
     fn handle_cancelled(&self, req: &Request) {
-        let Some(Value::Object(p)) = &req.params else { return };
+        let Some(Value::Object(p)) = &req.params else {
+            return;
+        };
         let Some(id) = p.get("requestId") else { return };
         let key = id.to_string();
-        let tx = self.inflight.lock().unwrap_or_else(|e| e.into_inner()).remove(&key);
+        let tx = self
+            .inflight
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(&key);
         if let Some(tx) = tx {
             if let Some(Value::String(reason)) = p.get("reason") {
                 if !reason.is_empty() {
@@ -129,13 +147,19 @@ async fn handle_request(
     }
     let key = req.id_key();
     let (tx, rx) = oneshot::channel();
-    inflight.lock().unwrap_or_else(|e| e.into_inner()).insert(key.clone(), tx);
+    inflight
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(key.clone(), tx);
     let outcome = tokio::select! {
         out = dispatcher.dispatch(&req, session) => out,
         // Once cancelled, nothing more may be sent for this request.
         Ok(()) = rx => None,
     };
-    inflight.lock().unwrap_or_else(|e| e.into_inner()).remove(&key);
+    inflight
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .remove(&key);
     if let Some(out) = outcome {
         send(&writer, &out).await;
     }

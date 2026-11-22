@@ -9,12 +9,12 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
 
-use asc_mcp::api::testutil::{test_token_provider, TEST_PRIVATE_KEY};
 use asc_mcp::api::Client;
+use asc_mcp::api::testutil::{TEST_PRIVATE_KEY, test_token_provider};
 use asc_mcp::mcp::{self, CallToolResult, Request, Tool};
 use asc_mcp::server::dispatch::{Dispatcher, Outcome, Session};
 use asc_mcp::tools::{Handler, HandlerFuture, HandlerResult, Registry};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Writes [`TEST_PRIVATE_KEY`] to a temp dir (Go `testSetup`); keep the
 /// returned dir alive for as long as the path is used.
@@ -28,7 +28,10 @@ pub fn write_test_key() -> (tempfile::TempDir, PathBuf) {
 
 /// A client whose API calls go nowhere useful (fake tools never call it).
 pub fn dummy_client() -> Arc<Client> {
-    Arc::new(Client::with_token_provider(test_token_provider(), "http://127.0.0.1:9"))
+    Arc::new(Client::with_token_provider(
+        test_token_provider(),
+        "http://127.0.0.1:9",
+    ))
 }
 
 /// An empty registry that fake tools can be added to.
@@ -56,7 +59,11 @@ where
 
 /// A fake tool that returns a fixed success text.
 pub fn register_text_tool(r: &mut Registry, name: &str, text: &'static str) {
-    register_fake(r, name, move || async move { Ok(CallToolResult::success(text)) });
+    register_fake(
+        r,
+        name,
+        move || async move { Ok(CallToolResult::success(text)) },
+    );
 }
 
 /// Parses a request from JSON text.
@@ -101,7 +108,12 @@ pub async fn dispatch(d: &Dispatcher, sess: &Session, r: Value) -> Value {
 
 /// Dispatches `initialize` so legacy-gated methods are served.
 pub async fn initialize(d: &Dispatcher, sess: &Session) {
-    let v = dispatch(d, sess, json!({"jsonrpc":"2.0","id":0,"method":"initialize","params":init_params("2025-06-18")})).await;
+    let v = dispatch(
+        d,
+        sess,
+        json!({"jsonrpc":"2.0","id":0,"method":"initialize","params":init_params("2025-06-18")}),
+    )
+    .await;
     assert!(v.get("error").is_none(), "initialize failed: {v}");
 }
 
@@ -125,7 +137,11 @@ impl SharedBuf {
 }
 
 impl tokio::io::AsyncWrite for SharedBuf {
-    fn poll_write(self: Pin<&mut Self>, _cx: &mut Context<'_>, buf: &[u8]) -> Poll<std::io::Result<usize>> {
+    fn poll_write(
+        self: Pin<&mut Self>,
+        _cx: &mut Context<'_>,
+        buf: &[u8],
+    ) -> Poll<std::io::Result<usize>> {
         self.0.lock().unwrap().extend_from_slice(buf);
         Poll::Ready(Ok(buf.len()))
     }

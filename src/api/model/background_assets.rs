@@ -5,13 +5,13 @@
 
 #![allow(missing_docs)]
 
-use crate::go_struct;
-#[allow(unused_imports)]
-use crate::go::{GoBytes, GoMap, GoSlice, GoTime, RawMessage};
-#[allow(unused_imports)]
-use serde_json::Value;
 #[allow(unused_imports)]
 use super::*;
+#[allow(unused_imports)]
+use crate::go::{GoBytes, GoMap, GoSlice, GoTime, RawMessage};
+use crate::go_struct;
+#[allow(unused_imports)]
+use serde_json::Value;
 
 go_struct! {
 /// BackgroundAssetsResponse represents a list of background assets.
@@ -366,4 +366,3 @@ pub struct BackgroundAssetVersionReleaseRelationships ("api.BackgroundAssetVersi
     pub background_asset_version: Option<RelationshipData> => "backgroundAssetVersion", omitempty;
 }
 }
-

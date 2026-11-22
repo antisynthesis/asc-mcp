@@ -5,8 +5,8 @@ use serde_json::{Map, Value};
 
 use crate::api::model::PagedDocumentLinks;
 use crate::api::{Client, ListOptions, Result};
-use crate::go::{json as gojson, GoDecode, GoEncode, GoMap, GoSlice};
-use crate::mcp::{text_content, CallToolResult};
+use crate::go::{GoDecode, GoEncode, GoMap, GoSlice, json as gojson};
+use crate::mcp::{CallToolResult, text_content};
 
 /// The JSON Schema entry list tools use to opt into pagination.
 pub fn cursor_property() -> Value {
@@ -24,7 +24,8 @@ pub fn list_opts(
     fields: &GoMap<GoSlice<String>>,
     include: &GoSlice<String>,
 ) -> Option<ListOptions> {
-    if limit <= 0 && filter.is_empty() && sort.is_empty() && fields.is_empty() && include.is_empty() {
+    if limit <= 0 && filter.is_empty() && sort.is_empty() && fields.is_empty() && include.is_empty()
+    {
         return None;
     }
     Some(ListOptions {
@@ -38,7 +39,13 @@ pub fn list_opts(
 
 /// Go `listOpts(limit, nil, nil, nil, nil)`.
 pub fn limit_opts(limit: i64) -> Option<ListOptions> {
-    list_opts(limit, &GoMap::nil(), &GoSlice::nil(), &GoMap::nil(), &GoSlice::nil())
+    list_opts(
+        limit,
+        &GoMap::nil(),
+        &GoSlice::nil(),
+        &GoMap::nil(),
+        &GoSlice::nil(),
+    )
 }
 
 /// Go `paginatedFetch`: the first page via `fetch_first` when `cursor` is
@@ -72,14 +79,25 @@ pub fn pagination_footer(next_url: &str) -> String {
 /// Go `newListResult(content, data, links)` with non-nil `data`: text plus
 /// the next-page footer, and structured content
 /// `{data, hasMore, links, nextPage}`.
-pub fn list_result<D: GoEncode + ?Sized>(content: &str, data: &D, links: &PagedDocumentLinks) -> CallToolResult {
+pub fn list_result<D: GoEncode + ?Sized>(
+    content: &str,
+    data: &D,
+    links: &PagedDocumentLinks,
+) -> CallToolResult {
     list_result_value(content, Some(gojson::to_value(data)), links)
 }
 
 /// Go `newListResult` with an explicit (possibly nil) data value.
-pub fn list_result_value(content: &str, data: Option<Value>, links: &PagedDocumentLinks) -> CallToolResult {
+pub fn list_result_value(
+    content: &str,
+    data: Option<Value>,
+    links: &PagedDocumentLinks,
+) -> CallToolResult {
     let footer = pagination_footer(&links.next);
-    let mut res = CallToolResult { content: vec![text_content(format!("{content}{footer}"))], ..Default::default() };
+    let mut res = CallToolResult {
+        content: vec![text_content(format!("{content}{footer}"))],
+        ..Default::default()
+    };
     if let Some(data) = data {
         // Go marshals the map[string]any with sorted keys.
         let mut m = Map::new();

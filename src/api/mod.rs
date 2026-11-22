@@ -10,6 +10,6 @@ pub mod testutil;
 pub mod upload;
 
 pub use client::Client;
-pub use error::{decode, ApiError, Error, Result};
+pub use error::{ApiError, Error, Result, decode};
 pub use listopts::ListOptions;
-pub use upload::{sha256_hex, MAX_UPLOAD_SIZE};
+pub use upload::{MAX_UPLOAD_SIZE, sha256_hex};

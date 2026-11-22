@@ -5,118 +5,233 @@
 // preserve the exact request path, query and body.
 
 #[allow(unused_imports)]
-use crate::api::{decode, model::*, Client, Error, ListOptions, Result};
+use crate::api::{Client, Error, ListOptions, Result, decode, model::*};
 #[allow(unused_imports)]
-use crate::go::{json, url::{self, Values}, GoBytes, GoMap, GoSlice, GoTime, RawMessage};
+use crate::go::{
+    GoBytes, GoMap, GoSlice, GoTime, RawMessage, json,
+    url::{self, Values},
+};
 #[allow(unused_imports)]
 use serde_json::Value;
 
 impl Client {
     /// CreateAlternativeDistributionKey creates an alternative distribution key.
-    pub async fn create_alternative_distribution_key(&self, req: &AlternativeDistributionKeyCreateRequest) -> Result<AlternativeDistributionKeyResponse> {
-        let data = self.post("/v1/alternativeDistributionKeys", Some(req)).await?;
+    pub async fn create_alternative_distribution_key(
+        &self,
+        req: &AlternativeDistributionKeyCreateRequest,
+    ) -> Result<AlternativeDistributionKeyResponse> {
+        let data = self
+            .post("/v1/alternativeDistributionKeys", Some(req))
+            .await?;
         decode(&data)
     }
 
     /// CreateAnalyticsReportRequest creates an analytics report request.
-    pub async fn create_analytics_report_request(&self, req: &AnalyticsReportRequestCreateRequest) -> Result<AnalyticsReportRequestResponse> {
+    pub async fn create_analytics_report_request(
+        &self,
+        req: &AnalyticsReportRequestCreateRequest,
+    ) -> Result<AnalyticsReportRequestResponse> {
         let data = self.post("/v1/analyticsReportRequests", Some(req)).await?;
         decode(&data)
     }
 
     /// CreateAppStoreReviewAttachment creates a review attachment.
-    pub async fn create_app_store_review_attachment(&self, req: &AppStoreReviewAttachmentCreateRequest) -> Result<AppStoreReviewAttachmentResponse> {
-        let data = self.post("/v1/appStoreReviewAttachments", Some(req)).await?;
+    pub async fn create_app_store_review_attachment(
+        &self,
+        req: &AppStoreReviewAttachmentCreateRequest,
+    ) -> Result<AppStoreReviewAttachmentResponse> {
+        let data = self
+            .post("/v1/appStoreReviewAttachments", Some(req))
+            .await?;
         decode(&data)
     }
 
     /// CreateEndUserLicenseAgreement creates an EULA.
-    pub async fn create_end_user_license_agreement(&self, req: &EndUserLicenseAgreementCreateRequest) -> Result<EndUserLicenseAgreementResponse> {
+    pub async fn create_end_user_license_agreement(
+        &self,
+        req: &EndUserLicenseAgreementCreateRequest,
+    ) -> Result<EndUserLicenseAgreementResponse> {
         let data = self.post("/v1/endUserLicenseAgreements", Some(req)).await?;
         decode(&data)
     }
 
     /// CreateMarketplaceSearchDetail creates marketplace search details.
-    pub async fn create_marketplace_search_detail(&self, req: &MarketplaceSearchDetailCreateRequest) -> Result<MarketplaceSearchDetailResponse> {
+    pub async fn create_marketplace_search_detail(
+        &self,
+        req: &MarketplaceSearchDetailCreateRequest,
+    ) -> Result<MarketplaceSearchDetailResponse> {
         let data = self.post("/v1/marketplaceSearchDetails", Some(req)).await?;
         decode(&data)
     }
 
     /// CreateRoutingAppCoverage creates routing app coverage.
-    pub async fn create_routing_app_coverage(&self, req: &RoutingAppCoverageCreateRequest) -> Result<RoutingAppCoverageResponse> {
+    pub async fn create_routing_app_coverage(
+        &self,
+        req: &RoutingAppCoverageCreateRequest,
+    ) -> Result<RoutingAppCoverageResponse> {
         let data = self.post("/v1/routingAppCoverages", Some(req)).await?;
         decode(&data)
     }
 
     /// DeleteAlternativeDistributionKey deletes an alternative distribution key.
     pub async fn delete_alternative_distribution_key(&self, key_id: &str) -> Result<()> {
-        self.delete(&format!("/v1/alternativeDistributionKeys/{}", url::path_escape(key_id))).await
+        self.delete(&format!(
+            "/v1/alternativeDistributionKeys/{}",
+            url::path_escape(key_id)
+        ))
+        .await
     }
 
     /// DeleteAnalyticsReportRequest deletes an analytics report request.
     pub async fn delete_analytics_report_request(&self, request_id: &str) -> Result<()> {
-        self.delete(&format!("/v1/analyticsReportRequests/{}", url::path_escape(request_id))).await
+        self.delete(&format!(
+            "/v1/analyticsReportRequests/{}",
+            url::path_escape(request_id)
+        ))
+        .await
     }
 
     /// DeleteAppStoreReviewAttachment deletes a review attachment.
     pub async fn delete_app_store_review_attachment(&self, attachment_id: &str) -> Result<()> {
-        self.delete(&format!("/v1/appStoreReviewAttachments/{}", url::path_escape(attachment_id))).await
+        self.delete(&format!(
+            "/v1/appStoreReviewAttachments/{}",
+            url::path_escape(attachment_id)
+        ))
+        .await
     }
 
     /// DeleteEndUserLicenseAgreement deletes an EULA.
     pub async fn delete_end_user_license_agreement(&self, agreement_id: &str) -> Result<()> {
-        self.delete(&format!("/v1/endUserLicenseAgreements/{}", url::path_escape(agreement_id))).await
+        self.delete(&format!(
+            "/v1/endUserLicenseAgreements/{}",
+            url::path_escape(agreement_id)
+        ))
+        .await
     }
 
     /// DeleteMarketplaceSearchDetail deletes marketplace search details.
     pub async fn delete_marketplace_search_detail(&self, detail_id: &str) -> Result<()> {
-        self.delete(&format!("/v1/marketplaceSearchDetails/{}", url::path_escape(detail_id))).await
+        self.delete(&format!(
+            "/v1/marketplaceSearchDetails/{}",
+            url::path_escape(detail_id)
+        ))
+        .await
     }
 
     /// DeleteRoutingAppCoverage deletes routing app coverage.
     pub async fn delete_routing_app_coverage(&self, coverage_id: &str) -> Result<()> {
-        self.delete(&format!("/v1/routingAppCoverages/{}", url::path_escape(coverage_id))).await
+        self.delete(&format!(
+            "/v1/routingAppCoverages/{}",
+            url::path_escape(coverage_id)
+        ))
+        .await
     }
 
     /// GetAlternativeDistributionKey returns a single alternative distribution key.
-    pub async fn get_alternative_distribution_key(&self, key_id: &str) -> Result<AlternativeDistributionKeyResponse> {
-        let data = self.get(&format!("/v1/alternativeDistributionKeys/{}", url::path_escape(key_id)), None).await?;
+    pub async fn get_alternative_distribution_key(
+        &self,
+        key_id: &str,
+    ) -> Result<AlternativeDistributionKeyResponse> {
+        let data = self
+            .get(
+                &format!(
+                    "/v1/alternativeDistributionKeys/{}",
+                    url::path_escape(key_id)
+                ),
+                None,
+            )
+            .await?;
         decode(&data)
     }
 
     /// GetAlternativeDistributionPackageForVersion returns the alternative
     /// distribution package for an app store version.
-    pub async fn get_alternative_distribution_package_for_version(&self, version_id: &str) -> Result<AlternativeDistributionPackageResponse> {
-        let data = self.get(&format!("/v1/appStoreVersions/{}/alternativeDistributionPackage", url::path_escape(version_id)), None).await?;
+    pub async fn get_alternative_distribution_package_for_version(
+        &self,
+        version_id: &str,
+    ) -> Result<AlternativeDistributionPackageResponse> {
+        let data = self
+            .get(
+                &format!(
+                    "/v1/appStoreVersions/{}/alternativeDistributionPackage",
+                    url::path_escape(version_id)
+                ),
+                None,
+            )
+            .await?;
         decode(&data)
     }
 
     /// GetAnalyticsReportRequest returns a single analytics report request.
-    pub async fn get_analytics_report_request(&self, request_id: &str) -> Result<AnalyticsReportRequestResponse> {
-        let data = self.get(&format!("/v1/analyticsReportRequests/{}", url::path_escape(request_id)), None).await?;
+    pub async fn get_analytics_report_request(
+        &self,
+        request_id: &str,
+    ) -> Result<AnalyticsReportRequestResponse> {
+        let data = self
+            .get(
+                &format!(
+                    "/v1/analyticsReportRequests/{}",
+                    url::path_escape(request_id)
+                ),
+                None,
+            )
+            .await?;
         decode(&data)
     }
 
     /// GetAppCategory returns a single app category.
     pub async fn get_app_category(&self, category_id: &str) -> Result<AppCategoryResponse> {
-        let data = self.get(&format!("/v1/appCategories/{}", url::path_escape(category_id)), None).await?;
+        let data = self
+            .get(
+                &format!("/v1/appCategories/{}", url::path_escape(category_id)),
+                None,
+            )
+            .await?;
         decode(&data)
     }
 
     /// GetAppStoreReviewAttachment returns a single review attachment.
-    pub async fn get_app_store_review_attachment(&self, attachment_id: &str) -> Result<AppStoreReviewAttachmentResponse> {
-        let data = self.get(&format!("/v1/appStoreReviewAttachments/{}", url::path_escape(attachment_id)), None).await?;
+    pub async fn get_app_store_review_attachment(
+        &self,
+        attachment_id: &str,
+    ) -> Result<AppStoreReviewAttachmentResponse> {
+        let data = self
+            .get(
+                &format!(
+                    "/v1/appStoreReviewAttachments/{}",
+                    url::path_escape(attachment_id)
+                ),
+                None,
+            )
+            .await?;
         decode(&data)
     }
 
     /// GetEndUserLicenseAgreement returns an EULA.
-    pub async fn get_end_user_license_agreement(&self, app_id: &str) -> Result<EndUserLicenseAgreementResponse> {
-        let data = self.get(&format!("/v1/apps/{}/endUserLicenseAgreement", url::path_escape(app_id)), None).await?;
+    pub async fn get_end_user_license_agreement(
+        &self,
+        app_id: &str,
+    ) -> Result<EndUserLicenseAgreementResponse> {
+        let data = self
+            .get(
+                &format!(
+                    "/v1/apps/{}/endUserLicenseAgreement",
+                    url::path_escape(app_id)
+                ),
+                None,
+            )
+            .await?;
         decode(&data)
     }
 
     /// GetFinanceReport returns finance reports.
-    pub async fn get_finance_report(&self, vendor_number: &str, region_code: &str, report_type: &str, report_date: &str) -> Result<Vec<u8>> {
+    pub async fn get_finance_report(
+        &self,
+        vendor_number: &str,
+        region_code: &str,
+        report_type: &str,
+        report_date: &str,
+    ) -> Result<Vec<u8>> {
         let mut query = Values::new();
         query.set("filter[vendorNumber]", vendor_number);
         query.set("filter[regionCode]", region_code);
@@ -126,19 +241,48 @@ impl Client {
     }
 
     /// GetMarketplaceSearchDetail returns marketplace search details.
-    pub async fn get_marketplace_search_detail(&self, app_id: &str) -> Result<MarketplaceSearchDetailResponse> {
-        let data = self.get(&format!("/v1/apps/{}/marketplaceSearchDetail", url::path_escape(app_id)), None).await?;
+    pub async fn get_marketplace_search_detail(
+        &self,
+        app_id: &str,
+    ) -> Result<MarketplaceSearchDetailResponse> {
+        let data = self
+            .get(
+                &format!(
+                    "/v1/apps/{}/marketplaceSearchDetail",
+                    url::path_escape(app_id)
+                ),
+                None,
+            )
+            .await?;
         decode(&data)
     }
 
     /// GetRoutingAppCoverage returns routing app coverage.
-    pub async fn get_routing_app_coverage(&self, version_id: &str) -> Result<RoutingAppCoverageResponse> {
-        let data = self.get(&format!("/v1/appStoreVersions/{}/routingAppCoverage", url::path_escape(version_id)), None).await?;
+    pub async fn get_routing_app_coverage(
+        &self,
+        version_id: &str,
+    ) -> Result<RoutingAppCoverageResponse> {
+        let data = self
+            .get(
+                &format!(
+                    "/v1/appStoreVersions/{}/routingAppCoverage",
+                    url::path_escape(version_id)
+                ),
+                None,
+            )
+            .await?;
         decode(&data)
     }
 
     /// GetSalesReport returns sales reports.
-    pub async fn get_sales_report(&self, vendor_number: &str, report_type: &str, report_sub_type: &str, frequency: &str, report_date: &str) -> Result<Vec<u8>> {
+    pub async fn get_sales_report(
+        &self,
+        vendor_number: &str,
+        report_type: &str,
+        report_sub_type: &str,
+        frequency: &str,
+        report_date: &str,
+    ) -> Result<Vec<u8>> {
         let mut query = Values::new();
         query.set("filter[vendorNumber]", vendor_number);
         query.set("filter[reportType]", report_type);
@@ -149,57 +293,113 @@ impl Client {
     }
 
     /// ListAlternativeDistributionKeys returns alternative distribution keys.
-    pub async fn list_alternative_distribution_keys(&self, opts: Option<&ListOptions>) -> Result<AlternativeDistributionKeysResponse> {
+    pub async fn list_alternative_distribution_keys(
+        &self,
+        opts: Option<&ListOptions>,
+    ) -> Result<AlternativeDistributionKeysResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get("/v1/alternativeDistributionKeys", Some(&query)).await?;
+        let data = self
+            .get("/v1/alternativeDistributionKeys", Some(&query))
+            .await?;
         decode(&data)
     }
 
     /// ListAnalyticsReportInstances returns instances for a report.
-    pub async fn list_analytics_report_instances(&self, report_id: &str, opts: Option<&ListOptions>) -> Result<AnalyticsReportInstancesResponse> {
+    pub async fn list_analytics_report_instances(
+        &self,
+        report_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<AnalyticsReportInstancesResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/analyticsReports/{}/instances", url::path_escape(report_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!(
+                    "/v1/analyticsReports/{}/instances",
+                    url::path_escape(report_id)
+                ),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListAnalyticsReportRequests returns analytics report requests for an app.
-    pub async fn list_analytics_report_requests(&self, app_id: &str, opts: Option<&ListOptions>) -> Result<AnalyticsReportRequestsResponse> {
+    pub async fn list_analytics_report_requests(
+        &self,
+        app_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<AnalyticsReportRequestsResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/apps/{}/analyticsReportRequests", url::path_escape(app_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!(
+                    "/v1/apps/{}/analyticsReportRequests",
+                    url::path_escape(app_id)
+                ),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListAnalyticsReportSegments returns segments for a report instance.
-    pub async fn list_analytics_report_segments(&self, instance_id: &str, opts: Option<&ListOptions>) -> Result<AnalyticsReportSegmentsResponse> {
+    pub async fn list_analytics_report_segments(
+        &self,
+        instance_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<AnalyticsReportSegmentsResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/analyticsReportInstances/{}/segments", url::path_escape(instance_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!(
+                    "/v1/analyticsReportInstances/{}/segments",
+                    url::path_escape(instance_id)
+                ),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListAnalyticsReports returns analytics reports for a request.
-    pub async fn list_analytics_reports(&self, request_id: &str, opts: Option<&ListOptions>) -> Result<AnalyticsReportsResponse> {
+    pub async fn list_analytics_reports(
+        &self,
+        request_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<AnalyticsReportsResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/analyticsReportRequests/{}/reports", url::path_escape(request_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!(
+                    "/v1/analyticsReportRequests/{}/reports",
+                    url::path_escape(request_id)
+                ),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListAppCategories returns all app categories.
-    pub async fn list_app_categories(&self, opts: Option<&ListOptions>) -> Result<AppCategoriesResponse> {
+    pub async fn list_app_categories(
+        &self,
+        opts: Option<&ListOptions>,
+    ) -> Result<AppCategoriesResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
@@ -209,69 +409,150 @@ impl Client {
     }
 
     /// ListAppStoreReviewAttachments returns review attachments.
-    pub async fn list_app_store_review_attachments(&self, review_detail_id: &str, opts: Option<&ListOptions>) -> Result<AppStoreReviewAttachmentsResponse> {
+    pub async fn list_app_store_review_attachments(
+        &self,
+        review_detail_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<AppStoreReviewAttachmentsResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/appStoreReviewDetails/{}/appStoreReviewAttachments", url::path_escape(review_detail_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!(
+                    "/v1/appStoreReviewDetails/{}/appStoreReviewAttachments",
+                    url::path_escape(review_detail_id)
+                ),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListBuildPerfPowerMetrics returns performance metrics for a build.
-    pub async fn list_build_perf_power_metrics(&self, build_id: &str, opts: Option<&ListOptions>) -> Result<PerfPowerMetricsResponse> {
+    pub async fn list_build_perf_power_metrics(
+        &self,
+        build_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<PerfPowerMetricsResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/builds/{}/perfPowerMetrics", url::path_escape(build_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!("/v1/builds/{}/perfPowerMetrics", url::path_escape(build_id)),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListDiagnosticLogs returns diagnostic logs.
-    pub async fn list_diagnostic_logs(&self, signature_id: &str, opts: Option<&ListOptions>) -> Result<DiagnosticLogsResponse> {
+    pub async fn list_diagnostic_logs(
+        &self,
+        signature_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<DiagnosticLogsResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/diagnosticSignatures/{}/logs", url::path_escape(signature_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!(
+                    "/v1/diagnosticSignatures/{}/logs",
+                    url::path_escape(signature_id)
+                ),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListDiagnosticSignatures returns diagnostic signatures.
-    pub async fn list_diagnostic_signatures(&self, build_id: &str, opts: Option<&ListOptions>) -> Result<DiagnosticSignaturesResponse> {
+    pub async fn list_diagnostic_signatures(
+        &self,
+        build_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<DiagnosticSignaturesResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/builds/{}/diagnosticSignatures", url::path_escape(build_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!(
+                    "/v1/builds/{}/diagnosticSignatures",
+                    url::path_escape(build_id)
+                ),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListPerfPowerMetrics returns performance and power metrics.
-    pub async fn list_perf_power_metrics(&self, app_id: &str, opts: Option<&ListOptions>) -> Result<PerfPowerMetricsResponse> {
+    pub async fn list_perf_power_metrics(
+        &self,
+        app_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<PerfPowerMetricsResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/apps/{}/perfPowerMetrics", url::path_escape(app_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!("/v1/apps/{}/perfPowerMetrics", url::path_escape(app_id)),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// UpdateEndUserLicenseAgreement updates an EULA.
-    pub async fn update_end_user_license_agreement(&self, agreement_id: &str, req: &EndUserLicenseAgreementUpdateRequest) -> Result<EndUserLicenseAgreementResponse> {
-        let data = self.patch(&format!("/v1/endUserLicenseAgreements/{}", url::path_escape(agreement_id)), Some(req)).await?;
+    pub async fn update_end_user_license_agreement(
+        &self,
+        agreement_id: &str,
+        req: &EndUserLicenseAgreementUpdateRequest,
+    ) -> Result<EndUserLicenseAgreementResponse> {
+        let data = self
+            .patch(
+                &format!(
+                    "/v1/endUserLicenseAgreements/{}",
+                    url::path_escape(agreement_id)
+                ),
+                Some(req),
+            )
+            .await?;
         decode(&data)
     }
 
     /// UpdateMarketplaceSearchDetail updates marketplace search details.
-    pub async fn update_marketplace_search_detail(&self, detail_id: &str, req: &MarketplaceSearchDetailUpdateRequest) -> Result<MarketplaceSearchDetailResponse> {
-        let data = self.patch(&format!("/v1/marketplaceSearchDetails/{}", url::path_escape(detail_id)), Some(req)).await?;
+    pub async fn update_marketplace_search_detail(
+        &self,
+        detail_id: &str,
+        req: &MarketplaceSearchDetailUpdateRequest,
+    ) -> Result<MarketplaceSearchDetailResponse> {
+        let data = self
+            .patch(
+                &format!(
+                    "/v1/marketplaceSearchDetails/{}",
+                    url::path_escape(detail_id)
+                ),
+                Some(req),
+            )
+            .await?;
         decode(&data)
     }
 
     /// CreateBackgroundAsset creates a background asset for an app.
-    pub async fn create_background_asset(&self, req: &BackgroundAssetCreateRequest) -> Result<BackgroundAssetResponse> {
+    pub async fn create_background_asset(
+        &self,
+        req: &BackgroundAssetCreateRequest,
+    ) -> Result<BackgroundAssetResponse> {
         let data = self.post("/v1/backgroundAssets", Some(req)).await?;
         decode(&data)
     }
@@ -279,102 +560,212 @@ impl Client {
     /// CreateBackgroundAssetUploadFile reserves an upload file slot on a
     /// background asset version. The response carries the upload operations
     /// for the file's bytes.
-    pub async fn create_background_asset_upload_file(&self, req: &BackgroundAssetUploadFileCreateRequest) -> Result<BackgroundAssetUploadFileResponse> {
-        let data = self.post("/v1/backgroundAssetUploadFiles", Some(req)).await?;
+    pub async fn create_background_asset_upload_file(
+        &self,
+        req: &BackgroundAssetUploadFileCreateRequest,
+    ) -> Result<BackgroundAssetUploadFileResponse> {
+        let data = self
+            .post("/v1/backgroundAssetUploadFiles", Some(req))
+            .await?;
         decode(&data)
     }
 
     /// CreateBackgroundAssetVersion creates a new version on a background
     /// asset. The version number is assigned by Apple.
-    pub async fn create_background_asset_version(&self, req: &BackgroundAssetVersionCreateRequest) -> Result<BackgroundAssetVersionResponse> {
+    pub async fn create_background_asset_version(
+        &self,
+        req: &BackgroundAssetVersionCreateRequest,
+    ) -> Result<BackgroundAssetVersionResponse> {
         let data = self.post("/v1/backgroundAssetVersions", Some(req)).await?;
         decode(&data)
     }
 
     /// GetBackgroundAsset returns a single background asset.
-    pub async fn get_background_asset(&self, background_asset_id: &str, opts: Option<&ListOptions>) -> Result<BackgroundAssetResponse> {
+    pub async fn get_background_asset(
+        &self,
+        background_asset_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<BackgroundAssetResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/backgroundAssets/{}", url::path_escape(background_asset_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!(
+                    "/v1/backgroundAssets/{}",
+                    url::path_escape(background_asset_id)
+                ),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// GetBackgroundAssetVersion returns a single background asset version.
-    pub async fn get_background_asset_version(&self, version_id: &str, opts: Option<&ListOptions>) -> Result<BackgroundAssetVersionResponse> {
+    pub async fn get_background_asset_version(
+        &self,
+        version_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<BackgroundAssetVersionResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/backgroundAssetVersions/{}", url::path_escape(version_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!(
+                    "/v1/backgroundAssetVersions/{}",
+                    url::path_escape(version_id)
+                ),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// GetBackgroundAssetVersionAppStoreRelease returns the App Store
     /// release record for a background asset version.
-    pub async fn get_background_asset_version_app_store_release(&self, release_id: &str) -> Result<BackgroundAssetVersionReleaseResponse> {
-        self.get_background_asset_version_release(&format!("/v1/backgroundAssetVersionAppStoreReleases/{}", url::path_escape(release_id))).await
+    pub async fn get_background_asset_version_app_store_release(
+        &self,
+        release_id: &str,
+    ) -> Result<BackgroundAssetVersionReleaseResponse> {
+        self.get_background_asset_version_release(&format!(
+            "/v1/backgroundAssetVersionAppStoreReleases/{}",
+            url::path_escape(release_id)
+        ))
+        .await
     }
 
     /// GetBackgroundAssetVersionExternalBetaRelease returns the external
     /// beta (TestFlight) release record for a background asset version.
-    pub async fn get_background_asset_version_external_beta_release(&self, release_id: &str) -> Result<BackgroundAssetVersionReleaseResponse> {
-        self.get_background_asset_version_release(&format!("/v1/backgroundAssetVersionExternalBetaReleases/{}", url::path_escape(release_id))).await
+    pub async fn get_background_asset_version_external_beta_release(
+        &self,
+        release_id: &str,
+    ) -> Result<BackgroundAssetVersionReleaseResponse> {
+        self.get_background_asset_version_release(&format!(
+            "/v1/backgroundAssetVersionExternalBetaReleases/{}",
+            url::path_escape(release_id)
+        ))
+        .await
     }
 
     /// GetBackgroundAssetVersionInternalBetaRelease returns the internal
     /// beta release record for a background asset version.
-    pub async fn get_background_asset_version_internal_beta_release(&self, release_id: &str) -> Result<BackgroundAssetVersionReleaseResponse> {
-        self.get_background_asset_version_release(&format!("/v1/backgroundAssetVersionInternalBetaReleases/{}", url::path_escape(release_id))).await
+    pub async fn get_background_asset_version_internal_beta_release(
+        &self,
+        release_id: &str,
+    ) -> Result<BackgroundAssetVersionReleaseResponse> {
+        self.get_background_asset_version_release(&format!(
+            "/v1/backgroundAssetVersionInternalBetaReleases/{}",
+            url::path_escape(release_id)
+        ))
+        .await
     }
 
     /// ListBackgroundAssetUploadFiles returns the upload files (asset pack
     /// and manifest) attached to a background asset version, including their
     /// delivery states.
-    pub async fn list_background_asset_upload_files(&self, version_id: &str, opts: Option<&ListOptions>) -> Result<BackgroundAssetUploadFilesResponse> {
+    pub async fn list_background_asset_upload_files(
+        &self,
+        version_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<BackgroundAssetUploadFilesResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/backgroundAssetVersions/{}/backgroundAssetUploadFiles", url::path_escape(version_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!(
+                    "/v1/backgroundAssetVersions/{}/backgroundAssetUploadFiles",
+                    url::path_escape(version_id)
+                ),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListBackgroundAssetVersions returns the versions of a background
     /// asset, including their processing states and release states.
-    pub async fn list_background_asset_versions(&self, background_asset_id: &str, opts: Option<&ListOptions>) -> Result<BackgroundAssetVersionsResponse> {
+    pub async fn list_background_asset_versions(
+        &self,
+        background_asset_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<BackgroundAssetVersionsResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/backgroundAssets/{}/versions", url::path_escape(background_asset_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!(
+                    "/v1/backgroundAssets/{}/versions",
+                    url::path_escape(background_asset_id)
+                ),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListBackgroundAssets returns the background assets for an app.
     /// Supports filter[versions.locale] and filter[versions.platforms] for
     /// the multi-locale read added in API 4.4.
-    pub async fn list_background_assets(&self, app_id: &str, opts: Option<&ListOptions>) -> Result<BackgroundAssetsResponse> {
+    pub async fn list_background_assets(
+        &self,
+        app_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<BackgroundAssetsResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/apps/{}/backgroundAssets", url::path_escape(app_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!("/v1/apps/{}/backgroundAssets", url::path_escape(app_id)),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// UpdateBackgroundAsset updates a background asset (archives or
     /// unarchives it).
-    pub async fn update_background_asset(&self, background_asset_id: &str, req: &BackgroundAssetUpdateRequest) -> Result<BackgroundAssetResponse> {
-        let data = self.patch(&format!("/v1/backgroundAssets/{}", url::path_escape(background_asset_id)), Some(req)).await?;
+    pub async fn update_background_asset(
+        &self,
+        background_asset_id: &str,
+        req: &BackgroundAssetUpdateRequest,
+    ) -> Result<BackgroundAssetResponse> {
+        let data = self
+            .patch(
+                &format!(
+                    "/v1/backgroundAssets/{}",
+                    url::path_escape(background_asset_id)
+                ),
+                Some(req),
+            )
+            .await?;
         decode(&data)
     }
 
     /// UpdateBackgroundAssetUploadFile commits (or amends) a background
     /// asset upload file.
-    pub async fn update_background_asset_upload_file(&self, file_id: &str, req: &BackgroundAssetUploadFileUpdateRequest) -> Result<BackgroundAssetUploadFileResponse> {
-        let data = self.patch(&format!("/v1/backgroundAssetUploadFiles/{}", url::path_escape(file_id)), Some(req)).await?;
+    pub async fn update_background_asset_upload_file(
+        &self,
+        file_id: &str,
+        req: &BackgroundAssetUploadFileUpdateRequest,
+    ) -> Result<BackgroundAssetUploadFileResponse> {
+        let data = self
+            .patch(
+                &format!(
+                    "/v1/backgroundAssetUploadFiles/{}",
+                    url::path_escape(file_id)
+                ),
+                Some(req),
+            )
+            .await?;
         decode(&data)
     }
 
@@ -382,7 +773,13 @@ impl Client {
     /// an existing background asset version. assetType is ASSET (the asset
     /// pack archive) or MANIFEST (its manifest plist). The commit carries
     /// the SHA-256 of the body so Apple can verify the stored bytes.
-    pub async fn upload_background_asset_file(&self, version_id: &str, file_name: &str, asset_type: &str, body: &[u8]) -> Result<BackgroundAssetUploadFileResponse> {
+    pub async fn upload_background_asset_file(
+        &self,
+        version_id: &str,
+        file_name: &str,
+        asset_type: &str,
+        body: &[u8],
+    ) -> Result<BackgroundAssetUploadFileResponse> {
         if file_name.is_empty() {
             return Err(Error::msg("file_name is required"));
         }
@@ -390,7 +787,10 @@ impl Client {
             return Err(Error::msg("file body is empty"));
         }
         if body.len() > crate::api::MAX_UPLOAD_SIZE {
-            return Err(Error::msg(format!("file body exceeds max size of {} bytes", crate::api::MAX_UPLOAD_SIZE)));
+            return Err(Error::msg(format!(
+                "file body exceeds max size of {} bytes",
+                crate::api::MAX_UPLOAD_SIZE
+            )));
         }
         let create_req = BackgroundAssetUploadFileCreateRequest {
             data: BackgroundAssetUploadFileCreateData {
@@ -402,69 +802,128 @@ impl Client {
                 },
                 relationships: BackgroundAssetUploadFileCreateRelationships {
                     background_asset_version: RelationshipData {
-                        data: ResourceIdentifier { type_: "backgroundAssetVersions".into(), id: version_id.into() },
+                        data: ResourceIdentifier {
+                            type_: "backgroundAssetVersions".into(),
+                            id: version_id.into(),
+                        },
                     },
                 },
             },
         };
-        let reservation = self.create_background_asset_upload_file(&create_req).await.map_err(|e| e.wrap("reservation"))?;
+        let reservation = self
+            .create_background_asset_upload_file(&create_req)
+            .await
+            .map_err(|e| e.wrap("reservation"))?;
         let ops = &reservation.data.attributes.upload_operations;
-        self.perform_upload_operations(ops, body).await.map_err(|e| e.wrap("upload"))?;
+        self.perform_upload_operations(ops, body)
+            .await
+            .map_err(|e| e.wrap("upload"))?;
         let commit = BackgroundAssetUploadFileUpdateRequest {
             data: BackgroundAssetUploadFileUpdateData {
                 type_: "backgroundAssetUploadFiles".into(),
                 id: reservation.data.id.clone(),
                 attributes: Some(BackgroundAssetUploadFileUpdateAttributes {
                     source_file_checksums: Some(Checksums {
-                        file: Some(Checksum { hash: crate::api::sha256_hex(body), algorithm: "SHA_256".into() }),
+                        file: Some(Checksum {
+                            hash: crate::api::sha256_hex(body),
+                            algorithm: "SHA_256".into(),
+                        }),
                         ..Default::default()
                     }),
                     uploaded: Some(true),
                 }),
             },
         };
-        self.update_background_asset_upload_file(&reservation.data.id, &commit).await
+        self.update_background_asset_upload_file(&reservation.data.id, &commit)
+            .await
     }
 
     /// getBackgroundAssetVersionRelease fetches one of the three release
     /// resource shapes, which share a single response structure.
-    async fn get_background_asset_version_release(&self, path: &str) -> Result<BackgroundAssetVersionReleaseResponse> {
+    async fn get_background_asset_version_release(
+        &self,
+        path: &str,
+    ) -> Result<BackgroundAssetVersionReleaseResponse> {
         let data = self.get(path, None).await?;
         decode(&data)
     }
 
     /// CreateAccessibilityDeclaration creates an accessibility declaration for an
     /// app and device family.
-    pub async fn create_accessibility_declaration(&self, req: &AccessibilityDeclarationCreateRequest) -> Result<AccessibilityDeclarationResponse> {
-        let data = self.post("/v1/accessibilityDeclarations", Some(req)).await?;
+    pub async fn create_accessibility_declaration(
+        &self,
+        req: &AccessibilityDeclarationCreateRequest,
+    ) -> Result<AccessibilityDeclarationResponse> {
+        let data = self
+            .post("/v1/accessibilityDeclarations", Some(req))
+            .await?;
         decode(&data)
     }
 
     /// DeleteAccessibilityDeclaration deletes an accessibility declaration.
     pub async fn delete_accessibility_declaration(&self, declaration_id: &str) -> Result<()> {
-        self.delete(&format!("/v1/accessibilityDeclarations/{}", url::path_escape(declaration_id))).await
+        self.delete(&format!(
+            "/v1/accessibilityDeclarations/{}",
+            url::path_escape(declaration_id)
+        ))
+        .await
     }
 
     /// GetAccessibilityDeclaration returns a single accessibility declaration.
-    pub async fn get_accessibility_declaration(&self, declaration_id: &str) -> Result<AccessibilityDeclarationResponse> {
-        let data = self.get(&format!("/v1/accessibilityDeclarations/{}", url::path_escape(declaration_id)), None).await?;
+    pub async fn get_accessibility_declaration(
+        &self,
+        declaration_id: &str,
+    ) -> Result<AccessibilityDeclarationResponse> {
+        let data = self
+            .get(
+                &format!(
+                    "/v1/accessibilityDeclarations/{}",
+                    url::path_escape(declaration_id)
+                ),
+                None,
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListAccessibilityDeclarations returns the accessibility declarations for an app.
-    pub async fn list_accessibility_declarations(&self, app_id: &str, opts: Option<&ListOptions>) -> Result<AccessibilityDeclarationsResponse> {
+    pub async fn list_accessibility_declarations(
+        &self,
+        app_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<AccessibilityDeclarationsResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/apps/{}/accessibilityDeclarations", url::path_escape(app_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!(
+                    "/v1/apps/{}/accessibilityDeclarations",
+                    url::path_escape(app_id)
+                ),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// UpdateAccessibilityDeclaration updates an accessibility declaration.
     /// Setting publish=true in the request publishes the draft declaration.
-    pub async fn update_accessibility_declaration(&self, declaration_id: &str, req: &AccessibilityDeclarationUpdateRequest) -> Result<AccessibilityDeclarationResponse> {
-        let data = self.patch(&format!("/v1/accessibilityDeclarations/{}", url::path_escape(declaration_id)), Some(req)).await?;
+    pub async fn update_accessibility_declaration(
+        &self,
+        declaration_id: &str,
+        req: &AccessibilityDeclarationUpdateRequest,
+    ) -> Result<AccessibilityDeclarationResponse> {
+        let data = self
+            .patch(
+                &format!(
+                    "/v1/accessibilityDeclarations/{}",
+                    url::path_escape(declaration_id)
+                ),
+                Some(req),
+            )
+            .await?;
         decode(&data)
     }
 
@@ -475,52 +934,91 @@ impl Client {
     }
 
     /// CreateWebhookPing sends a test ping event to a webhook endpoint.
-    pub async fn create_webhook_ping(&self, req: &WebhookPingCreateRequest) -> Result<WebhookPingResponse> {
+    pub async fn create_webhook_ping(
+        &self,
+        req: &WebhookPingCreateRequest,
+    ) -> Result<WebhookPingResponse> {
         let data = self.post("/v1/webhookPings", Some(req)).await?;
         decode(&data)
     }
 
     /// CreateWebhookRedelivery requests redelivery of a webhook event using a
     /// previous delivery as the template.
-    pub async fn create_webhook_redelivery(&self, req: &WebhookDeliveryCreateRequest) -> Result<WebhookDeliveryResponse> {
+    pub async fn create_webhook_redelivery(
+        &self,
+        req: &WebhookDeliveryCreateRequest,
+    ) -> Result<WebhookDeliveryResponse> {
         let data = self.post("/v1/webhookDeliveries", Some(req)).await?;
         decode(&data)
     }
 
     /// DeleteWebhook deletes a webhook.
     pub async fn delete_webhook(&self, webhook_id: &str) -> Result<()> {
-        self.delete(&format!("/v1/webhooks/{}", url::path_escape(webhook_id))).await
+        self.delete(&format!("/v1/webhooks/{}", url::path_escape(webhook_id)))
+            .await
     }
 
     /// GetWebhook returns a single webhook.
     pub async fn get_webhook(&self, webhook_id: &str) -> Result<WebhookResponse> {
-        let data = self.get(&format!("/v1/webhooks/{}", url::path_escape(webhook_id)), None).await?;
+        let data = self
+            .get(
+                &format!("/v1/webhooks/{}", url::path_escape(webhook_id)),
+                None,
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListWebhookDeliveries returns delivery attempts for a webhook.
-    pub async fn list_webhook_deliveries(&self, webhook_id: &str, opts: Option<&ListOptions>) -> Result<WebhookDeliveriesResponse> {
+    pub async fn list_webhook_deliveries(
+        &self,
+        webhook_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<WebhookDeliveriesResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/webhooks/{}/deliveries", url::path_escape(webhook_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!("/v1/webhooks/{}/deliveries", url::path_escape(webhook_id)),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// ListWebhooks returns the webhooks configured for an app.
-    pub async fn list_webhooks(&self, app_id: &str, opts: Option<&ListOptions>) -> Result<WebhooksResponse> {
+    pub async fn list_webhooks(
+        &self,
+        app_id: &str,
+        opts: Option<&ListOptions>,
+    ) -> Result<WebhooksResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
             o.apply(&mut query);
         }
-        let data = self.get(&format!("/v1/apps/{}/webhooks", url::path_escape(app_id)), Some(&query)).await?;
+        let data = self
+            .get(
+                &format!("/v1/apps/{}/webhooks", url::path_escape(app_id)),
+                Some(&query),
+            )
+            .await?;
         decode(&data)
     }
 
     /// UpdateWebhook updates a webhook's configuration.
-    pub async fn update_webhook(&self, webhook_id: &str, req: &WebhookUpdateRequest) -> Result<WebhookResponse> {
-        let data = self.patch(&format!("/v1/webhooks/{}", url::path_escape(webhook_id)), Some(req)).await?;
+    pub async fn update_webhook(
+        &self,
+        webhook_id: &str,
+        req: &WebhookUpdateRequest,
+    ) -> Result<WebhookResponse> {
+        let data = self
+            .patch(
+                &format!("/v1/webhooks/{}", url::path_escape(webhook_id)),
+                Some(req),
+            )
+            .await?;
         decode(&data)
     }
 }
@@ -536,11 +1034,19 @@ mod tests {
     fn filter(k: &str, v: &str) -> ListOptions {
         let mut f = GoMap::default();
         f.insert(k, GoSlice::from(vec![v.to_string()]));
-        ListOptions { filter: f, ..Default::default() }
+        ListOptions {
+            filter: f,
+            ..Default::default()
+        }
     }
 
     fn rel(t: &str, id: &str) -> RelationshipData {
-        RelationshipData { data: ResourceIdentifier { type_: t.into(), id: id.into() } }
+        RelationshipData {
+            data: ResourceIdentifier {
+                type_: t.into(),
+                id: id.into(),
+            },
+        }
     }
 
     // ---- client_webhooks_test.go ----
@@ -580,7 +1086,9 @@ mod tests {
                     secret: "s3cret".into(),
                     url: "https://example.com/hook".into(),
                 },
-                relationships: WebhookCreateRelationships { app: rel("apps", "123") },
+                relationships: WebhookCreateRelationships {
+                    app: rel("apps", "123"),
+                },
             },
         };
         let resp = mock.client().create_webhook(&req).await.unwrap();
@@ -594,19 +1102,32 @@ mod tests {
             assert_eq!(r.method, "PATCH");
             let req = r.json();
             assert_eq!(req["data"]["id"], "hook-1");
-            assert_eq!(req["data"]["attributes"]["enabled"], Value::Bool(false), "expected enabled=false in update attributes");
-            MockResponse::json(200, r#"{"data":{"type":"webhooks","id":"hook-1","attributes":{}}}"#)
+            assert_eq!(
+                req["data"]["attributes"]["enabled"],
+                Value::Bool(false),
+                "expected enabled=false in update attributes"
+            );
+            MockResponse::json(
+                200,
+                r#"{"data":{"type":"webhooks","id":"hook-1","attributes":{}}}"#,
+            )
         })
         .await;
         let req = WebhookUpdateRequest {
             data: WebhookUpdateData {
                 type_: "webhooks".into(),
                 id: "hook-1".into(),
-                attributes: Some(WebhookUpdateAttributes { enabled: Some(false), ..Default::default() }),
+                attributes: Some(WebhookUpdateAttributes {
+                    enabled: Some(false),
+                    ..Default::default()
+                }),
             },
         };
         let resp = mock.client().update_webhook("hook-1", &req).await.unwrap();
-        assert!(!resp.data.attributes.enabled, "expected webhook to be disabled");
+        assert!(
+            !resp.data.attributes.enabled,
+            "expected webhook to be disabled"
+        );
     }
 
     #[tokio::test]
@@ -630,7 +1151,11 @@ mod tests {
         })
         .await;
         let opts = filter("deliveryState", "FAILED");
-        let resp = mock.client().list_webhook_deliveries("hook-1", Some(&opts)).await.unwrap();
+        let resp = mock
+            .client()
+            .list_webhook_deliveries("hook-1", Some(&opts))
+            .await
+            .unwrap();
         assert_eq!(resp.data.len(), 1);
         assert_eq!(resp.data[0].attributes.delivery_state, "FAILED");
     }
@@ -647,11 +1172,16 @@ mod tests {
         let req = WebhookDeliveryCreateRequest {
             data: WebhookDeliveryCreateData {
                 type_: "webhookDeliveries".into(),
-                relationships: WebhookDeliveryCreateRelationships { template: rel("webhookDeliveries", "delivery-1") },
+                relationships: WebhookDeliveryCreateRelationships {
+                    template: rel("webhookDeliveries", "delivery-1"),
+                },
             },
         };
         let resp = mock.client().create_webhook_redelivery(&req).await.unwrap();
-        assert!(resp.data.attributes.redelivery, "expected redelivery to be true");
+        assert!(
+            resp.data.attributes.redelivery,
+            "expected redelivery to be true"
+        );
     }
 
     #[tokio::test]
@@ -659,14 +1189,19 @@ mod tests {
         let mock = MockApi::start(|r| {
             assert_eq!(r.path, "/v1/webhookPings");
             assert_eq!(r.method, "POST");
-            assert_eq!(r.json()["data"]["relationships"]["webhook"]["data"]["id"], "hook-1");
+            assert_eq!(
+                r.json()["data"]["relationships"]["webhook"]["data"]["id"],
+                "hook-1"
+            );
             MockResponse::json(200, r#"{"data":{"type":"webhookPings","id":"ping-1"}}"#)
         })
         .await;
         let req = WebhookPingCreateRequest {
             data: WebhookPingCreateData {
                 type_: "webhookPings".into(),
-                relationships: WebhookPingCreateRelationships { webhook: rel("webhooks", "hook-1") },
+                relationships: WebhookPingCreateRelationships {
+                    webhook: rel("webhooks", "hook-1"),
+                },
             },
         };
         let resp = mock.client().create_webhook_ping(&req).await.unwrap();
@@ -685,9 +1220,16 @@ mod tests {
         })
         .await;
         let opts = filter("versions.locale", "en-US");
-        let resp = mock.client().list_background_assets("123", Some(&opts)).await.unwrap();
+        let resp = mock
+            .client()
+            .list_background_assets("123", Some(&opts))
+            .await
+            .unwrap();
         assert_eq!(resp.data.len(), 1);
-        assert_eq!(resp.data[0].attributes.asset_pack_identifier, "com.example.game.levels1");
+        assert_eq!(
+            resp.data[0].attributes.asset_pack_identifier,
+            "com.example.game.levels1"
+        );
         assert_eq!(resp.data[0].attributes.used_bytes, 1024);
     }
 
@@ -706,8 +1248,12 @@ mod tests {
         let req = BackgroundAssetCreateRequest {
             data: BackgroundAssetCreateData {
                 type_: "backgroundAssets".into(),
-                attributes: BackgroundAssetCreateAttributes { asset_pack_identifier: "com.example.game.levels1".into() },
-                relationships: BackgroundAssetCreateRelationships { app: rel("apps", "123") },
+                attributes: BackgroundAssetCreateAttributes {
+                    asset_pack_identifier: "com.example.game.levels1".into(),
+                },
+                relationships: BackgroundAssetCreateRelationships {
+                    app: rel("apps", "123"),
+                },
             },
         };
         let resp = mock.client().create_background_asset(&req).await.unwrap();
@@ -727,10 +1273,16 @@ mod tests {
             data: BackgroundAssetUpdateData {
                 type_: "backgroundAssets".into(),
                 id: "asset-1".into(),
-                attributes: Some(BackgroundAssetUpdateAttributes { archived: Some(true) }),
+                attributes: Some(BackgroundAssetUpdateAttributes {
+                    archived: Some(true),
+                }),
             },
         };
-        let resp = mock.client().update_background_asset("asset-1", &req).await.unwrap();
+        let resp = mock
+            .client()
+            .update_background_asset("asset-1", &req)
+            .await
+            .unwrap();
         assert!(resp.data.attributes.archived, "archived = false, want true");
     }
 
@@ -744,7 +1296,11 @@ mod tests {
         })
         .await;
         let opts = filter("state", "COMPLETE");
-        let resp = mock.client().list_background_asset_versions("asset-1", Some(&opts)).await.unwrap();
+        let resp = mock
+            .client()
+            .list_background_asset_versions("asset-1", Some(&opts))
+            .await
+            .unwrap();
         assert_eq!(resp.data.len(), 1);
         assert_eq!(resp.data[0].attributes.state, "COMPLETE");
     }
@@ -757,13 +1313,25 @@ mod tests {
             MockResponse::json(200, r#"{"data":{"type":"backgroundAssetVersions","id":"version-1","attributes":{"state":"FAILED","stateDetails":{"errors":[{"code":"INVALID_MANIFEST","description":"bad manifest"}]}},"relationships":{"appStoreRelease":{"data":{"type":"backgroundAssetVersionAppStoreReleases","id":"release-9"}}}}}"#)
         })
         .await;
-        let resp = mock.client().get_background_asset_version("version-1", None).await.unwrap();
+        let resp = mock
+            .client()
+            .get_background_asset_version("version-1", None)
+            .await
+            .unwrap();
         assert_eq!(resp.data.attributes.state, "FAILED");
-        let details = resp.data.attributes.state_details.as_ref().expect("state details");
+        let details = resp
+            .data
+            .attributes
+            .state_details
+            .as_ref()
+            .expect("state details");
         assert_eq!(details.errors.len(), 1);
         assert_eq!(details.errors[0].code, "INVALID_MANIFEST");
         let rels = resp.data.relationships.as_ref().unwrap();
-        assert_eq!(rels.app_store_release.as_ref().unwrap().data.id, "release-9");
+        assert_eq!(
+            rels.app_store_release.as_ref().unwrap().data.id,
+            "release-9"
+        );
     }
 
     #[tokio::test]
@@ -780,10 +1348,16 @@ mod tests {
         let req = BackgroundAssetVersionCreateRequest {
             data: BackgroundAssetVersionCreateData {
                 type_: "backgroundAssetVersions".into(),
-                relationships: BackgroundAssetVersionCreateRelationships { background_asset: rel("backgroundAssets", "asset-1") },
+                relationships: BackgroundAssetVersionCreateRelationships {
+                    background_asset: rel("backgroundAssets", "asset-1"),
+                },
             },
         };
-        let resp = mock.client().create_background_asset_version(&req).await.unwrap();
+        let resp = mock
+            .client()
+            .create_background_asset_version(&req)
+            .await
+            .unwrap();
         assert_eq!(resp.data.id, "version-1");
     }
 
@@ -795,17 +1369,38 @@ mod tests {
             MockResponse::json(200, r#"{"data":[{"type":"backgroundAssetUploadFiles","id":"file-1","attributes":{"fileName":"levels1.aar","fileSize":4,"assetType":"ASSET","assetDeliveryState":{"state":"COMPLETE"}}}],"links":{"self":""}}"#)
         })
         .await;
-        let resp = mock.client().list_background_asset_upload_files("version-1", None).await.unwrap();
+        let resp = mock
+            .client()
+            .list_background_asset_upload_files("version-1", None)
+            .await
+            .unwrap();
         assert_eq!(resp.data.len(), 1);
-        assert_eq!(resp.data[0].attributes.asset_delivery_state.as_ref().unwrap().state, "COMPLETE");
+        assert_eq!(
+            resp.data[0]
+                .attributes
+                .asset_delivery_state
+                .as_ref()
+                .unwrap()
+                .state,
+            "COMPLETE"
+        );
     }
 
     #[tokio::test]
     async fn test_client_get_background_asset_version_releases() {
         for (name, want_path) in [
-            ("internal beta", "/v1/backgroundAssetVersionInternalBetaReleases/release-1"),
-            ("external beta", "/v1/backgroundAssetVersionExternalBetaReleases/release-1"),
-            ("app store", "/v1/backgroundAssetVersionAppStoreReleases/release-1"),
+            (
+                "internal beta",
+                "/v1/backgroundAssetVersionInternalBetaReleases/release-1",
+            ),
+            (
+                "external beta",
+                "/v1/backgroundAssetVersionExternalBetaReleases/release-1",
+            ),
+            (
+                "app store",
+                "/v1/backgroundAssetVersionAppStoreReleases/release-1",
+            ),
         ] {
             let want = want_path.to_string();
             let mock = MockApi::start(move |r| {
@@ -816,9 +1411,18 @@ mod tests {
             .await;
             let c = mock.client();
             let resp = match name {
-                "internal beta" => c.get_background_asset_version_internal_beta_release("release-1").await,
-                "external beta" => c.get_background_asset_version_external_beta_release("release-1").await,
-                _ => c.get_background_asset_version_app_store_release("release-1").await,
+                "internal beta" => {
+                    c.get_background_asset_version_internal_beta_release("release-1")
+                        .await
+                }
+                "external beta" => {
+                    c.get_background_asset_version_external_beta_release("release-1")
+                        .await
+                }
+                _ => {
+                    c.get_background_asset_version_app_store_release("release-1")
+                        .await
+                }
             }
             .unwrap();
             assert_eq!(resp.data.attributes.state, "READY_FOR_TESTING", "{name}");
@@ -863,7 +1467,11 @@ mod tests {
         })
         .await;
         *storage_url.lock().unwrap() = mock.base_url.clone();
-        let resp = mock.client().upload_background_asset_file("version-1", "Manifest.plist", "MANIFEST", b"PACK").await.unwrap();
+        let resp = mock
+            .client()
+            .upload_background_asset_file("version-1", "Manifest.plist", "MANIFEST", b"PACK")
+            .await
+            .unwrap();
         assert_eq!(resp.data.id, "file-1");
         assert!(uploaded.load(Ordering::SeqCst), "upload step did not run");
         assert!(committed.load(Ordering::SeqCst), "commit step did not run");
@@ -873,8 +1481,16 @@ mod tests {
     async fn test_upload_background_asset_file_validation() {
         let mock = MockApi::start(|_| panic!("no request expected")).await;
         let c = mock.client();
-        for (name, file_name, body) in [("missing file name", "", &b"PACK"[..]), ("empty body", "levels1.aar", &b""[..])] {
-            assert!(c.upload_background_asset_file("version-1", file_name, "ASSET", body).await.is_err(), "{name}: expected error");
+        for (name, file_name, body) in [
+            ("missing file name", "", &b"PACK"[..]),
+            ("empty body", "levels1.aar", &b""[..]),
+        ] {
+            assert!(
+                c.upload_background_asset_file("version-1", file_name, "ASSET", body)
+                    .await
+                    .is_err(),
+                "{name}: expected error"
+            );
         }
         assert!(mock.requests().is_empty());
     }

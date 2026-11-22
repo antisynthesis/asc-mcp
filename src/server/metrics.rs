@@ -39,13 +39,19 @@ impl Metrics {
         let registry = Registry::new();
         #[cfg(target_os = "linux")]
         {
-            let _ = registry.register(Box::new(prometheus::process_collector::ProcessCollector::for_self()));
+            let _ = registry.register(Box::new(
+                prometheus::process_collector::ProcessCollector::for_self(),
+            ));
         }
         let opts = |subsystem: &str, name: &str, help: &str| {
-            Opts::new(name, help).namespace("asc_mcp").subsystem(subsystem)
+            Opts::new(name, help)
+                .namespace("asc_mcp")
+                .subsystem(subsystem)
         };
         let hopts = |subsystem: &str, name: &str, help: &str| {
-            HistogramOpts::new(name, help).namespace("asc_mcp").subsystem(subsystem)
+            HistogramOpts::new(name, help)
+                .namespace("asc_mcp")
+                .subsystem(subsystem)
         };
         let m = Self {
             http_requests: CounterVec::new(
@@ -90,7 +96,9 @@ impl Metrics {
     /// Records one tool invocation.
     pub fn observe_tool(&self, tool: &str, result: &str, elapsed: Duration) {
         self.tool_calls.with_label_values(&[tool, result]).inc();
-        self.tool_duration.with_label_values(&[tool]).observe(elapsed.as_secs_f64());
+        self.tool_duration
+            .with_label_values(&[tool])
+            .observe(elapsed.as_secs_f64());
     }
 
     /// The registry backing `/metrics`.

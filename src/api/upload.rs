@@ -14,9 +14,9 @@ use std::time::Duration;
 
 use sha2::{Digest, Sha256};
 
+use super::Client;
 use super::error::{Error, Result};
 use super::model::UploadOperation;
-use super::Client;
 
 /// Largest asset accepted for upload.
 pub const MAX_UPLOAD_SIZE: usize = 600 * 1024 * 1024;
@@ -26,14 +26,23 @@ pub const UPLOAD_HTTP_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 
 impl Client {
     /// Sends each upload operation's chunk to its pre-authorized URL.
-    pub async fn perform_upload_operations(&self, ops: &[UploadOperation], body: &[u8]) -> Result<()> {
+    pub async fn perform_upload_operations(
+        &self,
+        ops: &[UploadOperation],
+        body: &[u8],
+    ) -> Result<()> {
         if body.len() > MAX_UPLOAD_SIZE {
-            return Err(Error::msg(format!("upload body exceeds max size of {MAX_UPLOAD_SIZE} bytes")));
+            return Err(Error::msg(format!(
+                "upload body exceeds max size of {MAX_UPLOAD_SIZE} bytes"
+            )));
         }
         if ops.is_empty() {
             return Err(Error::msg("no upload operations to perform"));
         }
-        let hc = reqwest::Client::builder().timeout(UPLOAD_HTTP_TIMEOUT).build().unwrap_or_default();
+        let hc = reqwest::Client::builder()
+            .timeout(UPLOAD_HTTP_TIMEOUT)
+            .build()
+            .unwrap_or_default();
         for (i, op) in ops.iter().enumerate() {
             if op.offset < 0 || op.length <= 0 || (op.offset + op.length) as usize > body.len() {
                 return Err(Error::msg(format!(
@@ -44,9 +53,17 @@ impl Client {
                 )));
             }
             let chunk = body[op.offset as usize..(op.offset + op.length) as usize].to_vec();
-            let method = if op.method.is_empty() { "PUT" } else { op.method.as_str() };
-            let method = reqwest::Method::from_bytes(method.as_bytes())
-                .map_err(|_| Error::msg(format!("upload op {i}: build request: net/http: invalid method {}", crate::go::fmt::quote(method))))?;
+            let method = if op.method.is_empty() {
+                "PUT"
+            } else {
+                op.method.as_str()
+            };
+            let method = reqwest::Method::from_bytes(method.as_bytes()).map_err(|_| {
+                Error::msg(format!(
+                    "upload op {i}: build request: net/http: invalid method {}",
+                    crate::go::fmt::quote(method)
+                ))
+            })?;
             // Pre-signed storage URLs get our User-Agent plus the operation's
             // headers, each replacing any earlier value (Go's Header.Set).
             let mut req = hc
@@ -55,7 +72,10 @@ impl Client {
                 .build()
                 .map_err(|e| Error::msg(format!("upload op {i}: build request: {e}")))?;
             let headers = req.headers_mut();
-            headers.insert(reqwest::header::USER_AGENT, reqwest::header::HeaderValue::from_static(super::client::USER_AGENT));
+            headers.insert(
+                reqwest::header::USER_AGENT,
+                reqwest::header::HeaderValue::from_static(super::client::USER_AGENT),
+            );
             for h in op.request_headers.iter() {
                 match (
                     reqwest::header::HeaderName::from_bytes(h.name.as_bytes()),
@@ -72,9 +92,16 @@ impl Client {
                     }
                 }
             }
-            let resp = hc.execute(req).await.map_err(|e| Error::msg(format!("upload op {i}: {e}")))?;
+            let resp = hc
+                .execute(req)
+                .await
+                .map_err(|e| Error::msg(format!("upload op {i}: {e}")))?;
             let status = resp.status().as_u16();
-            let text = resp.bytes().await.map(|b| b[..b.len().min(64 * 1024)].to_vec()).unwrap_or_default();
+            let text = resp
+                .bytes()
+                .await
+                .map(|b| b[..b.len().min(64 * 1024)].to_vec())
+                .unwrap_or_default();
             if status >= 400 {
                 return Err(Error::msg(format!(
                     "upload op {i} failed with {status}: {}",

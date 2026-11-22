@@ -16,7 +16,9 @@ pub fn quote(s: &str) -> String {
             '\t' => out.push_str("\\t"),
             '\x0b' => out.push_str("\\v"),
             c if is_print(c) => out.push(c),
-            c if (c as u32) < 0x20 || c as u32 == 0x7f => out.push_str(&format!("\\x{:02x}", c as u32)),
+            c if (c as u32) < 0x20 || c as u32 == 0x7f => {
+                out.push_str(&format!("\\x{:02x}", c as u32))
+            }
             c if (c as u32) < 0x10000 => out.push_str(&format!("\\u{:04x}", c as u32)),
             c => out.push_str(&format!("\\U{:08x}", c as u32)),
         }
@@ -50,10 +52,18 @@ pub fn float_v(f: f64) -> String {
         return "NaN".into();
     }
     if f.is_infinite() {
-        return if f > 0.0 { "+Inf".into() } else { "-Inf".into() };
+        return if f > 0.0 {
+            "+Inf".into()
+        } else {
+            "-Inf".into()
+        };
     }
     if f == 0.0 {
-        return if f.is_sign_negative() { "-0".into() } else { "0".into() };
+        return if f.is_sign_negative() {
+            "-0".into()
+        } else {
+            "0".into()
+        };
     }
     let e = format!("{f:e}");
     let (mant, exp) = e.split_once('e').unwrap_or((&e, "0"));
@@ -104,10 +114,20 @@ mod tests {
     #[test]
     fn float_v_matches_go() {
         let cases = [
-            (0.0, "0"), (1.0, "1"), (1.5, "1.5"), (100.0, "100"), (1234567.0, "1.234567e+06"),
-            (123456.7, "123456.7"), (1e21, "1e+21"), (1e20, "1e+20"), (0.0001, "0.0001"),
-            (0.00001, "1e-05"), (4.99, "4.99"), (1.0 / 3.0, "0.3333333333333333"),
-            (-2.5e-8, "-2.5e-08"), (100000000.0, "1e+08"),
+            (0.0, "0"),
+            (1.0, "1"),
+            (1.5, "1.5"),
+            (100.0, "100"),
+            (1234567.0, "1.234567e+06"),
+            (123456.7, "123456.7"),
+            (1e21, "1e+21"),
+            (1e20, "1e+20"),
+            (0.0001, "0.0001"),
+            (0.00001, "1e-05"),
+            (4.99, "4.99"),
+            (1.0 / 3.0, "0.3333333333333333"),
+            (-2.5e-8, "-2.5e-08"),
+            (100000000.0, "1e+08"),
         ];
         for (f, want) in cases {
             assert_eq!(float_v(f), want, "{f}");

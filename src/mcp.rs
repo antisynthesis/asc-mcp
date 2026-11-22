@@ -19,10 +19,17 @@ pub const LATEST_PROTOCOL_VERSION: &str = "2026-07-28";
 pub const PROTOCOL_VERSION: &str = "2025-11-25";
 
 /// Every revision this server speaks, newest first.
-pub const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
+pub const SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &[
+    "2026-07-28",
+    "2025-11-25",
+    "2025-06-18",
+    "2025-03-26",
+    "2024-11-05",
+];
 
 /// Revisions negotiable through `initialize`, newest first.
-pub const LEGACY_HANDSHAKE_VERSIONS: &[&str] = &["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
+pub const LEGACY_HANDSHAKE_VERSIONS: &[&str] =
+    &["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 
 /// Revisions accepted per request through `_meta`.
 pub const MODERN_PROTOCOL_VERSIONS: &[&str] = &["2026-07-28"];
@@ -103,7 +110,13 @@ impl Request {
                 // A JSON null id is a (malformed) request, not a
                 // notification: keep it.
                 "id" => r.id = Some(val.clone()),
-                "params" => r.params = if val.is_null() { None } else { Some(val.clone()) },
+                "params" => {
+                    r.params = if val.is_null() {
+                        None
+                    } else {
+                        Some(val.clone())
+                    }
+                }
                 _ => {}
             }
         }
@@ -159,16 +172,30 @@ pub struct Response {
 impl Response {
     /// A successful response.
     pub fn result(id: Option<Value>, result: Value) -> Self {
-        Self { jsonrpc: JSONRPC_VERSION, id, result: Some(result), error: None }
+        Self {
+            jsonrpc: JSONRPC_VERSION,
+            id,
+            result: Some(result),
+            error: None,
+        }
     }
 
     /// An error response.
-    pub fn error(id: Option<Value>, code: i64, message: impl Into<String>, data: impl Into<Value>) -> Self {
+    pub fn error(
+        id: Option<Value>,
+        code: i64,
+        message: impl Into<String>,
+        data: impl Into<Value>,
+    ) -> Self {
         Self {
             jsonrpc: JSONRPC_VERSION,
             id,
             result: None,
-            error: Some(RpcError { code, message: message.into(), data: data.into() }),
+            error: Some(RpcError {
+                code,
+                message: message.into(),
+                data: data.into(),
+            }),
         }
     }
 
@@ -209,7 +236,10 @@ impl Tool {
     /// definitions are compiled into the binary.
     pub fn from_json(json: &str) -> Self {
         let def: Value = serde_json::from_str(json).expect("valid tool definition JSON");
-        let name = def["name"].as_str().expect("tool definition has a name").to_string();
+        let name = def["name"]
+            .as_str()
+            .expect("tool definition has a name")
+            .to_string();
         Self { name, def }
     }
 
@@ -254,18 +284,28 @@ pub struct CallToolResult {
 impl CallToolResult {
     /// A successful text result (Go `mcp.NewSuccessResult`).
     pub fn success(text: impl Into<String>) -> Self {
-        Self { content: vec![text_content(text)], ..Default::default() }
+        Self {
+            content: vec![text_content(text)],
+            ..Default::default()
+        }
     }
 
     /// An error result (Go `mcp.NewErrorResult`): a successful JSON-RPC
     /// response with `isError: true` so the model can self-correct.
     pub fn error(text: impl Into<String>) -> Self {
-        Self { content: vec![text_content(text)], is_error: true, ..Default::default() }
+        Self {
+            content: vec![text_content(text)],
+            is_error: true,
+            ..Default::default()
+        }
     }
 
     /// Returns the first text block (convenient in tests).
     pub fn text(&self) -> &str {
-        self.content.first().and_then(|c| c["text"].as_str()).unwrap_or("")
+        self.content
+            .first()
+            .and_then(|c| c["text"].as_str())
+            .unwrap_or("")
     }
 
     /// Serializes in Go's field order.
@@ -309,14 +349,18 @@ impl RequestMeta {
     /// client capabilities that are not an object.
     pub fn parse(params: Option<&Value>) -> Result<Self, String> {
         let mut meta = RequestMeta::default();
-        let Some(params) = params else { return Ok(meta) };
+        let Some(params) = params else {
+            return Ok(meta);
+        };
         let Value::Object(p) = params else {
             return Err(format!(
                 "json: cannot unmarshal {} into Go value of type struct {{ Meta map[string]json.RawMessage \"json:\\\"_meta\\\"\" }}",
                 crate::go::json::kind(params)
             ));
         };
-        let Some(m) = p.get("_meta") else { return Ok(meta) };
+        let Some(m) = p.get("_meta") else {
+            return Ok(meta);
+        };
         let m = match m {
             Value::Null => return Ok(meta),
             Value::Object(m) => m,
@@ -359,5 +403,9 @@ impl RequestMeta {
 /// knows, else answers the preferred legacy version. 2026-07-28 is never
 /// negotiated here because it has no handshake.
 pub fn negotiate_protocol_version(requested: &str) -> &'static str {
-    LEGACY_HANDSHAKE_VERSIONS.iter().find(|v| **v == requested).copied().unwrap_or(PROTOCOL_VERSION)
+    LEGACY_HANDSHAKE_VERSIONS
+        .iter()
+        .find(|v| **v == requested)
+        .copied()
+        .unwrap_or(PROTOCOL_VERSION)
 }

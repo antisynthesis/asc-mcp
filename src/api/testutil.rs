@@ -12,13 +12,13 @@
 
 use std::sync::{Arc, Mutex};
 
+use axum::Router;
 use axum::body::Bytes;
 use axum::extract::{Request, State};
 use axum::response::{IntoResponse, Response};
-use axum::Router;
 
-use super::auth::{parse_private_key, TokenProvider};
 use super::Client;
+use super::auth::{TokenProvider, parse_private_key};
 
 /// A throwaway P-256 key used only by tests.
 pub const TEST_PRIVATE_KEY: &str = "-----BEGIN PRIVATE KEY-----
@@ -51,7 +51,10 @@ impl RecordedRequest {
     /// A header value by (case-insensitive) name.
     pub fn header(&self, name: &str) -> Option<&str> {
         let name = name.to_ascii_lowercase();
-        self.headers.iter().find(|(k, _)| *k == name).map(|(_, v)| v.as_str())
+        self.headers
+            .iter()
+            .find(|(k, _)| *k == name)
+            .map(|(_, v)| v.as_str())
     }
     /// A decoded query parameter (first value), if present.
     pub fn query_param(&self, key: &str) -> Option<String> {
@@ -76,11 +79,21 @@ pub struct MockResponse {
 impl MockResponse {
     /// A JSON response.
     pub fn json(status: u16, body: impl Into<String>) -> Self {
-        Self { status, content_type: "application/json".into(), body: body.into().into_bytes(), headers: vec![] }
+        Self {
+            status,
+            content_type: "application/json".into(),
+            body: body.into().into_bytes(),
+            headers: vec![],
+        }
     }
     /// An empty response (e.g. 204).
     pub fn empty(status: u16) -> Self {
-        Self { status, content_type: String::new(), body: vec![], headers: vec![] }
+        Self {
+            status,
+            content_type: String::new(),
+            body: vec![],
+            headers: vec![],
+        }
     }
     /// Adds a header.
     pub fn with_header(mut self, k: &str, v: &str) -> Self {
@@ -107,16 +120,27 @@ pub struct MockApi {
 
 impl MockApi {
     /// Starts a mock answering every request with `handler`.
-    pub async fn start(handler: impl Fn(&RecordedRequest) -> MockResponse + Send + Sync + 'static) -> Self {
-        let state = MockState { handler: Arc::new(handler), log: Arc::new(Mutex::new(Vec::new())) };
+    pub async fn start(
+        handler: impl Fn(&RecordedRequest) -> MockResponse + Send + Sync + 'static,
+    ) -> Self {
+        let state = MockState {
+            handler: Arc::new(handler),
+            log: Arc::new(Mutex::new(Vec::new())),
+        };
         let log = state.log.clone();
         let app = Router::new().fallback(serve).with_state(state);
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.expect("bind mock");
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind mock");
         let addr = listener.local_addr().expect("mock addr");
         let task = tokio::spawn(async move {
             let _ = axum::serve(listener, app).await;
         });
-        Self { base_url: format!("http://{addr}"), log, _task: task }
+        Self {
+            base_url: format!("http://{addr}"),
+            log,
+            _task: task,
+        }
     }
 
     /// A client pointed at this mock, authenticated with [`TEST_PRIVATE_KEY`].
@@ -132,12 +156,18 @@ impl MockApi {
 
 /// A token provider for tests.
 pub fn test_token_provider() -> TokenProvider {
-    TokenProvider::from_key("test-issuer", "TESTKEY123", parse_private_key(TEST_PRIVATE_KEY.as_bytes()).expect("test key"))
+    TokenProvider::from_key(
+        "test-issuer",
+        "TESTKEY123",
+        parse_private_key(TEST_PRIVATE_KEY.as_bytes()).expect("test key"),
+    )
 }
 
 async fn serve(State(st): State<MockState>, req: Request) -> Response {
     let (parts, body) = req.into_parts();
-    let body: Bytes = axum::body::to_bytes(body, usize::MAX).await.unwrap_or_default();
+    let body: Bytes = axum::body::to_bytes(body, usize::MAX)
+        .await
+        .unwrap_or_default();
     let rec = RecordedRequest {
         method: parts.method.to_string(),
         path: parts.uri.path().to_string(),
@@ -151,7 +181,11 @@ async fn serve(State(st): State<MockState>, req: Request) -> Response {
     };
     let resp = (st.handler)(&rec);
     st.log.lock().unwrap_or_else(|e| e.into_inner()).push(rec);
-    let mut r = (axum::http::StatusCode::from_u16(resp.status).unwrap_or(axum::http::StatusCode::OK), resp.body).into_response();
+    let mut r = (
+        axum::http::StatusCode::from_u16(resp.status).unwrap_or(axum::http::StatusCode::OK),
+        resp.body,
+    )
+        .into_response();
     if !resp.content_type.is_empty() {
         if let Ok(v) = resp.content_type.parse() {
             r.headers_mut().insert(axum::http::header::CONTENT_TYPE, v);
@@ -173,15 +207,26 @@ mod tests {
     async fn list_apps_round_trip() {
         let mock = MockApi::start(|req| {
             assert_eq!(req.path, "/v1/apps");
-            MockResponse::json(200, r#"{"data":[{"type":"apps","id":"1","attributes":{"name":"Demo"}}],"links":{}}"#)
+            MockResponse::json(
+                200,
+                r#"{"data":[{"type":"apps","id":"1","attributes":{"name":"Demo"}}],"links":{}}"#,
+            )
         })
         .await;
-        let opts = crate::api::ListOptions { limit: 5, ..Default::default() };
+        let opts = crate::api::ListOptions {
+            limit: 5,
+            ..Default::default()
+        };
         let resp = mock.client().list_apps(Some(&opts)).await.unwrap();
         assert_eq!(resp.data[0].attributes.name, "Demo");
         let reqs = mock.requests();
         assert_eq!(reqs[0].query, "limit=5");
-        assert!(reqs[0].header("authorization").unwrap().starts_with("Bearer "));
+        assert!(
+            reqs[0]
+                .header("authorization")
+                .unwrap()
+                .starts_with("Bearer ")
+        );
     }
 
     #[tokio::test]

@@ -32,7 +32,10 @@ impl Config {
             return Err("ASC_PRIVATE_KEY_PATH environment variable is required".into());
         }
         if !Path::new(&cfg.private_key_path).exists() {
-            return Err(format!("private key file not found: {}", cfg.private_key_path));
+            return Err(format!(
+                "private key file not found: {}",
+                cfg.private_key_path
+            ));
         }
         Ok(cfg)
     }

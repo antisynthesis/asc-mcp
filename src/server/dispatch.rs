@@ -14,7 +14,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 use crate::go::json::unmarshal_value;
 use crate::go::{GoMap, RawMessage};
@@ -54,7 +54,11 @@ pub struct Session {
 impl Default for Session {
     fn default() -> Self {
         let now = Instant::now();
-        Self { initialized: AtomicBool::new(false), created_at: now, last_active: Mutex::new(now) }
+        Self {
+            initialized: AtomicBool::new(false),
+            created_at: now,
+            last_active: Mutex::new(now),
+        }
     }
 }
 
@@ -90,7 +94,10 @@ pub struct Outcome {
 
 impl From<Response> for Outcome {
     fn from(response: Response) -> Self {
-        Self { notifications: Vec::new(), response }
+        Self {
+            notifications: Vec::new(),
+            response,
+        }
     }
 }
 
@@ -148,7 +155,10 @@ pub struct Dispatcher {
 impl Dispatcher {
     /// Creates a dispatcher over `registry`.
     pub fn new(registry: Arc<Registry>) -> Self {
-        Self { registry, metrics: None }
+        Self {
+            registry,
+            metrics: None,
+        }
     }
 
     /// Enables tool-call metrics.
@@ -170,7 +180,12 @@ impl Dispatcher {
             if req.is_notification() {
                 return None;
             }
-            return Some(err(req, mcp::ERR_INVALID_REQUEST, "Invalid Request", "jsonrpc must be 2.0"));
+            return Some(err(
+                req,
+                mcp::ERR_INVALID_REQUEST,
+                "Invalid Request",
+                "jsonrpc must be 2.0",
+            ));
         }
         let meta = match RequestMeta::parse(req.params.as_ref()) {
             Ok(m) => m,
@@ -212,7 +227,12 @@ impl Dispatcher {
                 if req.is_notification() {
                     return None;
                 }
-                Some(err(req, mcp::ERR_METHOD_NOT_FOUND, "Method not found", req.method.clone()))
+                Some(err(
+                    req,
+                    mcp::ERR_METHOD_NOT_FOUND,
+                    "Method not found",
+                    req.method.clone(),
+                ))
             }
         }
     }
@@ -225,7 +245,12 @@ impl Dispatcher {
             if req.is_notification() {
                 return None;
             }
-            return Some(err(req, mcp::ERR_INVALID_REQUEST, "Invalid Request", "jsonrpc must be 2.0"));
+            return Some(err(
+                req,
+                mcp::ERR_INVALID_REQUEST,
+                "Invalid Request",
+                "jsonrpc must be 2.0",
+            ));
         }
         let meta = match RequestMeta::parse(req.params.as_ref()) {
             Ok(m) => m,
@@ -240,7 +265,11 @@ impl Dispatcher {
     }
 
     fn tool_defs(&self) -> Vec<Value> {
-        self.registry.list_tools().iter().map(|t| t.def.clone()).collect()
+        self.registry
+            .list_tools()
+            .iter()
+            .map(|t| t.def.clone())
+            .collect()
     }
 
     /// Validates the modern `_meta` envelope: a supported protocol version
@@ -255,7 +284,9 @@ impl Dispatcher {
             ));
         }
         if !mcp::MODERN_PROTOCOL_VERSIONS.contains(&meta.protocol_version.as_str()) {
-            let message = if mcp::LEGACY_HANDSHAKE_VERSIONS.contains(&meta.protocol_version.as_str()) {
+            let message = if mcp::LEGACY_HANDSHAKE_VERSIONS
+                .contains(&meta.protocol_version.as_str())
+            {
                 format!(
                     "Unsupported protocol version: {} must be negotiated with the initialize handshake",
                     meta.protocol_version
@@ -275,7 +306,10 @@ impl Dispatcher {
                 req,
                 mcp::ERR_INVALID_PARAMS,
                 "Invalid params",
-                format!("missing required _meta key {}", mcp::META_CLIENT_CAPABILITIES),
+                format!(
+                    "missing required _meta key {}",
+                    mcp::META_CLIENT_CAPABILITIES
+                ),
             ));
         }
         None
@@ -310,7 +344,12 @@ impl Dispatcher {
                 if let Some(Value::Object(p)) = &req.params {
                     if p.contains_key("cursor") {
                         // This server never issues cursors for tools/list.
-                        return Some(err(req, mcp::ERR_INVALID_PARAMS, "Invalid params", "invalid cursor"));
+                        return Some(err(
+                            req,
+                            mcp::ERR_INVALID_PARAMS,
+                            "Invalid params",
+                            "invalid cursor",
+                        ));
                     }
                 }
                 let result = json!({
@@ -339,7 +378,12 @@ impl Dispatcher {
                 if req.is_notification() {
                     return None;
                 }
-                Some(err(req, mcp::ERR_METHOD_NOT_FOUND, "Method not found", req.method.clone()))
+                Some(err(
+                    req,
+                    mcp::ERR_METHOD_NOT_FOUND,
+                    "Method not found",
+                    req.method.clone(),
+                ))
             }
         }
     }
@@ -360,7 +404,10 @@ impl Dispatcher {
         let mut meta = server_info_meta();
         meta.insert(mcp::META_SUBSCRIPTION_ID.into(), sub_id);
         let result = json!({ "resultType": mcp::RESULT_TYPE_COMPLETE, "_meta": meta });
-        Outcome { notifications: vec![ack], response: Response::result(req.id.clone(), result) }
+        Outcome {
+            notifications: vec![ack],
+            response: Response::result(req.id.clone(), result),
+        }
     }
 
     fn handle_discover(&self, req: &Request) -> Outcome {
@@ -409,11 +456,21 @@ impl Dispatcher {
             // CallToolRequest requires a string name and object arguments.
             if let Some(Value::Object(p)) = &req.params {
                 if !matches!(p.get("name"), Some(Value::String(_))) {
-                    return err(req, mcp::ERR_INVALID_PARAMS, "Invalid params", "params.name must be a string");
+                    return err(
+                        req,
+                        mcp::ERR_INVALID_PARAMS,
+                        "Invalid params",
+                        "params.name must be a string",
+                    );
                 }
                 if let Some(a) = p.get("arguments") {
                     if !a.is_object() {
-                        return err(req, mcp::ERR_INVALID_PARAMS, "Invalid params", "params.arguments must be an object");
+                        return err(
+                            req,
+                            mcp::ERR_INVALID_PARAMS,
+                            "Invalid params",
+                            "params.arguments must be an object",
+                        );
                     }
                 }
             }
@@ -437,14 +494,22 @@ impl Dispatcher {
         }
         logging::info(
             "tool_call",
-            &[("tool", name.as_str().into()), ("result", label.into()), ("duration", elapsed.into())],
+            &[
+                ("tool", name.as_str().into()),
+                ("result", label.into()),
+                ("duration", elapsed.into()),
+            ],
         );
         let result = match outcome {
             Ok(r) => r,
             Err(CallError::UnknownTool(_)) => {
                 // 2026-07-28 defines an unknown tool as invalid params; the
                 // legacy path keeps its historical -32601.
-                let code = if modern { mcp::ERR_INVALID_PARAMS } else { mcp::ERR_METHOD_NOT_FOUND };
+                let code = if modern {
+                    mcp::ERR_INVALID_PARAMS
+                } else {
+                    mcp::ERR_METHOD_NOT_FOUND
+                };
                 return err(req, code, "Unknown tool", name);
             }
             Err(CallError::Failed(msg)) => CallToolResult::error(msg),
@@ -480,5 +545,10 @@ fn err(req: &Request, code: i64, message: impl Into<String>, data: impl Into<Val
 }
 
 fn not_initialized(req: &Request) -> Outcome {
-    err(req, mcp::ERR_INVALID_REQUEST, "Not initialized", "initialize must be called first")
+    err(
+        req,
+        mcp::ERR_INVALID_REQUEST,
+        "Not initialized",
+        "initialize must be called first",
+    )
 }

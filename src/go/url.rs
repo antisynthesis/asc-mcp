@@ -27,7 +27,11 @@ pub fn query_escape(s: &str) -> String {
 
 /// Go `url.PathEscape`.
 pub fn path_escape(s: &str) -> String {
-    escape(s, |c| is_unreserved(c) || matches!(c, b'$' | b'&' | b'+' | b':' | b'=' | b'@'), false)
+    escape(
+        s,
+        |c| is_unreserved(c) || matches!(c, b'$' | b'&' | b'+' | b':' | b'=' | b'@'),
+        false,
+    )
 }
 
 /// Go `url.QueryUnescape`.
@@ -38,7 +42,9 @@ pub fn query_unescape(s: &str) -> Result<String, String> {
     while i < b.len() {
         match b[i] {
             b'%' => {
-                let hex = s.get(i + 1..i + 3).filter(|h| h.bytes().all(|c| c.is_ascii_hexdigit()));
+                let hex = s
+                    .get(i + 1..i + 3)
+                    .filter(|h| h.bytes().all(|c| c.is_ascii_hexdigit()));
                 match hex {
                     Some(h) => {
                         out.push(u8::from_str_radix(h, 16).unwrap_or(0));
@@ -46,7 +52,10 @@ pub fn query_unescape(s: &str) -> Result<String, String> {
                     }
                     None => {
                         let bad: String = s[i..].chars().take(3).collect();
-                        return Err(format!("invalid URL escape {}", crate::go::fmt::quote(&bad)));
+                        return Err(format!(
+                            "invalid URL escape {}",
+                            crate::go::fmt::quote(&bad)
+                        ));
                     }
                 }
             }
@@ -82,7 +91,11 @@ impl Values {
     }
     /// Go `Values.Get`.
     pub fn get(&self, k: &str) -> &str {
-        self.0.get(k).and_then(|v| v.first()).map(String::as_str).unwrap_or("")
+        self.0
+            .get(k)
+            .and_then(|v| v.first())
+            .map(String::as_str)
+            .unwrap_or("")
     }
     /// Go `Values.Has`.
     pub fn has(&self, k: &str) -> bool {
@@ -162,7 +175,10 @@ mod tests {
 
     #[test]
     fn escapes_match_go() {
-        assert_eq!(path_escape("a b/c;d,e?f$&+:=@"), "a%20b%2Fc%3Bd%2Ce%3Ff$&+:=@");
+        assert_eq!(
+            path_escape("a b/c;d,e?f$&+:=@"),
+            "a%20b%2Fc%3Bd%2Ce%3Ff$&+:=@"
+        );
         assert_eq!(query_escape("a b/c[]"), "a+b%2Fc%5B%5D");
         let mut v = Values::new();
         v.set("limit", "5");

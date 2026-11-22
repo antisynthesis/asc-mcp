@@ -29,7 +29,11 @@ impl fmt::Display for ApiError {
             }
             return write!(f, "API error ({})", self.status_code);
         }
-        let parts: Vec<String> = self.errors.iter().map(|d| format!("{}: {}", d.title, d.detail)).collect();
+        let parts: Vec<String> = self
+            .errors
+            .iter()
+            .map(|d| format!("{}: {}", d.title, d.detail))
+            .collect();
         write!(f, "API error ({}): {}", self.status_code, parts.join("; "))
     }
 }
@@ -66,18 +70,30 @@ pub type Result<T> = std::result::Result<T, Error>;
 impl Error {
     /// A plain error (Go `fmt.Errorf` / `errors.New`).
     pub fn msg(msg: impl Into<String>) -> Self {
-        Self { msg: msg.into(), api: None, network: false }
+        Self {
+            msg: msg.into(),
+            api: None,
+            network: false,
+        }
     }
 
     /// A network/transport failure (retryable for idempotent methods).
     pub(crate) fn network(msg: impl Into<String>) -> Self {
-        Self { msg: msg.into(), api: None, network: true }
+        Self {
+            msg: msg.into(),
+            api: None,
+            network: true,
+        }
     }
 
     /// Go `fmt.Errorf("<prefix>: %w", err)`: prefixes the message and keeps
     /// the wrapped API error reachable.
     pub fn wrap(self, prefix: impl fmt::Display) -> Self {
-        Self { msg: format!("{prefix}: {}", self.msg), api: self.api, network: self.network }
+        Self {
+            msg: format!("{prefix}: {}", self.msg),
+            api: self.api,
+            network: self.network,
+        }
     }
 
     /// Go `errors.As(err, &apiErr)`.
@@ -85,14 +101,19 @@ impl Error {
         self.api.as_deref()
     }
 
-    pub(crate) fn is_network(&self) -> bool {
+    /// Reports whether this is a transport failure (no HTTP response).
+    pub fn is_network(&self) -> bool {
         self.network
     }
 }
 
 impl From<ApiError> for Error {
     fn from(e: ApiError) -> Self {
-        Self { msg: e.to_string(), api: Some(Box::new(e)), network: false }
+        Self {
+            msg: e.to_string(),
+            api: Some(Box::new(e)),
+            network: false,
+        }
     }
 }
 
@@ -107,5 +128,6 @@ impl std::error::Error for Error {}
 /// Go `json.Unmarshal(data, &resp)` wrapped as the client methods do:
 /// `failed to unmarshal response: <json error>`.
 pub fn decode<T: crate::go::GoDecode + Default>(data: &[u8]) -> Result<T> {
-    crate::go::json::from_slice(data).map_err(|e| Error::msg(format!("failed to unmarshal response: {e}")))
+    crate::go::json::from_slice(data)
+        .map_err(|e| Error::msg(format!("failed to unmarshal response: {e}")))
 }

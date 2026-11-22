@@ -26,7 +26,10 @@ pub struct TokenProvider {
 
 impl std::fmt::Debug for TokenProvider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TokenProvider").field("issuer_id", &self.issuer_id).field("key_id", &self.key_id).finish()
+        f.debug_struct("TokenProvider")
+            .field("issuer_id", &self.issuer_id)
+            .field("key_id", &self.key_id)
+            .finish()
     }
 }
 
@@ -45,7 +48,12 @@ impl TokenProvider {
 
     /// Builds a provider from an already parsed key.
     pub fn from_key(issuer_id: &str, key_id: &str, key: SigningKey) -> Self {
-        Self { issuer_id: issuer_id.into(), key_id: key_id.into(), key, cache: Mutex::new(None) }
+        Self {
+            issuer_id: issuer_id.into(),
+            key_id: key_id.into(),
+            key,
+            cache: Mutex::new(None),
+        }
     }
 
     /// Returns a valid token, generating a new one when the cached token is
@@ -65,7 +73,11 @@ impl TokenProvider {
     fn generate_token(&self) -> Result<(String, SystemTime)> {
         let now = SystemTime::now();
         let expires = now + TOKEN_DURATION;
-        let secs = |t: SystemTime| t.duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
+        let secs = |t: SystemTime| {
+            t.duration_since(UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0)
+        };
         // Go marshals map[string]... with sorted keys.
         let header = serde_json::json!({"alg": "ES256", "kid": self.key_id, "typ": "JWT"});
         let payload = serde_json::json!({
@@ -75,7 +87,8 @@ impl TokenProvider {
             "iss": self.issuer_id,
         });
         let enc = |v: &serde_json::Value| {
-            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(crate::go::json::to_go_json_bytes(v))
+            base64::engine::general_purpose::URL_SAFE_NO_PAD
+                .encode(crate::go::json::to_go_json_bytes(v))
         };
         let signing_input = format!("{}.{}", enc(&header), enc(&payload));
         let sig: Signature = self.key.sign(signing_input.as_bytes());
@@ -97,7 +110,10 @@ impl TokenProvider {
             return false;
         };
         let input = format!("{}.{}", parts[0], parts[1]);
-        self.key.verifying_key().verify(input.as_bytes(), &sig).is_ok()
+        self.key
+            .verifying_key()
+            .verify(input.as_bytes(), &sig)
+            .is_ok()
     }
 }
 
@@ -112,11 +128,15 @@ pub fn parse_private_key(data: &[u8]) -> Result<SigningKey> {
         Err(e) => {
             // Distinguish "valid PKCS#8 but not an EC key" like Go does.
             if let Ok(info) = p256::pkcs8::PrivateKeyInfo::try_from(der.as_slice()) {
-                if info.algorithm.oid != p256::pkcs8::ObjectIdentifier::new_unwrap("1.2.840.10045.2.1") {
+                if info.algorithm.oid
+                    != p256::pkcs8::ObjectIdentifier::new_unwrap("1.2.840.10045.2.1")
+                {
                     return Err(Error::msg("private key is not ECDSA"));
                 }
             }
-            Err(Error::msg(format!("failed to parse PKCS8 private key: {e}")))
+            Err(Error::msg(format!(
+                "failed to parse PKCS8 private key: {e}"
+            )))
         }
     }
 }
@@ -130,7 +150,10 @@ fn pem_first_block(text: &str) -> Option<Vec<u8>> {
     let body_start = rest[header_end..].find('\n')? + header_end + 1;
     let end_marker = format!("-----END {label}-----");
     let body_end = rest.find(&end_marker)?;
-    let body: String = rest[body_start..body_end].chars().filter(|c| !c.is_whitespace()).collect();
+    let body: String = rest[body_start..body_end]
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .collect();
     base64::engine::general_purpose::STANDARD.decode(body).ok()
 }
 
@@ -153,8 +176,13 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         let t1 = tp.get_token().unwrap();
         assert!(tp.verify_token(&t1));
         assert_eq!(t1, tp.get_token().unwrap(), "token is cached");
-        let header = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(t1.split('.').next().unwrap()).unwrap();
-        assert_eq!(String::from_utf8(header).unwrap(), r#"{"alg":"ES256","kid":"KEYID","typ":"JWT"}"#);
+        let header = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(t1.split('.').next().unwrap())
+            .unwrap();
+        assert_eq!(
+            String::from_utf8(header).unwrap(),
+            r#"{"alg":"ES256","kid":"KEYID","typ":"JWT"}"#
+        );
     }
 
     // ---- Ported from internal/asc/api/auth_test.go ----
@@ -163,7 +191,9 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
     fn generate_test_key() -> String {
         use p256::pkcs8::{EncodePrivateKey, LineEnding};
         let key = p256::SecretKey::random(&mut rand::rngs::OsRng);
-        key.to_pkcs8_pem(LineEnding::LF).expect("encode key").to_string()
+        key.to_pkcs8_pem(LineEnding::LF)
+            .expect("encode key")
+            .to_string()
     }
 
     /// Go `createTestKeyFile`.
@@ -175,7 +205,9 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
     }
 
     fn b64(part: &str) -> serde_json::Value {
-        let raw = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(part).expect("base64url");
+        let raw = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(part)
+            .expect("base64url");
         serde_json::from_slice(&raw).expect("json")
     }
 
@@ -183,15 +215,23 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
     #[test]
     fn new_token_provider() {
         let (_dir, path) = create_test_key_file(&generate_test_key());
-        let tp = TokenProvider::new("test-issuer-id", "TESTKEY123", &path).expect("valid configuration");
+        let tp =
+            TokenProvider::new("test-issuer-id", "TESTKEY123", &path).expect("valid configuration");
         assert_eq!(tp.issuer_id, "test-issuer-id");
         assert_eq!(tp.key_id, "TESTKEY123");
-        let err = TokenProvider::new("test-issuer-id", "TESTKEY123", "/nonexistent/path/key.p8").unwrap_err();
-        assert!(err.to_string().contains("failed to read private key"), "{err}");
+        let err = TokenProvider::new("test-issuer-id", "TESTKEY123", "/nonexistent/path/key.p8")
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("failed to read private key"),
+            "{err}"
+        );
         // A file that is not a key is wrapped as a parse failure.
         let (_d2, bad) = create_test_key_file("not a key");
         let err = TokenProvider::new("i", "k", &bad).unwrap_err();
-        assert_eq!(err.to_string(), "failed to parse private key: no PEM block found in private key");
+        assert_eq!(
+            err.to_string(),
+            "failed to parse private key: no PEM block found in private key"
+        );
     }
 
     // Go: TestParsePrivateKey
@@ -219,14 +259,19 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         let t1 = tp.get_token().unwrap();
         assert!(!t1.is_empty());
         assert_eq!(t1.split('.').count(), 3, "expected 3 parts in JWT");
-        assert_eq!(t1, tp.get_token().unwrap(), "expected same token from cache");
+        assert_eq!(
+            t1,
+            tp.get_token().unwrap(),
+            "expected same token from cache"
+        );
     }
 
     /// A cached token inside the refresh buffer is regenerated.
     #[test]
     fn get_token_refreshes_near_expiry() {
         let tp = TokenProvider::from_key("i", "k", parse_private_key(TEST_KEY.as_bytes()).unwrap());
-        *tp.cache.lock().unwrap() = Some(("stale".into(), SystemTime::now() + TOKEN_REFRESH_BUFFER / 2));
+        *tp.cache.lock().unwrap() =
+            Some(("stale".into(), SystemTime::now() + TOKEN_REFRESH_BUFFER / 2));
         let t = tp.get_token().unwrap();
         assert_ne!(t, "stale");
         assert!(tp.verify_token(&t));
@@ -247,16 +292,27 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         let payload = b64(parts[1]);
         assert_eq!(payload["iss"], "test-issuer-id");
         assert_eq!(payload["aud"], "appstoreconnect-v1");
-        assert_eq!(payload["exp"].as_u64().unwrap() - payload["iat"].as_u64().unwrap(), TOKEN_DURATION.as_secs());
+        assert_eq!(
+            payload["exp"].as_u64().unwrap() - payload["iat"].as_u64().unwrap(),
+            TOKEN_DURATION.as_secs()
+        );
         let now = SystemTime::now();
         assert!(expires > now, "token already expired");
         let expected = now + TOKEN_DURATION;
         let minute = Duration::from_secs(60);
-        assert!(expires > expected - minute && expires < expected + minute, "expiry not ~15 minutes out");
+        assert!(
+            expires > expected - minute && expires < expected + minute,
+            "expiry not ~15 minutes out"
+        );
         // Go's payload key order (sorted map keys).
-        let raw = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(parts[1]).unwrap();
+        let raw = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(parts[1])
+            .unwrap();
         let raw = String::from_utf8(raw).unwrap();
-        assert!(raw.starts_with(r#"{"aud":"appstoreconnect-v1","exp":"#), "{raw}");
+        assert!(
+            raw.starts_with(r#"{"aud":"appstoreconnect-v1","exp":"#),
+            "{raw}"
+        );
     }
 
     // Go: TestTokenProvider_VerifyToken + TestSplitToken (Rust splits with
@@ -268,12 +324,25 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         let (token, _) = tp.generate_token().unwrap();
         assert!(tp.verify_token(&token), "valid token should verify");
         let tampered = format!("{}XXXXX", &token[..token.len() - 5]);
-        assert!(!tp.verify_token(&tampered), "tampered token should not verify");
-        assert!(!tp.verify_token("invalid.token"), "invalid format should not verify");
+        assert!(
+            !tp.verify_token(&tampered),
+            "tampered token should not verify"
+        );
+        assert!(
+            !tp.verify_token("invalid.token"),
+            "invalid format should not verify"
+        );
         assert!(!tp.verify_token(""), "empty token should not verify");
-        assert!(!tp.verify_token(&format!("{token}.extra")), "four parts should not verify");
+        assert!(
+            !tp.verify_token(&format!("{token}.extra")),
+            "four parts should not verify"
+        );
         // A token signed by another key does not verify.
-        let other = TokenProvider::from_key("test-issuer", "TESTKEY123", parse_private_key(TEST_KEY.as_bytes()).unwrap());
+        let other = TokenProvider::from_key(
+            "test-issuer",
+            "TESTKEY123",
+            parse_private_key(TEST_KEY.as_bytes()).unwrap(),
+        );
         assert!(!other.verify_token(&token));
     }
 
@@ -287,9 +356,14 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         assert_eq!(enc(&[0xff, 0xfe, 0xfd]), "__79");
         let tp = TokenProvider::from_key("i", "k", parse_private_key(TEST_KEY.as_bytes()).unwrap());
         let t = tp.get_token().unwrap();
-        assert!(!t.contains('=') && !t.contains('+') && !t.contains('/'), "token must be unpadded base64url: {t}");
+        assert!(
+            !t.contains('=') && !t.contains('+') && !t.contains('/'),
+            "token must be unpadded base64url: {t}"
+        );
         // ES256 signatures are the fixed 64-byte r||s form.
-        let sig = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(t.split('.').nth(2).unwrap()).unwrap();
+        let sig = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(t.split('.').nth(2).unwrap())
+            .unwrap();
         assert_eq!(sig.len(), 64);
     }
 
@@ -297,21 +371,34 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
     #[test]
     fn concurrent_access() {
         let (_dir, path) = create_test_key_file(&generate_test_key());
-        let tp = std::sync::Arc::new(TokenProvider::new("test-issuer", "TESTKEY123", &path).unwrap());
+        let tp =
+            std::sync::Arc::new(TokenProvider::new("test-issuer", "TESTKEY123", &path).unwrap());
         let handles: Vec<_> = (0..100)
             .map(|_| {
                 let tp = tp.clone();
                 std::thread::spawn(move || tp.get_token())
             })
             .collect();
-        let tokens: Vec<String> = handles.into_iter().map(|h| h.join().unwrap().expect("get_token")).collect();
-        assert!(tokens.iter().all(|t| *t == tokens[0]), "all tokens should be the same (cached)");
+        let tokens: Vec<String> = handles
+            .into_iter()
+            .map(|h| h.join().unwrap().expect("get_token"))
+            .collect();
+        assert!(
+            tokens.iter().all(|t| *t == tokens[0]),
+            "all tokens should be the same (cached)"
+        );
     }
 
     #[test]
     fn key_errors() {
-        assert_eq!(parse_private_key(b"nope").unwrap_err().to_string(), "no PEM block found in private key");
+        assert_eq!(
+            parse_private_key(b"nope").unwrap_err().to_string(),
+            "no PEM block found in private key"
+        );
         let err = TokenProvider::new("i", "k", "/nonexistent/key.p8").unwrap_err();
-        assert_eq!(err.to_string(), "failed to read private key: open /nonexistent/key.p8: no such file or directory");
+        assert_eq!(
+            err.to_string(),
+            "failed to read private key: open /nonexistent/key.p8: no such file or directory"
+        );
     }
 }

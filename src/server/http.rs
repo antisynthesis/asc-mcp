@@ -16,12 +16,12 @@ use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use axum::Router;
 use axum::body::{Body, Bytes};
 use axum::extract::{ConnectInfo, Request as AxRequest, State};
-use axum::http::{header, HeaderMap, HeaderValue, Method, StatusCode};
+use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, header};
 use axum::response::{IntoResponse, Response as AxResponse};
 use axum::routing::any;
-use axum::Router;
 use base64::Engine;
 // hyper panics on the first connection if a header read timeout is set
 // without a timer.
@@ -29,7 +29,7 @@ use hyper_util::rt::TokioTimer;
 use sha2::{Digest, Sha256};
 use subtle::ConstantTimeEq;
 
-use super::dispatch::{is_modern, Dispatcher, Outcome, Session};
+use super::dispatch::{Dispatcher, Outcome, Session, is_modern};
 use super::metrics::Metrics;
 use crate::logging;
 use crate::mcp::{self, Request, RequestMeta, Response};
@@ -86,11 +86,17 @@ impl HttpServer {
         let inner = Inner {
             dispatcher: Dispatcher::new(registry).with_metrics(metrics.clone()),
             sessions: Mutex::new(HashMap::new()),
-            allowed_origins: opts.allowed_origins.iter().map(|o| o.to_ascii_lowercase()).collect(),
+            allowed_origins: opts
+                .allowed_origins
+                .iter()
+                .map(|o| o.to_ascii_lowercase())
+                .collect(),
             auth_tokens: tokens,
             metrics,
         };
-        Self { inner: Arc::new(inner) }
+        Self {
+            inner: Arc::new(inner),
+        }
     }
 
     /// The metrics surface.
@@ -100,7 +106,11 @@ impl HttpServer {
 
     /// Number of live legacy sessions.
     pub fn session_count(&self) -> usize {
-        self.inner.sessions.lock().unwrap_or_else(|e| e.into_inner()).len()
+        self.inner
+            .sessions
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .len()
     }
 
     /// The router: `/mcp`, `/healthz`, `/metrics`.
@@ -109,20 +119,33 @@ impl HttpServer {
             .route("/mcp", any(handle_mcp))
             .route("/healthz", any(|| async { "ok" }))
             .route("/metrics", any(handle_metrics))
-            .fallback(|| async { (StatusCode::NOT_FOUND, plain_headers(), "404 page not found\n") })
+            .fallback(|| async {
+                (
+                    StatusCode::NOT_FOUND,
+                    plain_headers(),
+                    "404 page not found\n",
+                )
+            })
             .with_state(self.clone())
     }
 
     /// Discards legacy sessions idle longer than `max_idle`.
     pub fn reap_idle(&self, max_idle: Duration) -> usize {
         let now = Instant::now();
-        let mut sessions = self.inner.sessions.lock().unwrap_or_else(|e| e.into_inner());
+        let mut sessions = self
+            .inner
+            .sessions
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         let before = sessions.len();
         sessions.retain(|_, s| now.duration_since(s.last_active()) < max_idle);
         let reaped = before - sessions.len();
         if reaped > 0 {
             self.inner.metrics.sessions_reaped.inc_by(reaped as f64);
-            self.inner.metrics.sessions_active.set(sessions.len() as f64);
+            self.inner
+                .metrics
+                .sessions_active
+                .set(sessions.len() as f64);
         }
         reaped
     }
@@ -153,18 +176,26 @@ impl HttpServer {
             shutdown.await;
             h2.graceful_shutdown(Some(Duration::from_secs(10)));
         });
-        let app = self.router().into_make_service_with_connect_info::<SocketAddr>();
+        let app = self
+            .router()
+            .into_make_service_with_connect_info::<SocketAddr>();
         let result = if use_tls {
             let _ = rustls::crypto::ring::default_provider().install_default();
             let cfg = axum_server::tls_rustls::RustlsConfig::from_pem_file(tls_cert, tls_key)
                 .await
                 .map_err(|e| format!("tls config: {e}"))?;
             let mut srv = axum_server::bind_rustls(addr, cfg).handle(handle);
-            srv.http_builder().http1().timer(TokioTimer::new()).header_read_timeout(Duration::from_secs(10));
+            srv.http_builder()
+                .http1()
+                .timer(TokioTimer::new())
+                .header_read_timeout(Duration::from_secs(10));
             srv.serve(app).await
         } else {
             let mut srv = axum_server::bind(addr).handle(handle);
-            srv.http_builder().http1().timer(TokioTimer::new()).header_read_timeout(Duration::from_secs(10));
+            srv.http_builder()
+                .http1()
+                .timer(TokioTimer::new())
+                .header_read_timeout(Duration::from_secs(10));
             srv.serve(app).await
         };
         result.map_err(|e| e.to_string())
@@ -173,7 +204,11 @@ impl HttpServer {
 
 fn resolve_addr(addr: &str) -> Result<SocketAddr, String> {
     // Accept Go-style ":8080" as all interfaces.
-    let a = if let Some(port) = addr.strip_prefix(':') { format!("0.0.0.0:{port}") } else { addr.to_string() };
+    let a = if let Some(port) = addr.strip_prefix(':') {
+        format!("0.0.0.0:{port}")
+    } else {
+        addr.to_string()
+    };
     use std::net::ToSocketAddrs;
     a.to_socket_addrs()
         .map_err(|e| format!("listen tcp {addr}: {e}"))?
@@ -186,17 +221,24 @@ pub fn validate_tls_pair(cert: &str, key: &str) -> Result<bool, String> {
     match (cert.is_empty(), key.is_empty()) {
         (true, true) => return Ok(false),
         (true, false) | (false, true) => {
-            return Err("tls config invalid: both --tls-cert and --tls-key must be set, or neither".into());
+            return Err(
+                "tls config invalid: both --tls-cert and --tls-key must be set, or neither".into(),
+            );
         }
         _ => {}
     }
-    std::fs::metadata(cert).map_err(|e| format!("tls cert: {}", crate::go::os::path_error("stat", cert, &e)))?;
-    std::fs::metadata(key).map_err(|e| format!("tls key: {}", crate::go::os::path_error("stat", key, &e)))?;
+    std::fs::metadata(cert)
+        .map_err(|e| format!("tls cert: {}", crate::go::os::path_error("stat", cert, &e)))?;
+    std::fs::metadata(key)
+        .map_err(|e| format!("tls key: {}", crate::go::os::path_error("stat", key, &e)))?;
     Ok(true)
 }
 
 fn plain_headers() -> [(header::HeaderName, &'static str); 2] {
-    [(header::CONTENT_TYPE, "text/plain; charset=utf-8"), (header::X_CONTENT_TYPE_OPTIONS, "nosniff")]
+    [
+        (header::CONTENT_TYPE, "text/plain; charset=utf-8"),
+        (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
+    ]
 }
 
 /// Go `http.Error`: plain text with a trailing newline.
@@ -205,7 +247,12 @@ fn http_error(status: StatusCode, msg: &str) -> AxResponse {
 }
 
 fn json_response(status: StatusCode, resp: &Response) -> AxResponse {
-    (status, [(header::CONTENT_TYPE, "application/json")], resp.to_bytes()).into_response()
+    (
+        status,
+        [(header::CONTENT_TYPE, "application/json")],
+        resp.to_bytes(),
+    )
+        .into_response()
 }
 
 async fn handle_metrics(State(srv): State<HttpServer>) -> AxResponse {
@@ -236,8 +283,12 @@ async fn handle_mcp(State(srv): State<HttpServer>, req: AxRequest) -> AxResponse
     let elapsed = start.elapsed();
     let status = resp.status().as_u16();
     let m = &srv.inner.metrics;
-    m.http_requests.with_label_values(&[method.as_str(), &status.to_string()]).inc();
-    m.http_duration.with_label_values(&[method.as_str()]).observe(elapsed.as_secs_f64());
+    m.http_requests
+        .with_label_values(&[method.as_str(), &status.to_string()])
+        .inc();
+    m.http_duration
+        .with_label_values(&[method.as_str()])
+        .observe(elapsed.as_secs_f64());
     logging::info(
         "http_request",
         &[
@@ -264,7 +315,10 @@ async fn serve_mcp(srv: &HttpServer, req: AxRequest) -> AxResponse {
     if !check_auth(&srv.inner, req.headers()) {
         srv.inner.metrics.auth_failures.inc();
         let mut r = http_error(StatusCode::UNAUTHORIZED, "unauthorized");
-        r.headers_mut().insert(header::WWW_AUTHENTICATE, HeaderValue::from_static("Bearer realm=\"asc-mcp\""));
+        r.headers_mut().insert(
+            header::WWW_AUTHENTICATE,
+            HeaderValue::from_static("Bearer realm=\"asc-mcp\""),
+        );
         return r;
     }
     match *req.method() {
@@ -272,18 +326,25 @@ async fn serve_mcp(srv: &HttpServer, req: AxRequest) -> AxResponse {
         Method::DELETE => handle_delete(srv, req.headers()),
         Method::OPTIONS => {
             let mut r = StatusCode::NO_CONTENT.into_response();
-            r.headers_mut().insert(header::ALLOW, HeaderValue::from_static("POST, DELETE, OPTIONS"));
+            r.headers_mut().insert(
+                header::ALLOW,
+                HeaderValue::from_static("POST, DELETE, OPTIONS"),
+            );
             r
         }
         Method::GET => {
             // No server-initiated stream is offered (2026-07-28 removed it).
             let mut r = http_error(StatusCode::METHOD_NOT_ALLOWED, "method not allowed");
-            r.headers_mut().insert(header::ALLOW, HeaderValue::from_static("POST, DELETE"));
+            r.headers_mut()
+                .insert(header::ALLOW, HeaderValue::from_static("POST, DELETE"));
             r
         }
         _ => {
             let mut r = http_error(StatusCode::METHOD_NOT_ALLOWED, "method not allowed");
-            r.headers_mut().insert(header::ALLOW, HeaderValue::from_static("POST, DELETE, OPTIONS"));
+            r.headers_mut().insert(
+                header::ALLOW,
+                HeaderValue::from_static("POST, DELETE, OPTIONS"),
+            );
             r
         }
     }
@@ -300,7 +361,10 @@ fn check_origin(inner: &Inner, h: &HeaderMap) -> bool {
     if inner.allowed_origins.iter().any(|o| *o == origin) {
         return true;
     }
-    let Some(rest) = origin.strip_prefix("http://").or_else(|| origin.strip_prefix("https://")) else {
+    let Some(rest) = origin
+        .strip_prefix("http://")
+        .or_else(|| origin.strip_prefix("https://"))
+    else {
         return false;
     };
     let host = header_str(h, "Host").to_ascii_lowercase();
@@ -308,7 +372,10 @@ fn check_origin(inner: &Inner, h: &HeaderMap) -> bool {
         return true;
     }
     let hostname = if rest.starts_with('[') {
-        rest.split(']').next().map(|s| format!("{s}]")).unwrap_or_default()
+        rest.split(']')
+            .next()
+            .map(|s| format!("{s}]"))
+            .unwrap_or_default()
     } else {
         rest.split(':').next().unwrap_or("").to_string()
     };
@@ -342,7 +409,12 @@ async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
     }
     let req = match crate::go::json::parse(&body).and_then(|v| Request::from_value(&v)) {
         Ok(r) => r,
-        Err(e) => return json_response(StatusCode::BAD_REQUEST, &Response::error(None, mcp::ERR_PARSE, "Parse error", e)),
+        Err(e) => {
+            return json_response(
+                StatusCode::BAD_REQUEST,
+                &Response::error(None, mcp::ERR_PARSE, "Parse error", e),
+            );
+        }
     };
     // Era detection. A malformed _meta cannot name a version, so the
     // header and method decide; initialize is always legacy.
@@ -370,21 +442,36 @@ async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
     } else {
         let id = header_str(&headers, SESSION_HEADER).to_string();
         if id.is_empty() {
-            return http_error(StatusCode::BAD_REQUEST, &format!("missing {SESSION_HEADER} header"));
+            return http_error(
+                StatusCode::BAD_REQUEST,
+                &format!("missing {SESSION_HEADER} header"),
+            );
         }
-        let sess = inner.sessions.lock().unwrap_or_else(|e| e.into_inner()).get(&id).cloned();
+        let sess = inner
+            .sessions
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(&id)
+            .cloned();
         let Some(sess) = sess else {
             return http_error(StatusCode::NOT_FOUND, "unknown session");
         };
         if !header_pv.is_empty() && !mcp::SUPPORTED_PROTOCOL_VERSIONS.contains(&header_pv) {
-            return http_error(StatusCode::BAD_REQUEST, &format!("unsupported {PROTOCOL_VERSION_HEADER}"));
+            return http_error(
+                StatusCode::BAD_REQUEST,
+                &format!("unsupported {PROTOCOL_VERSION_HEADER}"),
+            );
         }
         (id, sess)
     };
 
     let Some(out) = inner.dispatcher.dispatch(&req, &sess).await else {
         if is_init {
-            inner.sessions.lock().unwrap_or_else(|e| e.into_inner()).remove(&sess_id);
+            inner
+                .sessions
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .remove(&sess_id);
         }
         return StatusCode::ACCEPTED.into_response();
     };
@@ -394,7 +481,10 @@ async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
             r.headers_mut().insert(SESSION_HEADER, v);
         }
     }
-    r.headers_mut().insert(PROTOCOL_VERSION_HEADER, HeaderValue::from_static(mcp::PROTOCOL_VERSION));
+    r.headers_mut().insert(
+        PROTOCOL_VERSION_HEADER,
+        HeaderValue::from_static(mcp::PROTOCOL_VERSION),
+    );
     r
 }
 
@@ -425,31 +515,55 @@ pub fn decode_header_value(v: &str) -> Result<String, ()> {
     const SUFFIX: &str = "?=";
     if v.len() >= PREFIX.len() + SUFFIX.len() && v.starts_with(PREFIX) && v.ends_with(SUFFIX) {
         let inner = &v[PREFIX.len()..v.len() - SUFFIX.len()];
-        let bytes = base64::engine::general_purpose::STANDARD.decode(inner).map_err(|_| ())?;
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(inner)
+            .map_err(|_| ())?;
         return String::from_utf8(bytes).map_err(|_| ());
     }
     Ok(v.to_string())
 }
 
 fn mismatch(req: &Request, header: &str, detail: String) -> AxResponse {
-    let resp = Response::error(req.id.clone(), mcp::ERR_HEADER_MISMATCH, format!("Header mismatch: {detail}"), header);
+    let resp = Response::error(
+        req.id.clone(),
+        mcp::ERR_HEADER_MISMATCH,
+        format!("Header mismatch: {detail}"),
+        header,
+    );
     modern_json(StatusCode::BAD_REQUEST, &resp)
 }
 
 fn modern_json(status: StatusCode, resp: &Response) -> AxResponse {
     let mut r = json_response(status, resp);
-    r.headers_mut().insert(PROTOCOL_VERSION_HEADER, HeaderValue::from_static(mcp::LATEST_PROTOCOL_VERSION));
+    r.headers_mut().insert(
+        PROTOCOL_VERSION_HEADER,
+        HeaderValue::from_static(mcp::LATEST_PROTOCOL_VERSION),
+    );
     r
 }
 
 /// Serves a 2026-07-28 POST. Sessions do not exist in this revision: any
 /// `Mcp-Session-Id` is ignored and none is minted.
-async fn handle_modern_post(srv: &HttpServer, headers: &HeaderMap, req: Request, meta: &RequestMeta) -> AxResponse {
+async fn handle_modern_post(
+    srv: &HttpServer,
+    headers: &HeaderMap,
+    req: Request,
+    meta: &RequestMeta,
+) -> AxResponse {
     // Mcp-Method must mirror the body byte-for-byte (no decoding).
     let hm = headers.get(METHOD_HEADER).map(|v| v.as_bytes());
     if hm != Some(req.method.as_bytes()) {
-        let got = hm.map(|b| String::from_utf8_lossy(b).into_owned()).unwrap_or_default();
-        return mismatch(&req, METHOD_HEADER, format!("{METHOD_HEADER} header value '{got}' does not match body value '{}'", req.method));
+        let got = hm
+            .map(|b| String::from_utf8_lossy(b).into_owned())
+            .unwrap_or_default();
+        return mismatch(
+            &req,
+            METHOD_HEADER,
+            format!(
+                "{METHOD_HEADER} header value '{got}' does not match body value '{}'",
+                req.method
+            ),
+        );
     }
     // MCP-Protocol-Version must mirror _meta. A body without a version is
     // left to the dispatcher, which rejects it as invalid params (except
@@ -457,17 +571,27 @@ async fn handle_modern_post(srv: &HttpServer, headers: &HeaderMap, req: Request,
     if !meta.protocol_version.is_empty() {
         let hp = headers.get(PROTOCOL_VERSION_HEADER).map(|v| v.as_bytes());
         if hp != Some(meta.protocol_version.as_bytes()) {
-            let got = hp.map(|b| String::from_utf8_lossy(b).into_owned()).unwrap_or_default();
+            let got = hp
+                .map(|b| String::from_utf8_lossy(b).into_owned())
+                .unwrap_or_default();
             return mismatch(
                 &req,
                 PROTOCOL_VERSION_HEADER,
-                format!("{PROTOCOL_VERSION_HEADER} header value '{got}' does not match body value '{}'", meta.protocol_version),
+                format!(
+                    "{PROTOCOL_VERSION_HEADER} header value '{got}' does not match body value '{}'",
+                    meta.protocol_version
+                ),
             );
         }
     }
     // Mcp-Name is required on tools/call and must mirror params.name.
     if req.method == "tools/call" {
-        let name = req.params.as_ref().and_then(|p| p.get("name")).and_then(|n| n.as_str()).unwrap_or("");
+        let name = req
+            .params
+            .as_ref()
+            .and_then(|p| p.get("name"))
+            .and_then(|n| n.as_str())
+            .unwrap_or("");
         let raw = headers.get(NAME_HEADER).and_then(|v| v.to_str().ok());
         let decoded = raw.map(decode_header_value);
         match decoded {
@@ -476,17 +600,27 @@ async fn handle_modern_post(srv: &HttpServer, headers: &HeaderMap, req: Request,
                 return mismatch(
                     &req,
                     NAME_HEADER,
-                    format!("{NAME_HEADER} header value '{}' does not match body value '{name}'", raw.unwrap_or("")),
+                    format!(
+                        "{NAME_HEADER} header value '{}' does not match body value '{name}'",
+                        raw.unwrap_or("")
+                    ),
                 );
             }
         }
     }
 
     let sess = Session::new();
-    let out = srv.inner.dispatcher.dispatch_modern_forced(&req, &sess).await;
+    let out = srv
+        .inner
+        .dispatcher
+        .dispatch_modern_forced(&req, &sess)
+        .await;
     let Some(out) = out else {
         let mut r = StatusCode::ACCEPTED.into_response();
-        r.headers_mut().insert(PROTOCOL_VERSION_HEADER, HeaderValue::from_static(mcp::LATEST_PROTOCOL_VERSION));
+        r.headers_mut().insert(
+            PROTOCOL_VERSION_HEADER,
+            HeaderValue::from_static(mcp::LATEST_PROTOCOL_VERSION),
+        );
         return r;
     };
     let status = match &out.response.error {
@@ -504,7 +638,9 @@ fn sse_response(status: StatusCode, out: &Outcome) -> AxResponse {
     let mut body = String::new();
     for n in &out.notifications {
         body.push_str("event: message\ndata: ");
-        body.push_str(&String::from_utf8_lossy(&crate::go::json::to_go_json_bytes(n)));
+        body.push_str(&String::from_utf8_lossy(
+            &crate::go::json::to_go_json_bytes(n),
+        ));
         body.push_str("\n\n");
     }
     body.push_str("event: message\ndata: ");
@@ -512,10 +648,16 @@ fn sse_response(status: StatusCode, out: &Outcome) -> AxResponse {
     body.push_str("\n\n");
     let mut r = (status, Body::from(Bytes::from(body))).into_response();
     let h = r.headers_mut();
-    h.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/event-stream"));
+    h.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("text/event-stream"),
+    );
     h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
     h.insert("X-Accel-Buffering", HeaderValue::from_static("no"));
-    h.insert(PROTOCOL_VERSION_HEADER, HeaderValue::from_static(mcp::LATEST_PROTOCOL_VERSION));
+    h.insert(
+        PROTOCOL_VERSION_HEADER,
+        HeaderValue::from_static(mcp::LATEST_PROTOCOL_VERSION),
+    );
     r
 }
 
@@ -537,7 +679,10 @@ pub fn status_for_modern_error(code: i64) -> StatusCode {
 fn handle_delete(srv: &HttpServer, h: &HeaderMap) -> AxResponse {
     let id = header_str(h, SESSION_HEADER);
     if id.is_empty() {
-        return http_error(StatusCode::BAD_REQUEST, &format!("missing {SESSION_HEADER} header"));
+        return http_error(
+            StatusCode::BAD_REQUEST,
+            &format!("missing {SESSION_HEADER} header"),
+        );
     }
     let (existed, active) = {
         let mut s = srv.inner.sessions.lock().unwrap_or_else(|e| e.into_inner());

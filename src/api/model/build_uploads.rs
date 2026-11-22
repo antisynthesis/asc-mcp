@@ -5,13 +5,13 @@
 
 #![allow(missing_docs)]
 
-use crate::go_struct;
-#[allow(unused_imports)]
-use crate::go::{GoBytes, GoMap, GoSlice, GoTime, RawMessage};
-#[allow(unused_imports)]
-use serde_json::Value;
 #[allow(unused_imports)]
 use super::*;
+#[allow(unused_imports)]
+use crate::go::{GoBytes, GoMap, GoSlice, GoTime, RawMessage};
+use crate::go_struct;
+#[allow(unused_imports)]
+use serde_json::Value;
 
 go_struct! {
 /// BuildUploadsResponse represents a list of build uploads.
@@ -236,4 +236,3 @@ pub struct BuildUploadFileUpdateAttributes ("api.BuildUploadFileUpdateAttributes
     pub uploaded: Option<bool> => "uploaded", omitempty;
 }
 }
-

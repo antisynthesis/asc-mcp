@@ -118,7 +118,10 @@ pub fn init(format: Format, level: Level) {
 }
 
 fn config() -> &'static Config {
-    CONFIG.get_or_init(|| Config { format: Format::Std, level: Level::Info })
+    CONFIG.get_or_init(|| Config {
+        format: Format::Std,
+        level: Level::Info,
+    })
 }
 
 fn now_local() -> time::OffsetDateTime {
@@ -167,7 +170,12 @@ pub fn log(level: Level, msg: &str, attrs: &[(&str, Val)]) {
             std_line(&s);
         }
         Format::Text => {
-            let mut s = format!("time={} level={} msg={}", rfc3339_millis(), level.name(), text_value(msg));
+            let mut s = format!(
+                "time={} level={} msg={}",
+                rfc3339_millis(),
+                level.name(),
+                text_value(msg)
+            );
             for (k, v) in attrs {
                 s.push(' ');
                 s.push_str(&text_attr(k, v));
@@ -212,7 +220,12 @@ fn rfc3339_millis() -> String {
         "Z".to_string()
     } else {
         let (h, m, _) = off.as_hms();
-        format!("{}{:02}:{:02}", if h < 0 || m < 0 { '-' } else { '+' }, h.abs(), m.abs())
+        format!(
+            "{}{:02}:{:02}",
+            if h < 0 || m < 0 { '-' } else { '+' },
+            h.abs(),
+            m.abs()
+        )
     };
     format!(
         "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}{}",
@@ -228,8 +241,14 @@ fn rfc3339_millis() -> String {
 }
 
 fn text_value(s: &str) -> String {
-    let needs_quote = s.is_empty() || s.chars().any(|c| c == ' ' || c == '=' || c == '"' || !crate::go::fmt::is_print(c));
-    if needs_quote { crate::go::fmt::quote(s) } else { s.to_string() }
+    let needs_quote = s.is_empty()
+        || s.chars()
+            .any(|c| c == ' ' || c == '=' || c == '"' || !crate::go::fmt::is_print(c));
+    if needs_quote {
+        crate::go::fmt::quote(s)
+    } else {
+        s.to_string()
+    }
 }
 
 fn text_attr(k: &str, v: &Val) -> String {
@@ -251,13 +270,20 @@ pub fn go_duration(d: Duration) -> String {
         return format!("{ns}ns");
     }
     let trim = |s: String| {
-        if s.contains('.') { s.trim_end_matches('0').trim_end_matches('.').to_string() } else { s }
+        if s.contains('.') {
+            s.trim_end_matches('0').trim_end_matches('.').to_string()
+        } else {
+            s
+        }
     };
     if ns < 1_000_000 {
         return format!("{}µs", trim(format!("{}.{:03}", ns / 1_000, ns % 1_000)));
     }
     if ns < 1_000_000_000 {
-        return format!("{}ms", trim(format!("{}.{:06}", ns / 1_000_000, ns % 1_000_000)));
+        return format!(
+            "{}ms",
+            trim(format!("{}.{:06}", ns / 1_000_000, ns % 1_000_000))
+        );
     }
     let total_secs = ns / 1_000_000_000;
     let frac = ns % 1_000_000_000;

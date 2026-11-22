@@ -5,13 +5,13 @@
 
 #![allow(missing_docs)]
 
-use crate::go_struct;
-#[allow(unused_imports)]
-use crate::go::{GoBytes, GoMap, GoSlice, GoTime, RawMessage};
-#[allow(unused_imports)]
-use serde_json::Value;
 #[allow(unused_imports)]
 use super::*;
+#[allow(unused_imports)]
+use crate::go::{GoBytes, GoMap, GoSlice, GoTime, RawMessage};
+use crate::go_struct;
+#[allow(unused_imports)]
+use serde_json::Value;
 
 go_struct! {
 /// GameCenterLeaderboardSetsResponse represents a list of leaderboard sets.
@@ -1151,4 +1151,3 @@ pub struct GameCenterLeaderboardEntrySubmissionCreateAttributes ("api.GameCenter
     pub pre_released: Option<bool> => "preReleased", omitempty;
 }
 }
-

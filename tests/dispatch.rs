@@ -4,22 +4,24 @@
 
 mod common;
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use asc_mcp::mcp::{self, Response};
 use asc_mcp::server::dispatch::{self, Dispatcher, Session};
 use asc_mcp::tools::Registry;
 use common::*;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 fn full_dispatcher() -> Dispatcher {
     Dispatcher::new(Arc::new(Registry::new(None)))
 }
 
 fn err_code(v: &Value) -> i64 {
-    v["error"]["code"].as_i64().unwrap_or_else(|| panic!("expected an error, got {v}"))
+    v["error"]["code"]
+        .as_i64()
+        .unwrap_or_else(|| panic!("expected an error, got {v}"))
 }
 
 // Go: TestServer_HandleInitialize
@@ -35,11 +37,20 @@ async fn handle_initialize() {
     )
     .await;
     assert!(v.get("error").is_none(), "unexpected error: {v}");
-    assert!(sess.is_initialized(), "session should be initialized after initialize");
+    assert!(
+        sess.is_initialized(),
+        "session should be initialized after initialize"
+    );
     // 2024-11-05 is supported, so it is echoed back.
     assert_eq!(v["result"]["protocolVersion"], "2024-11-05");
     assert_eq!(v["result"]["serverInfo"]["name"], dispatch::SERVER_NAME);
-    assert!(!v["result"]["instructions"].as_str().unwrap_or("").is_empty(), "instructions must be set");
+    assert!(
+        !v["result"]["instructions"]
+            .as_str()
+            .unwrap_or("")
+            .is_empty(),
+        "instructions must be set"
+    );
 }
 
 // Go: TestServer_HandleInitialize_NegotiatesLatest
@@ -77,7 +88,12 @@ async fn initialize_with_modern_meta_is_still_legacy() {
     let sess = Session::new();
     let mut params = init_params("2025-06-18");
     params["_meta"] = modern_meta("2026-07-28", true)["_meta"].clone();
-    let v = dispatch(&d, &sess, json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":params})).await;
+    let v = dispatch(
+        &d,
+        &sess,
+        json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":params}),
+    )
+    .await;
     assert_eq!(v["result"]["protocolVersion"], "2025-06-18");
     assert!(v["result"].get("resultType").is_none());
     assert!(sess.is_initialized());
@@ -87,7 +103,12 @@ async fn initialize_with_modern_meta_is_still_legacy() {
 #[tokio::test]
 async fn handle_ping() {
     let d = full_dispatcher();
-    let v = dispatch(&d, &Session::new(), json!({"jsonrpc":"2.0","id":42,"method":"ping"})).await;
+    let v = dispatch(
+        &d,
+        &Session::new(),
+        json!({"jsonrpc":"2.0","id":42,"method":"ping"}),
+    )
+    .await;
     assert!(v.get("error").is_none(), "unexpected error: {v}");
     assert_eq!(v["result"], json!({}));
     assert_eq!(v["id"], 42);
@@ -99,7 +120,12 @@ async fn handle_tools_list() {
     let d = full_dispatcher();
     let sess = Session::new();
     initialize(&d, &sess).await;
-    let v = dispatch(&d, &sess, json!({"jsonrpc":"2.0","id":2,"method":"tools/list"})).await;
+    let v = dispatch(
+        &d,
+        &sess,
+        json!({"jsonrpc":"2.0","id":2,"method":"tools/list"}),
+    )
+    .await;
     assert!(v.get("error").is_none(), "unexpected error: {v}");
     let tools = v["result"]["tools"].as_array().expect("tools array");
     // 221 base + 3 upload + 6 build upload + 8 beta feedback + 10
@@ -111,7 +137,12 @@ async fn handle_tools_list() {
 #[tokio::test]
 async fn handle_tools_list_not_initialized() {
     let d = full_dispatcher();
-    let v = dispatch(&d, &Session::new(), json!({"jsonrpc":"2.0","id":1,"method":"tools/list"})).await;
+    let v = dispatch(
+        &d,
+        &Session::new(),
+        json!({"jsonrpc":"2.0","id":1,"method":"tools/list"}),
+    )
+    .await;
     assert_eq!(err_code(&v), mcp::ERR_INVALID_REQUEST);
 }
 
@@ -132,7 +163,12 @@ async fn handle_tools_call_not_initialized() {
 #[tokio::test]
 async fn handle_request_invalid_jsonrpc() {
     let d = full_dispatcher();
-    let v = dispatch(&d, &Session::new(), json!({"jsonrpc":"1.0","id":1,"method":"initialize"})).await;
+    let v = dispatch(
+        &d,
+        &Session::new(),
+        json!({"jsonrpc":"1.0","id":1,"method":"initialize"}),
+    )
+    .await;
     assert_eq!(err_code(&v), mcp::ERR_INVALID_REQUEST);
 }
 
@@ -140,7 +176,12 @@ async fn handle_request_invalid_jsonrpc() {
 #[tokio::test]
 async fn handle_request_method_not_found() {
     let d = full_dispatcher();
-    let v = dispatch(&d, &Session::new(), json!({"jsonrpc":"2.0","id":1,"method":"unknown/method"})).await;
+    let v = dispatch(
+        &d,
+        &Session::new(),
+        json!({"jsonrpc":"2.0","id":1,"method":"unknown/method"}),
+    )
+    .await;
     assert_eq!(err_code(&v), mcp::ERR_METHOD_NOT_FOUND);
 }
 
@@ -157,7 +198,12 @@ fn send_result_shape() {
 // Go: TestServer_SendError
 #[test]
 fn send_error_shape() {
-    let r = Response::error(Some(json!(1)), mcp::ERR_INTERNAL, "Internal error", "details");
+    let r = Response::error(
+        Some(json!(1)),
+        mcp::ERR_INTERNAL,
+        "Internal error",
+        "details",
+    );
     let v: Value = serde_json::from_slice(&r.to_bytes()).unwrap();
     assert_eq!(v["error"]["code"], mcp::ERR_INTERNAL);
     assert_eq!(v["error"]["message"], "Internal error");
@@ -169,7 +215,12 @@ fn send_error_shape() {
 #[tokio::test]
 async fn notifications_initialized_gets_no_response() {
     let d = full_dispatcher();
-    let out = d.dispatch(&req(json!({"jsonrpc":"2.0","method":"notifications/initialized"})), &Session::new()).await;
+    let out = d
+        .dispatch(
+            &req(json!({"jsonrpc":"2.0","method":"notifications/initialized"})),
+            &Session::new(),
+        )
+        .await;
     assert!(out.is_none(), "expected no response for notification");
 }
 
@@ -188,10 +239,19 @@ async fn modern_tools_list_no_handshake() {
     let r = &v["result"];
     assert!(!r["tools"].as_array().unwrap().is_empty());
     assert_eq!(r["resultType"], mcp::RESULT_TYPE_COMPLETE);
-    assert!(r["ttlMs"].is_i64(), "ttlMs must be set on modern tools/list");
+    assert!(
+        r["ttlMs"].is_i64(),
+        "ttlMs must be set on modern tools/list"
+    );
     assert_eq!(r["cacheScope"], mcp::CACHE_SCOPE_PUBLIC);
-    assert_eq!(r["_meta"][mcp::META_SERVER_INFO]["name"], dispatch::SERVER_NAME);
-    assert!(!sess.is_initialized(), "modern requests must not touch the handshake state");
+    assert_eq!(
+        r["_meta"][mcp::META_SERVER_INFO]["name"],
+        dispatch::SERVER_NAME
+    );
+    assert!(
+        !sess.is_initialized(),
+        "modern requests must not touch the handshake state"
+    );
 }
 
 // Go: TestServer_Modern_UnsupportedProtocolVersion
@@ -206,7 +266,10 @@ async fn modern_unsupported_protocol_version() {
     .await;
     assert_eq!(err_code(&v), mcp::ERR_UNSUPPORTED_PROTOCOL_VERSION);
     assert_eq!(v["error"]["data"]["requested"], "2025-06-18");
-    assert_eq!(v["error"]["data"]["supported"], json!(mcp::SUPPORTED_PROTOCOL_VERSIONS));
+    assert_eq!(
+        v["error"]["data"]["supported"],
+        json!(mcp::SUPPORTED_PROTOCOL_VERSIONS)
+    );
     // Intentional difference from Go: a legacy version sent via _meta gets
     // a message that says how to use it (the handshake).
     assert_eq!(
@@ -261,10 +324,19 @@ async fn legacy_tools_list_no_modern_keys() {
     let d = full_dispatcher();
     let sess = Session::new();
     initialize(&d, &sess).await;
-    let out = d.dispatch(&req(json!({"jsonrpc":"2.0","id":1,"method":"tools/list"})), &sess).await.unwrap();
+    let out = d
+        .dispatch(
+            &req(json!({"jsonrpc":"2.0","id":1,"method":"tools/list"})),
+            &sess,
+        )
+        .await
+        .unwrap();
     let raw = String::from_utf8(out.response.to_bytes()).unwrap();
     for key in [r#""resultType""#, r#""ttlMs""#, r#""cacheScope""#] {
-        assert!(!raw.contains(key), "legacy tools/list response contains modern key {key}");
+        assert!(
+            !raw.contains(key),
+            "legacy tools/list response contains modern key {key}"
+        );
     }
 }
 
@@ -282,9 +354,17 @@ async fn discover_validates_explicit_protocol_version() {
     .await;
     assert_eq!(err_code(&v), mcp::ERR_UNSUPPORTED_PROTOCOL_VERSION);
 
-    let v = dispatch(&d, &Session::new(), json!({"jsonrpc":"2.0","id":2,"method":"server/discover"})).await;
+    let v = dispatch(
+        &d,
+        &Session::new(),
+        json!({"jsonrpc":"2.0","id":2,"method":"server/discover"}),
+    )
+    .await;
     assert!(v.get("error").is_none(), "unexpected error: {v}");
-    assert_eq!(v["result"]["supportedVersions"], json!(mcp::SUPPORTED_PROTOCOL_VERSIONS));
+    assert_eq!(
+        v["result"]["supportedVersions"],
+        json!(mcp::SUPPORTED_PROTOCOL_VERSIONS)
+    );
 
     let v = dispatch(
         &d,
@@ -337,7 +417,10 @@ async fn modern_tools_call_param_types() {
     assert!(v.get("error").is_none(), "unexpected error: {v}");
     assert_eq!(v["result"]["content"][0]["text"], "ok");
     assert_eq!(v["result"]["resultType"], mcp::RESULT_TYPE_COMPLETE);
-    assert_eq!(v["result"]["_meta"][mcp::META_SERVER_INFO]["name"], dispatch::SERVER_NAME);
+    assert_eq!(
+        v["result"]["_meta"][mcp::META_SERVER_INFO]["name"],
+        dispatch::SERVER_NAME
+    );
 }
 
 /// Unknown tools: -32602 on the modern path, the historical -32601 on the
@@ -354,7 +437,12 @@ async fn unknown_tool_codes_per_era() {
     assert_eq!(err_code(&v), mcp::ERR_INVALID_PARAMS);
     let sess = Session::new();
     initialize(&d, &sess).await;
-    let v = dispatch(&d, &sess, json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"nope"}})).await;
+    let v = dispatch(
+        &d,
+        &sess,
+        json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"nope"}}),
+    )
+    .await;
     assert_eq!(err_code(&v), mcp::ERR_METHOD_NOT_FOUND);
 }
 
@@ -393,14 +481,20 @@ async fn subscriptions_listen_acknowledges_and_completes() {
     let ack = &out.notifications[0];
     assert_eq!(ack["jsonrpc"], "2.0");
     assert_eq!(ack["method"], "notifications/subscriptions/acknowledged");
-    assert!(ack.get("id").is_none(), "the acknowledgement is a notification");
+    assert!(
+        ack.get("id").is_none(),
+        "the acknowledgement is a notification"
+    );
     assert_eq!(ack["params"]["notifications"], json!({}));
     assert_eq!(ack["params"]["_meta"][mcp::META_SUBSCRIPTION_ID], "sub-1");
     let v = resp_json(&out);
     assert_eq!(v["id"], "sub-1");
     assert_eq!(v["result"]["resultType"], mcp::RESULT_TYPE_COMPLETE);
     assert_eq!(v["result"]["_meta"][mcp::META_SUBSCRIPTION_ID], "sub-1");
-    assert_eq!(v["result"]["_meta"][mcp::META_SERVER_INFO]["name"], dispatch::SERVER_NAME);
+    assert_eq!(
+        v["result"]["_meta"][mcp::META_SERVER_INFO]["name"],
+        dispatch::SERVER_NAME
+    );
 }
 
 /// A drop guard that records when the handler's future is torn down.
@@ -435,7 +529,8 @@ async fn dropping_dispatch_aborts_tool_call() {
     let d = Dispatcher::new(Arc::new(r));
     let sess = Session::new();
     initialize(&d, &sess).await;
-    let request = req(json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hang_tool"}}));
+    let request =
+        req(json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"hang_tool"}}));
     let out = tokio::select! {
         out = d.dispatch(&request, &sess) => Some(out),
         _ = started.notified() => None,
@@ -461,8 +556,16 @@ async fn handler_errors_and_panics_are_tool_errors() {
     let d = Dispatcher::new(Arc::new(r));
     let sess = Session::new();
     initialize(&d, &sess).await;
-    for (name, text) in [("fail_tool", "boom"), ("panic_tool", "internal error: tool handler panicked")] {
-        let v = dispatch(&d, &sess, json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":name}})).await;
+    for (name, text) in [
+        ("fail_tool", "boom"),
+        ("panic_tool", "internal error: tool handler panicked"),
+    ] {
+        let v = dispatch(
+            &d,
+            &sess,
+            json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":name}}),
+        )
+        .await;
         assert!(v.get("error").is_none(), "unexpected protocol error: {v}");
         assert_eq!(v["result"]["isError"], true);
         assert_eq!(v["result"]["content"][0]["text"], text);

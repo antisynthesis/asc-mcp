@@ -301,7 +301,10 @@ pub fn go_scan(data: &[u8]) -> Result<(), String> {
             for &want in rest {
                 let c = self.next()?;
                 if c != want {
-                    return Err(bad(c, &format!("in literal {name} (expecting {})", quote_char(want))));
+                    return Err(bad(
+                        c,
+                        &format!("in literal {name} (expecting {})", quote_char(want)),
+                    ));
                 }
             }
             Ok(())
@@ -419,7 +422,11 @@ pub fn go_scan(data: &[u8]) -> Result<(), String> {
             }
         }
     }
-    let mut s = S { b: data, i: 0, eof_space: false };
+    let mut s = S {
+        b: data,
+        i: 0,
+        eof_space: false,
+    };
     s.value()?;
     s.ws();
     if let Some(c) = s.peek() {
@@ -543,7 +550,11 @@ impl GoEncode for f64 {
 /// Formats a float64 exactly as Go's JSON encoder does.
 pub fn go_float_json(f: f64) -> String {
     if f == 0.0 {
-        return if f.is_sign_negative() { "-0".into() } else { "0".into() };
+        return if f.is_sign_negative() {
+            "-0".into()
+        } else {
+            "0".into()
+        };
     }
     let abs = f.abs();
     if (1e-6..1e21).contains(&abs) {
@@ -626,7 +637,10 @@ pub struct GoSlice<T> {
 
 impl<T> Default for GoSlice<T> {
     fn default() -> Self {
-        Self { items: Vec::new(), nil: true }
+        Self {
+            items: Vec::new(),
+            nil: true,
+        }
     }
 }
 
@@ -795,7 +809,10 @@ pub struct GoMap<T> {
 
 impl<T> Default for GoMap<T> {
     fn default() -> Self {
-        Self { map: BTreeMap::new(), nil: true }
+        Self {
+            map: BTreeMap::new(),
+            nil: true,
+        }
     }
 }
 
@@ -989,7 +1006,9 @@ impl GoDecode for GoTime {
                 *self = GoTime::parse_rfc3339(s).map_err(Fatal)?;
                 Ok(())
             }
-            _ => Err(Fatal("Time.UnmarshalJSON: input is not a JSON string".into())),
+            _ => Err(Fatal(
+                "Time.UnmarshalJSON: input is not a JSON string".into(),
+            )),
         }
     }
 }
@@ -1198,55 +1217,160 @@ mod tests {
     #[test]
     fn go_error_messages() {
         let cases = [
-            (r#"{"s":1}"#, "json: cannot unmarshal number into Go struct field Named.s of type string"),
-            (r#"{"i":"x"}"#, "json: cannot unmarshal string into Go struct field Named.i of type int"),
-            (r#"{"i":1.5}"#, "json: cannot unmarshal number 1.5 into Go struct field Named.i of type int"),
-            (r#"{"i":5.0}"#, "json: cannot unmarshal number 5.0 into Go struct field Named.i of type int"),
+            (
+                r#"{"s":1}"#,
+                "json: cannot unmarshal number into Go struct field Named.s of type string",
+            ),
+            (
+                r#"{"i":"x"}"#,
+                "json: cannot unmarshal string into Go struct field Named.i of type int",
+            ),
+            (
+                r#"{"i":1.5}"#,
+                "json: cannot unmarshal number 1.5 into Go struct field Named.i of type int",
+            ),
+            (
+                r#"{"i":5.0}"#,
+                "json: cannot unmarshal number 5.0 into Go struct field Named.i of type int",
+            ),
             // serde_json normalises exponent literals, so Go's "number 1e30" reads "number 1e+30" here.
-            (r#"{"i":1e30}"#, "json: cannot unmarshal number 1e+30 into Go struct field Named.i of type int"),
-            (r#"{"i64":"x"}"#, "json: cannot unmarshal string into Go struct field Named.i64 of type int64"),
-            (r#"{"f":"x"}"#, "json: cannot unmarshal string into Go struct field Named.f of type float64"),
-            (r#"{"b":1}"#, "json: cannot unmarshal number into Go struct field Named.b of type bool"),
-            (r#"{"p":"x"}"#, "json: cannot unmarshal string into Go struct field Named.p of type int"),
-            (r#"{"l":"x"}"#, "json: cannot unmarshal string into Go struct field Named.l of type []string"),
-            (r#"{"l":[1]}"#, "json: cannot unmarshal number into Go struct field Named.l of type string"),
-            (r#"{"m":{"k":"v"}}"#, "json: cannot unmarshal string into Go struct field Named.m of type []string"),
-            (r#"{"m":{"k":[1]}}"#, "json: cannot unmarshal number into Go struct field Named.m of type string"),
-            (r#"{"m":[]}"#, "json: cannot unmarshal array into Go struct field Named.m of type map[string][]string"),
-            (r#"{"in":{"n":"x"}}"#, "json: cannot unmarshal string into Go struct field Inner.in.n of type int"),
-            (r#"{"in":5}"#, "json: cannot unmarshal number into Go struct field Named.in of type main.Inner"),
-            (r#"{"ins":[{"n":"x"}]}"#, "json: cannot unmarshal string into Go struct field Inner.ins.n of type int"),
-            (r#"{"t":"bad"}"#, r#"parsing time "bad" as "2006-01-02T15:04:05Z07:00": cannot parse "bad" as "2006""#),
-            (r#"{"t":5}"#, "Time.UnmarshalJSON: input is not a JSON string"),
-            (r#"{"tt":"2024-01-01"}"#, r#"parsing time "2024-01-01" as "2006-01-02T15:04:05Z07:00": cannot parse "" as "T""#),
-            (r#"{"t":"2024-01-01T10:00:00+0000"}"#, r#"parsing time "2024-01-01T10:00:00+0000" as "2006-01-02T15:04:05Z07:00": cannot parse "+0000" as "Z07:00""#),
+            (
+                r#"{"i":1e30}"#,
+                "json: cannot unmarshal number 1e+30 into Go struct field Named.i of type int",
+            ),
+            (
+                r#"{"i64":"x"}"#,
+                "json: cannot unmarshal string into Go struct field Named.i64 of type int64",
+            ),
+            (
+                r#"{"f":"x"}"#,
+                "json: cannot unmarshal string into Go struct field Named.f of type float64",
+            ),
+            (
+                r#"{"b":1}"#,
+                "json: cannot unmarshal number into Go struct field Named.b of type bool",
+            ),
+            (
+                r#"{"p":"x"}"#,
+                "json: cannot unmarshal string into Go struct field Named.p of type int",
+            ),
+            (
+                r#"{"l":"x"}"#,
+                "json: cannot unmarshal string into Go struct field Named.l of type []string",
+            ),
+            (
+                r#"{"l":[1]}"#,
+                "json: cannot unmarshal number into Go struct field Named.l of type string",
+            ),
+            (
+                r#"{"m":{"k":"v"}}"#,
+                "json: cannot unmarshal string into Go struct field Named.m of type []string",
+            ),
+            (
+                r#"{"m":{"k":[1]}}"#,
+                "json: cannot unmarshal number into Go struct field Named.m of type string",
+            ),
+            (
+                r#"{"m":[]}"#,
+                "json: cannot unmarshal array into Go struct field Named.m of type map[string][]string",
+            ),
+            (
+                r#"{"in":{"n":"x"}}"#,
+                "json: cannot unmarshal string into Go struct field Inner.in.n of type int",
+            ),
+            (
+                r#"{"in":5}"#,
+                "json: cannot unmarshal number into Go struct field Named.in of type main.Inner",
+            ),
+            (
+                r#"{"ins":[{"n":"x"}]}"#,
+                "json: cannot unmarshal string into Go struct field Inner.ins.n of type int",
+            ),
+            (
+                r#"{"t":"bad"}"#,
+                r#"parsing time "bad" as "2006-01-02T15:04:05Z07:00": cannot parse "bad" as "2006""#,
+            ),
+            (
+                r#"{"t":5}"#,
+                "Time.UnmarshalJSON: input is not a JSON string",
+            ),
+            (
+                r#"{"tt":"2024-01-01"}"#,
+                r#"parsing time "2024-01-01" as "2006-01-02T15:04:05Z07:00": cannot parse "" as "T""#,
+            ),
+            (
+                r#"{"t":"2024-01-01T10:00:00+0000"}"#,
+                r#"parsing time "2024-01-01T10:00:00+0000" as "2006-01-02T15:04:05Z07:00": cannot parse "+0000" as "Z07:00""#,
+            ),
             (r#"{"bs":"!!"}"#, "illegal base64 data at input byte 0"),
-            (r#"{"bs":5}"#, "json: cannot unmarshal number into Go struct field Named.bs of type []uint8"),
-            ("[1]", "json: cannot unmarshal array into Go value of type main.Named"),
-            (r#""x""#, "json: cannot unmarshal string into Go value of type main.Named"),
+            (
+                r#"{"bs":5}"#,
+                "json: cannot unmarshal number into Go struct field Named.bs of type []uint8",
+            ),
+            (
+                "[1]",
+                "json: cannot unmarshal array into Go value of type main.Named",
+            ),
+            (
+                r#""x""#,
+                "json: cannot unmarshal string into Go value of type main.Named",
+            ),
             ("", "unexpected end of JSON input"),
-            ("nul", "invalid character ' ' in literal null (expecting 'l')"),
-            ("1.", "invalid character ' ' after decimal point in numeric literal"),
+            (
+                "nul",
+                "invalid character ' ' in literal null (expecting 'l')",
+            ),
+            (
+                "1.",
+                "invalid character ' ' after decimal point in numeric literal",
+            ),
             ("[1,", "unexpected end of JSON input"),
             ("-", "invalid character ' ' in numeric literal"),
-            ("tr", "invalid character ' ' in literal true (expecting 'u')"),
+            (
+                "tr",
+                "invalid character ' ' in literal true (expecting 'u')",
+            ),
             ("\"\\", "invalid character ' ' in string escape code"),
             ("{\"a\"", "unexpected end of JSON input"),
-            ("\u{1}", "invalid character '\\x01' looking for beginning of value"),
+            (
+                "\u{1}",
+                "invalid character '\\x01' looking for beginning of value",
+            ),
             ("\"ab", "unexpected end of JSON input"),
-            ("not json", "invalid character 'o' in literal null (expecting 'u')"),
-            ("{nope", "invalid character 'n' looking for beginning of object key string"),
+            (
+                "not json",
+                "invalid character 'o' in literal null (expecting 'u')",
+            ),
+            (
+                "{nope",
+                "invalid character 'n' looking for beginning of object key string",
+            ),
             ("[1 2]", "invalid character '2' after array element"),
             (r#"{"a" 1}"#, "invalid character '1' after object key"),
-            (r#"{"a":1 "b"}"#, "invalid character '\"' after object key:value pair"),
+            (
+                r#"{"a":1 "b"}"#,
+                "invalid character '\"' after object key:value pair",
+            ),
             ("01", "invalid character '1' after top-level value"),
             ("-x", "invalid character 'x' in numeric literal"),
-            ("1.x", "invalid character 'x' after decimal point in numeric literal"),
-            ("1ex", "invalid character 'x' in exponent of numeric literal"),
+            (
+                "1.x",
+                "invalid character 'x' after decimal point in numeric literal",
+            ),
+            (
+                "1ex",
+                "invalid character 'x' in exponent of numeric literal",
+            ),
             (r#""\q""#, "invalid character 'q' in string escape code"),
-            (r#""\u12x4""#, "invalid character 'x' in \\u hexadecimal character escape"),
+            (
+                r#""\u12x4""#,
+                "invalid character 'x' in \\u hexadecimal character escape",
+            ),
             ("\"a\tb\"", "invalid character '\\t' in string literal"),
-            (r#"{"i":"x","s":2}"#, "json: cannot unmarshal string into Go struct field Named.i of type int"),
+            (
+                r#"{"i":"x","s":2}"#,
+                "json: cannot unmarshal string into Go struct field Named.i of type int",
+            ),
             (r#"{"S":"case"}"#, "<nil>"),
         ];
         for (js, want) in cases {
@@ -1270,21 +1394,36 @@ mod tests {
         }
         let mut p = P::default();
         unmarshal(br#"{"LIMIT":3,"app_id":"a","cursor":"c"}"#, &mut p).unwrap();
-        assert_eq!((p.base.limit, p.base.cursor.as_str(), p.app_id.as_str()), (3, "c", "a"));
+        assert_eq!(
+            (p.base.limit, p.base.cursor.as_str(), p.app_id.as_str()),
+            (3, "c", "a")
+        );
         let mut p = P::default();
         assert_eq!(
             unmarshal(br#"{"limit":"x"}"#, &mut p).unwrap_err(),
             "json: cannot unmarshal string into Go struct field .Base.limit of type int"
         );
-        assert_eq!(String::from_utf8(marshal(&p)).unwrap(), r#"{"limit":0,"cursor":"","app_id":""}"#);
+        assert_eq!(
+            String::from_utf8(marshal(&p)).unwrap(),
+            r#"{"limit":0,"cursor":"","app_id":""}"#
+        );
     }
 
     #[test]
     fn go_float_formatting() {
         let cases = [
-            (0.0, "0"), (1.0, "1"), (1.5, "1.5"), (100.0, "100"), (1234567.0, "1234567"),
-            (123456.7, "123456.7"), (1e21, "1e+21"), (1e20, "100000000000000000000"),
-            (0.0001, "0.0001"), (0.00001, "0.00001"), (-2.5e-8, "-2.5e-8"), (100000000.0, "100000000"),
+            (0.0, "0"),
+            (1.0, "1"),
+            (1.5, "1.5"),
+            (100.0, "100"),
+            (1234567.0, "1234567"),
+            (123456.7, "123456.7"),
+            (1e21, "1e+21"),
+            (1e20, "100000000000000000000"),
+            (0.0001, "0.0001"),
+            (0.00001, "0.00001"),
+            (-2.5e-8, "-2.5e-8"),
+            (100000000.0, "100000000"),
         ];
         for (f, want) in cases {
             assert_eq!(go_float_json(f), want);
@@ -1304,13 +1443,20 @@ mod tests {
                 h: String => "h";
             }
         }
-        let e = E { h: "<a&b>".into(), ..Default::default() };
+        let e = E {
+            h: "<a&b>".into(),
+            ..Default::default()
+        };
         assert_eq!(
             String::from_utf8(marshal(&e)).unwrap(),
             r#"{"z":"0001-01-01T00:00:00Z","s":null,"m":null,"a":null,"h":"\u003ca\u0026b\u003e"}"#
         );
         let mut any = Value::Null;
-        unmarshal(br#"{"b":1,"a":[1.50,12345678901234567890,"x",null,true],"c":{"z":1,"y":2}}"#, &mut any).unwrap();
+        unmarshal(
+            br#"{"b":1,"a":[1.50,12345678901234567890,"x",null,true],"c":{"z":1,"y":2}}"#,
+            &mut any,
+        )
+        .unwrap();
         assert_eq!(
             String::from_utf8(marshal(&any)).unwrap(),
             r#"{"a":[1.5,12345678901234567000,"x",null,true],"b":1,"c":{"y":2,"z":1}}"#
