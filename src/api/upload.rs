@@ -47,11 +47,15 @@ impl Client {
             let method = if op.method.is_empty() { "PUT" } else { op.method.as_str() };
             let method = reqwest::Method::from_bytes(method.as_bytes())
                 .map_err(|_| Error::msg(format!("upload op {i}: build request: net/http: invalid method {}", crate::go::fmt::quote(method))))?;
-            let mut req = hc.request(method, &op.url).body(chunk);
+            // Pre-signed storage URLs get only the operation's own headers
+            // plus our User-Agent (no default Accept), like the Go client.
+            let mut req = hc.request(method, &op.url).header(reqwest::header::USER_AGENT, super::client::USER_AGENT).body(chunk);
             for h in op.request_headers.iter() {
                 req = req.header(h.name.as_str(), h.value.as_str());
             }
-            let resp = req.send().await.map_err(|e| Error::msg(format!("upload op {i}: {e}")))?;
+            let mut req = req.build().map_err(|e| Error::msg(format!("upload op {i}: build request: {e}")))?;
+            req.headers_mut().remove(reqwest::header::ACCEPT);
+            let resp = hc.execute(req).await.map_err(|e| Error::msg(format!("upload op {i}: {e}")))?;
             let status = resp.status().as_u16();
             let text = resp.bytes().await.map(|b| b[..b.len().min(64 * 1024)].to_vec()).unwrap_or_default();
             if status >= 400 {

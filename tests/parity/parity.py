@@ -257,6 +257,10 @@ class Mock:
                         rec["body"] = json.loads(raw)
                     except ValueError:
                         rec["body"] = {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+                if path.startswith("/__upload/") and rec["headers"].get("User-Agent") in ("Go-http-client/1.1", "asc-mcp/1.0.0 (+https://github.com/antisynthesis/asc-mcp)"):
+                    # Intended difference: Go's upload PUTs carry Go's default
+                    # User-Agent; the Rust server identifies itself.
+                    rec["headers"]["User-Agent"] = "<upload user agent>"
                 with mock.lock:
                     mock.log.append(rec)
                     mode = mock.mode
