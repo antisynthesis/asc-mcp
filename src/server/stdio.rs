@@ -55,8 +55,7 @@ impl StdioServer {
         loop {
             line.clear();
             let n = reader.read_until(b'\n', &mut line).await?;
-            // Like Go's ReadBytes, a final line without a newline is
-            // treated as end of input.
+            // A final line without a newline is treated as end of input.
             if n == 0 || line.last() != Some(&b'\n') {
                 logging::printf("client disconnected");
                 break;
@@ -64,7 +63,7 @@ impl StdioServer {
             if line.len() == 1 {
                 continue;
             }
-            let req = match crate::go::json::parse(&line).and_then(|v| Request::from_value(&v)) {
+            let req = match crate::wire::json::parse(&line).and_then(|v| Request::from_value(&v)) {
                 Ok(r) => r,
                 Err(e) => {
                     send(
@@ -168,7 +167,7 @@ async fn handle_request(
 async fn send(writer: &Writer, out: &Outcome) {
     let mut w = writer.lock().await;
     for n in &out.notifications {
-        let mut b = crate::go::json::to_go_json_bytes(n);
+        let mut b = crate::wire::json::to_json_bytes(n);
         b.push(b'\n');
         let _ = w.write_all(&b).await;
     }

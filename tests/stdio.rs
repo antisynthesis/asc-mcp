@@ -1,5 +1,4 @@
-//! stdio transport tests, ported from internal/asc/server/server_test.go
-//! (the `Run`-level cases).
+//! stdio transport tests: the full read/dispatch/write loop over a pipe.
 
 mod common;
 
@@ -27,7 +26,7 @@ async fn run_with_input(registry: Registry, input: Vec<u8>) -> SharedBuf {
     out
 }
 
-/// Go `waitForRun` + `io.Pipe`: spawns a server reading from a duplex
+/// Spawns a server reading from a duplex
 /// pipe; the caller writes requests and drops the writer for EOF.
 fn spawn_piped(
     registry: Registry,
@@ -58,8 +57,8 @@ async fn wait_notified(n: &tokio::sync::Notify, what: &str) {
         .unwrap_or_else(|_| panic!("{what}"));
 }
 
-// Go: TestNew. The Rust server is assembled from parts: a client built from
-// the config's key, the full registry and a dispatcher.
+// The server is assembled from parts: a client built from the config's
+// key, the full registry and a dispatcher.
 #[tokio::test]
 async fn new_from_config() {
     let (_dir, key) = write_test_key();
@@ -86,7 +85,6 @@ async fn new_from_config() {
     assert_eq!(out.lines()[0]["error"]["code"], mcp::ERR_INVALID_REQUEST);
 }
 
-// Go: TestServer_Run_PipelinedHandshake
 #[tokio::test]
 async fn pipelined_handshake() {
     let mut input = line(
@@ -108,7 +106,6 @@ async fn pipelined_handshake() {
     );
 }
 
-// Go: TestServer_Run_ParseError
 #[tokio::test]
 async fn parse_error() {
     let out = run_with_input(Registry::new(None), b"not valid json\n".to_vec()).await;
@@ -117,15 +114,14 @@ async fn parse_error() {
     assert!(lines[0].get("id").is_none() || lines[0]["id"].is_null());
 }
 
-// Go: TestServer_Run_EmptyLines
 #[tokio::test]
 async fn empty_lines() {
     let out = run_with_input(Registry::new(None), b"\n\n\n".to_vec()).await;
     assert_eq!(out.contents(), "");
 }
 
-// Go: TestServer_ConcurrentWrites. The Rust transport has no exported
-// send method, so the property is pinned end to end: many concurrent
+// The transport has no public send method, so the property is pinned end
+// to end: many concurrent
 // responses are each written as one intact line.
 #[tokio::test]
 async fn concurrent_writes() {
@@ -156,7 +152,6 @@ async fn concurrent_writes() {
     assert_eq!(ids, (1..=10).collect::<Vec<_>>());
 }
 
-// Go: TestServer_Discover_PreInitialize
 #[tokio::test]
 async fn discover_pre_initialize() {
     let mut input = line(json!({"jsonrpc":"2.0","id":1,"method":"server/discover"}));
@@ -216,7 +211,6 @@ async fn subscriptions_listen_writes_ack_then_result() {
     assert_eq!(lines[1]["result"]["resultType"], mcp::RESULT_TYPE_COMPLETE);
 }
 
-// Go: TestServer_Run_CancelledRequest_NoResponse
 #[tokio::test]
 async fn cancelled_request_no_response() {
     let started = Arc::new(tokio::sync::Notify::new());
@@ -268,7 +262,6 @@ async fn cancelled_request_no_response() {
     assert_eq!(lines[0]["id"], 0);
 }
 
-// Go: TestServer_Run_CancelUnknownID_Ignored
 #[tokio::test]
 async fn cancel_unknown_id_ignored() {
     let mut input = Vec::new();
@@ -282,7 +275,7 @@ async fn cancel_unknown_id_ignored() {
         );
         input.push(b'\n');
     }
-    // Go's malformed `{` params case cannot be expressed as a valid JSON
+    // Syntactically malformed params cannot be expressed as a valid JSON
     // line; the closest is params of the wrong type.
     input.extend(line(
         json!({"jsonrpc":"2.0","method":"notifications/cancelled","params":"{"}),
@@ -295,7 +288,6 @@ async fn cancel_unknown_id_ignored() {
     );
 }
 
-// Go: TestServer_Run_CancelIDTypeMismatch
 #[tokio::test]
 async fn cancel_id_type_mismatch() {
     let started = Arc::new(tokio::sync::Notify::new());
@@ -349,7 +341,6 @@ async fn cancel_id_type_mismatch() {
     assert_eq!(resp["result"]["content"][0]["text"], "completed");
 }
 
-// Go: TestServer_Run_ConcurrentRequests
 #[tokio::test]
 async fn concurrent_requests() {
     let second_started = Arc::new(tokio::sync::Notify::new());

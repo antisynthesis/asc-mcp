@@ -1,14 +1,11 @@
-//! Ported from internal/asc/tools/iap_offer_codes.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! In-app purchase offer code tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 use super::commerce_versions::rel;
 
-/// Ported from `Registry.registerInAppPurchaseOfferCodeTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_in_app_purchase_offer_code_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -468,9 +465,9 @@ pub(super) fn register_in_app_purchase_offer_code_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListInAppPurchaseOfferCodes`.
+/// Handles `list_in_app_purchase_offer_codes`.
 async fn handle_list_in_app_purchase_offer_codes(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { IAPID string \"json:\\\"iap_id\\\"\"; tools.commerceListParams }", "") {
         iap_id: String => "iap_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -491,9 +488,9 @@ async fn handle_list_in_app_purchase_offer_codes(c: Arc<Client>, args: Args) -> 
     Ok(list_result(&format_in_app_purchase_offer_codes(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetInAppPurchaseOfferCode`.
+/// Handles `get_in_app_purchase_offer_code`.
 async fn handle_get_in_app_purchase_offer_code(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OfferCodeID string \"json:\\\"offer_code_id\\\"\" }", "") {
         offer_code_id: String => "offer_code_id";
     }
@@ -512,20 +509,20 @@ async fn handle_get_in_app_purchase_offer_code(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format_in_app_purchase_offer_code(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateInAppPurchaseOfferCode`.
+/// Handles `create_in_app_purchase_offer_code`.
 async fn handle_create_in_app_purchase_offer_code(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     pub struct ParamsPrices ("struct { TerritoryID string \"json:\\\"territory_id\\\"\"; PricePointID string \"json:\\\"price_point_id\\\"\" }", "") {
         pub territory_id: String => "territory_id";
         pub price_point_id: String => "price_point_id";
     }
     }
-    go_struct! {
+    json_struct! {
     struct Params ("struct { IAPID string \"json:\\\"iap_id\\\"\"; Name string \"json:\\\"name\\\"\"; CustomerEligibilities []string \"json:\\\"customer_eligibilities\\\"\"; Prices []struct { TerritoryID string \"json:\\\"territory_id\\\"\"; PricePointID string \"json:\\\"price_point_id\\\"\" } \"json:\\\"prices\\\"\" }", "") {
         iap_id: String => "iap_id";
         name: String => "name";
-        customer_eligibilities: GoSlice<String> => "customer_eligibilities";
-        prices: GoSlice<ParamsPrices> => "prices";
+        customer_eligibilities: JsonSlice<String> => "customer_eligibilities";
+        prices: JsonSlice<ParamsPrices> => "prices";
     }
     }
     let mut params = Params::default();
@@ -575,10 +572,10 @@ async fn handle_create_in_app_purchase_offer_code(c: Arc<Client>, args: Args) ->
             },
             relationships: InAppPurchaseOfferCodeCreateRelationships {
                 in_app_purchase: rel("inAppPurchases", &params.iap_id),
-                prices: RelationshipDataList { data: GoSlice::from(price_refs) },
+                prices: RelationshipDataList { data: JsonSlice::from(price_refs) },
             },
         },
-        included: GoSlice::from(included),
+        included: JsonSlice::from(included),
     };
     let resp = match c.create_in_app_purchase_offer_code(&req).await {
         Ok(r) => r,
@@ -587,9 +584,9 @@ async fn handle_create_in_app_purchase_offer_code(c: Arc<Client>, args: Args) ->
     Ok(data_result(&format!("In-app purchase offer code created:\n{}", format_in_app_purchase_offer_code(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateInAppPurchaseOfferCode`.
+/// Handles `update_in_app_purchase_offer_code`.
 async fn handle_update_in_app_purchase_offer_code(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OfferCodeID string \"json:\\\"offer_code_id\\\"\"; Active *bool \"json:\\\"active\\\"\" }", "") {
         offer_code_id: String => "offer_code_id";
         active: Option<bool> => "active";
@@ -619,9 +616,9 @@ async fn handle_update_in_app_purchase_offer_code(c: Arc<Client>, args: Args) ->
     Ok(data_result(&format!("In-app purchase offer code updated:\n{}", format_in_app_purchase_offer_code(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleListInAppPurchaseOfferCodePrices`.
+/// Handles `list_in_app_purchase_offer_code_prices`.
 async fn handle_list_in_app_purchase_offer_code_prices(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OfferCodeID string \"json:\\\"offer_code_id\\\"\"; tools.commerceListParams }", "") {
         offer_code_id: String => "offer_code_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -642,9 +639,9 @@ async fn handle_list_in_app_purchase_offer_code_prices(c: Arc<Client>, args: Arg
     Ok(list_result(&format_in_app_purchase_offer_prices(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListInAppPurchaseOfferCodeCustomCodes`.
+/// Handles `list_in_app_purchase_offer_code_custom_codes`.
 async fn handle_list_in_app_purchase_offer_code_custom_codes(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OfferCodeID string \"json:\\\"offer_code_id\\\"\"; tools.commerceListParams }", "") {
         offer_code_id: String => "offer_code_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -665,9 +662,9 @@ async fn handle_list_in_app_purchase_offer_code_custom_codes(c: Arc<Client>, arg
     Ok(list_result(&format_in_app_purchase_offer_code_custom_codes(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleCreateInAppPurchaseOfferCodeCustomCode`.
+/// Handles `create_in_app_purchase_offer_code_custom_code`.
 async fn handle_create_in_app_purchase_offer_code_custom_code(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OfferCodeID string \"json:\\\"offer_code_id\\\"\"; CustomCode string \"json:\\\"custom_code\\\"\"; NumberOfCodes int \"json:\\\"number_of_codes\\\"\"; ExpirationDate string \"json:\\\"expiration_date\\\"\" }", "") {
         offer_code_id: String => "offer_code_id";
         custom_code: String => "custom_code";
@@ -706,9 +703,9 @@ async fn handle_create_in_app_purchase_offer_code_custom_code(c: Arc<Client>, ar
     Ok(data_result(&format!("Custom code created:\n{}", format_in_app_purchase_offer_code_custom_code(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateInAppPurchaseOfferCodeCustomCode`.
+/// Handles `update_in_app_purchase_offer_code_custom_code`.
 async fn handle_update_in_app_purchase_offer_code_custom_code(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { CustomCodeID string \"json:\\\"custom_code_id\\\"\"; Active *bool \"json:\\\"active\\\"\" }", "") {
         custom_code_id: String => "custom_code_id";
         active: Option<bool> => "active";
@@ -738,9 +735,9 @@ async fn handle_update_in_app_purchase_offer_code_custom_code(c: Arc<Client>, ar
     Ok(data_result(&format!("Custom code updated:\n{}", format_in_app_purchase_offer_code_custom_code(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleListInAppPurchaseOfferCodeOneTimeUseCodes`.
+/// Handles `list_in_app_purchase_offer_code_one_time_use_codes`.
 async fn handle_list_in_app_purchase_offer_code_one_time_use_codes(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OfferCodeID string \"json:\\\"offer_code_id\\\"\"; tools.commerceListParams }", "") {
         offer_code_id: String => "offer_code_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -761,9 +758,9 @@ async fn handle_list_in_app_purchase_offer_code_one_time_use_codes(c: Arc<Client
     Ok(list_result(&format_in_app_purchase_offer_code_one_time_use_codes(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleCreateInAppPurchaseOfferCodeOneTimeUseCode`.
+/// Handles `create_in_app_purchase_offer_code_one_time_use_code`.
 async fn handle_create_in_app_purchase_offer_code_one_time_use_code(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OfferCodeID string \"json:\\\"offer_code_id\\\"\"; NumberOfCodes int \"json:\\\"number_of_codes\\\"\"; ExpirationDate string \"json:\\\"expiration_date\\\"\"; Environment string \"json:\\\"environment\\\"\" }", "") {
         offer_code_id: String => "offer_code_id";
         number_of_codes: i64 => "number_of_codes";
@@ -802,9 +799,9 @@ async fn handle_create_in_app_purchase_offer_code_one_time_use_code(c: Arc<Clien
     Ok(data_result(&format!("One-time-use code batch created:\n{}", format_in_app_purchase_offer_code_one_time_use_code(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateInAppPurchaseOfferCodeOneTimeUseCode`.
+/// Handles `update_in_app_purchase_offer_code_one_time_use_code`.
 async fn handle_update_in_app_purchase_offer_code_one_time_use_code(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OneTimeUseCodeID string \"json:\\\"one_time_use_code_id\\\"\"; Active *bool \"json:\\\"active\\\"\" }", "") {
         one_time_use_code_id: String => "one_time_use_code_id";
         active: Option<bool> => "active";
@@ -834,9 +831,9 @@ async fn handle_update_in_app_purchase_offer_code_one_time_use_code(c: Arc<Clien
     Ok(data_result(&format!("One-time-use code batch updated:\n{}", format_in_app_purchase_offer_code_one_time_use_code(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleGetInAppPurchaseOfferCodeOneTimeUseCodeValues`.
+/// Handles `get_in_app_purchase_offer_code_one_time_use_code_values`.
 async fn handle_get_in_app_purchase_offer_code_one_time_use_code_values(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OneTimeUseCodeID string \"json:\\\"one_time_use_code_id\\\"\" }", "") {
         one_time_use_code_id: String => "one_time_use_code_id";
     }
@@ -858,7 +855,6 @@ async fn handle_get_in_app_purchase_offer_code_one_time_use_code_values(c: Arc<C
     Ok(data_result(&csv, &json!({ "csv": csv })))
 }
 
-/// Go `formatInAppPurchaseOfferCodes`.
 fn format_in_app_purchase_offer_codes(codes: &[InAppPurchaseOfferCode]) -> String {
     if codes.is_empty() {
         return "No in-app purchase offer codes found".to_string();
@@ -872,7 +868,6 @@ fn format_in_app_purchase_offer_codes(codes: &[InAppPurchaseOfferCode]) -> Strin
     sb
 }
 
-/// Go `formatInAppPurchaseOfferCode`.
 fn format_in_app_purchase_offer_code(c: &InAppPurchaseOfferCode) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", c.id);
@@ -886,7 +881,6 @@ fn format_in_app_purchase_offer_code(c: &InAppPurchaseOfferCode) -> String {
     sb
 }
 
-/// Go `formatInAppPurchaseOfferPrices`.
 fn format_in_app_purchase_offer_prices(prices: &[InAppPurchaseOfferPrice]) -> String {
     if prices.is_empty() {
         return "No offer prices found".to_string();
@@ -906,7 +900,6 @@ fn format_in_app_purchase_offer_prices(prices: &[InAppPurchaseOfferPrice]) -> St
     sb
 }
 
-/// Go `formatInAppPurchaseOfferCodeCustomCodes`.
 fn format_in_app_purchase_offer_code_custom_codes(codes: &[InAppPurchaseOfferCodeCustomCode]) -> String {
     if codes.is_empty() {
         return "No custom codes found".to_string();
@@ -920,7 +913,6 @@ fn format_in_app_purchase_offer_code_custom_codes(codes: &[InAppPurchaseOfferCod
     sb
 }
 
-/// Go `formatInAppPurchaseOfferCodeCustomCode`.
 fn format_in_app_purchase_offer_code_custom_code(c: &InAppPurchaseOfferCodeCustomCode) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", c.id);
@@ -933,7 +925,6 @@ fn format_in_app_purchase_offer_code_custom_code(c: &InAppPurchaseOfferCodeCusto
     sb
 }
 
-/// Go `formatInAppPurchaseOfferCodeOneTimeUseCodes`.
 fn format_in_app_purchase_offer_code_one_time_use_codes(codes: &[InAppPurchaseOfferCodeOneTimeUseCode]) -> String {
     if codes.is_empty() {
         return "No one-time-use code batches found".to_string();
@@ -947,7 +938,6 @@ fn format_in_app_purchase_offer_code_one_time_use_codes(codes: &[InAppPurchaseOf
     sb
 }
 
-/// Go `formatInAppPurchaseOfferCodeOneTimeUseCode`.
 fn format_in_app_purchase_offer_code_one_time_use_code(c: &InAppPurchaseOfferCodeOneTimeUseCode) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", c.id);

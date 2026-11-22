@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/reports.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Sales and finance report tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerReportsTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_reports_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -94,9 +91,9 @@ pub(super) fn register_reports_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleGetSalesReport`.
+/// Handles `get_sales_report`.
 async fn handle_get_sales_report(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VendorNumber string \"json:\\\"vendor_number\\\"\"; ReportType string \"json:\\\"report_type\\\"\"; ReportSubType string \"json:\\\"report_sub_type\\\"\"; Frequency string \"json:\\\"frequency\\\"\"; ReportDate string \"json:\\\"report_date\\\"\" }", "") {
         vendor_number: String => "vendor_number";
         report_type: String => "report_type";
@@ -141,12 +138,12 @@ async fn handle_get_sales_report(c: Arc<Client>, args: Args) -> HandlerResult {
     )
     .into_bytes();
     text.extend_from_slice(&truncate_bytes(&data, 1000));
-    Ok(CallToolResult::success(go_string(&text)))
+    Ok(CallToolResult::success(lossy_string(&text)))
 }
 
-/// Ported from `Registry.handleGetFinanceReport`.
+/// Handles `get_finance_report`.
 async fn handle_get_finance_report(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VendorNumber string \"json:\\\"vendor_number\\\"\"; RegionCode string \"json:\\\"region_code\\\"\"; ReportType string \"json:\\\"report_type\\\"\"; ReportDate string \"json:\\\"report_date\\\"\" }", "") {
         vendor_number: String => "vendor_number";
         region_code: String => "region_code";
@@ -187,12 +184,11 @@ async fn handle_get_finance_report(c: Arc<Client>, args: Args) -> HandlerResult 
     )
     .into_bytes();
     text.extend_from_slice(&truncate_bytes(&data, 1000));
-    Ok(CallToolResult::success(go_string(&text)))
+    Ok(CallToolResult::success(lossy_string(&text)))
 }
 
-/// Ported from `truncateString`, on the raw bytes of a Go string: slices at
-/// a byte offset (which may split a UTF-8 sequence, as Go's `s[:maxLen]`
-/// does).
+/// Truncates to `max_len` bytes plus `...`, cutting at a byte offset (which
+/// may split a UTF-8 sequence).
 fn truncate_bytes(s: &[u8], max_len: usize) -> Vec<u8> {
     if s.len() <= max_len {
         return s.to_vec();
@@ -202,12 +198,11 @@ fn truncate_bytes(s: &[u8], max_len: usize) -> Vec<u8> {
     out
 }
 
-/// Converts Go string bytes to the text Go's JSON encoder emits for them:
-/// every byte that does not start a valid UTF-8 sequence becomes one
-/// U+FFFD (Go's `utf8.DecodeRuneInString` reports width 1 for invalid
-/// input), unlike `String::from_utf8_lossy`, which folds a truncated
-/// sequence into a single replacement character.
-pub(super) fn go_string(b: &[u8]) -> String {
+/// Converts raw bytes to the text emitted on the wire: every byte that
+/// does not start a valid UTF-8 sequence becomes one U+FFFD, unlike
+/// `String::from_utf8_lossy`, which folds a truncated sequence into a
+/// single replacement character.
+pub(super) fn lossy_string(b: &[u8]) -> String {
     let mut out = String::with_capacity(b.len());
     let mut rest = b;
     while !rest.is_empty() {
@@ -232,16 +227,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn go_string_replaces_each_invalid_byte() {
-        assert_eq!(go_string(b"ab"), "ab");
-        assert_eq!(go_string(&[0x1f, 0x8b, 0x08]), "\u{1f}\u{FFFD}\u{8}");
-        // A truncated 3-byte sequence is two replacement characters in Go.
-        assert_eq!(go_string(&[b'x', 0xe2, 0x82]), "x\u{FFFD}\u{FFFD}");
-        assert_eq!(go_string("é".as_bytes()), "é");
+    fn lossy_string_replaces_each_invalid_byte() {
+        assert_eq!(lossy_string(b"ab"), "ab");
+        assert_eq!(lossy_string(&[0x1f, 0x8b, 0x08]), "\u{1f}\u{FFFD}\u{8}");
+        // A truncated 3-byte sequence is two replacement characters.
+        assert_eq!(lossy_string(&[b'x', 0xe2, 0x82]), "x\u{FFFD}\u{FFFD}");
+        assert_eq!(lossy_string("é".as_bytes()), "é");
     }
 
     #[test]
-    fn truncate_bytes_matches_go() {
+    fn truncate_bytes_splits_runes() {
         assert_eq!(truncate_bytes(b"abc", 3), b"abc");
         assert_eq!(truncate_bytes(b"abcd", 3), b"abc...");
     }

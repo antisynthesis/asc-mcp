@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/uploads.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Asset upload tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerUploadTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_upload_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -132,13 +129,13 @@ pub(super) fn register_upload_tools(r: &mut Registry) {
     );
 }
 
-/// Go `MaxLoadedFileSize`: the largest payload loaded from disk or decoded
+/// The largest payload loaded from disk or decoded
 /// from base64 before it reaches the API client.
 pub(crate) const MAX_LOADED_FILE_SIZE: usize = api::MAX_UPLOAD_SIZE;
 
-/// Go `loadUploadBody`: resolves exactly one of `file_path` (local stdio
-/// sessions) or `file_data_base64` (remote transports) to the bytes to
-/// upload. Error strings match the Go server's.
+/// Resolves exactly one of `file_path` (local stdio sessions) or
+/// `file_data_base64` (remote transports) to the bytes to upload. Error
+/// strings are part of the tool output and kept stable.
 pub(crate) fn load_upload_body(file_path: &str, file_data_base64: &str) -> Result<Vec<u8>, String> {
     let has_path = !file_path.is_empty();
     let has_data = !file_data_base64.is_empty();
@@ -153,21 +150,21 @@ pub(crate) fn load_upload_body(file_path: &str, file_data_base64: &str) -> Resul
         }
         return Ok(b);
     }
-    let abs = go_abs(file_path).map_err(|e| format!("resolve file_path: {e}"))?;
+    let abs = abs_path(file_path).map_err(|e| format!("resolve file_path: {e}"))?;
     let meta = std::fs::metadata(&abs)
-        .map_err(|e| format!("stat file_path: {}", crate::go::os::path_error("stat", &abs, &e)))?;
+        .map_err(|e| format!("stat file_path: {}", crate::wire::os::path_error("stat", &abs, &e)))?;
     if meta.is_dir() {
         return Err("file_path is a directory".into());
     }
     if meta.len() as usize > MAX_LOADED_FILE_SIZE {
         return Err(format!("file at {abs} exceeds max size of {MAX_LOADED_FILE_SIZE} bytes"));
     }
-    std::fs::read(&abs).map_err(|e| crate::go::os::path_error("open", &abs, &e))
+    std::fs::read(&abs).map_err(|e| crate::wire::os::path_error("open", &abs, &e))
 }
 
-/// Go `decodeBase64Flexible`: standard or URL-safe alphabet, with or
-/// without padding. Like Go's decoders, CR and LF are ignored and
-/// non-canonical trailing bits are accepted.
+/// Decodes base64 in the standard or URL-safe alphabet, with or without
+/// padding. CR and LF are ignored and non-canonical trailing bits are
+/// accepted.
 pub(crate) fn decode_base64_flexible(s: &str) -> Result<Vec<u8>, String> {
     use base64::alphabet::{STANDARD, URL_SAFE};
     use base64::engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig};
@@ -190,20 +187,21 @@ pub(crate) fn decode_base64_flexible(s: &str) -> Result<Vec<u8>, String> {
     Err("unrecognized base64 encoding".into())
 }
 
-/// Go `filepath.Abs`: joins relative paths onto the working directory and
+/// Makes a path absolute: joins relative paths onto the working directory and
 /// cleans the result lexically.
-pub(crate) fn go_abs(path: &str) -> Result<String, String> {
+pub(crate) fn abs_path(path: &str) -> Result<String, String> {
     let joined = if path.starts_with('/') {
         path.to_string()
     } else {
-        let cwd = std::env::current_dir().map_err(|e| crate::go::os::errno_text(&e))?;
+        let cwd = std::env::current_dir().map_err(|e| crate::wire::os::errno_text(&e))?;
         format!("{}/{}", cwd.display(), path)
     };
-    Ok(go_clean(&joined))
+    Ok(clean_path(&joined))
 }
 
-/// Go `filepath.Clean` for Unix paths.
-pub(crate) fn go_clean(path: &str) -> String {
+/// Lexically cleans a Unix path: collapses repeated and `.` segments,
+/// resolves `..` where possible, and returns `.` for an empty path.
+pub(crate) fn clean_path(path: &str) -> String {
     if path.is_empty() {
         return ".".into();
     }
@@ -230,9 +228,9 @@ pub(crate) fn go_clean(path: &str) -> String {
     }
 }
 
-/// Ported from `Registry.handleUploadAppScreenshot`.
+/// Handles `upload_app_screenshot`.
 async fn handle_upload_app_screenshot(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ScreenshotSetID string \"json:\\\"screenshot_set_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; FilePath string \"json:\\\"file_path\\\"\"; FileDataBase64 string \"json:\\\"file_data_base64\\\"\" }", "") {
         screenshot_set_id: String => "screenshot_set_id";
         file_name: String => "file_name";
@@ -268,9 +266,9 @@ async fn handle_upload_app_screenshot(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(data_result(&text, &resp.data))
 }
 
-/// Ported from `Registry.handleUploadAppPreview`.
+/// Handles `upload_app_preview`.
 async fn handle_upload_app_preview(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PreviewSetID string \"json:\\\"preview_set_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; MimeType string \"json:\\\"mime_type\\\"\"; FilePath string \"json:\\\"file_path\\\"\"; FileDataBase64 string \"json:\\\"file_data_base64\\\"\" }", "") {
         preview_set_id: String => "preview_set_id";
         file_name: String => "file_name";
@@ -307,9 +305,9 @@ async fn handle_upload_app_preview(c: Arc<Client>, args: Args) -> HandlerResult 
     Ok(data_result(&text, &resp.data))
 }
 
-/// Ported from `Registry.handleUploadReviewAttachment`.
+/// Handles `upload_review_attachment`.
 async fn handle_upload_review_attachment(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ReviewDetailID string \"json:\\\"review_detail_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; FilePath string \"json:\\\"file_path\\\"\"; FileDataBase64 string \"json:\\\"file_data_base64\\\"\" }", "") {
         review_detail_id: String => "review_detail_id";
         file_name: String => "file_name";

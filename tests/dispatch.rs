@@ -1,6 +1,5 @@
-//! Dispatcher tests, ported from internal/asc/server/server_test.go (the
-//! `handleRequest`-level cases) plus the 2026-07-28 behaviours the Rust
-//! dispatcher adds.
+//! Dispatcher tests: request handling for the legacy handshake protocol
+//! and the 2026-07-28 `_meta`-based protocol.
 
 mod common;
 
@@ -24,7 +23,6 @@ fn err_code(v: &Value) -> i64 {
         .unwrap_or_else(|| panic!("expected an error, got {v}"))
 }
 
-// Go: TestServer_HandleInitialize
 #[tokio::test]
 async fn handle_initialize() {
     let d = full_dispatcher();
@@ -53,7 +51,6 @@ async fn handle_initialize() {
     );
 }
 
-// Go: TestServer_HandleInitialize_NegotiatesLatest
 #[tokio::test]
 async fn handle_initialize_negotiates_latest() {
     let d = full_dispatcher();
@@ -66,7 +63,6 @@ async fn handle_initialize_negotiates_latest() {
     assert_eq!(v["result"]["protocolVersion"], mcp::PROTOCOL_VERSION);
 }
 
-// Go: TestServer_HandleInitialize_ModernVersionFallsBack
 #[tokio::test]
 async fn handle_initialize_modern_version_falls_back() {
     let d = full_dispatcher();
@@ -99,7 +95,6 @@ async fn initialize_with_modern_meta_is_still_legacy() {
     assert!(sess.is_initialized());
 }
 
-// Go: TestServer_HandlePing
 #[tokio::test]
 async fn handle_ping() {
     let d = full_dispatcher();
@@ -114,7 +109,6 @@ async fn handle_ping() {
     assert_eq!(v["id"], 42);
 }
 
-// Go: TestServer_HandleToolsList
 #[tokio::test]
 async fn handle_tools_list() {
     let d = full_dispatcher();
@@ -133,7 +127,6 @@ async fn handle_tools_list() {
     assert_eq!(tools.len(), 356);
 }
 
-// Go: TestServer_HandleToolsList_NotInitialized
 #[tokio::test]
 async fn handle_tools_list_not_initialized() {
     let d = full_dispatcher();
@@ -146,7 +139,6 @@ async fn handle_tools_list_not_initialized() {
     assert_eq!(err_code(&v), mcp::ERR_INVALID_REQUEST);
 }
 
-// Go: TestServer_HandleToolsCall_NotInitialized
 #[tokio::test]
 async fn handle_tools_call_not_initialized() {
     let d = full_dispatcher();
@@ -159,7 +151,6 @@ async fn handle_tools_call_not_initialized() {
     assert_eq!(err_code(&v), mcp::ERR_INVALID_REQUEST);
 }
 
-// Go: TestServer_HandleRequest_InvalidJSONRPC
 #[tokio::test]
 async fn handle_request_invalid_jsonrpc() {
     let d = full_dispatcher();
@@ -172,7 +163,6 @@ async fn handle_request_invalid_jsonrpc() {
     assert_eq!(err_code(&v), mcp::ERR_INVALID_REQUEST);
 }
 
-// Go: TestServer_HandleRequest_MethodNotFound
 #[tokio::test]
 async fn handle_request_method_not_found() {
     let d = full_dispatcher();
@@ -185,7 +175,6 @@ async fn handle_request_method_not_found() {
     assert_eq!(err_code(&v), mcp::ERR_METHOD_NOT_FOUND);
 }
 
-// Go: TestServer_SendResult
 #[test]
 fn send_result_shape() {
     let r = Response::result(Some(json!(1)), json!({"status": "ok"}));
@@ -195,7 +184,6 @@ fn send_result_shape() {
     assert_eq!(v["result"]["status"], "ok");
 }
 
-// Go: TestServer_SendError
 #[test]
 fn send_error_shape() {
     let r = Response::error(
@@ -211,7 +199,6 @@ fn send_error_shape() {
     assert!(v.get("result").is_none());
 }
 
-// Go: TestServer_NotificationsInitialized
 #[tokio::test]
 async fn notifications_initialized_gets_no_response() {
     let d = full_dispatcher();
@@ -224,7 +211,6 @@ async fn notifications_initialized_gets_no_response() {
     assert!(out.is_none(), "expected no response for notification");
 }
 
-// Go: TestServer_ModernToolsList_NoHandshake
 #[tokio::test]
 async fn modern_tools_list_no_handshake() {
     let d = full_dispatcher();
@@ -254,7 +240,6 @@ async fn modern_tools_list_no_handshake() {
     );
 }
 
-// Go: TestServer_Modern_UnsupportedProtocolVersion
 #[tokio::test]
 async fn modern_unsupported_protocol_version() {
     let d = full_dispatcher();
@@ -270,8 +255,8 @@ async fn modern_unsupported_protocol_version() {
         v["error"]["data"]["supported"],
         json!(mcp::SUPPORTED_PROTOCOL_VERSIONS)
     );
-    // Intentional difference from Go: a legacy version sent via _meta gets
-    // a message that says how to use it (the handshake).
+    // A legacy version sent via _meta gets a message that says how to use
+    // it (the handshake).
     assert_eq!(
         v["error"]["message"],
         "Unsupported protocol version: 2025-06-18 must be negotiated with the initialize handshake"
@@ -292,7 +277,6 @@ async fn modern_unknown_protocol_version_message() {
     assert_eq!(v["error"]["data"]["requested"], "1999-01-01");
 }
 
-// Go: TestServer_Modern_MissingClientCapabilities
 #[tokio::test]
 async fn modern_missing_client_capabilities() {
     let d = full_dispatcher();
@@ -305,7 +289,6 @@ async fn modern_missing_client_capabilities() {
     assert_eq!(err_code(&v), mcp::ERR_INVALID_PARAMS);
 }
 
-// Go: TestServer_Modern_PingRemoved
 #[tokio::test]
 async fn modern_ping_removed() {
     let d = full_dispatcher();
@@ -318,7 +301,6 @@ async fn modern_ping_removed() {
     assert_eq!(err_code(&v), mcp::ERR_METHOD_NOT_FOUND);
 }
 
-// Go: TestServer_LegacyToolsList_NoModernKeys
 #[tokio::test]
 async fn legacy_tools_list_no_modern_keys() {
     let d = full_dispatcher();
@@ -340,8 +322,8 @@ async fn legacy_tools_list_no_modern_keys() {
     }
 }
 
-/// Intentional difference from Go (which ignored `_meta` on discover): an
-/// explicit unsupported version on server/discover gets -32022, while a
+/// `_meta` is validated on discover too: an explicit unsupported version
+/// on server/discover gets -32022, while a
 /// discover without any version is still answered.
 #[tokio::test]
 async fn discover_validates_explicit_protocol_version() {
@@ -505,9 +487,8 @@ impl Drop for SetOnDrop {
     }
 }
 
-// Go: TestDispatcher_ContextCancellationAbortsToolCall. The Go transport
-// cancels a context; in Rust the transport drops the dispatch future
-// (stdio cancellation, a closed HTTP connection). Dropping it must abort
+// A transport cancels a call by dropping the dispatch future (stdio
+// cancellation, a closed HTTP connection). Dropping it must abort
 // the tool handler instead of leaving it running in the background.
 #[tokio::test]
 async fn dropping_dispatch_aborts_tool_call() {

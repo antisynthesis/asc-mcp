@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/provisioning.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Provisioning (bundle ID, certificate, profile, device) tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerProvisioningTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_provisioning_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -267,16 +264,16 @@ pub(super) fn register_provisioning_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListBundleIDs`.
+/// Handles `list_bundle_ids`.
 async fn handle_list_bundle_ids(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
@@ -313,9 +310,9 @@ async fn handle_list_bundle_ids(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&sb, &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetBundleID`.
+/// Handles `get_bundle_id`.
 async fn handle_get_bundle_id(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BundleIDID string \"json:\\\"bundle_id_id\\\"\" }", "") {
         bundle_id_id: String => "bundle_id_id";
     }
@@ -348,16 +345,16 @@ async fn handle_get_bundle_id(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&sb, &resp.data))
 }
 
-/// Ported from `Registry.handleListCertificates`.
+/// Handles `list_certificates`.
 async fn handle_list_certificates(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
@@ -401,16 +398,16 @@ async fn handle_list_certificates(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&sb, &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListProfiles`.
+/// Handles `list_profiles`.
 async fn handle_list_profiles(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
@@ -452,16 +449,16 @@ async fn handle_list_profiles(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&sb, &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListDevices`.
+/// Handles `list_devices`.
 async fn handle_list_devices(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
@@ -501,9 +498,9 @@ async fn handle_list_devices(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&sb, &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleRegisterDevice`.
+/// Handles `register_device`.
 async fn handle_register_device(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Name string \"json:\\\"name\\\"\"; UDID string \"json:\\\"udid\\\"\"; Platform string \"json:\\\"platform\\\"\" }", "") {
         name: String => "name";
         udid: String => "udid";

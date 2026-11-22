@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/analytics.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Analytics report tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerAnalyticsTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_analytics_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -308,17 +305,17 @@ pub(super) fn register_analytics_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListAnalyticsReportRequests`.
+/// Handles `list_analytics_report_requests`.
 async fn handle_list_analytics_report_requests(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -341,9 +338,9 @@ async fn handle_list_analytics_report_requests(c: Arc<Client>, args: Args) -> Ha
     Ok(list_result(&format_analytics_report_requests(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAnalyticsReportRequest`.
+/// Handles `get_analytics_report_request`.
 async fn handle_get_analytics_report_request(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { RequestID string \"json:\\\"request_id\\\"\" }", "") {
         request_id: String => "request_id";
     }
@@ -365,9 +362,9 @@ async fn handle_get_analytics_report_request(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&format_analytics_report_request(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateAnalyticsReportRequest`.
+/// Handles `create_analytics_report_request`.
 async fn handle_create_analytics_report_request(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; AccessType string \"json:\\\"access_type\\\"\" }", "") {
         app_id: String => "app_id";
         access_type: String => "access_type";
@@ -403,9 +400,9 @@ async fn handle_create_analytics_report_request(c: Arc<Client>, args: Args) -> H
     Ok(data_result(&format!("Created analytics report request: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteAnalyticsReportRequest`.
+/// Handles `delete_analytics_report_request`.
 async fn handle_delete_analytics_report_request(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { RequestID string \"json:\\\"request_id\\\"\" }", "") {
         request_id: String => "request_id";
     }
@@ -426,17 +423,17 @@ async fn handle_delete_analytics_report_request(c: Arc<Client>, args: Args) -> H
     Ok(CallToolResult::success("Analytics report request deleted successfully"))
 }
 
-/// Ported from `Registry.handleListAnalyticsReports`.
+/// Handles `list_analytics_reports`.
 async fn handle_list_analytics_reports(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { RequestID string \"json:\\\"request_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         request_id: String => "request_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -459,17 +456,17 @@ async fn handle_list_analytics_reports(c: Arc<Client>, args: Args) -> HandlerRes
     Ok(list_result(&format_analytics_reports(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListAnalyticsReportInstances`.
+/// Handles `list_analytics_report_instances`.
 async fn handle_list_analytics_report_instances(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ReportID string \"json:\\\"report_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         report_id: String => "report_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -492,17 +489,17 @@ async fn handle_list_analytics_report_instances(c: Arc<Client>, args: Args) -> H
     Ok(list_result(&format_analytics_report_instances(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListAnalyticsReportSegments`.
+/// Handles `list_analytics_report_segments`.
 async fn handle_list_analytics_report_segments(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { InstanceID string \"json:\\\"instance_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         instance_id: String => "instance_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -525,7 +522,7 @@ async fn handle_list_analytics_report_segments(c: Arc<Client>, args: Args) -> Ha
     Ok(list_result(&format_analytics_report_segments(&resp.data), &resp.data, &resp.links))
 }
 
-/// The `limit <= 0 → 50; limit > 200 → 200` clamp the Go handlers inline.
+/// Clamps a page size: `limit <= 0 → 50; limit > 200 → 200`.
 fn clamp_limit(limit: i64) -> i64 {
     let mut limit = limit;
     if limit <= 0 {
@@ -537,7 +534,6 @@ fn clamp_limit(limit: i64) -> i64 {
     limit
 }
 
-/// Ported from `formatAnalyticsReportRequests`.
 fn format_analytics_report_requests(requests: &[AnalyticsReportRequest]) -> String {
     if requests.is_empty() {
         return "No analytics report requests found".into();
@@ -554,7 +550,6 @@ fn format_analytics_report_requests(requests: &[AnalyticsReportRequest]) -> Stri
     sb
 }
 
-/// Ported from `formatAnalyticsReportRequest`.
 fn format_analytics_report_request(req: &AnalyticsReportRequest) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", req.id);
@@ -563,7 +558,6 @@ fn format_analytics_report_request(req: &AnalyticsReportRequest) -> String {
     sb
 }
 
-/// Ported from `formatAnalyticsReports`.
 fn format_analytics_reports(reports: &[AnalyticsReport]) -> String {
     if reports.is_empty() {
         return "No analytics reports found".into();
@@ -582,7 +576,6 @@ fn format_analytics_reports(reports: &[AnalyticsReport]) -> String {
     sb
 }
 
-/// Ported from `formatAnalyticsReportInstances`.
 fn format_analytics_report_instances(instances: &[AnalyticsReportInstance]) -> String {
     if instances.is_empty() {
         return "No analytics report instances found".into();
@@ -601,7 +594,6 @@ fn format_analytics_report_instances(instances: &[AnalyticsReportInstance]) -> S
     sb
 }
 
-/// Ported from `formatAnalyticsReportSegments`.
 fn format_analytics_report_segments(segments: &[AnalyticsReportSegment]) -> String {
     if segments.is_empty() {
         return "No analytics report segments found".into();

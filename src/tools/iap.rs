@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/iap.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! In-app purchase tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerInAppPurchaseTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_in_app_purchase_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -202,17 +199,17 @@ pub(super) fn register_in_app_purchase_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListInAppPurchases`.
+/// Handles `list_in_app_purchases`.
 async fn handle_list_in_app_purchases(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -241,9 +238,9 @@ async fn handle_list_in_app_purchases(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(list_result(&format_in_app_purchases(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetInAppPurchase`.
+/// Handles `get_in_app_purchase`.
 async fn handle_get_in_app_purchase(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { IAPID string \"json:\\\"iap_id\\\"\" }", "") {
         iap_id: String => "iap_id";
     }
@@ -265,9 +262,9 @@ async fn handle_get_in_app_purchase(c: Arc<Client>, args: Args) -> HandlerResult
     Ok(data_result(&format_in_app_purchase(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateInAppPurchase`.
+/// Handles `create_in_app_purchase`.
 async fn handle_create_in_app_purchase(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Name string \"json:\\\"name\\\"\"; ProductID string \"json:\\\"product_id\\\"\"; IAPType string \"json:\\\"iap_type\\\"\"; ReviewNote string \"json:\\\"review_note\\\"\"; FamilySharable bool \"json:\\\"family_sharable\\\"\" }", "") {
         app_id: String => "app_id";
         name: String => "name";
@@ -325,9 +322,9 @@ async fn handle_create_in_app_purchase(c: Arc<Client>, args: Args) -> HandlerRes
     ))
 }
 
-/// Ported from `Registry.handleUpdateInAppPurchase`.
+/// Handles `update_in_app_purchase`.
 async fn handle_update_in_app_purchase(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { IAPID string \"json:\\\"iap_id\\\"\"; Name string \"json:\\\"name\\\"\"; ReviewNote string \"json:\\\"review_note\\\"\"; FamilySharable *bool \"json:\\\"family_sharable\\\"\" }", "") {
         iap_id: String => "iap_id";
         name: String => "name";
@@ -365,9 +362,9 @@ async fn handle_update_in_app_purchase(c: Arc<Client>, args: Args) -> HandlerRes
     Ok(data_result(&format!("Updated in-app purchase: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteInAppPurchase`.
+/// Handles `delete_in_app_purchase`.
 async fn handle_delete_in_app_purchase(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { IAPID string \"json:\\\"iap_id\\\"\" }", "") {
         iap_id: String => "iap_id";
     }
@@ -388,7 +385,6 @@ async fn handle_delete_in_app_purchase(c: Arc<Client>, args: Args) -> HandlerRes
     Ok(CallToolResult::success("In-app purchase deleted successfully"))
 }
 
-/// Ported from `formatInAppPurchases`.
 fn format_in_app_purchases(iaps: &[InAppPurchase]) -> String {
     if iaps.is_empty() {
         return "No in-app purchases found".to_string();
@@ -405,7 +401,6 @@ fn format_in_app_purchases(iaps: &[InAppPurchase]) -> String {
     sb
 }
 
-/// Ported from `formatInAppPurchase`.
 fn format_in_app_purchase(iap: &InAppPurchase) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", iap.id);

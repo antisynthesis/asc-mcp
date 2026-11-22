@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/android_mapping.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Android-to-iOS app mapping tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerAndroidMappingTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_android_mapping_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -173,14 +170,14 @@ pub(super) fn register_android_mapping_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListAndroidToIosAppMappings`.
+/// Handles `list_android_to_ios_app_mappings`.
 async fn handle_list_android_to_ios_app_mappings(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        fields: GoMap<GoSlice<String>> => "fields";
+        fields: JsonMap<JsonSlice<String>> => "fields";
     }
     }
     let mut params = Params::default();
@@ -200,7 +197,7 @@ async fn handle_list_android_to_ios_app_mappings(c: Arc<Client>, args: Args) -> 
         limit = 200;
     }
 
-    let opts = list_opts(limit, &GoMap::nil(), &GoSlice::nil(), &params.fields, &GoSlice::nil());
+    let opts = list_opts(limit, &JsonMap::nil(), &JsonSlice::nil(), &params.fields, &JsonSlice::nil());
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_android_to_ios_app_mapping_details(&params.app_id, opts.as_ref())).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to list Android-to-iOS app mappings: {e}"))),
@@ -209,9 +206,9 @@ async fn handle_list_android_to_ios_app_mappings(c: Arc<Client>, args: Args) -> 
     Ok(list_result(&format_android_to_ios_app_mappings(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAndroidToIosAppMapping`.
+/// Handles `get_android_to_ios_app_mapping`.
 async fn handle_get_android_to_ios_app_mapping(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { MappingID string \"json:\\\"mapping_id\\\"\" }", "") {
         mapping_id: String => "mapping_id";
     }
@@ -233,13 +230,13 @@ async fn handle_get_android_to_ios_app_mapping(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format_android_to_ios_app_mapping(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateAndroidToIosAppMapping`.
+/// Handles `create_android_to_ios_app_mapping`.
 async fn handle_create_android_to_ios_app_mapping(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; PackageName string \"json:\\\"package_name\\\"\"; Sha256Fingerprints []string \"json:\\\"sha256_fingerprints\\\"\" }", "") {
         app_id: String => "app_id";
         package_name: String => "package_name";
-        sha256_fingerprints: GoSlice<String> => "sha256_fingerprints";
+        sha256_fingerprints: JsonSlice<String> => "sha256_fingerprints";
     }
     }
     let mut params = Params::default();
@@ -278,13 +275,13 @@ async fn handle_create_android_to_ios_app_mapping(c: Arc<Client>, args: Args) ->
     Ok(data_result(&format!("Created Android-to-iOS app mapping:\n{}", format_android_to_ios_app_mapping(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateAndroidToIosAppMapping`.
+/// Handles `update_android_to_ios_app_mapping`.
 async fn handle_update_android_to_ios_app_mapping(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { MappingID string \"json:\\\"mapping_id\\\"\"; PackageName string \"json:\\\"package_name\\\"\"; Sha256Fingerprints []string \"json:\\\"sha256_fingerprints\\\"\" }", "") {
         mapping_id: String => "mapping_id";
         package_name: String => "package_name";
-        sha256_fingerprints: GoSlice<String> => "sha256_fingerprints";
+        sha256_fingerprints: JsonSlice<String> => "sha256_fingerprints";
     }
     }
     let mut params = Params::default();
@@ -315,9 +312,9 @@ async fn handle_update_android_to_ios_app_mapping(c: Arc<Client>, args: Args) ->
     Ok(data_result(&format!("Android-to-iOS app mapping updated:\n{}", format_android_to_ios_app_mapping(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteAndroidToIosAppMapping`.
+/// Handles `delete_android_to_ios_app_mapping`.
 async fn handle_delete_android_to_ios_app_mapping(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { MappingID string \"json:\\\"mapping_id\\\"\" }", "") {
         mapping_id: String => "mapping_id";
     }
@@ -338,7 +335,6 @@ async fn handle_delete_android_to_ios_app_mapping(c: Arc<Client>, args: Args) ->
     Ok(CallToolResult::success("Android-to-iOS app mapping deleted successfully"))
 }
 
-/// Ported from `formatAndroidToIosAppMappings`.
 fn format_android_to_ios_app_mappings(mappings: &[AndroidToIosAppMappingDetail]) -> String {
     if mappings.is_empty() {
         return "No Android-to-iOS app mappings found".to_string();
@@ -355,7 +351,6 @@ fn format_android_to_ios_app_mappings(mappings: &[AndroidToIosAppMappingDetail])
     sb
 }
 
-/// Ported from `formatAndroidToIosAppMapping`.
 fn format_android_to_ios_app_mapping(mapping: &AndroidToIosAppMappingDetail) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "Mapping ID: {}", mapping.id);

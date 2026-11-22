@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/screenshots.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Screenshot and preview tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerScreenshotTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_screenshot_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -327,17 +324,17 @@ pub(super) fn register_screenshot_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListScreenshotSets`.
+/// Handles `list_screenshot_sets`.
 async fn handle_list_screenshot_sets(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         localization_id: String => "localization_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -366,17 +363,17 @@ async fn handle_list_screenshot_sets(c: Arc<Client>, args: Args) -> HandlerResul
     Ok(list_result(&format_screenshot_sets(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListScreenshots`.
+/// Handles `list_screenshots`.
 async fn handle_list_screenshots(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ScreenshotSetID string \"json:\\\"screenshot_set_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         screenshot_set_id: String => "screenshot_set_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -405,9 +402,9 @@ async fn handle_list_screenshots(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&format_screenshots(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetScreenshot`.
+/// Handles `get_screenshot`.
 async fn handle_get_screenshot(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ScreenshotID string \"json:\\\"screenshot_id\\\"\" }", "") {
         screenshot_id: String => "screenshot_id";
     }
@@ -429,9 +426,9 @@ async fn handle_get_screenshot(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_screenshot(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteScreenshot`.
+/// Handles `delete_screenshot`.
 async fn handle_delete_screenshot(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ScreenshotID string \"json:\\\"screenshot_id\\\"\" }", "") {
         screenshot_id: String => "screenshot_id";
     }
@@ -452,17 +449,17 @@ async fn handle_delete_screenshot(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(CallToolResult::success("Screenshot deleted successfully"))
 }
 
-/// Ported from `Registry.handleListPreviewSets`.
+/// Handles `list_preview_sets`.
 async fn handle_list_preview_sets(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         localization_id: String => "localization_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -491,17 +488,17 @@ async fn handle_list_preview_sets(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&format_preview_sets(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListPreviews`.
+/// Handles `list_previews`.
 async fn handle_list_previews(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PreviewSetID string \"json:\\\"preview_set_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         preview_set_id: String => "preview_set_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -530,9 +527,9 @@ async fn handle_list_previews(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&format_previews(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetPreview`.
+/// Handles `get_preview`.
 async fn handle_get_preview(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PreviewID string \"json:\\\"preview_id\\\"\" }", "") {
         preview_id: String => "preview_id";
     }
@@ -554,9 +551,9 @@ async fn handle_get_preview(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_preview(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleDeletePreview`.
+/// Handles `delete_preview`.
 async fn handle_delete_preview(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PreviewID string \"json:\\\"preview_id\\\"\" }", "") {
         preview_id: String => "preview_id";
     }
@@ -577,7 +574,6 @@ async fn handle_delete_preview(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(CallToolResult::success("Preview deleted successfully"))
 }
 
-/// Ported from `formatScreenshotSets`.
 fn format_screenshot_sets(sets: &[AppScreenshotSet]) -> String {
     if sets.is_empty() {
         return "No screenshot sets found".into();
@@ -595,7 +591,6 @@ fn format_screenshot_sets(sets: &[AppScreenshotSet]) -> String {
     sb
 }
 
-/// Ported from `formatScreenshots`.
 fn format_screenshots(screenshots: &[AppScreenshot]) -> String {
     if screenshots.is_empty() {
         return "No screenshots found".into();
@@ -612,7 +607,6 @@ fn format_screenshots(screenshots: &[AppScreenshot]) -> String {
     sb
 }
 
-/// Ported from `formatScreenshot`.
 fn format_screenshot(ss: &AppScreenshot) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", ss.id);
@@ -627,7 +621,6 @@ fn format_screenshot(ss: &AppScreenshot) -> String {
     sb
 }
 
-/// Ported from `formatPreviewSets`.
 fn format_preview_sets(sets: &[AppPreviewSet]) -> String {
     if sets.is_empty() {
         return "No preview sets found".into();
@@ -645,7 +638,6 @@ fn format_preview_sets(sets: &[AppPreviewSet]) -> String {
     sb
 }
 
-/// Ported from `formatPreviews`.
 fn format_previews(previews: &[AppPreview]) -> String {
     if previews.is_empty() {
         return "No previews found".into();
@@ -662,7 +654,6 @@ fn format_previews(previews: &[AppPreview]) -> String {
     sb
 }
 
-/// Ported from `formatPreview`.
 fn format_preview(p: &AppPreview) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", p.id);

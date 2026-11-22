@@ -1,21 +1,17 @@
 // App Store Connect API endpoints for the "commerce" area.
-//
-// Signatures were generated from the Go declarations; bodies are ported by
-// hand from the Go file named in each method's todo!/comment and must
-// preserve the exact request path, query and body.
 
 #[allow(unused_imports)]
 use crate::api::{Client, Error, ListOptions, Result, decode, model::*};
 #[allow(unused_imports)]
-use crate::go::{
-    GoBytes, GoMap, GoSlice, GoTime, RawMessage, json,
+use crate::wire::{
+    Base64Bytes, JsonMap, JsonSlice, RawMessage, Timestamp, json,
     url::{self, Values},
 };
 #[allow(unused_imports)]
 use serde_json::Value;
 
 impl Client {
-    /// GetAppPriceSchedule returns the price schedule for an app.
+    /// Returns the price schedule for an app.
     pub async fn get_app_price_schedule(&self, app_id: &str) -> Result<AppPriceScheduleResponse> {
         let data = self
             .get(
@@ -26,7 +22,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppPricePoints returns price points for an app.
+    /// Returns price points for an app.
     pub async fn list_app_price_points(
         &self,
         app_id: &str,
@@ -45,7 +41,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptionPricePoints returns price points for a subscription.
+    /// Returns price points for a subscription.
     pub async fn list_subscription_price_points(
         &self,
         subscription_id: &str,
@@ -67,7 +63,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListTerritories returns all territories.
+    /// Returns all territories.
     pub async fn list_territories(
         &self,
         opts: Option<&ListOptions>,
@@ -80,7 +76,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAppPriceSchedule replaces an app's price schedule.
+    /// Replaces an app's price schedule.
     pub async fn create_app_price_schedule(
         &self,
         req: &AppPriceScheduleCreateRequest,
@@ -89,7 +85,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateInAppPurchaseAvailability sets the territory availability of an
+    /// Sets the territory availability of an
     /// in-app purchase.
     pub async fn create_in_app_purchase_availability(
         &self,
@@ -101,7 +97,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateInAppPurchaseImage reserves an image upload on an in-app
+    /// Reserves an image upload on an in-app
     /// purchase version. The response carries the upload operations to
     /// perform before committing with UpdateInAppPurchaseImage.
     pub async fn create_in_app_purchase_image(
@@ -112,7 +108,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateInAppPurchaseLocalization creates a localization on an in-app
+    /// Creates a localization on an in-app
     /// purchase version.
     pub async fn create_in_app_purchase_localization(
         &self,
@@ -124,7 +120,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateInAppPurchaseOfferCode creates an in-app purchase offer code.
+    /// Creates an in-app purchase offer code.
     pub async fn create_in_app_purchase_offer_code(
         &self,
         req: &InAppPurchaseOfferCodeCreateRequest,
@@ -133,7 +129,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateInAppPurchaseOfferCodeCustomCode creates a custom code batch.
+    /// Creates a custom code batch.
     pub async fn create_in_app_purchase_offer_code_custom_code(
         &self,
         req: &InAppPurchaseOfferCodeCustomCodeCreateRequest,
@@ -144,7 +140,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateInAppPurchaseOfferCodeOneTimeUseCode creates a one-time-use code batch.
+    /// Creates a one-time-use code batch.
     pub async fn create_in_app_purchase_offer_code_one_time_use_code(
         &self,
         req: &InAppPurchaseOfferCodeOneTimeUseCodeCreateRequest,
@@ -155,7 +151,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateInAppPurchasePriceSchedule replaces an in-app purchase's price schedule.
+    /// Replaces an in-app purchase's price schedule.
     pub async fn create_in_app_purchase_price_schedule(
         &self,
         req: &InAppPurchasePriceScheduleCreateRequest,
@@ -166,7 +162,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateInAppPurchaseVersion creates a new version of an in-app
+    /// Creates a new version of an in-app
     /// purchase, snapshotting its current metadata for editing.
     pub async fn create_in_app_purchase_version(
         &self,
@@ -176,7 +172,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateSubscriptionGroupLocalization creates a localization on a
+    /// Creates a localization on a
     /// subscription group version.
     pub async fn create_subscription_group_localization(
         &self,
@@ -188,7 +184,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateSubscriptionGroupVersion creates a new version of a subscription group.
+    /// Creates a new version of a subscription group.
     pub async fn create_subscription_group_version(
         &self,
         req: &SubscriptionGroupVersionCreateRequest,
@@ -199,7 +195,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateSubscriptionImage reserves an image upload on a subscription version.
+    /// Reserves an image upload on a subscription version.
     pub async fn create_subscription_image(
         &self,
         req: &SubscriptionImageCreateRequest,
@@ -208,7 +204,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateSubscriptionLocalization creates a localization on a subscription version.
+    /// Creates a localization on a subscription version.
     pub async fn create_subscription_localization(
         &self,
         req: &SubscriptionLocalizationCreateRequest,
@@ -219,7 +215,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateSubscriptionPlanAvailability configures the territories one
+    /// Configures the territories one
     /// billing plan of a subscription is available in.
     pub async fn create_subscription_plan_availability(
         &self,
@@ -231,7 +227,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateSubscriptionVersion creates a new version of a subscription.
+    /// Creates a new version of a subscription.
     pub async fn create_subscription_version(
         &self,
         req: &SubscriptionVersionCreateRequest,
@@ -240,7 +236,7 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteInAppPurchaseImage deletes an in-app purchase image.
+    /// Deletes an in-app purchase image.
     pub async fn delete_in_app_purchase_image(&self, image_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v2/inAppPurchaseImages/{}",
@@ -249,7 +245,7 @@ impl Client {
         .await
     }
 
-    /// DeleteInAppPurchaseLocalization deletes an in-app purchase localization.
+    /// Deletes an in-app purchase localization.
     pub async fn delete_in_app_purchase_localization(&self, localization_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v2/inAppPurchaseLocalizations/{}",
@@ -258,7 +254,7 @@ impl Client {
         .await
     }
 
-    /// DeleteSubscriptionGroupLocalization deletes a subscription group localization.
+    /// Deletes a subscription group localization.
     pub async fn delete_subscription_group_localization(
         &self,
         localization_id: &str,
@@ -270,7 +266,7 @@ impl Client {
         .await
     }
 
-    /// DeleteSubscriptionImage deletes a subscription image.
+    /// Deletes a subscription image.
     pub async fn delete_subscription_image(&self, image_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v2/subscriptionImages/{}",
@@ -279,7 +275,7 @@ impl Client {
         .await
     }
 
-    /// DeleteSubscriptionLocalization deletes a subscription localization.
+    /// Deletes a subscription localization.
     pub async fn delete_subscription_localization(&self, localization_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v2/subscriptionLocalizations/{}",
@@ -288,7 +284,7 @@ impl Client {
         .await
     }
 
-    /// GetAppPricePoint returns a single app price point.
+    /// Returns a single app price point.
     pub async fn get_app_price_point(&self, price_point_id: &str) -> Result<AppPricePointResponse> {
         let data = self
             .get(
@@ -299,7 +295,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetInAppPurchaseAvailability returns the territory availability of an
+    /// Returns the territory availability of an
     /// in-app purchase.
     pub async fn get_in_app_purchase_availability(
         &self,
@@ -317,7 +313,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetInAppPurchaseOfferCode returns a single in-app purchase offer code.
+    /// Returns a single in-app purchase offer code.
     pub async fn get_in_app_purchase_offer_code(
         &self,
         offer_code_id: &str,
@@ -334,7 +330,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetInAppPurchaseOfferCodeOneTimeUseCodeValues downloads the generated
+    /// Downloads the generated
     /// codes of a one-time-use batch. Apple returns them as CSV, not JSON, so
     /// the raw body is handed back to the caller.
     pub async fn get_in_app_purchase_offer_code_one_time_use_code_values(
@@ -353,7 +349,7 @@ impl Client {
         Ok(String::from_utf8_lossy(&data).into_owned())
     }
 
-    /// GetInAppPurchasePriceSchedule returns the price schedule of an in-app purchase.
+    /// Returns the price schedule of an in-app purchase.
     pub async fn get_in_app_purchase_price_schedule(
         &self,
         iap_id: &str,
@@ -370,7 +366,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetInAppPurchaseVersion returns a single in-app purchase version.
+    /// Returns a single in-app purchase version.
     pub async fn get_in_app_purchase_version(
         &self,
         version_id: &str,
@@ -384,7 +380,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetSubscriptionGroupVersion returns a single subscription group version.
+    /// Returns a single subscription group version.
     pub async fn get_subscription_group_version(
         &self,
         version_id: &str,
@@ -401,7 +397,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetSubscriptionPlanAvailability returns a single subscription plan availability.
+    /// Returns a single subscription plan availability.
     pub async fn get_subscription_plan_availability(
         &self,
         availability_id: &str,
@@ -418,7 +414,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetSubscriptionPricePoint returns a single subscription price point.
+    /// Returns a single subscription price point.
     pub async fn get_subscription_price_point(
         &self,
         price_point_id: &str,
@@ -435,7 +431,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetSubscriptionVersion returns a single subscription version.
+    /// Returns a single subscription version.
     pub async fn get_subscription_version(
         &self,
         version_id: &str,
@@ -449,7 +445,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppPricePointEqualizations returns the app price points in other
+    /// Returns the app price points in other
     /// territories that are equivalent to the given one.
     pub async fn list_app_price_point_equalizations(
         &self,
@@ -472,7 +468,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListInAppPurchaseAvailableTerritories returns the territories covered
+    /// Returns the territories covered
     /// by an in-app purchase availability.
     pub async fn list_in_app_purchase_available_territories(
         &self,
@@ -495,7 +491,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListInAppPurchaseOfferCodeCustomCodes returns the custom code batches
+    /// Returns the custom code batches
     /// of an in-app purchase offer code.
     pub async fn list_in_app_purchase_offer_code_custom_codes(
         &self,
@@ -518,7 +514,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListInAppPurchaseOfferCodeOneTimeUseCodes returns the one-time-use code
+    /// Returns the one-time-use code
     /// batches of an in-app purchase offer code.
     pub async fn list_in_app_purchase_offer_code_one_time_use_codes(
         &self,
@@ -541,7 +537,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListInAppPurchaseOfferCodePrices returns the per-territory prices of an
+    /// Returns the per-territory prices of an
     /// in-app purchase offer code.
     pub async fn list_in_app_purchase_offer_code_prices(
         &self,
@@ -564,7 +560,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListInAppPurchaseOfferCodes returns the offer codes of an in-app purchase.
+    /// Returns the offer codes of an in-app purchase.
     pub async fn list_in_app_purchase_offer_codes(
         &self,
         iap_id: &str,
@@ -583,7 +579,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListInAppPurchasePricePoints returns the price points available to an
+    /// Returns the price points available to an
     /// in-app purchase.
     pub async fn list_in_app_purchase_price_points(
         &self,
@@ -606,7 +602,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListInAppPurchasePriceSchedulePrices returns the prices of an in-app
+    /// Returns the prices of an in-app
     /// purchase price schedule. Manual prices are the ones the developer set;
     /// automatic prices are the ones Apple derived for other territories.
     pub async fn list_in_app_purchase_price_schedule_prices(
@@ -637,7 +633,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListInAppPurchaseVersionImages returns the images of an in-app purchase version.
+    /// Returns the images of an in-app purchase version.
     pub async fn list_in_app_purchase_version_images(
         &self,
         version_id: &str,
@@ -659,7 +655,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListInAppPurchaseVersionLocalizations returns the localizations of an
+    /// Returns the localizations of an
     /// in-app purchase version.
     pub async fn list_in_app_purchase_version_localizations(
         &self,
@@ -682,7 +678,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListInAppPurchaseVersions returns the versions of an in-app purchase.
+    /// Returns the versions of an in-app purchase.
     pub async fn list_in_app_purchase_versions(
         &self,
         iap_id: &str,
@@ -701,7 +697,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptionGroupVersionLocalizations returns the localizations of
+    /// Returns the localizations of
     /// a subscription group version.
     pub async fn list_subscription_group_version_localizations(
         &self,
@@ -724,7 +720,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptionGroupVersions returns the versions of a subscription group.
+    /// Returns the versions of a subscription group.
     pub async fn list_subscription_group_versions(
         &self,
         group_id: &str,
@@ -746,7 +742,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptionPlanAvailabilities returns the plan availabilities of a
+    /// Returns the plan availabilities of a
     /// subscription, one per billing plan.
     pub async fn list_subscription_plan_availabilities(
         &self,
@@ -769,7 +765,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptionPlanAvailableTerritories returns the territories
+    /// Returns the territories
     /// covered by a subscription plan availability.
     pub async fn list_subscription_plan_available_territories(
         &self,
@@ -792,7 +788,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptionPricePointAdjustedEqualizations returns equalized price
+    /// Returns equalized price
     /// points adjusted for a pre-paid (upfront) plan, so a monthly price point
     /// can be matched against the upfront plan's price point
     /// (App Store Connect API 4.4.1). Pass filter[upfrontPricePointId] and
@@ -818,7 +814,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptionPricePointEqualizations returns the price points in
+    /// Returns the price points in
     /// other territories that are equivalent to the given one.
     pub async fn list_subscription_price_point_equalizations(
         &self,
@@ -841,7 +837,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptionVersionImages returns the images of a subscription version.
+    /// Returns the images of a subscription version.
     pub async fn list_subscription_version_images(
         &self,
         version_id: &str,
@@ -863,7 +859,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptionVersionLocalizations returns the localizations of a
+    /// Returns the localizations of a
     /// subscription version.
     pub async fn list_subscription_version_localizations(
         &self,
@@ -886,7 +882,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptionVersions returns the versions of a subscription.
+    /// Returns the versions of a subscription.
     pub async fn list_subscription_versions(
         &self,
         subscription_id: &str,
@@ -908,7 +904,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateInAppPurchaseImage commits an in-app purchase image upload.
+    /// Commits an in-app purchase image upload.
     pub async fn update_in_app_purchase_image(
         &self,
         image_id: &str,
@@ -923,7 +919,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateInAppPurchaseLocalization updates an in-app purchase localization.
+    /// Updates an in-app purchase localization.
     pub async fn update_in_app_purchase_localization(
         &self,
         localization_id: &str,
@@ -941,7 +937,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateInAppPurchaseOfferCode activates or deactivates an in-app
+    /// Activates or deactivates an in-app
     /// purchase offer code.
     pub async fn update_in_app_purchase_offer_code(
         &self,
@@ -960,7 +956,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateInAppPurchaseOfferCodeCustomCode activates or deactivates a
+    /// Activates or deactivates a
     /// custom code batch.
     pub async fn update_in_app_purchase_offer_code_custom_code(
         &self,
@@ -979,7 +975,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateInAppPurchaseOfferCodeOneTimeUseCode activates or deactivates a
+    /// Activates or deactivates a
     /// one-time-use code batch.
     pub async fn update_in_app_purchase_offer_code_one_time_use_code(
         &self,
@@ -998,7 +994,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateSubscriptionGroupLocalization updates a subscription group localization.
+    /// Updates a subscription group localization.
     pub async fn update_subscription_group_localization(
         &self,
         localization_id: &str,
@@ -1016,7 +1012,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateSubscriptionImage commits a subscription image upload.
+    /// Commits a subscription image upload.
     pub async fn update_subscription_image(
         &self,
         image_id: &str,
@@ -1031,7 +1027,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateSubscriptionLocalization updates a subscription localization.
+    /// Updates a subscription localization.
     pub async fn update_subscription_localization(
         &self,
         localization_id: &str,
@@ -1049,7 +1045,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateSubscriptionPlanAvailability updates a subscription plan availability.
+    /// Updates a subscription plan availability.
     pub async fn update_subscription_plan_availability(
         &self,
         availability_id: &str,
@@ -1067,7 +1063,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppTagTerritories returns the territories where an app tag applies.
+    /// Returns the territories where an app tag applies.
     pub async fn list_app_tag_territories(
         &self,
         app_tag_id: &str,
@@ -1086,7 +1082,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppTags returns the Apple-created tags applied to an app.
+    /// Returns the Apple-created tags applied to an app.
     pub async fn list_app_tags(
         &self,
         app_id: &str,
@@ -1105,7 +1101,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAppTag updates an app tag's App Store visibility (opt-out).
+    /// Updates an app tag's App Store visibility (opt-out).
     pub async fn update_app_tag(
         &self,
         app_tag_id: &str,
@@ -1121,7 +1117,6 @@ impl Client {
     }
 }
 
-// Ported from internal/asc/api/client_commerce_test.go.
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1533,16 +1528,16 @@ mod tests {
                 type_: "inAppPurchaseOfferCodes".into(),
                 attributes: InAppPurchaseOfferCodeCreateAttributes {
                     name: "Launch".into(),
-                    customer_eligibilities: GoSlice::from(vec!["NEW".to_string()]),
+                    customer_eligibilities: JsonSlice::from(vec!["NEW".to_string()]),
                 },
                 relationships: InAppPurchaseOfferCodeCreateRelationships {
                     in_app_purchase: rel("inAppPurchases", "iap-1"),
                     prices: RelationshipDataList {
-                        data: GoSlice::from(vec![ri("inAppPurchaseOfferPrices", "price-1")]),
+                        data: JsonSlice::from(vec![ri("inAppPurchaseOfferPrices", "price-1")]),
                     },
                 },
             },
-            included: GoSlice::from(vec![InAppPurchaseOfferPriceInlineCreate {
+            included: JsonSlice::from(vec![InAppPurchaseOfferPriceInlineCreate {
                 type_: "inAppPurchaseOfferPrices".into(),
                 id: "price-1".into(),
                 relationships: Some(InAppPurchaseOfferPriceInlineCreateRelationships {
@@ -1655,11 +1650,11 @@ mod tests {
                     in_app_purchase: rel("inAppPurchases", "iap-1"),
                     base_territory: rel("territories", "USA"),
                     manual_prices: RelationshipDataList {
-                        data: GoSlice::from(vec![ri("inAppPurchasePrices", "price-1")]),
+                        data: JsonSlice::from(vec![ri("inAppPurchasePrices", "price-1")]),
                     },
                 },
             },
-            included: GoSlice::from(vec![InAppPurchasePriceInlineCreate {
+            included: JsonSlice::from(vec![InAppPurchasePriceInlineCreate {
                 type_: "inAppPurchasePrices".into(),
                 id: "price-1".into(),
                 attributes: None,
@@ -1706,11 +1701,11 @@ mod tests {
                     app: rel("apps", "app-1"),
                     base_territory: rel("territories", "USA"),
                     manual_prices: RelationshipDataList {
-                        data: GoSlice::from(vec![ri("appPrices", "price-1")]),
+                        data: JsonSlice::from(vec![ri("appPrices", "price-1")]),
                     },
                 },
             },
-            included: GoSlice::from(vec![AppPriceInlineCreate {
+            included: JsonSlice::from(vec![AppPriceInlineCreate {
                 type_: "appPrices".into(),
                 id: "price-1".into(),
                 attributes: Some(CommercePriceInlineAttributes {
@@ -1761,7 +1756,7 @@ mod tests {
                 relationships: InAppPurchaseAvailabilityCreateRelationships {
                     in_app_purchase: rel("inAppPurchases", "iap-1"),
                     available_territories: RelationshipDataList {
-                        data: GoSlice::from(vec![
+                        data: JsonSlice::from(vec![
                             ri("territories", "USA"),
                             ri("territories", "CAN"),
                         ]),
@@ -1806,7 +1801,7 @@ mod tests {
                 relationships: SubscriptionPlanAvailabilityCreateRelationships {
                     subscription: rel("subscriptions", "sub-1"),
                     available_territories: RelationshipDataList {
-                        data: GoSlice::from(vec![ri("territories", "USA")]),
+                        data: JsonSlice::from(vec![ri("territories", "USA")]),
                     },
                 },
             },
@@ -1841,7 +1836,7 @@ mod tests {
                 attributes: None,
                 relationships: Some(SubscriptionPlanAvailabilityUpdateRelationships {
                     available_territories: Some(RelationshipDataList {
-                        data: GoSlice::from(vec![ri("territories", "JPN")]),
+                        data: JsonSlice::from(vec![ri("territories", "JPN")]),
                     }),
                 }),
             },
@@ -1872,12 +1867,12 @@ mod tests {
             )
         })
         .await;
-        let mut filter = GoMap::nil();
+        let mut filter = JsonMap::nil();
         filter.insert(
             "upfrontPricePointId",
-            GoSlice::from(vec!["pp-upfront".to_string()]),
+            JsonSlice::from(vec!["pp-upfront".to_string()]),
         );
-        filter.insert("planType", GoSlice::from(vec!["UPFRONT".to_string()]));
+        filter.insert("planType", JsonSlice::from(vec!["UPFRONT".to_string()]));
         let opts = ListOptions {
             filter,
             ..Default::default()

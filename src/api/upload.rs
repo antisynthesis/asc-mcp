@@ -61,11 +61,11 @@ impl Client {
             let method = reqwest::Method::from_bytes(method.as_bytes()).map_err(|_| {
                 Error::msg(format!(
                     "upload op {i}: build request: net/http: invalid method {}",
-                    crate::go::fmt::quote(method)
+                    crate::wire::fmt::quote(method)
                 ))
             })?;
             // Pre-signed storage URLs get our User-Agent plus the operation's
-            // headers, each replacing any earlier value (Go's Header.Set).
+            // headers, each replacing any earlier value of that header.
             let mut req = hc
                 .request(method, &op.url)
                 .body(chunk)
@@ -87,7 +87,7 @@ impl Client {
                     _ => {
                         return Err(Error::msg(format!(
                             "upload op {i}: net/http: invalid header field {}",
-                            crate::go::fmt::quote(&h.name)
+                            crate::wire::fmt::quote(&h.name)
                         )));
                     }
                 }

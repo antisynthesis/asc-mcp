@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/background_assets.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Background asset tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerBackgroundAssetTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_background_asset_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -374,16 +371,16 @@ pub(super) fn register_background_asset_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListBackgroundAssets`.
+/// Handles `list_background_assets`.
 async fn handle_list_background_assets(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -397,7 +394,7 @@ async fn handle_list_background_assets(c: Arc<Client>, args: Args) -> HandlerRes
 
     let limit = clamp_limit(params.limit);
 
-    let opts = list_opts(limit, &params.filter, &params.sort, &GoMap::nil(), &params.include);
+    let opts = list_opts(limit, &params.filter, &params.sort, &JsonMap::nil(), &params.include);
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_background_assets(&params.app_id, opts.as_ref())).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to list background assets: {e}"))),
@@ -406,12 +403,12 @@ async fn handle_list_background_assets(c: Arc<Client>, args: Args) -> HandlerRes
     Ok(list_result(&format_background_assets(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetBackgroundAsset`.
+/// Handles `get_background_asset`.
 async fn handle_get_background_asset(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BackgroundAssetID string \"json:\\\"background_asset_id\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         background_asset_id: String => "background_asset_id";
-        include: GoSlice<String> => "include";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -423,7 +420,7 @@ async fn handle_get_background_asset(c: Arc<Client>, args: Args) -> HandlerResul
         return Ok(error_result("background_asset_id is required"));
     }
 
-    let opts = list_opts(0, &GoMap::nil(), &GoSlice::nil(), &GoMap::nil(), &params.include);
+    let opts = list_opts(0, &JsonMap::nil(), &JsonSlice::nil(), &JsonMap::nil(), &params.include);
     let resp = match c.get_background_asset(&params.background_asset_id, opts.as_ref()).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to get background asset: {e}"))),
@@ -432,9 +429,9 @@ async fn handle_get_background_asset(c: Arc<Client>, args: Args) -> HandlerResul
     Ok(data_result(&format_background_asset(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateBackgroundAsset`.
+/// Handles `create_background_asset`.
 async fn handle_create_background_asset(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; AssetPackIdentifier string \"json:\\\"asset_pack_identifier\\\"\" }", "") {
         app_id: String => "app_id";
         asset_pack_identifier: String => "asset_pack_identifier";
@@ -478,9 +475,9 @@ async fn handle_create_background_asset(c: Arc<Client>, args: Args) -> HandlerRe
     ))
 }
 
-/// Ported from `Registry.handleUpdateBackgroundAsset`.
+/// Handles `update_background_asset`.
 async fn handle_update_background_asset(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BackgroundAssetID string \"json:\\\"background_asset_id\\\"\"; Archived *bool \"json:\\\"archived\\\"\" }", "") {
         background_asset_id: String => "background_asset_id";
         archived: Option<bool> => "archived";
@@ -515,16 +512,16 @@ async fn handle_update_background_asset(c: Arc<Client>, args: Args) -> HandlerRe
     Ok(data_result(&format!("Background asset updated:\n{}", format_background_asset(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleListBackgroundAssetVersions`.
+/// Handles `list_background_asset_versions`.
 async fn handle_list_background_asset_versions(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BackgroundAssetID string \"json:\\\"background_asset_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         background_asset_id: String => "background_asset_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -538,7 +535,7 @@ async fn handle_list_background_asset_versions(c: Arc<Client>, args: Args) -> Ha
 
     let limit = clamp_limit(params.limit);
 
-    let opts = list_opts(limit, &params.filter, &params.sort, &GoMap::nil(), &params.include);
+    let opts = list_opts(limit, &params.filter, &params.sort, &JsonMap::nil(), &params.include);
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_background_asset_versions(&params.background_asset_id, opts.as_ref())).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to list background asset versions: {e}"))),
@@ -547,12 +544,12 @@ async fn handle_list_background_asset_versions(c: Arc<Client>, args: Args) -> Ha
     Ok(list_result(&format_background_asset_versions(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetBackgroundAssetVersion`.
+/// Handles `get_background_asset_version`.
 async fn handle_get_background_asset_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         version_id: String => "version_id";
-        include: GoSlice<String> => "include";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -564,7 +561,7 @@ async fn handle_get_background_asset_version(c: Arc<Client>, args: Args) -> Hand
         return Ok(error_result("version_id is required"));
     }
 
-    let opts = list_opts(0, &GoMap::nil(), &GoSlice::nil(), &GoMap::nil(), &params.include);
+    let opts = list_opts(0, &JsonMap::nil(), &JsonSlice::nil(), &JsonMap::nil(), &params.include);
     let resp = match c.get_background_asset_version(&params.version_id, opts.as_ref()).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to get background asset version: {e}"))),
@@ -573,9 +570,9 @@ async fn handle_get_background_asset_version(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&format_background_asset_version(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateBackgroundAssetVersion`.
+/// Handles `create_background_asset_version`.
 async fn handle_create_background_asset_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BackgroundAssetID string \"json:\\\"background_asset_id\\\"\" }", "") {
         background_asset_id: String => "background_asset_id";
     }
@@ -615,9 +612,9 @@ async fn handle_create_background_asset_version(c: Arc<Client>, args: Args) -> H
     ))
 }
 
-/// Ported from `Registry.handleUploadBackgroundAssetFile`.
+/// Handles `upload_background_asset_file`.
 async fn handle_upload_background_asset_file(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; AssetType string \"json:\\\"asset_type\\\"\"; FilePath string \"json:\\\"file_path\\\"\"; FileDataBase64 string \"json:\\\"file_data_base64\\\"\" }", "") {
         version_id: String => "version_id";
         file_name: String => "file_name";
@@ -663,9 +660,9 @@ async fn handle_upload_background_asset_file(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&text, &resp.data))
 }
 
-/// Ported from `Registry.handleListBackgroundAssetUploadFiles`.
+/// Handles `list_background_asset_upload_files`.
 async fn handle_list_background_asset_upload_files(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\" }", "") {
         version_id: String => "version_id";
         limit: i64 => "limit";
@@ -692,9 +689,9 @@ async fn handle_list_background_asset_upload_files(c: Arc<Client>, args: Args) -
     Ok(list_result(&format_background_asset_upload_files(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetBackgroundAssetVersionRelease`.
+/// Handles `get_background_asset_version_release`.
 async fn handle_get_background_asset_version_release(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ReleaseType string \"json:\\\"release_type\\\"\"; ReleaseID string \"json:\\\"release_id\\\"\" }", "") {
         release_type: String => "release_type";
         release_id: String => "release_id";
@@ -727,7 +724,7 @@ async fn handle_get_background_asset_version_release(c: Arc<Client>, args: Args)
     Ok(data_result(&format_background_asset_version_release(&resp.data), &resp.data))
 }
 
-/// The `limit <= 0 → 50; limit > 200 → 200` clamp the Go handlers inline.
+/// Clamps a page size: `limit <= 0 → 50; limit > 200 → 200`.
 fn clamp_limit(limit: i64) -> i64 {
     let mut limit = limit;
     if limit <= 0 {
@@ -739,7 +736,6 @@ fn clamp_limit(limit: i64) -> i64 {
     limit
 }
 
-/// Ported from `formatBackgroundAssets`.
 fn format_background_assets(assets: &[BackgroundAsset]) -> String {
     if assets.is_empty() {
         return "No background assets found".into();
@@ -756,12 +752,12 @@ fn format_background_assets(assets: &[BackgroundAsset]) -> String {
     sb
 }
 
-/// `rel != nil && rel.Data.ID != ""` for an optional relationship.
+/// The related resource's ID, or `None` when the optional relationship is
+/// absent or carries an empty ID.
 fn rel_id(rel: &Option<RelationshipData>) -> Option<&str> {
     rel.as_ref().map(|r| r.data.id.as_str()).filter(|id| !id.is_empty())
 }
 
-/// Ported from `formatBackgroundAsset`.
 fn format_background_asset(asset: &BackgroundAsset) -> String {
     let a = &asset.attributes;
     let mut sb = String::new();
@@ -790,7 +786,6 @@ fn format_background_asset(asset: &BackgroundAsset) -> String {
     sb
 }
 
-/// Ported from `formatBackgroundAssetVersions`.
 fn format_background_asset_versions(versions: &[BackgroundAssetVersion]) -> String {
     if versions.is_empty() {
         return "No background asset versions found".into();
@@ -807,7 +802,6 @@ fn format_background_asset_versions(versions: &[BackgroundAssetVersion]) -> Stri
     sb
 }
 
-/// Ported from `formatBackgroundAssetVersion`.
 fn format_background_asset_version(version: &BackgroundAssetVersion) -> String {
     let a = &version.attributes;
     let mut sb = String::new();
@@ -858,7 +852,6 @@ fn format_background_asset_version(version: &BackgroundAssetVersion) -> String {
     sb
 }
 
-/// Ported from `formatBackgroundAssetUploadFiles`.
 fn format_background_asset_upload_files(files: &[BackgroundAssetUploadFile]) -> String {
     if files.is_empty() {
         return "No background asset upload files found".into();
@@ -885,7 +878,6 @@ fn format_background_asset_upload_files(files: &[BackgroundAssetUploadFile]) -> 
     sb
 }
 
-/// Ported from `formatBackgroundAssetVersionRelease`.
 fn format_background_asset_version_release(release: &BackgroundAssetVersionRelease) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "Release ID: {}", release.id);

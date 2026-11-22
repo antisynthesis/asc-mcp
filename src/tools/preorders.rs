@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/preorders.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Pre-order tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerPreOrderTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_pre_order_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -40,11 +37,11 @@ pub(super) fn register_pre_order_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleEndAppAvailabilityPreOrder`.
+/// Handles `end_app_availability_pre_order`.
 async fn handle_end_app_availability_pre_order(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { TerritoryAvailabilityIDs []string \"json:\\\"territory_availability_ids\\\"\" }", "") {
-        territory_availability_ids: GoSlice<String> => "territory_availability_ids";
+        territory_availability_ids: JsonSlice<String> => "territory_availability_ids";
     }
     }
     let mut params = Params::default();
@@ -56,7 +53,7 @@ async fn handle_end_app_availability_pre_order(c: Arc<Client>, args: Args) -> Ha
         return Ok(error_result("territory_availability_ids is required"));
     }
 
-    let mut availabilities: GoSlice<ResourceIdentifier> = GoSlice::nil();
+    let mut availabilities: JsonSlice<ResourceIdentifier> = JsonSlice::nil();
     for id in params.territory_availability_ids.iter() {
         availabilities.push(ResourceIdentifier { type_: "territoryAvailabilities".into(), id: id.clone() });
     }

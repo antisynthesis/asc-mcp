@@ -1,21 +1,17 @@
 // App Store Connect API endpoints for the "platform" area.
-//
-// Signatures were generated from the Go declarations; bodies are ported by
-// hand from the Go file named in each method's todo!/comment and must
-// preserve the exact request path, query and body.
 
 #[allow(unused_imports)]
 use crate::api::{Client, Error, ListOptions, Result, decode, model::*};
 #[allow(unused_imports)]
-use crate::go::{
-    GoBytes, GoMap, GoSlice, GoTime, RawMessage, json,
+use crate::wire::{
+    Base64Bytes, JsonMap, JsonSlice, RawMessage, Timestamp, json,
     url::{self, Values},
 };
 #[allow(unused_imports)]
 use serde_json::Value;
 
 impl Client {
-    /// CreateAlternativeDistributionKey creates an alternative distribution key.
+    /// Creates an alternative distribution key.
     pub async fn create_alternative_distribution_key(
         &self,
         req: &AlternativeDistributionKeyCreateRequest,
@@ -26,7 +22,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAnalyticsReportRequest creates an analytics report request.
+    /// Creates an analytics report request.
     pub async fn create_analytics_report_request(
         &self,
         req: &AnalyticsReportRequestCreateRequest,
@@ -35,7 +31,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAppStoreReviewAttachment creates a review attachment.
+    /// Creates a review attachment.
     pub async fn create_app_store_review_attachment(
         &self,
         req: &AppStoreReviewAttachmentCreateRequest,
@@ -46,7 +42,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateEndUserLicenseAgreement creates an EULA.
+    /// Creates an EULA.
     pub async fn create_end_user_license_agreement(
         &self,
         req: &EndUserLicenseAgreementCreateRequest,
@@ -55,7 +51,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateMarketplaceSearchDetail creates marketplace search details.
+    /// Creates marketplace search details.
     pub async fn create_marketplace_search_detail(
         &self,
         req: &MarketplaceSearchDetailCreateRequest,
@@ -64,7 +60,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateRoutingAppCoverage creates routing app coverage.
+    /// Creates routing app coverage.
     pub async fn create_routing_app_coverage(
         &self,
         req: &RoutingAppCoverageCreateRequest,
@@ -73,7 +69,7 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteAlternativeDistributionKey deletes an alternative distribution key.
+    /// Deletes an alternative distribution key.
     pub async fn delete_alternative_distribution_key(&self, key_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/alternativeDistributionKeys/{}",
@@ -82,7 +78,7 @@ impl Client {
         .await
     }
 
-    /// DeleteAnalyticsReportRequest deletes an analytics report request.
+    /// Deletes an analytics report request.
     pub async fn delete_analytics_report_request(&self, request_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/analyticsReportRequests/{}",
@@ -91,7 +87,7 @@ impl Client {
         .await
     }
 
-    /// DeleteAppStoreReviewAttachment deletes a review attachment.
+    /// Deletes a review attachment.
     pub async fn delete_app_store_review_attachment(&self, attachment_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/appStoreReviewAttachments/{}",
@@ -100,7 +96,7 @@ impl Client {
         .await
     }
 
-    /// DeleteEndUserLicenseAgreement deletes an EULA.
+    /// Deletes an EULA.
     pub async fn delete_end_user_license_agreement(&self, agreement_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/endUserLicenseAgreements/{}",
@@ -109,7 +105,7 @@ impl Client {
         .await
     }
 
-    /// DeleteMarketplaceSearchDetail deletes marketplace search details.
+    /// Deletes marketplace search details.
     pub async fn delete_marketplace_search_detail(&self, detail_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/marketplaceSearchDetails/{}",
@@ -118,7 +114,7 @@ impl Client {
         .await
     }
 
-    /// DeleteRoutingAppCoverage deletes routing app coverage.
+    /// Deletes routing app coverage.
     pub async fn delete_routing_app_coverage(&self, coverage_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/routingAppCoverages/{}",
@@ -127,7 +123,7 @@ impl Client {
         .await
     }
 
-    /// GetAlternativeDistributionKey returns a single alternative distribution key.
+    /// Returns a single alternative distribution key.
     pub async fn get_alternative_distribution_key(
         &self,
         key_id: &str,
@@ -144,7 +140,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAlternativeDistributionPackageForVersion returns the alternative
+    /// Returns the alternative
     /// distribution package for an app store version.
     pub async fn get_alternative_distribution_package_for_version(
         &self,
@@ -162,7 +158,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAnalyticsReportRequest returns a single analytics report request.
+    /// Returns a single analytics report request.
     pub async fn get_analytics_report_request(
         &self,
         request_id: &str,
@@ -179,7 +175,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppCategory returns a single app category.
+    /// Returns a single app category.
     pub async fn get_app_category(&self, category_id: &str) -> Result<AppCategoryResponse> {
         let data = self
             .get(
@@ -190,7 +186,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppStoreReviewAttachment returns a single review attachment.
+    /// Returns a single review attachment.
     pub async fn get_app_store_review_attachment(
         &self,
         attachment_id: &str,
@@ -207,7 +203,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetEndUserLicenseAgreement returns an EULA.
+    /// Returns an EULA.
     pub async fn get_end_user_license_agreement(
         &self,
         app_id: &str,
@@ -224,7 +220,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetFinanceReport returns finance reports.
+    /// Returns finance reports.
     pub async fn get_finance_report(
         &self,
         vendor_number: &str,
@@ -240,7 +236,7 @@ impl Client {
         self.get("/v1/financeReports", Some(&query)).await
     }
 
-    /// GetMarketplaceSearchDetail returns marketplace search details.
+    /// Returns marketplace search details.
     pub async fn get_marketplace_search_detail(
         &self,
         app_id: &str,
@@ -257,7 +253,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetRoutingAppCoverage returns routing app coverage.
+    /// Returns routing app coverage.
     pub async fn get_routing_app_coverage(
         &self,
         version_id: &str,
@@ -274,7 +270,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetSalesReport returns sales reports.
+    /// Returns sales reports.
     pub async fn get_sales_report(
         &self,
         vendor_number: &str,
@@ -292,7 +288,7 @@ impl Client {
         self.get("/v1/salesReports", Some(&query)).await
     }
 
-    /// ListAlternativeDistributionKeys returns alternative distribution keys.
+    /// Returns alternative distribution keys.
     pub async fn list_alternative_distribution_keys(
         &self,
         opts: Option<&ListOptions>,
@@ -307,7 +303,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAnalyticsReportInstances returns instances for a report.
+    /// Returns instances for a report.
     pub async fn list_analytics_report_instances(
         &self,
         report_id: &str,
@@ -329,7 +325,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAnalyticsReportRequests returns analytics report requests for an app.
+    /// Returns analytics report requests for an app.
     pub async fn list_analytics_report_requests(
         &self,
         app_id: &str,
@@ -351,7 +347,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAnalyticsReportSegments returns segments for a report instance.
+    /// Returns segments for a report instance.
     pub async fn list_analytics_report_segments(
         &self,
         instance_id: &str,
@@ -373,7 +369,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAnalyticsReports returns analytics reports for a request.
+    /// Returns analytics reports for a request.
     pub async fn list_analytics_reports(
         &self,
         request_id: &str,
@@ -395,7 +391,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppCategories returns all app categories.
+    /// Returns all app categories.
     pub async fn list_app_categories(
         &self,
         opts: Option<&ListOptions>,
@@ -408,7 +404,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppStoreReviewAttachments returns review attachments.
+    /// Returns review attachments.
     pub async fn list_app_store_review_attachments(
         &self,
         review_detail_id: &str,
@@ -430,7 +426,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBuildPerfPowerMetrics returns performance metrics for a build.
+    /// Returns performance metrics for a build.
     pub async fn list_build_perf_power_metrics(
         &self,
         build_id: &str,
@@ -449,7 +445,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListDiagnosticLogs returns diagnostic logs.
+    /// Returns diagnostic logs.
     pub async fn list_diagnostic_logs(
         &self,
         signature_id: &str,
@@ -471,7 +467,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListDiagnosticSignatures returns diagnostic signatures.
+    /// Returns diagnostic signatures.
     pub async fn list_diagnostic_signatures(
         &self,
         build_id: &str,
@@ -493,7 +489,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListPerfPowerMetrics returns performance and power metrics.
+    /// Returns performance and power metrics.
     pub async fn list_perf_power_metrics(
         &self,
         app_id: &str,
@@ -512,7 +508,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateEndUserLicenseAgreement updates an EULA.
+    /// Updates an EULA.
     pub async fn update_end_user_license_agreement(
         &self,
         agreement_id: &str,
@@ -530,7 +526,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateMarketplaceSearchDetail updates marketplace search details.
+    /// Updates marketplace search details.
     pub async fn update_marketplace_search_detail(
         &self,
         detail_id: &str,
@@ -548,7 +544,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateBackgroundAsset creates a background asset for an app.
+    /// Creates a background asset for an app.
     pub async fn create_background_asset(
         &self,
         req: &BackgroundAssetCreateRequest,
@@ -557,7 +553,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateBackgroundAssetUploadFile reserves an upload file slot on a
+    /// Reserves an upload file slot on a
     /// background asset version. The response carries the upload operations
     /// for the file's bytes.
     pub async fn create_background_asset_upload_file(
@@ -570,7 +566,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateBackgroundAssetVersion creates a new version on a background
+    /// Creates a new version on a background
     /// asset. The version number is assigned by Apple.
     pub async fn create_background_asset_version(
         &self,
@@ -580,7 +576,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetBackgroundAsset returns a single background asset.
+    /// Returns a single background asset.
     pub async fn get_background_asset(
         &self,
         background_asset_id: &str,
@@ -602,7 +598,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetBackgroundAssetVersion returns a single background asset version.
+    /// Returns a single background asset version.
     pub async fn get_background_asset_version(
         &self,
         version_id: &str,
@@ -624,7 +620,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetBackgroundAssetVersionAppStoreRelease returns the App Store
+    /// Returns the App Store
     /// release record for a background asset version.
     pub async fn get_background_asset_version_app_store_release(
         &self,
@@ -637,7 +633,7 @@ impl Client {
         .await
     }
 
-    /// GetBackgroundAssetVersionExternalBetaRelease returns the external
+    /// Returns the external
     /// beta (TestFlight) release record for a background asset version.
     pub async fn get_background_asset_version_external_beta_release(
         &self,
@@ -650,7 +646,7 @@ impl Client {
         .await
     }
 
-    /// GetBackgroundAssetVersionInternalBetaRelease returns the internal
+    /// Returns the internal
     /// beta release record for a background asset version.
     pub async fn get_background_asset_version_internal_beta_release(
         &self,
@@ -663,7 +659,7 @@ impl Client {
         .await
     }
 
-    /// ListBackgroundAssetUploadFiles returns the upload files (asset pack
+    /// Returns the upload files (asset pack
     /// and manifest) attached to a background asset version, including their
     /// delivery states.
     pub async fn list_background_asset_upload_files(
@@ -687,7 +683,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBackgroundAssetVersions returns the versions of a background
+    /// Returns the versions of a background
     /// asset, including their processing states and release states.
     pub async fn list_background_asset_versions(
         &self,
@@ -710,7 +706,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBackgroundAssets returns the background assets for an app.
+    /// Returns the background assets for an app.
     /// Supports filter[versions.locale] and filter[versions.platforms] for
     /// the multi-locale read added in API 4.4.
     pub async fn list_background_assets(
@@ -731,7 +727,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateBackgroundAsset updates a background asset (archives or
+    /// Updates a background asset (archives or
     /// unarchives it).
     pub async fn update_background_asset(
         &self,
@@ -750,7 +746,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateBackgroundAssetUploadFile commits (or amends) a background
+    /// Commits (or amends) a background
     /// asset upload file.
     pub async fn update_background_asset_upload_file(
         &self,
@@ -769,7 +765,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UploadBackgroundAssetFile reserves, uploads, and commits one file on
+    /// Reserves, uploads, and commits one file on
     /// an existing background asset version. assetType is ASSET (the asset
     /// pack archive) or MANIFEST (its manifest plist). The commit carries
     /// the SHA-256 of the body so Apple can verify the stored bytes.
@@ -848,7 +844,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAccessibilityDeclaration creates an accessibility declaration for an
+    /// Creates an accessibility declaration for an
     /// app and device family.
     pub async fn create_accessibility_declaration(
         &self,
@@ -860,7 +856,7 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteAccessibilityDeclaration deletes an accessibility declaration.
+    /// Deletes an accessibility declaration.
     pub async fn delete_accessibility_declaration(&self, declaration_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/accessibilityDeclarations/{}",
@@ -869,7 +865,7 @@ impl Client {
         .await
     }
 
-    /// GetAccessibilityDeclaration returns a single accessibility declaration.
+    /// Returns a single accessibility declaration.
     pub async fn get_accessibility_declaration(
         &self,
         declaration_id: &str,
@@ -886,7 +882,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAccessibilityDeclarations returns the accessibility declarations for an app.
+    /// Returns the accessibility declarations for an app.
     pub async fn list_accessibility_declarations(
         &self,
         app_id: &str,
@@ -908,7 +904,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAccessibilityDeclaration updates an accessibility declaration.
+    /// Updates an accessibility declaration.
     /// Setting publish=true in the request publishes the draft declaration.
     pub async fn update_accessibility_declaration(
         &self,
@@ -927,13 +923,13 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateWebhook creates a webhook for an app.
+    /// Creates a webhook for an app.
     pub async fn create_webhook(&self, req: &WebhookCreateRequest) -> Result<WebhookResponse> {
         let data = self.post("/v1/webhooks", Some(req)).await?;
         decode(&data)
     }
 
-    /// CreateWebhookPing sends a test ping event to a webhook endpoint.
+    /// Sends a test ping event to a webhook endpoint.
     pub async fn create_webhook_ping(
         &self,
         req: &WebhookPingCreateRequest,
@@ -942,7 +938,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateWebhookRedelivery requests redelivery of a webhook event using a
+    /// Requests redelivery of a webhook event using a
     /// previous delivery as the template.
     pub async fn create_webhook_redelivery(
         &self,
@@ -952,13 +948,13 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteWebhook deletes a webhook.
+    /// Deletes a webhook.
     pub async fn delete_webhook(&self, webhook_id: &str) -> Result<()> {
         self.delete(&format!("/v1/webhooks/{}", url::path_escape(webhook_id)))
             .await
     }
 
-    /// GetWebhook returns a single webhook.
+    /// Returns a single webhook.
     pub async fn get_webhook(&self, webhook_id: &str) -> Result<WebhookResponse> {
         let data = self
             .get(
@@ -969,7 +965,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListWebhookDeliveries returns delivery attempts for a webhook.
+    /// Returns delivery attempts for a webhook.
     pub async fn list_webhook_deliveries(
         &self,
         webhook_id: &str,
@@ -988,7 +984,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListWebhooks returns the webhooks configured for an app.
+    /// Returns the webhooks configured for an app.
     pub async fn list_webhooks(
         &self,
         app_id: &str,
@@ -1007,7 +1003,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateWebhook updates a webhook's configuration.
+    /// Updates a webhook's configuration.
     pub async fn update_webhook(
         &self,
         webhook_id: &str,
@@ -1032,8 +1028,8 @@ mod tests {
     use crate::api::testutil::{MockApi, MockResponse};
 
     fn filter(k: &str, v: &str) -> ListOptions {
-        let mut f = GoMap::default();
-        f.insert(k, GoSlice::from(vec![v.to_string()]));
+        let mut f = JsonMap::default();
+        f.insert(k, JsonSlice::from(vec![v.to_string()]));
         ListOptions {
             filter: f,
             ..Default::default()
@@ -1049,7 +1045,7 @@ mod tests {
         }
     }
 
-    // ---- client_webhooks_test.go ----
+    // ---- webhooks ----
 
     #[tokio::test]
     async fn test_client_list_webhooks() {
@@ -1081,7 +1077,7 @@ mod tests {
                 type_: "webhooks".into(),
                 attributes: WebhookCreateAttributes {
                     enabled: true,
-                    event_types: GoSlice::from(vec!["BUILD_UPLOAD_STATE_UPDATED".to_string()]),
+                    event_types: JsonSlice::from(vec!["BUILD_UPLOAD_STATE_UPDATED".to_string()]),
                     name: "CI hook".into(),
                     secret: "s3cret".into(),
                     url: "https://example.com/hook".into(),
@@ -1208,7 +1204,7 @@ mod tests {
         assert_eq!(resp.data.id, "ping-1");
     }
 
-    // ---- client_background_assets_test.go ----
+    // ---- background assets ----
 
     #[tokio::test]
     async fn test_client_list_background_assets() {

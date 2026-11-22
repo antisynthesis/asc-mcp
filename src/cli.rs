@@ -276,7 +276,7 @@ fn validate() -> Result<(), String> {
             Err(e) => {
                 println!(
                     "[FAIL] ASC_PRIVATE_KEY_PATH error: {}",
-                    crate::go::os::path_error("stat", &key_path, &e)
+                    crate::wire::os::path_error("stat", &key_path, &e)
                 );
                 has_errors = true;
             }

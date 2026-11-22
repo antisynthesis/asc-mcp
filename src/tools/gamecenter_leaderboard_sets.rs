@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/gamecenter_leaderboard_sets.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Game Center leaderboard set tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerGameCenterLeaderboardSetTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_game_center_leaderboard_set_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -711,9 +708,9 @@ pub(super) fn register_game_center_leaderboard_set_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListGameCenterLeaderboardSets`.
+/// Handles `list_game_center_leaderboard_sets`.
 async fn handle_list_game_center_leaderboard_sets(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GameCenterDetailID string \"json:\\\"game_center_detail_id\\\"\"; tools.gcListParams }", "") {
         game_center_detail_id: String => "game_center_detail_id";
         gc_list_params: GcListParams => "gcListParams", flatten;
@@ -737,9 +734,9 @@ async fn handle_list_game_center_leaderboard_sets(c: Arc<Client>, args: Args) ->
     Ok(list_result(&format_game_center_leaderboard_sets(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetGameCenterLeaderboardSet`.
+/// Handles `get_game_center_leaderboard_set`.
 async fn handle_get_game_center_leaderboard_set(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LeaderboardSetID string \"json:\\\"leaderboard_set_id\\\"\" }", "") {
         leaderboard_set_id: String => "leaderboard_set_id";
     }
@@ -761,9 +758,9 @@ async fn handle_get_game_center_leaderboard_set(c: Arc<Client>, args: Args) -> H
     Ok(data_result(&format_game_center_leaderboard_set(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateGameCenterLeaderboardSet`.
+/// Handles `create_game_center_leaderboard_set`.
 async fn handle_create_game_center_leaderboard_set(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GameCenterDetailID string \"json:\\\"game_center_detail_id\\\"\"; GameCenterGroupID string \"json:\\\"game_center_group_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\"; VendorIdentifier string \"json:\\\"vendor_identifier\\\"\" }", "") {
         game_center_detail_id: String => "game_center_detail_id";
         game_center_group_id: String => "game_center_group_id";
@@ -790,7 +787,7 @@ async fn handle_create_game_center_leaderboard_set(c: Arc<Client>, args: Args) -
         // The v2 API requires an initial leaderboard set version, created
         // inline with a client-chosen temporary ID.
         versions: RelationshipDataList {
-            data: GoSlice::from(vec![ResourceIdentifier { type_: "gameCenterLeaderboardSetVersions".into(), id: "${new-version}".into() }]),
+            data: JsonSlice::from(vec![ResourceIdentifier { type_: "gameCenterLeaderboardSetVersions".into(), id: "${new-version}".into() }]),
         },
         ..Default::default()
     };
@@ -813,7 +810,7 @@ async fn handle_create_game_center_leaderboard_set(c: Arc<Client>, args: Args) -
             },
             relationships: rels,
         },
-        included: GoSlice::from(vec![GameCenterVersionInlineCreate { type_: "gameCenterLeaderboardSetVersions".into(), id: "${new-version}".into() }]),
+        included: JsonSlice::from(vec![GameCenterVersionInlineCreate { type_: "gameCenterLeaderboardSetVersions".into(), id: "${new-version}".into() }]),
     };
 
     let resp = match c.create_game_center_leaderboard_set(&req).await {
@@ -824,9 +821,9 @@ async fn handle_create_game_center_leaderboard_set(c: Arc<Client>, args: Args) -
     Ok(data_result(&format!("Created leaderboard set: {} (ID: {})", resp.data.attributes.reference_name, resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateGameCenterLeaderboardSet`.
+/// Handles `update_game_center_leaderboard_set`.
 async fn handle_update_game_center_leaderboard_set(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LeaderboardSetID string \"json:\\\"leaderboard_set_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\" }", "") {
         leaderboard_set_id: String => "leaderboard_set_id";
         reference_name: String => "reference_name";
@@ -860,9 +857,9 @@ async fn handle_update_game_center_leaderboard_set(c: Arc<Client>, args: Args) -
     Ok(data_result(&format!("Updated leaderboard set: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteGameCenterLeaderboardSet`.
+/// Handles `delete_game_center_leaderboard_set`.
 async fn handle_delete_game_center_leaderboard_set(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LeaderboardSetID string \"json:\\\"leaderboard_set_id\\\"\" }", "") {
         leaderboard_set_id: String => "leaderboard_set_id";
     }
@@ -883,9 +880,9 @@ async fn handle_delete_game_center_leaderboard_set(c: Arc<Client>, args: Args) -
     Ok(CallToolResult::success("Leaderboard set deleted successfully"))
 }
 
-/// Ported from `Registry.handleListGameCenterLeaderboardSetMembers`.
+/// Handles `list_game_center_leaderboard_set_members`.
 async fn handle_list_game_center_leaderboard_set_members(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LeaderboardSetID string \"json:\\\"leaderboard_set_id\\\"\"; tools.gcListParams }", "") {
         leaderboard_set_id: String => "leaderboard_set_id";
         gc_list_params: GcListParams => "gcListParams", flatten;
@@ -909,7 +906,7 @@ async fn handle_list_game_center_leaderboard_set_members(c: Arc<Client>, args: A
     Ok(list_result(&super::gamecenter::format_game_center_leaderboards(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleAddGameCenterLeaderboardSetMembers`.
+/// Handles `add_game_center_leaderboard_set_members`.
 async fn handle_add_game_center_leaderboard_set_members(c: Arc<Client>, args: Args) -> HandlerResult {
     let (set_id, ids) = match parse_leaderboard_set_membership(&args)? {
         Ok(v) => v,
@@ -923,7 +920,7 @@ async fn handle_add_game_center_leaderboard_set_members(c: Arc<Client>, args: Ar
     Ok(CallToolResult::success(format!("Added {} leaderboard(s) to set {}", ids.data.len(), set_id)))
 }
 
-/// Ported from `Registry.handleRemoveGameCenterLeaderboardSetMembers`.
+/// Handles `remove_game_center_leaderboard_set_members`.
 async fn handle_remove_game_center_leaderboard_set_members(c: Arc<Client>, args: Args) -> HandlerResult {
     let (set_id, ids) = match parse_leaderboard_set_membership(&args)? {
         Ok(v) => v,
@@ -937,9 +934,9 @@ async fn handle_remove_game_center_leaderboard_set_members(c: Arc<Client>, args:
     Ok(CallToolResult::success(format!("Removed {} leaderboard(s) from set {}", ids.data.len(), set_id)))
 }
 
-/// Ported from `Registry.handleListGameCenterLeaderboardSetVersions`.
+/// Handles `list_game_center_leaderboard_set_versions`.
 async fn handle_list_game_center_leaderboard_set_versions(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LeaderboardSetID string \"json:\\\"leaderboard_set_id\\\"\"; tools.gcListParams }", "") {
         leaderboard_set_id: String => "leaderboard_set_id";
         gc_list_params: GcListParams => "gcListParams", flatten;
@@ -963,9 +960,9 @@ async fn handle_list_game_center_leaderboard_set_versions(c: Arc<Client>, args: 
     Ok(list_result(&format_game_center_leaderboard_set_versions(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetGameCenterLeaderboardSetVersion`.
+/// Handles `get_game_center_leaderboard_set_version`.
 async fn handle_get_game_center_leaderboard_set_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\" }", "") {
         version_id: String => "version_id";
     }
@@ -987,9 +984,9 @@ async fn handle_get_game_center_leaderboard_set_version(c: Arc<Client>, args: Ar
     Ok(data_result(&format_game_center_leaderboard_set_version(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateGameCenterLeaderboardSetVersion`.
+/// Handles `create_game_center_leaderboard_set_version`.
 async fn handle_create_game_center_leaderboard_set_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LeaderboardSetID string \"json:\\\"leaderboard_set_id\\\"\" }", "") {
         leaderboard_set_id: String => "leaderboard_set_id";
     }
@@ -1022,9 +1019,9 @@ async fn handle_create_game_center_leaderboard_set_version(c: Arc<Client>, args:
     Ok(data_result(&format!("Created leaderboard set version: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleListGameCenterLeaderboardSetLocalizations`.
+/// Handles `list_game_center_leaderboard_set_localizations`.
 async fn handle_list_game_center_leaderboard_set_localizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; tools.gcListParams }", "") {
         version_id: String => "version_id";
         gc_list_params: GcListParams => "gcListParams", flatten;
@@ -1048,9 +1045,9 @@ async fn handle_list_game_center_leaderboard_set_localizations(c: Arc<Client>, a
     Ok(list_result(&format_game_center_leaderboard_set_localizations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleCreateGameCenterLeaderboardSetLocalization`.
+/// Handles `create_game_center_leaderboard_set_localization`.
 async fn handle_create_game_center_leaderboard_set_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; Locale string \"json:\\\"locale\\\"\"; Name string \"json:\\\"name\\\"\" }", "") {
         version_id: String => "version_id";
         locale: String => "locale";
@@ -1095,9 +1092,9 @@ async fn handle_create_game_center_leaderboard_set_localization(c: Arc<Client>, 
     Ok(data_result(&format!("Created leaderboard set localization {} for {}", resp.data.id, params.locale), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateGameCenterLeaderboardSetLocalization`.
+/// Handles `update_game_center_leaderboard_set_localization`.
 async fn handle_update_game_center_leaderboard_set_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; Name string \"json:\\\"name\\\"\" }", "") {
         localization_id: String => "localization_id";
         name: String => "name";
@@ -1131,9 +1128,9 @@ async fn handle_update_game_center_leaderboard_set_localization(c: Arc<Client>, 
     Ok(data_result(&format!("Updated leaderboard set localization: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteGameCenterLeaderboardSetLocalization`.
+/// Handles `delete_game_center_leaderboard_set_localization`.
 async fn handle_delete_game_center_leaderboard_set_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -1154,9 +1151,9 @@ async fn handle_delete_game_center_leaderboard_set_localization(c: Arc<Client>, 
     Ok(CallToolResult::success("Leaderboard set localization deleted successfully"))
 }
 
-/// Ported from `Registry.handleUploadGameCenterLeaderboardSetImage`.
+/// Handles `upload_game_center_leaderboard_set_image`.
 async fn handle_upload_game_center_leaderboard_set_image(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; FilePath string \"json:\\\"file_path\\\"\"; FileDataBase64 string \"json:\\\"file_data_base64\\\"\" }", "") {
         localization_id: String => "localization_id";
         file_name: String => "file_name";
@@ -1196,15 +1193,15 @@ async fn handle_upload_game_center_leaderboard_set_image(c: Arc<Client>, args: A
     Ok(data_result(&text, &resp.data))
 }
 
-/// Ported from `Registry.handleListGameCenterLeaderboardSetMemberLocalizations`.
+/// Handles `list_game_center_leaderboard_set_member_localizations`.
 async fn handle_list_game_center_leaderboard_set_member_localizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LeaderboardSetID string \"json:\\\"leaderboard_set_id\\\"\"; LeaderboardID string \"json:\\\"leaderboard_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         leaderboard_set_id: String => "leaderboard_set_id";
         leaderboard_id: String => "leaderboard_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        include: GoSlice<String> => "include";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -1220,11 +1217,11 @@ async fn handle_list_game_center_leaderboard_set_member_localizations(c: Arc<Cli
     if params.leaderboard_id.is_empty() {
         return Ok(error_result("leaderboard_id is required"));
     }
-    let mut filter: GoMap<GoSlice<String>> = GoMap::from_map(Default::default());
-    filter.insert("gameCenterLeaderboardSet", GoSlice::from(vec![params.leaderboard_set_id.clone()]));
-    filter.insert("gameCenterLeaderboard", GoSlice::from(vec![params.leaderboard_id.clone()]));
+    let mut filter: JsonMap<JsonSlice<String>> = JsonMap::from_map(Default::default());
+    filter.insert("gameCenterLeaderboardSet", JsonSlice::from(vec![params.leaderboard_set_id.clone()]));
+    filter.insert("gameCenterLeaderboard", JsonSlice::from(vec![params.leaderboard_id.clone()]));
 
-    let opts = list_opts(super::gamecenter_content::gc_limit(params.limit), &filter, &GoSlice::nil(), &GoMap::nil(), &params.include);
+    let opts = list_opts(super::gamecenter_content::gc_limit(params.limit), &filter, &JsonSlice::nil(), &JsonMap::nil(), &params.include);
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_game_center_leaderboard_set_member_localizations(opts.as_ref())).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to list member localizations: {e}"))),
@@ -1233,9 +1230,9 @@ async fn handle_list_game_center_leaderboard_set_member_localizations(c: Arc<Cli
     Ok(list_result(&format_game_center_leaderboard_set_member_localizations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleCreateGameCenterLeaderboardSetMemberLocalization`.
+/// Handles `create_game_center_leaderboard_set_member_localization`.
 async fn handle_create_game_center_leaderboard_set_member_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LeaderboardSetID string \"json:\\\"leaderboard_set_id\\\"\"; LeaderboardID string \"json:\\\"leaderboard_id\\\"\"; Locale string \"json:\\\"locale\\\"\"; Name string \"json:\\\"name\\\"\" }", "") {
         leaderboard_set_id: String => "leaderboard_set_id";
         leaderboard_id: String => "leaderboard_id";
@@ -1287,9 +1284,9 @@ async fn handle_create_game_center_leaderboard_set_member_localization(c: Arc<Cl
     Ok(data_result(&format!("Created member localization {} for {}", resp.data.id, params.locale), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateGameCenterLeaderboardSetMemberLocalization`.
+/// Handles `update_game_center_leaderboard_set_member_localization`.
 async fn handle_update_game_center_leaderboard_set_member_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { MemberLocalizationID string \"json:\\\"member_localization_id\\\"\"; Name string \"json:\\\"name\\\"\" }", "") {
         member_localization_id: String => "member_localization_id";
         name: String => "name";
@@ -1323,9 +1320,9 @@ async fn handle_update_game_center_leaderboard_set_member_localization(c: Arc<Cl
     Ok(data_result(&format!("Updated member localization: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteGameCenterLeaderboardSetMemberLocalization`.
+/// Handles `delete_game_center_leaderboard_set_member_localization`.
 async fn handle_delete_game_center_leaderboard_set_member_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { MemberLocalizationID string \"json:\\\"member_localization_id\\\"\" }", "") {
         member_localization_id: String => "member_localization_id";
     }
@@ -1346,14 +1343,14 @@ async fn handle_delete_game_center_leaderboard_set_member_localization(c: Arc<Cl
     Ok(CallToolResult::success("Member localization deleted successfully"))
 }
 
-/// Ported from `parseLeaderboardSetMembership`: decodes the arguments
-/// shared by the add and remove member tools into a linkages document.
+/// Decodes the leaderboard-set membership arguments shared by the add and
+/// remove member tools into a linkages document.
 /// The inner `Err` carries the tool result when validation failed.
 fn parse_leaderboard_set_membership(args: &Args) -> Result<Result<(String, RelationshipDataList), CallToolResult>, String> {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LeaderboardSetID string \"json:\\\"leaderboard_set_id\\\"\"; LeaderboardIDs []string \"json:\\\"leaderboard_ids\\\"\" }", "") {
         leaderboard_set_id: String => "leaderboard_set_id";
-        leaderboard_ids: GoSlice<String> => "leaderboard_ids";
+        leaderboard_ids: JsonSlice<String> => "leaderboard_ids";
     }
     }
     let mut params = Params::default();
@@ -1368,7 +1365,7 @@ fn parse_leaderboard_set_membership(args: &Args) -> Result<Result<(String, Relat
         return Ok(Err(error_result("leaderboard_ids is required")));
     }
 
-    let mut linkages = RelationshipDataList { data: GoSlice::from(Vec::with_capacity(params.leaderboard_ids.len())) };
+    let mut linkages = RelationshipDataList { data: JsonSlice::from(Vec::with_capacity(params.leaderboard_ids.len())) };
     for id in params.leaderboard_ids.iter() {
         if id.is_empty() {
             continue;
@@ -1382,7 +1379,6 @@ fn parse_leaderboard_set_membership(args: &Args) -> Result<Result<(String, Relat
     Ok(Ok((params.leaderboard_set_id, linkages)))
 }
 
-/// Ported from `formatGameCenterLeaderboardSets`.
 fn format_game_center_leaderboard_sets(sets: &[GameCenterLeaderboardSet]) -> String {
     if sets.is_empty() {
         return "No Game Center leaderboard sets found".into();
@@ -1399,7 +1395,6 @@ fn format_game_center_leaderboard_sets(sets: &[GameCenterLeaderboardSet]) -> Str
     sb
 }
 
-/// Ported from `formatGameCenterLeaderboardSet`.
 fn format_game_center_leaderboard_set(set: &GameCenterLeaderboardSet) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", set.id);
@@ -1408,7 +1403,6 @@ fn format_game_center_leaderboard_set(set: &GameCenterLeaderboardSet) -> String 
     sb
 }
 
-/// Ported from `formatGameCenterLeaderboardSetVersions`.
 fn format_game_center_leaderboard_set_versions(versions: &[GameCenterLeaderboardSetVersion]) -> String {
     if versions.is_empty() {
         return "No Game Center leaderboard set versions found".into();
@@ -1425,7 +1419,6 @@ fn format_game_center_leaderboard_set_versions(versions: &[GameCenterLeaderboard
     sb
 }
 
-/// Ported from `formatGameCenterLeaderboardSetVersion`.
 fn format_game_center_leaderboard_set_version(version: &GameCenterLeaderboardSetVersion) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", version.id);
@@ -1434,7 +1427,6 @@ fn format_game_center_leaderboard_set_version(version: &GameCenterLeaderboardSet
     sb
 }
 
-/// Ported from `formatGameCenterLeaderboardSetLocalizations`.
 fn format_game_center_leaderboard_set_localizations(localizations: &[GameCenterLeaderboardSetLocalization]) -> String {
     if localizations.is_empty() {
         return "No Game Center leaderboard set localizations found".into();
@@ -1453,7 +1445,6 @@ fn format_game_center_leaderboard_set_localizations(localizations: &[GameCenterL
     sb
 }
 
-/// Ported from `formatGameCenterLeaderboardSetMemberLocalizations`.
 fn format_game_center_leaderboard_set_member_localizations(localizations: &[GameCenterLeaderboardSetMemberLocalization]) -> String {
     if localizations.is_empty() {
         return "No Game Center leaderboard set member localizations found".into();

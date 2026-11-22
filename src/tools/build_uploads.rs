@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/build_uploads.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Build upload tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerBuildUploadTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_build_upload_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -242,9 +239,9 @@ pub(super) fn register_build_upload_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleStartBuildUpload`.
+/// Handles `start_build_upload`.
 async fn handle_start_build_upload(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; CFBundleShortVersionString string \"json:\\\"cf_bundle_short_version_string\\\"\"; CFBundleVersion string \"json:\\\"cf_bundle_version\\\"\"; Platform string \"json:\\\"platform\\\"\" }", "") {
         app_id: String => "app_id";
         cf_bundle_short_version_string: String => "cf_bundle_short_version_string";
@@ -301,9 +298,9 @@ async fn handle_start_build_upload(c: Arc<Client>, args: Args) -> HandlerResult 
     ))
 }
 
-/// Ported from `Registry.handleUploadBuildFile`.
+/// Handles `upload_build_file`.
 async fn handle_upload_build_file(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BuildUploadID string \"json:\\\"build_upload_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; AssetType string \"json:\\\"asset_type\\\"\"; UTI string \"json:\\\"uti\\\"\"; FilePath string \"json:\\\"file_path\\\"\"; FileDataBase64 string \"json:\\\"file_data_base64\\\"\" }", "") {
         build_upload_id: String => "build_upload_id";
         file_name: String => "file_name";
@@ -352,9 +349,9 @@ async fn handle_upload_build_file(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&text, &resp.data))
 }
 
-/// Ported from `Registry.handleGetBuildUpload`.
+/// Handles `get_build_upload`.
 async fn handle_get_build_upload(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BuildUploadID string \"json:\\\"build_upload_id\\\"\" }", "") {
         build_upload_id: String => "build_upload_id";
     }
@@ -376,15 +373,15 @@ async fn handle_get_build_upload(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_build_upload(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleListBuildUploads`.
+/// Handles `list_build_uploads`.
 async fn handle_list_build_uploads(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
     }
     }
     let mut params = Params::default();
@@ -404,7 +401,7 @@ async fn handle_list_build_uploads(c: Arc<Client>, args: Args) -> HandlerResult 
         limit = 200;
     }
 
-    let opts = list_opts(limit, &params.filter, &params.sort, &GoMap::nil(), &GoSlice::nil());
+    let opts = list_opts(limit, &params.filter, &params.sort, &JsonMap::nil(), &JsonSlice::nil());
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_build_uploads(&params.app_id, opts.as_ref())).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to list build uploads: {e}"))),
@@ -413,9 +410,9 @@ async fn handle_list_build_uploads(c: Arc<Client>, args: Args) -> HandlerResult 
     Ok(list_result(&format_build_uploads(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListBuildUploadFiles`.
+/// Handles `list_build_upload_files`.
 async fn handle_list_build_upload_files(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BuildUploadID string \"json:\\\"build_upload_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\" }", "") {
         build_upload_id: String => "build_upload_id";
         limit: i64 => "limit";
@@ -448,9 +445,9 @@ async fn handle_list_build_upload_files(c: Arc<Client>, args: Args) -> HandlerRe
     Ok(list_result(&format_build_upload_files(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleDeleteBuildUpload`.
+/// Handles `delete_build_upload`.
 async fn handle_delete_build_upload(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BuildUploadID string \"json:\\\"build_upload_id\\\"\" }", "") {
         build_upload_id: String => "build_upload_id";
     }
@@ -471,7 +468,6 @@ async fn handle_delete_build_upload(c: Arc<Client>, args: Args) -> HandlerResult
     Ok(CallToolResult::success("Build upload deleted successfully"))
 }
 
-/// Ported from `formatBuildUploads`.
 fn format_build_uploads(uploads: &[BuildUpload]) -> String {
     if uploads.is_empty() {
         return "No build uploads found".to_string();
@@ -486,7 +482,6 @@ fn format_build_uploads(uploads: &[BuildUpload]) -> String {
     sb
 }
 
-/// Ported from `formatBuildUpload`.
 fn format_build_upload(upload: &BuildUpload) -> String {
     let a = &upload.attributes;
     let mut sb = String::new();
@@ -522,7 +517,6 @@ fn format_build_upload(upload: &BuildUpload) -> String {
     sb
 }
 
-/// Ported from `formatBuildUploadFiles`.
 fn format_build_upload_files(files: &[BuildUploadFile]) -> String {
     if files.is_empty() {
         return "No build upload files found".to_string();

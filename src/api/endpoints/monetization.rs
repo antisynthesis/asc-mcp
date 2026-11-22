@@ -1,21 +1,17 @@
 // App Store Connect API endpoints for the "monetization" area.
-//
-// Signatures were generated from the Go declarations; bodies are ported by
-// hand from the Go file named in each method's todo!/comment and must
-// preserve the exact request path, query and body.
 
 #[allow(unused_imports)]
 use crate::api::{Client, Error, ListOptions, Result, decode, model::*};
 #[allow(unused_imports)]
-use crate::go::{
-    GoBytes, GoMap, GoSlice, GoTime, RawMessage, json,
+use crate::wire::{
+    Base64Bytes, JsonMap, JsonSlice, RawMessage, Timestamp, json,
     url::{self, Values},
 };
 #[allow(unused_imports)]
 use serde_json::Value;
 
 impl Client {
-    /// AssignBuildToEncryptionDeclaration assigns a build to an encryption declaration
+    /// Assigns a build to an encryption declaration
     /// by setting the build's appEncryptionDeclaration relationship. This replaces the
     /// deprecated POST /v1/appEncryptionDeclarations/{id}/relationships/builds endpoint.
     pub async fn assign_build_to_encryption_declaration(
@@ -41,7 +37,7 @@ impl Client {
         Ok(())
     }
 
-    /// ClearSandboxTesterPurchaseHistory clears the purchase history for the
+    /// Clears the purchase history for the
     /// given sandbox testers.
     pub async fn clear_sandbox_tester_purchase_history(
         &self,
@@ -53,7 +49,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAppAvailability sets app availability.
+    /// Sets app availability.
     pub async fn create_app_availability(
         &self,
         req: &AppAvailabilityCreateRequest,
@@ -62,7 +58,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAppEncryptionDeclaration creates an encryption declaration.
+    /// Creates an encryption declaration.
     pub async fn create_app_encryption_declaration(
         &self,
         req: &AppEncryptionDeclarationCreateRequest,
@@ -73,7 +69,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateInAppPurchase creates a new in-app purchase.
+    /// Creates a new in-app purchase.
     pub async fn create_in_app_purchase(
         &self,
         req: &InAppPurchaseCreateRequest,
@@ -82,7 +78,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreatePromotedPurchase creates a promoted purchase.
+    /// Creates a promoted purchase.
     pub async fn create_promoted_purchase(
         &self,
         req: &PromotedPurchaseCreateRequest,
@@ -91,7 +87,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateSubscriptionOfferCode creates an offer code.
+    /// Creates an offer code.
     pub async fn create_subscription_offer_code(
         &self,
         req: &SubscriptionOfferCodeCreateRequest,
@@ -100,7 +96,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateUserInvitation invites a new user.
+    /// Invites a new user.
     pub async fn create_user_invitation(
         &self,
         req: &UserInvitationCreateRequest,
@@ -109,7 +105,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateWinBackOffer creates a win-back offer.
+    /// Creates a win-back offer.
     pub async fn create_win_back_offer(
         &self,
         req: &WinBackOfferCreateRequest,
@@ -118,13 +114,13 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteInAppPurchase deletes an in-app purchase.
+    /// Deletes an in-app purchase.
     pub async fn delete_in_app_purchase(&self, iap_id: &str) -> Result<()> {
         self.delete(&format!("/v2/inAppPurchases/{}", url::path_escape(iap_id)))
             .await
     }
 
-    /// DeletePromotedPurchase deletes a promoted purchase.
+    /// Deletes a promoted purchase.
     pub async fn delete_promoted_purchase(&self, promoted_purchase_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/promotedPurchases/{}",
@@ -133,13 +129,13 @@ impl Client {
         .await
     }
 
-    /// DeleteUser removes a user from the team.
+    /// Removes a user from the team.
     pub async fn delete_user(&self, user_id: &str) -> Result<()> {
         self.delete(&format!("/v1/users/{}", url::path_escape(user_id)))
             .await
     }
 
-    /// DeleteUserInvitation cancels a user invitation.
+    /// Cancels a user invitation.
     pub async fn delete_user_invitation(&self, invitation_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/userInvitations/{}",
@@ -148,13 +144,13 @@ impl Client {
         .await
     }
 
-    /// DeleteWinBackOffer deletes a win-back offer.
+    /// Deletes a win-back offer.
     pub async fn delete_win_back_offer(&self, offer_id: &str) -> Result<()> {
         self.delete(&format!("/v1/winBackOffers/{}", url::path_escape(offer_id)))
             .await
     }
 
-    /// EndAppAvailabilityPreOrder ends pre-order availability for the given
+    /// Ends pre-order availability for the given
     /// territory availabilities.
     pub async fn end_app_availability_pre_order(
         &self,
@@ -166,7 +162,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAgeRatingDeclaration returns an age rating declaration.
+    /// Returns an age rating declaration.
     pub async fn get_age_rating_declaration(
         &self,
         app_info_id: &str,
@@ -183,7 +179,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppAvailability returns app availability.
+    /// Returns app availability.
     pub async fn get_app_availability(&self, app_id: &str) -> Result<AppAvailabilityResponse> {
         let data = self
             .get(
@@ -194,7 +190,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppEncryptionDeclaration returns a single encryption declaration.
+    /// Returns a single encryption declaration.
     pub async fn get_app_encryption_declaration(
         &self,
         declaration_id: &str,
@@ -211,7 +207,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetInAppPurchase returns a single in-app purchase by ID.
+    /// Returns a single in-app purchase by ID.
     pub async fn get_in_app_purchase(&self, iap_id: &str) -> Result<InAppPurchaseResponse> {
         let data = self
             .get(
@@ -222,7 +218,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetPromotedPurchase returns a single promoted purchase.
+    /// Returns a single promoted purchase.
     pub async fn get_promoted_purchase(
         &self,
         promoted_purchase_id: &str,
@@ -239,7 +235,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetSubscription returns a single subscription by ID.
+    /// Returns a single subscription by ID.
     pub async fn get_subscription(&self, subscription_id: &str) -> Result<SubscriptionResponse> {
         let data = self
             .get(
@@ -250,7 +246,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetSubscriptionGroup returns a single subscription group by ID.
+    /// Returns a single subscription group by ID.
     pub async fn get_subscription_group(
         &self,
         group_id: &str,
@@ -264,7 +260,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetSubscriptionOfferCode returns a single offer code.
+    /// Returns a single offer code.
     pub async fn get_subscription_offer_code(
         &self,
         offer_code_id: &str,
@@ -281,7 +277,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetUser returns a single user.
+    /// Returns a single user.
     pub async fn get_user(&self, user_id: &str) -> Result<UserResponse> {
         let data = self
             .get(&format!("/v1/users/{}", url::path_escape(user_id)), None)
@@ -289,7 +285,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetUserInvitation returns a single user invitation.
+    /// Returns a single user invitation.
     pub async fn get_user_invitation(&self, invitation_id: &str) -> Result<UserInvitationResponse> {
         let data = self
             .get(
@@ -300,7 +296,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetWinBackOffer returns a single win-back offer.
+    /// Returns a single win-back offer.
     pub async fn get_win_back_offer(&self, offer_id: &str) -> Result<WinBackOfferResponse> {
         let data = self
             .get(
@@ -311,7 +307,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppEncryptionDeclarations returns encryption declarations for an app.
+    /// Returns encryption declarations for an app.
     pub async fn list_app_encryption_declarations(
         &self,
         app_id: &str,
@@ -330,7 +326,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListInAppPurchases returns in-app purchases for an app.
+    /// Returns in-app purchases for an app.
     pub async fn list_in_app_purchases(
         &self,
         app_id: &str,
@@ -349,7 +345,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListPromotedPurchases returns promoted purchases for an app.
+    /// Returns promoted purchases for an app.
     pub async fn list_promoted_purchases(
         &self,
         app_id: &str,
@@ -368,7 +364,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSandboxTesters returns a list of sandbox testers.
+    /// Returns a list of sandbox testers.
     pub async fn list_sandbox_testers(
         &self,
         opts: Option<&ListOptions>,
@@ -381,7 +377,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptionGroups returns subscription groups for an app.
+    /// Returns subscription groups for an app.
     pub async fn list_subscription_groups(
         &self,
         app_id: &str,
@@ -400,7 +396,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptionOfferCodes returns offer codes for a subscription.
+    /// Returns offer codes for a subscription.
     pub async fn list_subscription_offer_codes(
         &self,
         subscription_id: &str,
@@ -422,7 +418,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListSubscriptions returns subscriptions for a subscription group.
+    /// Returns subscriptions for a subscription group.
     pub async fn list_subscriptions(
         &self,
         group_id: &str,
@@ -444,7 +440,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListTerritoryAvailabilities returns territory availabilities.
+    /// Returns territory availabilities.
     pub async fn list_territory_availabilities(
         &self,
         app_availability_id: &str,
@@ -466,7 +462,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListUserInvitations returns a list of user invitations.
+    /// Returns a list of user invitations.
     pub async fn list_user_invitations(
         &self,
         opts: Option<&ListOptions>,
@@ -479,7 +475,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListUsers returns a list of users.
+    /// Returns a list of users.
     pub async fn list_users(&self, opts: Option<&ListOptions>) -> Result<UsersResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
@@ -489,7 +485,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListWinBackOffers returns win-back offers for a subscription.
+    /// Returns win-back offers for a subscription.
     pub async fn list_win_back_offers(
         &self,
         subscription_id: &str,
@@ -511,7 +507,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAgeRatingDeclaration updates an age rating declaration.
+    /// Updates an age rating declaration.
     pub async fn update_age_rating_declaration(
         &self,
         declaration_id: &str,
@@ -529,7 +525,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateInAppPurchase updates an in-app purchase.
+    /// Updates an in-app purchase.
     pub async fn update_in_app_purchase(
         &self,
         iap_id: &str,
@@ -544,7 +540,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdatePromotedPurchase updates a promoted purchase.
+    /// Updates a promoted purchase.
     pub async fn update_promoted_purchase(
         &self,
         promoted_purchase_id: &str,
@@ -562,7 +558,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateSandboxTester updates a sandbox tester.
+    /// Updates a sandbox tester.
     pub async fn update_sandbox_tester(
         &self,
         tester_id: &str,
@@ -577,7 +573,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateSubscriptionOfferCode updates an offer code.
+    /// Updates an offer code.
     pub async fn update_subscription_offer_code(
         &self,
         offer_code_id: &str,
@@ -595,7 +591,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateUser updates a user.
+    /// Updates a user.
     pub async fn update_user(
         &self,
         user_id: &str,
@@ -610,7 +606,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateWinBackOffer updates a win-back offer.
+    /// Updates a win-back offer.
     pub async fn update_win_back_offer(
         &self,
         offer_id: &str,
@@ -625,7 +621,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAndroidToIosAppMappingDetail creates an Android-to-iOS app mapping.
+    /// Creates an Android-to-iOS app mapping.
     pub async fn create_android_to_ios_app_mapping_detail(
         &self,
         req: &AndroidToIosAppMappingDetailCreateRequest,
@@ -636,7 +632,7 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteAndroidToIosAppMappingDetail deletes an Android-to-iOS app mapping.
+    /// Deletes an Android-to-iOS app mapping.
     pub async fn delete_android_to_ios_app_mapping_detail(&self, mapping_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/androidToIosAppMappingDetails/{}",
@@ -645,7 +641,7 @@ impl Client {
         .await
     }
 
-    /// GetAndroidToIosAppMappingDetail returns a single Android-to-iOS app mapping.
+    /// Returns a single Android-to-iOS app mapping.
     pub async fn get_android_to_ios_app_mapping_detail(
         &self,
         mapping_id: &str,
@@ -662,7 +658,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAndroidToIosAppMappingDetails returns the Android-to-iOS app mappings
+    /// Returns the Android-to-iOS app mappings
     /// for an app.
     pub async fn list_android_to_ios_app_mapping_details(
         &self,
@@ -685,7 +681,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListTerritoryAgeRatings returns an app's age ratings per territory for an
+    /// Returns an app's age ratings per territory for an
     /// app info.
     pub async fn list_territory_age_ratings(
         &self,
@@ -708,7 +704,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAndroidToIosAppMappingDetail updates an Android-to-iOS app mapping.
+    /// Updates an Android-to-iOS app mapping.
     pub async fn update_android_to_ios_app_mapping_detail(
         &self,
         mapping_id: &str,
@@ -743,7 +739,7 @@ mod tests {
             ..Default::default()
         };
         opts.filter
-            .insert("state", GoSlice::from(vec!["APPROVED".to_string()]));
+            .insert("state", JsonSlice::from(vec!["APPROVED".to_string()]));
         let resp = mock
             .client()
             .list_in_app_purchases("a/1", Some(&opts))
@@ -777,7 +773,7 @@ mod tests {
             ..Default::default()
         };
         opts.filter
-            .insert("app", GoSlice::from(vec!["other".to_string()]));
+            .insert("app", JsonSlice::from(vec!["other".to_string()]));
         mock.client()
             .list_app_encryption_declarations("app1", Some(&opts))
             .await

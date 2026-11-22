@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/events.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! In-app event tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerAppEventTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_app_event_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -220,17 +217,17 @@ pub(super) fn register_app_event_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListAppEvents`.
+/// Handles `list_app_events`.
 async fn handle_list_app_events(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -259,9 +256,9 @@ async fn handle_list_app_events(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&format_app_events(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAppEvent`.
+/// Handles `get_app_event`.
 async fn handle_get_app_event(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { EventID string \"json:\\\"event_id\\\"\" }", "") {
         event_id: String => "event_id";
     }
@@ -283,9 +280,9 @@ async fn handle_get_app_event(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_app_event(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateAppEvent`.
+/// Handles `create_app_event`.
 async fn handle_create_app_event(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\"; Badge string \"json:\\\"badge\\\"\"; DeepLink string \"json:\\\"deep_link\\\"\"; PurchaseRequirement string \"json:\\\"purchase_requirement\\\"\"; PrimaryLocale string \"json:\\\"primary_locale\\\"\"; Priority string \"json:\\\"priority\\\"\"; Purpose string \"json:\\\"purpose\\\"\" }", "") {
         app_id: String => "app_id";
         reference_name: String => "reference_name";
@@ -339,9 +336,9 @@ async fn handle_create_app_event(c: Arc<Client>, args: Args) -> HandlerResult {
     ))
 }
 
-/// Ported from `Registry.handleUpdateAppEvent`.
+/// Handles `update_app_event`.
 async fn handle_update_app_event(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { EventID string \"json:\\\"event_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\"; Badge string \"json:\\\"badge\\\"\"; DeepLink string \"json:\\\"deep_link\\\"\"; PurchaseRequirement string \"json:\\\"purchase_requirement\\\"\"; Priority string \"json:\\\"priority\\\"\"; Purpose string \"json:\\\"purpose\\\"\" }", "") {
         event_id: String => "event_id";
         reference_name: String => "reference_name";
@@ -385,9 +382,9 @@ async fn handle_update_app_event(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format!("Updated app event: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteAppEvent`.
+/// Handles `delete_app_event`.
 async fn handle_delete_app_event(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { EventID string \"json:\\\"event_id\\\"\" }", "") {
         event_id: String => "event_id";
     }
@@ -408,7 +405,6 @@ async fn handle_delete_app_event(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(CallToolResult::success("App event deleted successfully"))
 }
 
-/// Ported from `formatAppEvents`.
 fn format_app_events(events: &[AppEvent]) -> String {
     if events.is_empty() {
         return "No app events found".into();
@@ -425,7 +421,6 @@ fn format_app_events(events: &[AppEvent]) -> String {
     sb
 }
 
-/// Ported from `formatAppEvent`.
 fn format_app_event(event: &AppEvent) -> String {
     let a = &event.attributes;
     let mut sb = String::new();

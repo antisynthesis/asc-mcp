@@ -7,8 +7,8 @@ use reqwest::Method;
 use super::auth::TokenProvider;
 use super::error::{ApiError, Error, Result};
 use super::model::ErrorResponse;
-use crate::go::GoEncode;
-use crate::go::url::Values;
+use crate::wire::JsonEncode;
+use crate::wire::url::Values;
 
 /// The App Store Connect API base URL.
 pub const BASE_URL: &str = "https://api.appstoreconnect.apple.com";
@@ -139,7 +139,7 @@ impl Client {
                 status_code: status,
                 ..Default::default()
             };
-            match crate::go::json::from_slice::<ErrorResponse>(&body) {
+            match crate::wire::json::from_slice::<ErrorResponse>(&body) {
                 Ok(er) if !er.errors.is_empty() => api.errors = er.errors.into_vec(),
                 _ => api.raw_body = String::from_utf8_lossy(&body).into_owned(),
             }
@@ -159,17 +159,22 @@ impl Client {
     }
 
     /// POST a JSON body.
-    pub async fn post<B: GoEncode + ?Sized>(
+    pub async fn post<B: JsonEncode + ?Sized>(
         &self,
         path: &str,
         body: Option<&B>,
     ) -> Result<Vec<u8>> {
-        self.do_request(Method::POST, path, None, body.map(crate::go::json::marshal))
-            .await
+        self.do_request(
+            Method::POST,
+            path,
+            None,
+            body.map(crate::wire::json::marshal),
+        )
+        .await
     }
 
     /// PATCH a JSON body.
-    pub async fn patch<B: GoEncode + ?Sized>(
+    pub async fn patch<B: JsonEncode + ?Sized>(
         &self,
         path: &str,
         body: Option<&B>,
@@ -178,7 +183,7 @@ impl Client {
             Method::PATCH,
             path,
             None,
-            body.map(crate::go::json::marshal),
+            body.map(crate::wire::json::marshal),
         )
         .await
     }
@@ -191,7 +196,7 @@ impl Client {
     }
 
     /// DELETE with a JSON body (relationship removals).
-    pub async fn delete_with_body<B: GoEncode + ?Sized>(
+    pub async fn delete_with_body<B: JsonEncode + ?Sized>(
         &self,
         path: &str,
         body: Option<&B>,
@@ -200,7 +205,7 @@ impl Client {
             Method::DELETE,
             path,
             None,
-            body.map(crate::go::json::marshal),
+            body.map(crate::wire::json::marshal),
         )
         .await
         .map(|_| ())
@@ -213,15 +218,15 @@ impl Client {
         if full_url.is_empty() {
             return Err(Error::msg("empty URL"));
         }
-        let parsed =
-            GoUrl::parse(full_url).map_err(|e| Error::msg(format!("invalid cursor URL: {e}")))?;
-        let base = GoUrl::parse(&self.base_url)
+        let parsed = ParsedUrl::parse(full_url)
+            .map_err(|e| Error::msg(format!("invalid cursor URL: {e}")))?;
+        let base = ParsedUrl::parse(&self.base_url)
             .map_err(|e| Error::msg(format!("invalid client base URL: {e}")))?;
         if parsed.scheme != base.scheme || parsed.host != base.host {
             return Err(Error::msg(format!(
                 "cursor URL host mismatch: got {}, want {}",
-                crate::go::fmt::quote(&parsed.host),
-                crate::go::fmt::quote(&base.host)
+                crate::wire::fmt::quote(&parsed.host),
+                crate::wire::fmt::quote(&base.host)
             )));
         }
         let path = if parsed.path.is_empty() {
@@ -259,8 +264,8 @@ async fn read_limited(mut resp: reqwest::Response, limit: usize) -> Result<Vec<u
     }
 }
 
-/// Go `isRetryable`: 429 and 5xx always; other non-API failures only for
-/// idempotent methods.
+/// Whether a failed attempt is retried: 429 and 5xx always; other non-API
+/// failures only for idempotent methods.
 fn is_retryable(err: &Error, method: &Method) -> bool {
     if let Some(api) = err.api() {
         return api.status_code == 429 || api.status_code >= 500;
@@ -301,15 +306,15 @@ fn parse_retry_after(v: &str) -> Duration {
     Duration::ZERO
 }
 
-/// The parts of Go's `url.Parse` the cursor check relies on.
-struct GoUrl {
+/// A minimal URL split (scheme, host, path, query) used by the cursor check.
+struct ParsedUrl {
     scheme: String,
     host: String,
     path: String,
     query: Option<String>,
 }
 
-impl GoUrl {
+impl ParsedUrl {
     fn parse(raw: &str) -> std::result::Result<Self, String> {
         let raw = raw.split('#').next().unwrap_or("");
         let (mut scheme, mut rest) = (String::new(), raw);
@@ -322,7 +327,7 @@ impl GoUrl {
             if i == 0 {
                 return Err(format!(
                     "parse {}: missing protocol scheme",
-                    crate::go::fmt::quote(raw)
+                    crate::wire::fmt::quote(raw)
                 ));
             }
             if valid {
@@ -366,15 +371,16 @@ mod tests {
     }
 
     #[test]
-    fn go_url_parse() {
-        let u = GoUrl::parse("https://api.appstoreconnect.apple.com/v1/apps?cursor=abc&limit=5")
-            .unwrap();
+    fn url_parse() {
+        let u =
+            ParsedUrl::parse("https://api.appstoreconnect.apple.com/v1/apps?cursor=abc&limit=5")
+                .unwrap();
         assert_eq!(
             (u.scheme.as_str(), u.host.as_str(), u.path.as_str()),
             ("https", "api.appstoreconnect.apple.com", "/v1/apps")
         );
         assert_eq!(u.query.as_deref(), Some("cursor=abc&limit=5"));
-        let u = GoUrl::parse("not a url").unwrap();
+        let u = ParsedUrl::parse("not a url").unwrap();
         assert_eq!((u.scheme.as_str(), u.host.as_str()), ("", ""));
     }
 }

@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/subscriptions.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Subscription tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerSubscriptionTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_subscription_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -167,17 +164,17 @@ pub(super) fn register_subscription_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListSubscriptionGroups`.
+/// Handles `list_subscription_groups`.
 async fn handle_list_subscription_groups(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -206,9 +203,9 @@ async fn handle_list_subscription_groups(c: Arc<Client>, args: Args) -> HandlerR
     Ok(list_result(&format_subscription_groups(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetSubscriptionGroup`.
+/// Handles `get_subscription_group`.
 async fn handle_get_subscription_group(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GroupID string \"json:\\\"group_id\\\"\" }", "") {
         group_id: String => "group_id";
     }
@@ -230,17 +227,17 @@ async fn handle_get_subscription_group(c: Arc<Client>, args: Args) -> HandlerRes
     Ok(data_result(&format_subscription_group(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleListSubscriptions`.
+/// Handles `list_subscriptions`.
 async fn handle_list_subscriptions(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GroupID string \"json:\\\"group_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         group_id: String => "group_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -269,9 +266,9 @@ async fn handle_list_subscriptions(c: Arc<Client>, args: Args) -> HandlerResult 
     Ok(list_result(&format_subscriptions(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetSubscription`.
+/// Handles `get_subscription`.
 async fn handle_get_subscription(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubscriptionID string \"json:\\\"subscription_id\\\"\" }", "") {
         subscription_id: String => "subscription_id";
     }
@@ -293,7 +290,6 @@ async fn handle_get_subscription(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_subscription(&resp.data), &resp.data))
 }
 
-/// Ported from `formatSubscriptionGroups`.
 fn format_subscription_groups(groups: &[SubscriptionGroup]) -> String {
     if groups.is_empty() {
         return "No subscription groups found".to_string();
@@ -310,7 +306,6 @@ fn format_subscription_groups(groups: &[SubscriptionGroup]) -> String {
     sb
 }
 
-/// Ported from `formatSubscriptionGroup`.
 fn format_subscription_group(group: &SubscriptionGroup) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "Group ID: {}", group.id);
@@ -318,7 +313,6 @@ fn format_subscription_group(group: &SubscriptionGroup) -> String {
     sb
 }
 
-/// Ported from `formatSubscriptions`.
 fn format_subscriptions(subs: &[Subscription]) -> String {
     if subs.is_empty() {
         return "No subscriptions found".to_string();
@@ -335,7 +329,6 @@ fn format_subscriptions(subs: &[Subscription]) -> String {
     sb
 }
 
-/// Ported from `formatSubscription`.
 fn format_subscription(sub: &Subscription) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", sub.id);

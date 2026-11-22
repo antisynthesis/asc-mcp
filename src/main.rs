@@ -2,8 +2,8 @@
 
 #[tokio::main]
 async fn main() {
-    // Behave like a Go binary on a closed pipe (e.g. `asc-mcp tools | head`):
-    // exit quietly via SIGPIPE instead of panicking on a failed write.
+    // On a closed pipe (e.g. `asc-mcp tools | head`), exit quietly via
+    // SIGPIPE instead of panicking on a failed write.
     #[cfg(unix)]
     // SAFETY: restoring the default disposition of SIGPIPE before any other
     // threads exist has no memory-safety implications.

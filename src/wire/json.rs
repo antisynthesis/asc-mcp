@@ -1,22 +1,23 @@
-//! Go `encoding/json` compatible decoding and encoding.
+//! JSON decoding and encoding with the server's wire-format rules.
 //!
-//! The server was originally written in Go, and its wire behaviour (the
-//! exact JSON bodies sent to App Store Connect, the `structuredContent`
-//! returned to MCP clients, and the text of argument-decoding errors) is
-//! defined by Go's `encoding/json` semantics. This module reproduces those
-//! semantics on top of `serde_json::Value`:
+//! The server's wire behaviour (the exact JSON bodies sent to App Store
+//! Connect, the `structuredContent` returned to MCP clients, and the text of
+//! argument-decoding errors) is a stable format that clients depend on. This
+//! module implements those rules on top of `serde_json::Value`:
 //!
 //! * Decoding walks object members in document order, matches keys exactly
 //!   first and then ASCII case-insensitively, ignores unknown keys, treats
 //!   `null` as a no-op for scalars and structs and as "reset to nil" for
 //!   pointers, slices and maps, and keeps decoding after a type mismatch so
-//!   that the *first* mismatch is reported, worded exactly as Go words it.
+//!   that the *first* mismatch is reported, using the established error
+//!   wording (`json: cannot unmarshal ... into Go struct field ...`).
 //! * Encoding emits struct fields in declaration order, honours
 //!   `omitempty`, distinguishes nil from empty slices and maps, sorts map
-//!   keys, and formats floats the way Go does.
+//!   keys, escapes `<`, `>` and `&` (HTML-safe), and formats floats with
+//!   the shortest round-trip digits.
 //!
-//! Types opt in through [`GoDecode`]/[`GoEncode`]; structs normally use the
-//! [`go_struct!`](crate::go_struct) macro.
+//! Types opt in through [`JsonDecode`]/[`JsonEncode`]; structs normally use the
+//! [`json_struct!`](crate::json_struct) macro.
 
 use std::collections::BTreeMap;
 use std::fmt;
@@ -24,18 +25,19 @@ use std::ops::{Deref, DerefMut};
 
 use serde_json::{Map, Number, Value};
 
-use super::time::GoTime;
+use super::time::Timestamp;
 
-/// An error that aborts decoding immediately (Go returns errors from
-/// `UnmarshalJSON` implementations without saving them).
+/// An error that aborts decoding immediately, unlike a type mismatch, which
+/// is saved and decoding continues (used for invalid base64 data and
+/// malformed timestamps).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Fatal(pub String);
 
 /// Result of a decode step.
 pub type DResult = Result<(), Fatal>;
 
-/// Decoding state: the error context Go attaches to type mismatches plus
-/// the first saved mismatch.
+/// Decoding state: the struct/field context attached to type-mismatch
+/// errors plus the first saved mismatch.
 #[derive(Debug, Default)]
 pub struct Decoder {
     struct_name: &'static str,
@@ -50,17 +52,17 @@ impl Decoder {
         Self::default()
     }
 
-    /// Records a type mismatch (only the first one is kept, as in Go).
-    pub fn type_error(&mut self, value_desc: &str, go_type: &str) {
+    /// Records a type mismatch (only the first one is kept).
+    pub fn type_error(&mut self, value_desc: &str, type_name: &str) {
         if self.saved.is_some() {
             return;
         }
-        let go_type = self.type_override.unwrap_or(go_type);
+        let type_name = self.type_override.unwrap_or(type_name);
         let msg = if self.path.is_empty() {
-            format!("json: cannot unmarshal {value_desc} into Go value of type {go_type}")
+            format!("json: cannot unmarshal {value_desc} into Go value of type {type_name}")
         } else {
             format!(
-                "json: cannot unmarshal {value_desc} into Go struct field {}.{} of type {go_type}",
+                "json: cannot unmarshal {value_desc} into Go struct field {}.{} of type {type_name}",
                 self.struct_name,
                 self.path.join(".")
             )
@@ -69,7 +71,7 @@ impl Decoder {
     }
 
     /// Decodes a struct field: pushes the error context, decodes, pops.
-    pub fn field<T: GoDecode + ?Sized>(
+    pub fn field<T: JsonDecode + ?Sized>(
         &mut self,
         struct_short: &'static str,
         json: &'static str,
@@ -82,14 +84,14 @@ impl Decoder {
         self.struct_name = struct_short;
         self.path.push(json);
         self.type_override = type_override;
-        let r = target.go_decode(v, self);
+        let r = target.json_decode(v, self);
         self.type_override = prev_override;
         self.path.pop();
         self.struct_name = prev_struct;
         r
     }
 
-    /// Pushes an embedded struct's Go field name onto the error path.
+    /// Pushes an embedded struct's field name onto the error path.
     #[doc(hidden)]
     pub fn push_path(&mut self, name: &'static str) {
         self.path.push(name);
@@ -119,7 +121,7 @@ impl Decoder {
     }
 }
 
-/// The Go `UnmarshalTypeError.Value` description of a JSON value kind.
+/// The description of a JSON value kind used in type-mismatch errors.
 pub fn kind(v: &Value) -> &'static str {
     match v {
         Value::Null => "null",
@@ -131,24 +133,25 @@ pub fn kind(v: &Value) -> &'static str {
     }
 }
 
-/// Types that decode with Go `encoding/json` semantics.
-pub trait GoDecode {
-    /// The Go type name used in error messages (`reflect.Type.String()`).
-    fn go_type() -> String
+/// Types that decode with the wire-format rules.
+pub trait JsonDecode {
+    /// The type name used in error messages (e.g. `int`, `[]string`).
+    fn type_name() -> String
     where
         Self: Sized;
 
-    /// Decodes `v` into `self`, merging as Go does.
-    fn go_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult;
+    /// Decodes `v` into `self`, merging into existing contents (absent
+    /// members leave fields untouched).
+    fn json_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult;
 }
 
-/// Types that encode with Go `encoding/json` semantics.
-pub trait GoEncode {
+/// Types that encode with the wire-format rules.
+pub trait JsonEncode {
     /// Encodes `self` as a JSON value.
-    fn go_encode(&self) -> Value;
+    fn json_encode(&self) -> Value;
 
     /// Reports whether the value is "empty" for `omitempty`.
-    fn go_is_empty(&self) -> bool {
+    fn is_omittable(&self) -> bool {
         false
     }
 }
@@ -156,22 +159,22 @@ pub trait GoEncode {
 // ---------------------------------------------------------------------------
 // Entry points
 
-/// Go `json.Unmarshal(data, out)`.
-pub fn unmarshal<T: GoDecode>(data: &[u8], out: &mut T) -> Result<(), String> {
+/// Parses `data` and decodes it into `out`.
+pub fn unmarshal<T: JsonDecode>(data: &[u8], out: &mut T) -> Result<(), String> {
     let v = parse(data)?;
     unmarshal_value(&v, out)
 }
 
-/// Go `json.Unmarshal` from an already parsed value.
-pub fn unmarshal_value<T: GoDecode>(v: &Value, out: &mut T) -> Result<(), String> {
+/// Decodes an already parsed value into `out`.
+pub fn unmarshal_value<T: JsonDecode>(v: &Value, out: &mut T) -> Result<(), String> {
     let mut d = Decoder::new();
-    out.go_decode(v, &mut d).map_err(|f| f.0)?;
+    out.json_decode(v, &mut d).map_err(|f| f.0)?;
     d.finish()
 }
 
-/// Go `json.Unmarshal(args, out)` where `args` is a `json.RawMessage`
-/// that may be nil (absent).
-pub fn unmarshal_args<T: GoDecode>(args: Option<&Value>, out: &mut T) -> Result<(), String> {
+/// Decodes tool arguments into `out`; absent arguments are reported as
+/// `unexpected end of JSON input`.
+pub fn unmarshal_args<T: JsonDecode>(args: Option<&Value>, out: &mut T) -> Result<(), String> {
     match args {
         None => Err("unexpected end of JSON input".to_string()),
         Some(v) => unmarshal_value(v, out),
@@ -179,30 +182,29 @@ pub fn unmarshal_args<T: GoDecode>(args: Option<&Value>, out: &mut T) -> Result<
 }
 
 /// Decodes a fresh `T` from `data`.
-pub fn from_slice<T: GoDecode + Default>(data: &[u8]) -> Result<T, String> {
+pub fn from_slice<T: JsonDecode + Default>(data: &[u8]) -> Result<T, String> {
     let mut out = T::default();
     unmarshal(data, &mut out)?;
     Ok(out)
 }
 
-/// Go `json.Marshal(v)` as a value.
-pub fn to_value<T: GoEncode + ?Sized>(v: &T) -> Value {
-    v.go_encode()
+/// Encodes `v` as a JSON value.
+pub fn to_value<T: JsonEncode + ?Sized>(v: &T) -> Value {
+    v.json_encode()
 }
 
-/// Go `json.Marshal(v)` as bytes. Like Go, `<`, `>` and `&` are escaped.
-pub fn marshal<T: GoEncode + ?Sized>(v: &T) -> Vec<u8> {
-    to_go_json_bytes(&v.go_encode())
+/// Encodes `v` as compact bytes with `<`, `>` and `&` escaped.
+pub fn marshal<T: JsonEncode + ?Sized>(v: &T) -> Vec<u8> {
+    to_json_bytes(&v.json_encode())
 }
 
-/// Serializes a value the way Go's encoder writes bytes (HTML-safe
-/// escaping, no whitespace).
-pub fn to_go_json_bytes(v: &Value) -> Vec<u8> {
+/// Serializes a value to wire bytes (HTML-safe escaping, no whitespace).
+pub fn to_json_bytes(v: &Value) -> Vec<u8> {
     let s = serde_json::to_string(v).unwrap_or_else(|_| "null".into());
     html_escape(&s).into_bytes()
 }
 
-/// Escapes `<`, `>`, `&`, U+2028 and U+2029 like Go's encoder. Those
+/// Escapes `<`, `>`, `&`, U+2028 and U+2029 as `\uXXXX`. Those
 /// characters can only appear inside JSON strings, so a plain replacement
 /// over serialized JSON is safe.
 pub fn html_escape(s: &str) -> String {
@@ -223,39 +225,40 @@ pub fn html_escape(s: &str) -> String {
     out
 }
 
-/// Parses bytes as JSON, producing Go-worded syntax errors.
+/// Parses bytes as JSON, producing syntax errors in the established
+/// wording (`invalid character ...`, `unexpected end of JSON input`).
 pub fn parse(data: &[u8]) -> Result<Value, String> {
     if data.iter().all(|b| b.is_ascii_whitespace()) {
         return Err("unexpected end of JSON input".into());
     }
-    serde_json::from_slice::<Value>(data).map_err(|e| go_syntax_error(data, &e))
+    serde_json::from_slice::<Value>(data).map_err(|e| syntax_error(data, &e))
 }
 
-/// Translates a syntax error into Go's wording by re-scanning the input
-/// with Go's validation rules (`encoding/json` `checkValid`).
-fn go_syntax_error(data: &[u8], e: &serde_json::Error) -> String {
-    match go_scan(data) {
+/// Translates a syntax error into the established wording by re-scanning
+/// the input with [`scan`].
+fn syntax_error(data: &[u8], e: &serde_json::Error) -> String {
+    match scan(data) {
         Err(msg) => msg,
         // The scanner accepted what serde rejected (e.g. invalid UTF-8,
-        // which Go tolerates); fall back to serde's description.
+        // which the scanner tolerates); fall back to serde's description.
         Ok(()) => e.to_string(),
     }
 }
 
-/// Go `quoteChar`.
 fn quote_char(c: u8) -> String {
     match c {
         b'\'' => "'\\''".into(),
         b'"' => "'\"'".into(),
         c => {
-            let q = crate::go::fmt::quote(&char::from(c).to_string());
+            let q = crate::wire::fmt::quote(&char::from(c).to_string());
             format!("'{}'", &q[1..q.len() - 1])
         }
     }
 }
 
-/// Validates JSON exactly as Go's scanner does, returning Go's error text.
-pub fn go_scan(data: &[u8]) -> Result<(), String> {
+/// Validates JSON byte by byte, returning the established error text for
+/// the first offending character.
+pub fn scan(data: &[u8]) -> Result<(), String> {
     struct S<'a> {
         b: &'a [u8],
         i: usize,
@@ -271,7 +274,7 @@ pub fn go_scan(data: &[u8]) -> Result<(), String> {
                 self.i += 1;
             }
         }
-        /// Reads a byte. At end of input Go's scanner feeds one virtual
+        /// Reads a byte. At end of input the scanner feeds one virtual
         /// space (so `nul` fails "in literal null"); a second read is EOF.
         fn next(&mut self) -> Result<u8, String> {
             match self.b.get(self.i) {
@@ -438,11 +441,11 @@ pub fn go_scan(data: &[u8]) -> Result<(), String> {
 // ---------------------------------------------------------------------------
 // Scalars
 
-impl GoDecode for String {
-    fn go_type() -> String {
+impl JsonDecode for String {
+    fn type_name() -> String {
         "string".into()
     }
-    fn go_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
+    fn json_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
         match v {
             Value::Null => {}
             Value::String(s) => *self = s.clone(),
@@ -451,28 +454,28 @@ impl GoDecode for String {
         Ok(())
     }
 }
-impl GoEncode for String {
-    fn go_encode(&self) -> Value {
+impl JsonEncode for String {
+    fn json_encode(&self) -> Value {
         Value::String(self.clone())
     }
-    fn go_is_empty(&self) -> bool {
+    fn is_omittable(&self) -> bool {
         self.is_empty()
     }
 }
-impl GoEncode for str {
-    fn go_encode(&self) -> Value {
+impl JsonEncode for str {
+    fn json_encode(&self) -> Value {
         Value::String(self.to_string())
     }
-    fn go_is_empty(&self) -> bool {
+    fn is_omittable(&self) -> bool {
         self.is_empty()
     }
 }
 
-impl GoDecode for bool {
-    fn go_type() -> String {
+impl JsonDecode for bool {
+    fn type_name() -> String {
         "bool".into()
     }
-    fn go_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
+    fn json_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
         match v {
             Value::Null => {}
             Value::Bool(b) => *self = *b,
@@ -481,21 +484,22 @@ impl GoDecode for bool {
         Ok(())
     }
 }
-impl GoEncode for bool {
-    fn go_encode(&self) -> Value {
+impl JsonEncode for bool {
+    fn json_encode(&self) -> Value {
         Value::Bool(*self)
     }
-    fn go_is_empty(&self) -> bool {
+    fn is_omittable(&self) -> bool {
         !*self
     }
 }
 
-/// Go `int` (64-bit). Use the `as "int64"` field flag for `int64`.
-impl GoDecode for i64 {
-    fn go_type() -> String {
+/// A 64-bit integer, reported as `int` in errors. Use the `as "int64"`
+/// field flag to report `int64` instead.
+impl JsonDecode for i64 {
+    fn type_name() -> String {
         "int".into()
     }
-    fn go_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
+    fn json_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
         match v {
             Value::Null => {}
             Value::Number(n) => {
@@ -510,20 +514,20 @@ impl GoDecode for i64 {
         Ok(())
     }
 }
-impl GoEncode for i64 {
-    fn go_encode(&self) -> Value {
+impl JsonEncode for i64 {
+    fn json_encode(&self) -> Value {
         Value::Number(Number::from(*self))
     }
-    fn go_is_empty(&self) -> bool {
+    fn is_omittable(&self) -> bool {
         *self == 0
     }
 }
 
-impl GoDecode for f64 {
-    fn go_type() -> String {
+impl JsonDecode for f64 {
+    fn type_name() -> String {
         "float64".into()
     }
-    fn go_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
+    fn json_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
         match v {
             Value::Null => {}
             Value::Number(n) => {
@@ -538,17 +542,18 @@ impl GoDecode for f64 {
         Ok(())
     }
 }
-impl GoEncode for f64 {
-    fn go_encode(&self) -> Value {
-        go_float_number(*self)
+impl JsonEncode for f64 {
+    fn json_encode(&self) -> Value {
+        float_number(*self)
     }
-    fn go_is_empty(&self) -> bool {
+    fn is_omittable(&self) -> bool {
         *self == 0.0
     }
 }
 
-/// Formats a float64 exactly as Go's JSON encoder does.
-pub fn go_float_json(f: f64) -> String {
+/// Formats a float64 for the wire: shortest round-trip digits, plain
+/// notation for magnitudes in `[1e-6, 1e21)`, exponent notation otherwise.
+pub fn float_json(f: f64) -> String {
     if f == 0.0 {
         return if f.is_sign_negative() {
             "-0".into()
@@ -562,7 +567,7 @@ pub fn go_float_json(f: f64) -> String {
         let s = format!("{f}");
         return s;
     }
-    // 'e' format, shortest digits, Go-style exponent: e-07 → e-7, e+21.
+    // 'e' format, shortest digits, signed exponent without padding: e-7, e+21.
     let s = format!("{f:e}"); // like 1.5e-7 or 1e21
     let (mant, exp) = s.split_once('e').unwrap_or((&s, "0"));
     let exp: i32 = exp.parse().unwrap_or(0);
@@ -570,9 +575,9 @@ pub fn go_float_json(f: f64) -> String {
     format!("{mant}e{sign}{}", exp.abs())
 }
 
-/// A JSON number holding a Go-formatted float64.
-pub fn go_float_number(f: f64) -> Value {
-    serde_json::from_str::<Number>(&go_float_json(f))
+/// A JSON number holding a float64 formatted by [`float_json`].
+pub fn float_number(f: f64) -> Value {
+    serde_json::from_str::<Number>(&float_json(f))
         .map(Value::Number)
         .unwrap_or(Value::Null)
 }
@@ -580,62 +585,62 @@ pub fn go_float_number(f: f64) -> Value {
 // ---------------------------------------------------------------------------
 // Pointers (Option)
 
-impl<T: GoDecode + Default> GoDecode for Option<T> {
-    fn go_type() -> String {
-        T::go_type()
+impl<T: JsonDecode + Default> JsonDecode for Option<T> {
+    fn type_name() -> String {
+        T::type_name()
     }
-    fn go_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
+    fn json_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
         if v.is_null() {
             *self = None;
             return Ok(());
         }
-        self.get_or_insert_with(T::default).go_decode(v, d)
+        self.get_or_insert_with(T::default).json_decode(v, d)
     }
 }
-impl<T: GoEncode> GoEncode for Option<T> {
-    fn go_encode(&self) -> Value {
+impl<T: JsonEncode> JsonEncode for Option<T> {
+    fn json_encode(&self) -> Value {
         match self {
             None => Value::Null,
-            Some(v) => v.go_encode(),
+            Some(v) => v.json_encode(),
         }
     }
-    fn go_is_empty(&self) -> bool {
+    fn is_omittable(&self) -> bool {
         self.is_none()
     }
 }
 
-impl<T: GoDecode + Default> GoDecode for Box<T> {
-    fn go_type() -> String {
-        T::go_type()
+impl<T: JsonDecode + Default> JsonDecode for Box<T> {
+    fn type_name() -> String {
+        T::type_name()
     }
-    fn go_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
-        (**self).go_decode(v, d)
+    fn json_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
+        (**self).json_decode(v, d)
     }
 }
-impl<T: GoEncode> GoEncode for Box<T> {
-    fn go_encode(&self) -> Value {
-        (**self).go_encode()
+impl<T: JsonEncode> JsonEncode for Box<T> {
+    fn json_encode(&self) -> Value {
+        (**self).json_encode()
     }
-    fn go_is_empty(&self) -> bool {
-        (**self).go_is_empty()
+    fn is_omittable(&self) -> bool {
+        (**self).is_omittable()
     }
 }
 
 // ---------------------------------------------------------------------------
 // Slices
 
-/// A Go slice: a `Vec` that remembers whether it is nil.
+/// A slice: a `Vec` that remembers whether it is nil.
 ///
 /// Derefs to `Vec<T>`, so handler code can iterate and index it directly.
 /// Without `omitempty`, a nil slice encodes as `null` and an empty one as
-/// `[]`, exactly as in Go.
+/// `[]`.
 #[derive(Clone, PartialEq)]
-pub struct GoSlice<T> {
+pub struct JsonSlice<T> {
     items: Vec<T>,
     nil: bool,
 }
 
-impl<T> Default for GoSlice<T> {
+impl<T> Default for JsonSlice<T> {
     fn default() -> Self {
         Self {
             items: Vec::new(),
@@ -644,7 +649,7 @@ impl<T> Default for GoSlice<T> {
     }
 }
 
-impl<T: fmt::Debug> fmt::Debug for GoSlice<T> {
+impl<T: fmt::Debug> fmt::Debug for JsonSlice<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.nil {
             f.write_str("nil")
@@ -654,7 +659,7 @@ impl<T: fmt::Debug> fmt::Debug for GoSlice<T> {
     }
 }
 
-impl<T> GoSlice<T> {
+impl<T> JsonSlice<T> {
     /// A nil slice.
     pub fn nil() -> Self {
         Self::default()
@@ -667,7 +672,7 @@ impl<T> GoSlice<T> {
     pub fn is_nil(&self) -> bool {
         self.nil
     }
-    /// Go `append`: appending to a nil slice makes it non-nil.
+    /// Appends an item; appending to a nil slice makes it non-nil.
     pub fn push(&mut self, v: T) {
         self.nil = false;
         self.items.push(v);
@@ -678,39 +683,39 @@ impl<T> GoSlice<T> {
     }
 }
 
-impl<T> From<Vec<T>> for GoSlice<T> {
+impl<T> From<Vec<T>> for JsonSlice<T> {
     fn from(v: Vec<T>) -> Self {
         Self::from_vec(v)
     }
 }
 
-impl<T> FromIterator<T> for GoSlice<T> {
+impl<T> FromIterator<T> for JsonSlice<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         Self::from_vec(iter.into_iter().collect())
     }
 }
 
-impl<T> Deref for GoSlice<T> {
+impl<T> Deref for JsonSlice<T> {
     type Target = Vec<T>;
     fn deref(&self) -> &Vec<T> {
         &self.items
     }
 }
-impl<T> DerefMut for GoSlice<T> {
+impl<T> DerefMut for JsonSlice<T> {
     fn deref_mut(&mut self) -> &mut Vec<T> {
         self.nil = false;
         &mut self.items
     }
 }
 
-impl<'a, T> IntoIterator for &'a GoSlice<T> {
+impl<'a, T> IntoIterator for &'a JsonSlice<T> {
     type Item = &'a T;
     type IntoIter = std::slice::Iter<'a, T>;
     fn into_iter(self) -> Self::IntoIter {
         self.items.iter()
     }
 }
-impl<T> IntoIterator for GoSlice<T> {
+impl<T> IntoIterator for JsonSlice<T> {
     type Item = T;
     type IntoIter = std::vec::IntoIter<T>;
     fn into_iter(self) -> Self::IntoIter {
@@ -718,11 +723,11 @@ impl<T> IntoIterator for GoSlice<T> {
     }
 }
 
-impl<T: GoDecode + Default> GoDecode for GoSlice<T> {
-    fn go_type() -> String {
-        format!("[]{}", T::go_type())
+impl<T: JsonDecode + Default> JsonDecode for JsonSlice<T> {
+    fn type_name() -> String {
+        format!("[]{}", T::type_name())
     }
-    fn go_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
+    fn json_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
         match v {
             Value::Null => *self = Self::nil(),
             Value::Array(items) => {
@@ -730,40 +735,40 @@ impl<T: GoDecode + Default> GoDecode for GoSlice<T> {
                 d.nested(|d| {
                     for item in items {
                         let mut t = T::default();
-                        t.go_decode(item, d)?;
+                        t.json_decode(item, d)?;
                         out.push(t);
                     }
                     Ok::<(), Fatal>(())
                 })?;
                 *self = Self::from_vec(out);
             }
-            other => d.type_error(kind(other), &Self::go_type()),
+            other => d.type_error(kind(other), &Self::type_name()),
         }
         Ok(())
     }
 }
-impl<T: GoEncode> GoEncode for GoSlice<T> {
-    fn go_encode(&self) -> Value {
+impl<T: JsonEncode> JsonEncode for JsonSlice<T> {
+    fn json_encode(&self) -> Value {
         if self.nil {
             Value::Null
         } else {
-            Value::Array(self.items.iter().map(GoEncode::go_encode).collect())
+            Value::Array(self.items.iter().map(JsonEncode::json_encode).collect())
         }
     }
-    fn go_is_empty(&self) -> bool {
+    fn is_omittable(&self) -> bool {
         self.items.is_empty()
     }
 }
 
-/// Go `[]byte`: base64 in JSON.
+/// Raw bytes, carried as standard base64 in JSON (nil when absent).
 #[derive(Clone, Default, PartialEq, Debug)]
-pub struct GoBytes(pub Option<Vec<u8>>);
+pub struct Base64Bytes(pub Option<Vec<u8>>);
 
-impl GoDecode for GoBytes {
-    fn go_type() -> String {
+impl JsonDecode for Base64Bytes {
+    fn type_name() -> String {
         "[]uint8".into()
     }
-    fn go_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
+    fn json_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
         use base64::Engine;
         match v {
             Value::Null => self.0 = None,
@@ -784,15 +789,15 @@ impl GoDecode for GoBytes {
         Ok(())
     }
 }
-impl GoEncode for GoBytes {
-    fn go_encode(&self) -> Value {
+impl JsonEncode for Base64Bytes {
+    fn json_encode(&self) -> Value {
         use base64::Engine;
         match &self.0 {
             None => Value::Null,
             Some(b) => Value::String(base64::engine::general_purpose::STANDARD.encode(b)),
         }
     }
-    fn go_is_empty(&self) -> bool {
+    fn is_omittable(&self) -> bool {
         self.0.as_ref().is_none_or(|b| b.is_empty())
     }
 }
@@ -800,14 +805,14 @@ impl GoEncode for GoBytes {
 // ---------------------------------------------------------------------------
 // Maps
 
-/// A Go `map[string]T`: sorted keys on encode, nil-aware.
+/// A string-keyed map: sorted keys on encode, nil-aware.
 #[derive(Clone, PartialEq)]
-pub struct GoMap<T> {
+pub struct JsonMap<T> {
     map: BTreeMap<String, T>,
     nil: bool,
 }
 
-impl<T> Default for GoMap<T> {
+impl<T> Default for JsonMap<T> {
     fn default() -> Self {
         Self {
             map: BTreeMap::new(),
@@ -816,7 +821,7 @@ impl<T> Default for GoMap<T> {
     }
 }
 
-impl<T: fmt::Debug> fmt::Debug for GoMap<T> {
+impl<T: fmt::Debug> fmt::Debug for JsonMap<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.nil {
             f.write_str("nil")
@@ -826,7 +831,7 @@ impl<T: fmt::Debug> fmt::Debug for GoMap<T> {
     }
 }
 
-impl<T> GoMap<T> {
+impl<T> JsonMap<T> {
     /// A nil map.
     pub fn nil() -> Self {
         Self::default()
@@ -839,37 +844,37 @@ impl<T> GoMap<T> {
     pub fn is_nil(&self) -> bool {
         self.nil
     }
-    /// Go `m[k] = v` (the map must be non-nil in Go; here it becomes so).
+    /// Inserts `k = v`, making a nil map non-nil.
     pub fn insert(&mut self, k: impl Into<String>, v: T) {
         self.nil = false;
         self.map.insert(k.into(), v);
     }
 }
 
-impl<T> FromIterator<(String, T)> for GoMap<T> {
+impl<T> FromIterator<(String, T)> for JsonMap<T> {
     fn from_iter<I: IntoIterator<Item = (String, T)>>(iter: I) -> Self {
         Self::from_map(iter.into_iter().collect())
     }
 }
 
-impl<T> Deref for GoMap<T> {
+impl<T> Deref for JsonMap<T> {
     type Target = BTreeMap<String, T>;
     fn deref(&self) -> &BTreeMap<String, T> {
         &self.map
     }
 }
-impl<T> DerefMut for GoMap<T> {
+impl<T> DerefMut for JsonMap<T> {
     fn deref_mut(&mut self) -> &mut BTreeMap<String, T> {
         self.nil = false;
         &mut self.map
     }
 }
 
-impl<T: GoDecode + Default> GoDecode for GoMap<T> {
-    fn go_type() -> String {
-        format!("map[string]{}", T::go_type())
+impl<T: JsonDecode + Default> JsonDecode for JsonMap<T> {
+    fn type_name() -> String {
+        format!("map[string]{}", T::type_name())
     }
-    fn go_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
+    fn json_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
         match v {
             Value::Null => *self = Self::nil(),
             Value::Object(m) => {
@@ -877,43 +882,43 @@ impl<T: GoDecode + Default> GoDecode for GoMap<T> {
                 d.nested(|d| {
                     for (k, item) in m {
                         let mut t = T::default();
-                        t.go_decode(item, d)?;
+                        t.json_decode(item, d)?;
                         self.map.insert(k.clone(), t);
                     }
                     Ok::<(), Fatal>(())
                 })?;
             }
-            other => d.type_error(kind(other), &Self::go_type()),
+            other => d.type_error(kind(other), &Self::type_name()),
         }
         Ok(())
     }
 }
-impl<T: GoEncode> GoEncode for GoMap<T> {
-    fn go_encode(&self) -> Value {
+impl<T: JsonEncode> JsonEncode for JsonMap<T> {
+    fn json_encode(&self) -> Value {
         if self.nil {
             return Value::Null;
         }
         let mut m = Map::new();
         for (k, v) in &self.map {
-            m.insert(k.clone(), v.go_encode());
+            m.insert(k.clone(), v.json_encode());
         }
         Value::Object(m)
     }
-    fn go_is_empty(&self) -> bool {
+    fn is_omittable(&self) -> bool {
         self.map.is_empty()
     }
 }
 
 // ---------------------------------------------------------------------------
-// interface{} and json.RawMessage
+// Untyped values and raw JSON
 
-/// Go `any` / `interface{}`: decoding converts numbers to float64, and
-/// encoding sorts object keys (they became `map[string]any`).
-impl GoDecode for Value {
-    fn go_type() -> String {
+/// An untyped value: decoding converts numbers to float64, and encoding
+/// sorts object keys.
+impl JsonDecode for Value {
+    fn type_name() -> String {
         "interface {}".into()
     }
-    fn go_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
+    fn json_decode(&mut self, v: &Value, d: &mut Decoder) -> DResult {
         match normalize_any(v) {
             Ok(n) => *self = n,
             Err(lit) => d.type_error(&format!("number {lit}"), "float64"),
@@ -921,23 +926,22 @@ impl GoDecode for Value {
         Ok(())
     }
 }
-impl GoEncode for Value {
-    fn go_encode(&self) -> Value {
+impl JsonEncode for Value {
+    fn json_encode(&self) -> Value {
         sort_keys(self)
     }
-    fn go_is_empty(&self) -> bool {
+    fn is_omittable(&self) -> bool {
         self.is_null()
     }
 }
 
-/// Converts a JSON value to what Go's `any` would hold after decoding:
-/// every number becomes a float64.
+/// Normalizes an untyped JSON value: every number becomes a float64.
 pub fn normalize_any(v: &Value) -> Result<Value, String> {
     Ok(match v {
         Value::Number(n) => {
             let lit = n.to_string();
             match lit.parse::<f64>() {
-                Ok(f) if f.is_finite() => go_float_number(f),
+                Ok(f) if f.is_finite() => float_number(f),
                 _ => return Err(lit),
             }
         }
@@ -953,7 +957,7 @@ pub fn normalize_any(v: &Value) -> Result<Value, String> {
     })
 }
 
-/// Recursively sorts object keys (Go encodes maps with sorted keys).
+/// Recursively sorts object keys (maps are encoded with sorted keys).
 pub fn sort_keys(v: &Value) -> Value {
     match v {
         Value::Array(a) => Value::Array(a.iter().map(sort_keys).collect()),
@@ -970,40 +974,40 @@ pub fn sort_keys(v: &Value) -> Value {
     }
 }
 
-/// Go `json.RawMessage`: kept verbatim (nil when absent).
+/// A raw JSON value: kept verbatim (nil when absent).
 #[derive(Clone, Default, PartialEq, Debug)]
 pub struct RawMessage(pub Option<Value>);
 
-impl GoDecode for RawMessage {
-    fn go_type() -> String {
+impl JsonDecode for RawMessage {
+    fn type_name() -> String {
         "json.RawMessage".into()
     }
-    fn go_decode(&mut self, v: &Value, _d: &mut Decoder) -> DResult {
+    fn json_decode(&mut self, v: &Value, _d: &mut Decoder) -> DResult {
         self.0 = Some(v.clone());
         Ok(())
     }
 }
-impl GoEncode for RawMessage {
-    fn go_encode(&self) -> Value {
+impl JsonEncode for RawMessage {
+    fn json_encode(&self) -> Value {
         self.0.clone().unwrap_or(Value::Null)
     }
-    fn go_is_empty(&self) -> bool {
+    fn is_omittable(&self) -> bool {
         self.0.is_none()
     }
 }
 
 // ---------------------------------------------------------------------------
-// time.Time
+// Timestamps
 
-impl GoDecode for GoTime {
-    fn go_type() -> String {
+impl JsonDecode for Timestamp {
+    fn type_name() -> String {
         "time.Time".into()
     }
-    fn go_decode(&mut self, v: &Value, _d: &mut Decoder) -> DResult {
+    fn json_decode(&mut self, v: &Value, _d: &mut Decoder) -> DResult {
         match v {
             Value::Null => Ok(()),
             Value::String(s) => {
-                *self = GoTime::parse_rfc3339(s).map_err(Fatal)?;
+                *self = Timestamp::parse_rfc3339(s).map_err(Fatal)?;
                 Ok(())
             }
             _ => Err(Fatal(
@@ -1012,8 +1016,8 @@ impl GoDecode for GoTime {
         }
     }
 }
-impl GoEncode for GoTime {
-    fn go_encode(&self) -> Value {
+impl JsonEncode for Timestamp {
+    fn json_encode(&self) -> Value {
         Value::String(self.format_rfc3339_nano())
     }
 }
@@ -1021,8 +1025,8 @@ impl GoEncode for GoTime {
 // ---------------------------------------------------------------------------
 // Structs
 
-/// Matches an object key against a field's JSON name the way Go does:
-/// exact first, then case-insensitively.
+/// Matches an object key against a field's JSON name: an exact pass
+/// first, then an ASCII case-insensitive pass.
 #[doc(hidden)]
 pub fn key_matches(key: &str, json: &str, exact_pass: bool) -> bool {
     if exact_pass {
@@ -1032,13 +1036,13 @@ pub fn key_matches(key: &str, json: &str, exact_pass: bool) -> bool {
     }
 }
 
-/// Struct-level decoding hooks used by [`go_struct!`](crate::go_struct),
+/// Struct-level decoding hooks used by [`json_struct!`](crate::json_struct),
 /// including promotion of embedded (`flatten`) struct fields.
-pub trait GoStruct {
+pub trait JsonStruct {
     /// Tries to decode object member `k` into a field. `short` is the
-    /// struct name Go reports in errors (the outermost struct for
+    /// struct name reported in errors (the outermost struct for
     /// promoted fields). Returns whether a field matched.
-    fn go_decode_member(
+    fn decode_member(
         &mut self,
         short: &'static str,
         k: &str,
@@ -1048,31 +1052,31 @@ pub trait GoStruct {
     ) -> Result<bool, Fatal>;
 
     /// Writes this struct's fields into `m` in declaration order.
-    fn go_encode_into(&self, m: &mut Map<String, Value>);
+    fn encode_into(&self, m: &mut Map<String, Value>);
 }
 
-/// Defines a struct with Go `encoding/json` semantics.
+/// Defines a struct that decodes and encodes with the wire-format rules.
 ///
 /// ```ignore
-/// go_struct! {
+/// json_struct! {
 ///     /// Doc comment.
 ///     pub struct AppAttributes ("api.AppAttributes", "AppAttributes") {
 ///         pub name: String => "name", omitempty;
 ///         pub file_size: i64 => "fileSize" as "int64";
-///         pub created: Option<GoTime> => "createdDate", omitempty;
-///         pub base: OtherStruct => "", flatten;   // Go embedded field
+///         pub created: Option<Timestamp> => "createdDate", omitempty;
+///         pub base: OtherStruct => "", flatten;   // embedded struct
 ///     }
 /// }
 /// ```
 ///
-/// The first string is Go's `reflect` type name (used when a non-object
-/// is decoded into the struct at top level); the second is the short
-/// struct name Go puts in field error messages (`""` for anonymous
-/// structs). `as "int64"` overrides the Go type name reported for a
-/// scalar field. `flatten` marks a Go embedded struct whose fields are
+/// The first string is the full type name (used when a non-object is
+/// decoded into the struct at top level); the second is the short struct
+/// name used in field error messages (`""` for anonymous structs).
+/// `as "int64"` overrides the type name reported for a scalar field.
+/// `flatten` marks an embedded struct whose fields are
 /// promoted into this struct's JSON object.
 #[macro_export]
-macro_rules! go_struct {
+macro_rules! json_struct {
     (
         $(#[$meta:meta])*
         $vis:vis struct $name:ident ($gotype:expr, $short:expr) {
@@ -1088,43 +1092,43 @@ macro_rules! go_struct {
             $( $(#[$fmeta])* $fvis $field : $fty, )*
         }
 
-        impl $crate::go::json::GoStruct for $name {
+        impl $crate::wire::json::JsonStruct for $name {
             #[allow(unused_variables)]
-            fn go_decode_member(
+            fn decode_member(
                 &mut self,
                 short: &'static str,
                 k: &str,
                 v: &::serde_json::Value,
-                d: &mut $crate::go::json::Decoder,
+                d: &mut $crate::wire::json::Decoder,
                 exact: bool,
-            ) -> Result<bool, $crate::go::json::Fatal> {
+            ) -> Result<bool, $crate::wire::json::Fatal> {
                 $(
-                    $crate::go_struct!(@decode self, short, k, v, d, exact, $field, $json, [$($ovr)?] $(, $flag)*);
+                    $crate::json_struct!(@decode self, short, k, v, d, exact, $field, $json, [$($ovr)?] $(, $flag)*);
                 )*
                 Ok(false)
             }
 
             #[allow(unused_variables)]
-            fn go_encode_into(&self, m: &mut ::serde_json::Map<String, ::serde_json::Value>) {
+            fn encode_into(&self, m: &mut ::serde_json::Map<String, ::serde_json::Value>) {
                 $(
-                    $crate::go_struct!(@encode m, self, $field, $json $(, $flag)*);
+                    $crate::json_struct!(@encode m, self, $field, $json $(, $flag)*);
                 )*
             }
         }
 
-        impl $crate::go::json::GoDecode for $name {
-            fn go_type() -> String { ($gotype).to_string() }
-            fn go_decode(
+        impl $crate::wire::json::JsonDecode for $name {
+            fn type_name() -> String { ($gotype).to_string() }
+            fn json_decode(
                 &mut self,
                 v: &::serde_json::Value,
-                d: &mut $crate::go::json::Decoder,
-            ) -> $crate::go::json::DResult {
+                d: &mut $crate::wire::json::Decoder,
+            ) -> $crate::wire::json::DResult {
                 match v {
                     ::serde_json::Value::Null => Ok(()),
                     ::serde_json::Value::Object(m) => {
                         for (k, val) in m {
                             for exact in [true, false] {
-                                if $crate::go::json::GoStruct::go_decode_member(self, $short, k, val, d, exact)? {
+                                if $crate::wire::json::JsonStruct::decode_member(self, $short, k, val, d, exact)? {
                                     break;
                                 }
                             }
@@ -1132,17 +1136,17 @@ macro_rules! go_struct {
                         Ok(())
                     }
                     other => {
-                        d.type_error($crate::go::json::kind(other), &<Self as $crate::go::json::GoDecode>::go_type());
+                        d.type_error($crate::wire::json::kind(other), &<Self as $crate::wire::json::JsonDecode>::type_name());
                         Ok(())
                     }
                 }
             }
         }
 
-        impl $crate::go::json::GoEncode for $name {
-            fn go_encode(&self) -> ::serde_json::Value {
+        impl $crate::wire::json::JsonEncode for $name {
+            fn json_encode(&self) -> ::serde_json::Value {
                 let mut m = ::serde_json::Map::new();
-                $crate::go::json::GoStruct::go_encode_into(self, &mut m);
+                $crate::wire::json::JsonStruct::encode_into(self, &mut m);
                 ::serde_json::Value::Object(m)
             }
         }
@@ -1150,14 +1154,14 @@ macro_rules! go_struct {
 
     (@decode $s:ident, $short:ident, $k:ident, $v:ident, $d:ident, $exact:ident, $field:ident, $json:literal, [$($ovr:literal)?] , flatten) => {
         $d.push_path($json);
-        let matched = $crate::go::json::GoStruct::go_decode_member(&mut $s.$field, $short, $k, $v, $d, $exact);
+        let matched = $crate::wire::json::JsonStruct::decode_member(&mut $s.$field, $short, $k, $v, $d, $exact);
         $d.pop_path();
         if matched? {
             return Ok(true);
         }
     };
     (@decode $s:ident, $short:ident, $k:ident, $v:ident, $d:ident, $exact:ident, $field:ident, $json:literal, [$($ovr:literal)?] $(, $flag:ident)*) => {
-        if $crate::go::json::key_matches($k, $json, $exact) {
+        if $crate::wire::json::key_matches($k, $json, $exact) {
             let ovr: Option<&'static str> = None $(.or(Some($ovr)))?;
             $d.field($short, $json, ovr, &mut $s.$field, $v)?;
             return Ok(true);
@@ -1165,14 +1169,14 @@ macro_rules! go_struct {
     };
 
     (@encode $m:ident, $s:ident, $field:ident, $json:literal, flatten) => {
-        $crate::go::json::GoStruct::go_encode_into(&$s.$field, $m);
+        $crate::wire::json::JsonStruct::encode_into(&$s.$field, $m);
     };
     (@encode $m:ident, $s:ident, $field:ident, $json:literal) => {
-        $m.insert($json.to_string(), $crate::go::json::GoEncode::go_encode(&$s.$field));
+        $m.insert($json.to_string(), $crate::wire::json::JsonEncode::json_encode(&$s.$field));
     };
     (@encode $m:ident, $s:ident, $field:ident, $json:literal, omitempty) => {
-        if !$crate::go::json::GoEncode::go_is_empty(&$s.$field) {
-            $m.insert($json.to_string(), $crate::go::json::GoEncode::go_encode(&$s.$field));
+        if !$crate::wire::json::JsonEncode::is_omittable(&$s.$field) {
+            $m.insert($json.to_string(), $crate::wire::json::JsonEncode::json_encode(&$s.$field));
         }
     };
 }
@@ -1180,14 +1184,14 @@ macro_rules! go_struct {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::go::time::GoTime;
+    use crate::wire::time::Timestamp;
 
-    go_struct! {
+    json_struct! {
         struct Inner ("main.Inner", "Inner") {
             n: i64 => "n";
         }
     }
-    go_struct! {
+    json_struct! {
         struct Named ("main.Named", "Named") {
             s: String => "s";
             i: i64 => "i";
@@ -1195,14 +1199,14 @@ mod tests {
             f: f64 => "f";
             b: bool => "b";
             p: Option<i64> => "p";
-            l: GoSlice<String> => "l";
-            m: GoMap<GoSlice<String>> => "m";
+            l: JsonSlice<String> => "l";
+            m: JsonMap<JsonSlice<String>> => "m";
             inner: Inner => "in";
-            ins: GoSlice<Inner> => "ins";
-            t: Option<GoTime> => "t";
-            tt: GoTime => "tt";
+            ins: JsonSlice<Inner> => "ins";
+            t: Option<Timestamp> => "t";
+            tt: Timestamp => "tt";
             a: Value => "a";
-            bs: GoBytes => "bs";
+            bs: Base64Bytes => "bs";
         }
     }
 
@@ -1215,7 +1219,7 @@ mod tests {
     }
 
     #[test]
-    fn go_error_messages() {
+    fn decode_error_messages() {
         let cases = [
             (
                 r#"{"s":1}"#,
@@ -1233,7 +1237,7 @@ mod tests {
                 r#"{"i":5.0}"#,
                 "json: cannot unmarshal number 5.0 into Go struct field Named.i of type int",
             ),
-            // serde_json normalises exponent literals, so Go's "number 1e30" reads "number 1e+30" here.
+            // serde_json normalises exponent literals, so `1e30` is reported as "number 1e+30".
             (
                 r#"{"i":1e30}"#,
                 "json: cannot unmarshal number 1e+30 into Go struct field Named.i of type int",
@@ -1380,13 +1384,13 @@ mod tests {
 
     #[test]
     fn embedded_fields_are_promoted() {
-        go_struct! {
+        json_struct! {
             struct Base ("tools.Base", "Base") {
                 limit: i64 => "limit";
                 cursor: String => "cursor";
             }
         }
-        go_struct! {
+        json_struct! {
             struct P ("struct { tools.Base; AppID string \"json:\\\"app_id\\\"\" }", "") {
                 base: Base => "Base", flatten;
                 app_id: String => "app_id";
@@ -1410,7 +1414,7 @@ mod tests {
     }
 
     #[test]
-    fn go_float_formatting() {
+    fn float_formatting() {
         let cases = [
             (0.0, "0"),
             (1.0, "1"),
@@ -1426,18 +1430,18 @@ mod tests {
             (100000000.0, "100000000"),
         ];
         for (f, want) in cases {
-            assert_eq!(go_float_json(f), want);
+            assert_eq!(float_json(f), want);
         }
     }
 
     #[test]
     fn encode_semantics() {
-        go_struct! {
+        json_struct! {
             struct E ("main.E", "E") {
-                z: GoTime => "z", omitempty;
-                s: GoSlice<String> => "s";
-                s2: GoSlice<String> => "s2", omitempty;
-                m: GoMap<i64> => "m";
+                z: Timestamp => "z", omitempty;
+                s: JsonSlice<String> => "s";
+                s2: JsonSlice<String> => "s2", omitempty;
+                m: JsonMap<i64> => "m";
                 a: Value => "a";
                 p: Option<bool> => "p", omitempty;
                 h: String => "h";

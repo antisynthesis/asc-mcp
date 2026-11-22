@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/gamecenter_submissions.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Game Center player submission tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerGameCenterSubmissionTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_game_center_submission_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -127,15 +124,15 @@ pub(super) fn register_game_center_submission_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleSubmitGameCenterPlayerAchievement`.
+/// Handles `submit_game_center_player_achievement`.
 async fn handle_submit_game_center_player_achievement(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BundleID string \"json:\\\"bundle_id\\\"\"; VendorIdentifier string \"json:\\\"vendor_identifier\\\"\"; ScopedPlayerID string \"json:\\\"scoped_player_id\\\"\"; PercentageAchieved *int \"json:\\\"percentage_achieved\\\"\"; ChallengeIDs []string \"json:\\\"challenge_ids\\\"\"; SubmittedDate string \"json:\\\"submitted_date\\\"\"; PreReleased *bool \"json:\\\"pre_released\\\"\" }", "") {
         bundle_id: String => "bundle_id";
         vendor_identifier: String => "vendor_identifier";
         scoped_player_id: String => "scoped_player_id";
         percentage_achieved: Option<i64> => "percentage_achieved";
-        challenge_ids: GoSlice<String> => "challenge_ids";
+        challenge_ids: JsonSlice<String> => "challenge_ids";
         submitted_date: String => "submitted_date";
         pre_released: Option<bool> => "pre_released";
     }
@@ -184,16 +181,16 @@ async fn handle_submit_game_center_player_achievement(c: Arc<Client>, args: Args
     Ok(data_result(&format_game_center_player_achievement_submission(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleSubmitGameCenterLeaderboardEntry`.
+/// Handles `submit_game_center_leaderboard_entry`.
 async fn handle_submit_game_center_leaderboard_entry(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BundleID string \"json:\\\"bundle_id\\\"\"; VendorIdentifier string \"json:\\\"vendor_identifier\\\"\"; ScopedPlayerID string \"json:\\\"scoped_player_id\\\"\"; Score string \"json:\\\"score\\\"\"; Context string \"json:\\\"context\\\"\"; ChallengeIDs []string \"json:\\\"challenge_ids\\\"\"; SubmittedDate string \"json:\\\"submitted_date\\\"\"; PreReleased *bool \"json:\\\"pre_released\\\"\" }", "") {
         bundle_id: String => "bundle_id";
         vendor_identifier: String => "vendor_identifier";
         scoped_player_id: String => "scoped_player_id";
         score: String => "score";
         context: String => "context";
-        challenge_ids: GoSlice<String> => "challenge_ids";
+        challenge_ids: JsonSlice<String> => "challenge_ids";
         submitted_date: String => "submitted_date";
         pre_released: Option<bool> => "pre_released";
     }
@@ -240,7 +237,6 @@ async fn handle_submit_game_center_leaderboard_entry(c: Arc<Client>, args: Args)
     Ok(data_result(&format_game_center_leaderboard_entry_submission(&resp.data), &resp.data))
 }
 
-/// Ported from `formatGameCenterPlayerAchievementSubmission`.
 fn format_game_center_player_achievement_submission(submission: &GameCenterPlayerAchievementSubmission) -> String {
     let a = &submission.attributes;
     let mut sb = String::new();
@@ -258,7 +254,6 @@ fn format_game_center_player_achievement_submission(submission: &GameCenterPlaye
     sb
 }
 
-/// Ported from `formatGameCenterLeaderboardEntrySubmission`.
 fn format_game_center_leaderboard_entry_submission(submission: &GameCenterLeaderboardEntrySubmission) -> String {
     let a = &submission.attributes;
     let mut sb = String::new();

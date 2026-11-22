@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/webhooks.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Webhook tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerWebhookTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_webhook_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -298,14 +295,14 @@ pub(super) fn register_webhook_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListWebhooks`.
+/// Handles `list_webhooks`.
 async fn handle_list_webhooks(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        fields: GoMap<GoSlice<String>> => "fields";
+        fields: JsonMap<JsonSlice<String>> => "fields";
     }
     }
     let mut params = Params::default();
@@ -319,7 +316,7 @@ async fn handle_list_webhooks(c: Arc<Client>, args: Args) -> HandlerResult {
 
     let limit = clamp_limit(params.limit);
 
-    let opts = list_opts(limit, &GoMap::nil(), &GoSlice::nil(), &params.fields, &GoSlice::nil());
+    let opts = list_opts(limit, &JsonMap::nil(), &JsonSlice::nil(), &params.fields, &JsonSlice::nil());
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_webhooks(&params.app_id, opts.as_ref())).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to list webhooks: {e}"))),
@@ -328,9 +325,9 @@ async fn handle_list_webhooks(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&format_webhooks(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetWebhook`.
+/// Handles `get_webhook`.
 async fn handle_get_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { WebhookID string \"json:\\\"webhook_id\\\"\" }", "") {
         webhook_id: String => "webhook_id";
     }
@@ -352,15 +349,15 @@ async fn handle_get_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_webhook(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateWebhook`.
+/// Handles `create_webhook`.
 async fn handle_create_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Name string \"json:\\\"name\\\"\"; URL string \"json:\\\"url\\\"\"; Secret string \"json:\\\"secret\\\"\"; EventTypes []string \"json:\\\"event_types\\\"\"; Enabled *bool \"json:\\\"enabled\\\"\" }", "") {
         app_id: String => "app_id";
         name: String => "name";
         url: String => "url";
         secret: String => "secret";
-        event_types: GoSlice<String> => "event_types";
+        event_types: JsonSlice<String> => "event_types";
         enabled: Option<bool> => "enabled";
     }
     }
@@ -418,15 +415,15 @@ async fn handle_create_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format!("Created webhook:\n{}", format_webhook(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateWebhook`.
+/// Handles `update_webhook`.
 async fn handle_update_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { WebhookID string \"json:\\\"webhook_id\\\"\"; Name string \"json:\\\"name\\\"\"; URL string \"json:\\\"url\\\"\"; Secret string \"json:\\\"secret\\\"\"; EventTypes []string \"json:\\\"event_types\\\"\"; Enabled *bool \"json:\\\"enabled\\\"\" }", "") {
         webhook_id: String => "webhook_id";
         name: String => "name";
         url: String => "url";
         secret: String => "secret";
-        event_types: GoSlice<String> => "event_types";
+        event_types: JsonSlice<String> => "event_types";
         enabled: Option<bool> => "enabled";
     }
     }
@@ -461,9 +458,9 @@ async fn handle_update_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format!("Webhook updated:\n{}", format_webhook(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteWebhook`.
+/// Handles `delete_webhook`.
 async fn handle_delete_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { WebhookID string \"json:\\\"webhook_id\\\"\" }", "") {
         webhook_id: String => "webhook_id";
     }
@@ -484,16 +481,16 @@ async fn handle_delete_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(CallToolResult::success("Webhook deleted successfully"))
 }
 
-/// Ported from `Registry.handleListWebhookDeliveries`.
+/// Handles `list_webhook_deliveries`.
 async fn handle_list_webhook_deliveries(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { WebhookID string \"json:\\\"webhook_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         webhook_id: String => "webhook_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -507,7 +504,7 @@ async fn handle_list_webhook_deliveries(c: Arc<Client>, args: Args) -> HandlerRe
 
     let limit = clamp_limit(params.limit);
 
-    let opts = list_opts(limit, &params.filter, &GoSlice::nil(), &params.fields, &params.include);
+    let opts = list_opts(limit, &params.filter, &JsonSlice::nil(), &params.fields, &params.include);
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_webhook_deliveries(&params.webhook_id, opts.as_ref())).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to list webhook deliveries: {e}"))),
@@ -516,9 +513,9 @@ async fn handle_list_webhook_deliveries(c: Arc<Client>, args: Args) -> HandlerRe
     Ok(list_result(&format_webhook_deliveries(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handlePingWebhook`.
+/// Handles `ping_webhook`.
 async fn handle_ping_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { WebhookID string \"json:\\\"webhook_id\\\"\" }", "") {
         webhook_id: String => "webhook_id";
     }
@@ -549,9 +546,9 @@ async fn handle_ping_webhook(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format!("Ping event sent: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleRedeliverWebhookDelivery`.
+/// Handles `redeliver_webhook_delivery`.
 async fn handle_redeliver_webhook_delivery(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { DeliveryID string \"json:\\\"delivery_id\\\"\" }", "") {
         delivery_id: String => "delivery_id";
     }
@@ -584,7 +581,7 @@ async fn handle_redeliver_webhook_delivery(c: Arc<Client>, args: Args) -> Handle
     Ok(data_result(&format!("Redelivery requested:\n{}", format_webhook_delivery(&resp.data)), &resp.data))
 }
 
-/// The `limit <= 0 → 50; limit > 200 → 200` clamp the Go handlers inline.
+/// Clamps a page size: `limit <= 0 → 50; limit > 200 → 200`.
 fn clamp_limit(limit: i64) -> i64 {
     let mut limit = limit;
     if limit <= 0 {
@@ -596,7 +593,6 @@ fn clamp_limit(limit: i64) -> i64 {
     limit
 }
 
-/// Ported from `formatWebhooks`.
 fn format_webhooks(webhooks: &[Webhook]) -> String {
     if webhooks.is_empty() {
         return "No webhooks found".into();
@@ -613,7 +609,6 @@ fn format_webhooks(webhooks: &[Webhook]) -> String {
     sb
 }
 
-/// Ported from `formatWebhook`.
 fn format_webhook(webhook: &Webhook) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "Webhook ID: {}", webhook.id);
@@ -630,7 +625,6 @@ fn format_webhook(webhook: &Webhook) -> String {
     sb
 }
 
-/// Ported from `formatWebhookDeliveries`.
 fn format_webhook_deliveries(deliveries: &[WebhookDelivery]) -> String {
     if deliveries.is_empty() {
         return "No webhook deliveries found".into();
@@ -647,7 +641,6 @@ fn format_webhook_deliveries(deliveries: &[WebhookDelivery]) -> String {
     sb
 }
 
-/// Ported from `formatWebhookDelivery`.
 fn format_webhook_delivery(delivery: &WebhookDelivery) -> String {
     let a = &delivery.attributes;
     let mut sb = String::new();

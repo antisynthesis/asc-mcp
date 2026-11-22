@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/gamecenter.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Game Center achievement, leaderboard and detail tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerGameCenterTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_game_center_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -438,9 +435,9 @@ pub(super) fn register_game_center_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleGetGameCenterDetail`.
+/// Handles `get_game_center_detail`.
 async fn handle_get_game_center_detail(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\" }", "") {
         app_id: String => "app_id";
     }
@@ -462,17 +459,17 @@ async fn handle_get_game_center_detail(c: Arc<Client>, args: Args) -> HandlerRes
     Ok(data_result(&format_game_center_detail(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleListGameCenterAchievements`.
+/// Handles `list_game_center_achievements`.
 async fn handle_list_game_center_achievements(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GameCenterDetailID string \"json:\\\"game_center_detail_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         game_center_detail_id: String => "game_center_detail_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -501,9 +498,9 @@ async fn handle_list_game_center_achievements(c: Arc<Client>, args: Args) -> Han
     Ok(list_result(&format_game_center_achievements(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetGameCenterAchievement`.
+/// Handles `get_game_center_achievement`.
 async fn handle_get_game_center_achievement(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AchievementID string \"json:\\\"achievement_id\\\"\" }", "") {
         achievement_id: String => "achievement_id";
     }
@@ -525,9 +522,9 @@ async fn handle_get_game_center_achievement(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&format_game_center_achievement(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateGameCenterAchievement`.
+/// Handles `create_game_center_achievement`.
 async fn handle_create_game_center_achievement(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GameCenterDetailID string \"json:\\\"game_center_detail_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\"; VendorIdentifier string \"json:\\\"vendor_identifier\\\"\"; Points int \"json:\\\"points\\\"\"; ShowBeforeEarned bool \"json:\\\"show_before_earned\\\"\"; Repeatable bool \"json:\\\"repeatable\\\"\" }", "") {
         game_center_detail_id: String => "game_center_detail_id";
         reference_name: String => "reference_name";
@@ -569,11 +566,11 @@ async fn handle_create_game_center_achievement(c: Arc<Client>, args: Args) -> Ha
                     data: ResourceIdentifier { type_: "gameCenterDetails".into(), id: params.game_center_detail_id.clone() },
                 },
                 versions: RelationshipDataList {
-                    data: GoSlice::from(vec![ResourceIdentifier { type_: "gameCenterAchievementVersions".into(), id: "${new-version}".into() }]),
+                    data: JsonSlice::from(vec![ResourceIdentifier { type_: "gameCenterAchievementVersions".into(), id: "${new-version}".into() }]),
                 },
             },
         },
-        included: GoSlice::from(vec![GameCenterVersionInlineCreate { type_: "gameCenterAchievementVersions".into(), id: "${new-version}".into() }]),
+        included: JsonSlice::from(vec![GameCenterVersionInlineCreate { type_: "gameCenterAchievementVersions".into(), id: "${new-version}".into() }]),
     };
 
     let resp = match c.create_game_center_achievement(&req).await {
@@ -584,9 +581,9 @@ async fn handle_create_game_center_achievement(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("Created achievement: {} (ID: {})", resp.data.attributes.reference_name, resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateGameCenterAchievement`.
+/// Handles `update_game_center_achievement`.
 async fn handle_update_game_center_achievement(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AchievementID string \"json:\\\"achievement_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\"; Points *int \"json:\\\"points\\\"\"; ShowBeforeEarned *bool \"json:\\\"show_before_earned\\\"\"; Repeatable *bool \"json:\\\"repeatable\\\"\"; Archived *bool \"json:\\\"archived\\\"\" }", "") {
         achievement_id: String => "achievement_id";
         reference_name: String => "reference_name";
@@ -627,9 +624,9 @@ async fn handle_update_game_center_achievement(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("Updated achievement: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteGameCenterAchievement`.
+/// Handles `delete_game_center_achievement`.
 async fn handle_delete_game_center_achievement(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AchievementID string \"json:\\\"achievement_id\\\"\" }", "") {
         achievement_id: String => "achievement_id";
     }
@@ -650,17 +647,17 @@ async fn handle_delete_game_center_achievement(c: Arc<Client>, args: Args) -> Ha
     Ok(CallToolResult::success("Achievement deleted successfully"))
 }
 
-/// Ported from `Registry.handleListGameCenterLeaderboards`.
+/// Handles `list_game_center_leaderboards`.
 async fn handle_list_game_center_leaderboards(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GameCenterDetailID string \"json:\\\"game_center_detail_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         game_center_detail_id: String => "game_center_detail_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -689,9 +686,9 @@ async fn handle_list_game_center_leaderboards(c: Arc<Client>, args: Args) -> Han
     Ok(list_result(&format_game_center_leaderboards(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetGameCenterLeaderboard`.
+/// Handles `get_game_center_leaderboard`.
 async fn handle_get_game_center_leaderboard(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LeaderboardID string \"json:\\\"leaderboard_id\\\"\" }", "") {
         leaderboard_id: String => "leaderboard_id";
     }
@@ -713,9 +710,9 @@ async fn handle_get_game_center_leaderboard(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&format_game_center_leaderboard(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateGameCenterLeaderboard`.
+/// Handles `create_game_center_leaderboard`.
 async fn handle_create_game_center_leaderboard(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GameCenterDetailID string \"json:\\\"game_center_detail_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\"; VendorIdentifier string \"json:\\\"vendor_identifier\\\"\"; SubmissionType string \"json:\\\"submission_type\\\"\"; ScoreSortType string \"json:\\\"score_sort_type\\\"\"; ScoreRangeStart string \"json:\\\"score_range_start\\\"\"; ScoreRangeEnd string \"json:\\\"score_range_end\\\"\"; DefaultFormatter string \"json:\\\"default_formatter\\\"\" }", "") {
         game_center_detail_id: String => "game_center_detail_id";
         reference_name: String => "reference_name";
@@ -774,11 +771,11 @@ async fn handle_create_game_center_leaderboard(c: Arc<Client>, args: Args) -> Ha
                     data: ResourceIdentifier { type_: "gameCenterDetails".into(), id: params.game_center_detail_id.clone() },
                 },
                 versions: RelationshipDataList {
-                    data: GoSlice::from(vec![ResourceIdentifier { type_: "gameCenterLeaderboardVersions".into(), id: "${new-version}".into() }]),
+                    data: JsonSlice::from(vec![ResourceIdentifier { type_: "gameCenterLeaderboardVersions".into(), id: "${new-version}".into() }]),
                 },
             },
         },
-        included: GoSlice::from(vec![GameCenterVersionInlineCreate { type_: "gameCenterLeaderboardVersions".into(), id: "${new-version}".into() }]),
+        included: JsonSlice::from(vec![GameCenterVersionInlineCreate { type_: "gameCenterLeaderboardVersions".into(), id: "${new-version}".into() }]),
     };
 
     let resp = match c.create_game_center_leaderboard(&req).await {
@@ -789,9 +786,9 @@ async fn handle_create_game_center_leaderboard(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("Created leaderboard: {} (ID: {})", resp.data.attributes.reference_name, resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateGameCenterLeaderboard`.
+/// Handles `update_game_center_leaderboard`.
 async fn handle_update_game_center_leaderboard(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LeaderboardID string \"json:\\\"leaderboard_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\"; SubmissionType string \"json:\\\"submission_type\\\"\"; ScoreSortType string \"json:\\\"score_sort_type\\\"\"; Archived *bool \"json:\\\"archived\\\"\" }", "") {
         leaderboard_id: String => "leaderboard_id";
         reference_name: String => "reference_name";
@@ -831,9 +828,9 @@ async fn handle_update_game_center_leaderboard(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("Updated leaderboard: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteGameCenterLeaderboard`.
+/// Handles `delete_game_center_leaderboard`.
 async fn handle_delete_game_center_leaderboard(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LeaderboardID string \"json:\\\"leaderboard_id\\\"\" }", "") {
         leaderboard_id: String => "leaderboard_id";
     }
@@ -854,7 +851,6 @@ async fn handle_delete_game_center_leaderboard(c: Arc<Client>, args: Args) -> Ha
     Ok(CallToolResult::success("Leaderboard deleted successfully"))
 }
 
-/// Ported from `formatGameCenterDetail`.
 fn format_game_center_detail(detail: &GameCenterDetail) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "Game Center Detail ID: {}", detail.id);
@@ -863,7 +859,6 @@ fn format_game_center_detail(detail: &GameCenterDetail) -> String {
     sb
 }
 
-/// Ported from `formatGameCenterAchievements`.
 fn format_game_center_achievements(achievements: &[GameCenterAchievement]) -> String {
     if achievements.is_empty() {
         return "No Game Center achievements found".into();
@@ -880,7 +875,6 @@ fn format_game_center_achievements(achievements: &[GameCenterAchievement]) -> St
     sb
 }
 
-/// Ported from `formatGameCenterAchievement`.
 fn format_game_center_achievement(achievement: &GameCenterAchievement) -> String {
     let a = &achievement.attributes;
     let mut sb = String::new();
@@ -894,7 +888,6 @@ fn format_game_center_achievement(achievement: &GameCenterAchievement) -> String
     sb
 }
 
-/// Ported from `formatGameCenterLeaderboards`.
 pub(super) fn format_game_center_leaderboards(leaderboards: &[GameCenterLeaderboard]) -> String {
     if leaderboards.is_empty() {
         return "No Game Center leaderboards found".into();
@@ -911,7 +904,6 @@ pub(super) fn format_game_center_leaderboards(leaderboards: &[GameCenterLeaderbo
     sb
 }
 
-/// Ported from `formatGameCenterLeaderboard`.
 fn format_game_center_leaderboard(leaderboard: &GameCenterLeaderboard) -> String {
     let a = &leaderboard.attributes;
     let mut sb = String::new();

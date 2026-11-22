@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/pricing.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! App pricing and territory tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerPricingTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_pricing_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -190,9 +187,9 @@ pub(super) fn register_pricing_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleGetAppPriceSchedule`.
+/// Handles `get_app_price_schedule`.
 async fn handle_get_app_price_schedule(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\" }", "") {
         app_id: String => "app_id";
     }
@@ -211,17 +208,17 @@ async fn handle_get_app_price_schedule(c: Arc<Client>, args: Args) -> HandlerRes
     Ok(data_result(&format_app_price_schedule(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleListAppPricePoints`.
+/// Handles `list_app_price_points`.
 async fn handle_list_app_price_points(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -246,16 +243,16 @@ async fn handle_list_app_price_points(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(list_result(&format_app_price_points(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListTerritories`.
+/// Handles `list_territories`.
 async fn handle_list_territories(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -277,17 +274,17 @@ async fn handle_list_territories(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&format_territories(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListSubscriptionPricePoints`.
+/// Handles `list_subscription_price_points`.
 async fn handle_list_subscription_price_points(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubscriptionID string \"json:\\\"subscription_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         subscription_id: String => "subscription_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -312,12 +309,10 @@ async fn handle_list_subscription_price_points(c: Arc<Client>, args: Args) -> Ha
     Ok(list_result(&format_subscription_price_points(&resp.data), &resp.data, &resp.links))
 }
 
-/// Go `formatAppPriceSchedule`.
 fn format_app_price_schedule(schedule: &AppPriceSchedule) -> String {
     format!("App Price Schedule ID: {}\n", schedule.id)
 }
 
-/// Go `formatAppPricePoints`.
 pub(crate) fn format_app_price_points(price_points: &[AppPricePoint]) -> String {
     if price_points.is_empty() {
         return "No price points found".to_string();
@@ -331,7 +326,6 @@ pub(crate) fn format_app_price_points(price_points: &[AppPricePoint]) -> String 
     sb
 }
 
-/// Go `formatAppPricePoint`.
 pub(crate) fn format_app_price_point(pp: &AppPricePoint) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", pp.id);
@@ -340,7 +334,6 @@ pub(crate) fn format_app_price_point(pp: &AppPricePoint) -> String {
     sb
 }
 
-/// Go `formatTerritories`.
 pub(crate) fn format_territories(territories: &[Territory]) -> String {
     if territories.is_empty() {
         return "No territories found".to_string();
@@ -353,7 +346,6 @@ pub(crate) fn format_territories(territories: &[Territory]) -> String {
     sb
 }
 
-/// Go `formatSubscriptionPricePoints`.
 pub(crate) fn format_subscription_price_points(price_points: &[SubscriptionPricePoint]) -> String {
     if price_points.is_empty() {
         return "No subscription price points found".to_string();
@@ -367,7 +359,6 @@ pub(crate) fn format_subscription_price_points(price_points: &[SubscriptionPrice
     sb
 }
 
-/// Go `formatSubscriptionPricePoint`.
 pub(crate) fn format_subscription_price_point(pp: &SubscriptionPricePoint) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", pp.id);

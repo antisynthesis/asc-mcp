@@ -16,12 +16,12 @@ use std::time::{Duration, Instant};
 
 use serde_json::{Map, Value, json};
 
-use crate::go::json::unmarshal_value;
-use crate::go::{GoMap, RawMessage};
-use crate::go_struct;
+use crate::json_struct;
 use crate::logging;
 use crate::mcp::{self, CallToolResult, Request, RequestMeta, Response};
 use crate::tools::{CallError, Registry};
+use crate::wire::json::unmarshal_value;
+use crate::wire::{JsonMap, RawMessage};
 
 use super::metrics::Metrics;
 
@@ -108,38 +108,38 @@ pub fn is_modern(method: &str, meta: &RequestMeta) -> bool {
     method != "initialize" && (!meta.protocol_version.is_empty() || method == "server/discover")
 }
 
-go_struct! {
+json_struct! {
     struct RootsCapability ("mcp.RootsCapability", "RootsCapability") {
         list_changed: bool => "listChanged", omitempty;
     }
 }
-go_struct! {
+json_struct! {
     struct EmptyCapability ("mcp.EmptyCapability", "EmptyCapability") {}
 }
-go_struct! {
+json_struct! {
     struct ClientCapability ("mcp.ClientCapability", "ClientCapability") {
         roots: Option<RootsCapability> => "roots", omitempty;
         sampling: Option<EmptyCapability> => "sampling", omitempty;
         elicitation: Option<EmptyCapability> => "elicitation", omitempty;
-        experimental: GoMap<Value> => "experimental", omitempty;
-        extensions: GoMap<RawMessage> => "extensions", omitempty;
+        experimental: JsonMap<Value> => "experimental", omitempty;
+        extensions: JsonMap<RawMessage> => "extensions", omitempty;
     }
 }
-go_struct! {
+json_struct! {
     struct ClientInfo ("mcp.ClientInfo", "ClientInfo") {
         name: String => "name";
         title: String => "title", omitempty;
         version: String => "version";
     }
 }
-go_struct! {
+json_struct! {
     struct InitializeParams ("mcp.InitializeParams", "InitializeParams") {
         protocol_version: String => "protocolVersion";
         capabilities: ClientCapability => "capabilities";
         client_info: ClientInfo => "clientInfo";
     }
 }
-go_struct! {
+json_struct! {
     struct ToolsCallParams ("mcp.ToolsCallParams", "ToolsCallParams") {
         name: String => "name";
         arguments: RawMessage => "arguments", omitempty;
@@ -431,6 +431,7 @@ impl Dispatcher {
             }
         }
         let negotiated = mcp::negotiate_protocol_version(&params.protocol_version);
+        warn_handshake_deprecated(negotiated);
         sess.initialized.store(true, Ordering::SeqCst);
         let result = json!({
             "protocolVersion": negotiated,
@@ -516,6 +517,19 @@ impl Dispatcher {
         };
         Response::result(req.id.clone(), stamp_modern(result, modern).to_value()).into()
     }
+}
+
+/// Logs, once per process, that a client negotiated a deprecated handshake
+/// revision. The handshake revisions are scheduled for removal in the next
+/// major release in favour of the stateless 2026-07-28 revision.
+fn warn_handshake_deprecated(negotiated: &str) {
+    static WARNED: std::sync::Once = std::sync::Once::new();
+    WARNED.call_once(|| {
+        logging::warn(
+            "deprecated MCP handshake revision negotiated; clients should use the stateless 2026-07-28 revision",
+            &[("protocol_version", negotiated.into())],
+        );
+    });
 }
 
 /// The `_meta` map carrying server identity, stamped into modern results.

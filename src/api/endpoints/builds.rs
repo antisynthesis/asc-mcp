@@ -1,21 +1,17 @@
 // App Store Connect API endpoints for the "builds" area.
-//
-// Signatures were generated from the Go declarations; bodies are ported by
-// hand from the Go file named in each method's todo!/comment and must
-// preserve the exact request path, query and body.
 
 #[allow(unused_imports)]
 use crate::api::{Client, Error, ListOptions, Result, decode, model::*};
 #[allow(unused_imports)]
-use crate::go::{
-    GoBytes, GoMap, GoSlice, GoTime, RawMessage, json,
+use crate::wire::{
+    Base64Bytes, JsonMap, JsonSlice, RawMessage, Timestamp, json,
     url::{self, Values},
 };
 #[allow(unused_imports)]
 use serde_json::Value;
 
 impl Client {
-    /// AddBetaTesterToGroup adds a beta tester to a group.
+    /// Adds a beta tester to a group.
     pub async fn add_beta_tester_to_group(
         &self,
         beta_group_id: &str,
@@ -40,7 +36,7 @@ impl Client {
         Ok(())
     }
 
-    /// CreateBetaAppLocalization creates a beta app localization.
+    /// Creates a beta app localization.
     pub async fn create_beta_app_localization(
         &self,
         req: &BetaAppLocalizationCreateRequest,
@@ -49,7 +45,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateBetaAppReviewSubmission submits a build for beta app review.
+    /// Submits a build for beta app review.
     pub async fn create_beta_app_review_submission(
         &self,
         req: &BetaAppReviewSubmissionCreateRequest,
@@ -58,7 +54,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateBetaBuildLocalization creates a beta build localization.
+    /// Creates a beta build localization.
     pub async fn create_beta_build_localization(
         &self,
         req: &BetaBuildLocalizationCreateRequest,
@@ -67,7 +63,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateBetaGroup creates a new beta group.
+    /// Creates a new beta group.
     pub async fn create_beta_group(
         &self,
         req: &BetaGroupCreateRequest,
@@ -76,7 +72,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateBetaTester invites a new beta tester.
+    /// Invites a new beta tester.
     pub async fn create_beta_tester(
         &self,
         req: &BetaTesterCreateRequest,
@@ -85,7 +81,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateCustomerReviewResponse creates a response to a customer review.
+    /// Creates a response to a customer review.
     pub async fn create_customer_review_response(
         &self,
         req: &CustomerReviewResponseCreateRequest,
@@ -94,7 +90,7 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteBetaAppLocalization deletes a beta app localization.
+    /// Deletes a beta app localization.
     pub async fn delete_beta_app_localization(&self, localization_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/betaAppLocalizations/{}",
@@ -103,7 +99,7 @@ impl Client {
         .await
     }
 
-    /// DeleteBetaBuildLocalization deletes a beta build localization.
+    /// Deletes a beta build localization.
     pub async fn delete_beta_build_localization(&self, localization_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/betaBuildLocalizations/{}",
@@ -112,7 +108,7 @@ impl Client {
         .await
     }
 
-    /// DeleteBetaGroup deletes a beta group.
+    /// Deletes a beta group.
     pub async fn delete_beta_group(&self, beta_group_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/betaGroups/{}",
@@ -121,7 +117,7 @@ impl Client {
         .await
     }
 
-    /// DeleteBetaTester removes a beta tester.
+    /// Removes a beta tester.
     pub async fn delete_beta_tester(&self, beta_tester_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/betaTesters/{}",
@@ -130,7 +126,7 @@ impl Client {
         .await
     }
 
-    /// DeleteCustomerReviewResponse deletes a customer review response.
+    /// Deletes a customer review response.
     pub async fn delete_customer_review_response(&self, response_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/customerReviewResponses/{}",
@@ -139,7 +135,7 @@ impl Client {
         .await
     }
 
-    /// GetBetaAppLocalization returns a single beta app localization.
+    /// Returns a single beta app localization.
     pub async fn get_beta_app_localization(
         &self,
         localization_id: &str,
@@ -156,7 +152,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetBetaAppReviewSubmission returns a single beta app review submission.
+    /// Returns a single beta app review submission.
     pub async fn get_beta_app_review_submission(
         &self,
         submission_id: &str,
@@ -173,7 +169,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetBetaBuildLocalization returns a single beta build localization.
+    /// Returns a single beta build localization.
     pub async fn get_beta_build_localization(
         &self,
         localization_id: &str,
@@ -190,7 +186,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetBetaLicenseAgreement returns a single beta license agreement.
+    /// Returns a single beta license agreement.
     pub async fn get_beta_license_agreement(
         &self,
         agreement_id: &str,
@@ -207,7 +203,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetBuild returns a single build by ID.
+    /// Returns a single build by ID.
     pub async fn get_build(&self, build_id: &str) -> Result<BuildResponse> {
         let data = self
             .get(&format!("/v1/builds/{}", url::path_escape(build_id)), None)
@@ -215,7 +211,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetBuildBetaDetail returns build beta detail.
+    /// Returns build beta detail.
     pub async fn get_build_beta_detail(&self, build_id: &str) -> Result<BuildBetaDetailResponse> {
         let data = self
             .get(
@@ -226,7 +222,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetBundleID returns a single bundle ID by ID.
+    /// Returns a single bundle ID by ID.
     pub async fn get_bundle_id(&self, bundle_id_id: &str) -> Result<BundleIDResponse> {
         let data = self
             .get(
@@ -237,7 +233,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetCiBuildRun returns a single build run.
+    /// Returns a single build run.
     pub async fn get_ci_build_run(&self, build_run_id: &str) -> Result<CiBuildRunResponse> {
         let data = self
             .get(
@@ -248,7 +244,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetCiProduct returns a single Xcode Cloud product.
+    /// Returns a single Xcode Cloud product.
     pub async fn get_ci_product(&self, product_id: &str) -> Result<CiProductResponse> {
         let data = self
             .get(
@@ -259,7 +255,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetCiWorkflow returns a single workflow.
+    /// Returns a single workflow.
     pub async fn get_ci_workflow(&self, workflow_id: &str) -> Result<CiWorkflowResponse> {
         let data = self
             .get(
@@ -270,7 +266,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetCustomerReview returns a single customer review by ID.
+    /// Returns a single customer review by ID.
     pub async fn get_customer_review(&self, review_id: &str) -> Result<CustomerReviewResponse> {
         let data = self
             .get(
@@ -281,7 +277,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetProfile returns a single profile by ID.
+    /// Returns a single profile by ID.
     pub async fn get_profile(&self, profile_id: &str) -> Result<ProfileResponse> {
         let data = self
             .get(
@@ -292,7 +288,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBetaAppLocalizations returns beta app localizations.
+    /// Returns beta app localizations.
     pub async fn list_beta_app_localizations(
         &self,
         app_id: &str,
@@ -307,7 +303,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBetaAppReviewSubmissions returns a list of beta app review submissions.
+    /// Returns a list of beta app review submissions.
     pub async fn list_beta_app_review_submissions(
         &self,
         opts: Option<&ListOptions>,
@@ -322,7 +318,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBetaBuildLocalizations returns beta build localizations.
+    /// Returns beta build localizations.
     pub async fn list_beta_build_localizations(
         &self,
         build_id: &str,
@@ -337,7 +333,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBetaGroups returns a list of beta groups.
+    /// Returns a list of beta groups.
     pub async fn list_beta_groups(
         &self,
         app_id: &str,
@@ -354,7 +350,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBetaLicenseAgreements returns a list of beta license agreements.
+    /// Returns a list of beta license agreements.
     pub async fn list_beta_license_agreements(
         &self,
         opts: Option<&ListOptions>,
@@ -367,7 +363,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBetaTesters returns a list of beta testers.
+    /// Returns a list of beta testers.
     pub async fn list_beta_testers(
         &self,
         beta_group_id: &str,
@@ -384,7 +380,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBuilds returns a list of builds.
+    /// Returns a list of builds.
     pub async fn list_builds(
         &self,
         app_id: &str,
@@ -401,7 +397,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBundleIDs returns a list of bundle IDs.
+    /// Returns a list of bundle IDs.
     pub async fn list_bundle_ids(&self, opts: Option<&ListOptions>) -> Result<BundleIDsResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
@@ -411,7 +407,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListCertificates returns a list of certificates.
+    /// Returns a list of certificates.
     pub async fn list_certificates(
         &self,
         opts: Option<&ListOptions>,
@@ -424,7 +420,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListCiBuildRuns returns build runs for a workflow.
+    /// Returns build runs for a workflow.
     pub async fn list_ci_build_runs(
         &self,
         workflow_id: &str,
@@ -446,7 +442,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListCiProducts returns Xcode Cloud products for an app.
+    /// Returns Xcode Cloud products for an app.
     pub async fn list_ci_products(
         &self,
         app_id: &str,
@@ -463,7 +459,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListCiWorkflows returns workflows for a product.
+    /// Returns workflows for a product.
     pub async fn list_ci_workflows(
         &self,
         product_id: &str,
@@ -482,7 +478,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListCustomerReviews returns customer reviews for an app.
+    /// Returns customer reviews for an app.
     pub async fn list_customer_reviews(
         &self,
         app_id: &str,
@@ -501,7 +497,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListDevices returns a list of devices.
+    /// Returns a list of devices.
     pub async fn list_devices(&self, opts: Option<&ListOptions>) -> Result<DevicesResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
@@ -511,7 +507,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListProfiles returns a list of provisioning profiles.
+    /// Returns a list of provisioning profiles.
     pub async fn list_profiles(&self, opts: Option<&ListOptions>) -> Result<ProfilesResponse> {
         let mut query = Values::new();
         if let Some(o) = opts {
@@ -521,13 +517,13 @@ impl Client {
         decode(&data)
     }
 
-    /// RegisterDevice registers a new device.
+    /// Registers a new device.
     pub async fn register_device(&self, req: &DeviceCreateRequest) -> Result<DeviceResponse> {
         let data = self.post("/v1/devices", Some(req)).await?;
         decode(&data)
     }
 
-    /// RemoveBetaTesterFromGroup removes a beta tester from a group.
+    /// Removes a beta tester from a group.
     pub async fn remove_beta_tester_from_group(
         &self,
         beta_group_id: &str,
@@ -543,7 +539,7 @@ impl Client {
         .await
     }
 
-    /// StartCiBuildRun starts a new build run for a workflow.
+    /// Starts a new build run for a workflow.
     pub async fn start_ci_build_run(&self, workflow_id: &str) -> Result<CiBuildRunResponse> {
         let body = serde_json::json!({
             "data": {
@@ -562,7 +558,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateBetaAppLocalization updates a beta app localization.
+    /// Updates a beta app localization.
     pub async fn update_beta_app_localization(
         &self,
         localization_id: &str,
@@ -580,7 +576,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateBetaBuildLocalization updates a beta build localization.
+    /// Updates a beta build localization.
     pub async fn update_beta_build_localization(
         &self,
         localization_id: &str,
@@ -598,7 +594,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateBetaLicenseAgreement updates a beta license agreement.
+    /// Updates a beta license agreement.
     pub async fn update_beta_license_agreement(
         &self,
         agreement_id: &str,
@@ -616,7 +612,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateBuildBetaDetail updates build beta detail.
+    /// Updates build beta detail.
     pub async fn update_build_beta_detail(
         &self,
         detail_id: &str,
@@ -631,7 +627,7 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteBetaFeedbackCrashSubmission deletes a crash feedback submission.
+    /// Deletes a crash feedback submission.
     pub async fn delete_beta_feedback_crash_submission(&self, submission_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/betaFeedbackCrashSubmissions/{}",
@@ -640,7 +636,7 @@ impl Client {
         .await
     }
 
-    /// DeleteBetaFeedbackScreenshotSubmission deletes a screenshot feedback
+    /// Deletes a screenshot feedback
     /// submission.
     pub async fn delete_beta_feedback_screenshot_submission(
         &self,
@@ -653,7 +649,7 @@ impl Client {
         .await
     }
 
-    /// GetBetaBuildUsageMetrics returns TestFlight usage metrics for a build.
+    /// Returns TestFlight usage metrics for a build.
     pub async fn get_beta_build_usage_metrics(
         &self,
         build_id: &str,
@@ -675,7 +671,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetBetaFeedbackCrashLog returns the crash log attached to a crash
+    /// Returns the crash log attached to a crash
     /// feedback submission.
     pub async fn get_beta_feedback_crash_log(
         &self,
@@ -693,7 +689,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetBetaFeedbackCrashSubmission returns a single crash feedback
+    /// Returns a single crash feedback
     /// submission.
     pub async fn get_beta_feedback_crash_submission(
         &self,
@@ -711,7 +707,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetBetaFeedbackScreenshotSubmission returns a single screenshot
+    /// Returns a single screenshot
     /// feedback submission, including its image download URLs.
     pub async fn get_beta_feedback_screenshot_submission(
         &self,
@@ -729,7 +725,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBetaFeedbackCrashSubmissions returns crash feedback submissions
+    /// Returns crash feedback submissions
     /// for an app.
     pub async fn list_beta_feedback_crash_submissions(
         &self,
@@ -752,7 +748,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBetaFeedbackScreenshotSubmissions returns screenshot feedback
+    /// Returns screenshot feedback
     /// submissions for an app.
     pub async fn list_beta_feedback_screenshot_submissions(
         &self,
@@ -775,7 +771,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateBuildUpload starts a new build upload for an app.
+    /// Starts a new build upload for an app.
     pub async fn create_build_upload(
         &self,
         req: &BuildUploadCreateRequest,
@@ -784,7 +780,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateBuildUploadFile reserves an asset file slot on a build upload.
+    /// Reserves an asset file slot on a build upload.
     /// The response carries the upload operations for the file's bytes.
     pub async fn create_build_upload_file(
         &self,
@@ -794,7 +790,7 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteBuildUpload deletes a build upload (e.g. an abandoned or failed
+    /// Deletes a build upload (e.g. an abandoned or failed
     /// delivery).
     pub async fn delete_build_upload(&self, build_upload_id: &str) -> Result<()> {
         self.delete(&format!(
@@ -804,7 +800,7 @@ impl Client {
         .await
     }
 
-    /// GetBuildUpload returns a single build upload.
+    /// Returns a single build upload.
     pub async fn get_build_upload(
         &self,
         build_upload_id: &str,
@@ -823,7 +819,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBuildUploadFiles returns the asset files attached to a build
+    /// Returns the asset files attached to a build
     /// upload, including their delivery states.
     pub async fn list_build_upload_files(
         &self,
@@ -846,7 +842,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListBuildUploads returns the build uploads for an app.
+    /// Returns the build uploads for an app.
     pub async fn list_build_uploads(
         &self,
         app_id: &str,
@@ -865,7 +861,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateBuildUploadFile commits (or amends) a build upload file.
+    /// Commits (or amends) a build upload file.
     pub async fn update_build_upload_file(
         &self,
         file_id: &str,
@@ -880,7 +876,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UploadBuildFile reserves, uploads, and commits one asset file on an
+    /// Reserves, uploads, and commits one asset file on an
     /// existing build upload. assetType is ASSET, ASSET_DESCRIPTION, or
     /// ASSET_SPI; uti must be one of Apple's accepted identifiers (e.g.
     /// com.apple.ipa). The commit carries the SHA-256 of the body so Apple
@@ -952,7 +948,7 @@ impl Client {
             .await
     }
 
-    /// ListCustomerReviewSummarizations returns Apple-generated summaries of an
+    /// Returns Apple-generated summaries of an
     /// app's customer reviews.
     pub async fn list_customer_review_summarizations(
         &self,
@@ -978,16 +974,13 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    // Ported from internal/asc/api/client_beta_feedback_test.go and
-    // internal/asc/api/client_build_uploads_test.go.
-
     use super::*;
     use crate::api::testutil::{MockApi, MockResponse, test_token_provider};
     use std::sync::{Arc, Mutex};
 
     fn filter(k: &str, v: &str) -> ListOptions {
         let mut o = ListOptions::default();
-        o.filter.insert(k, GoSlice::from(vec![v.to_string()]));
+        o.filter.insert(k, JsonSlice::from(vec![v.to_string()]));
         o
     }
 

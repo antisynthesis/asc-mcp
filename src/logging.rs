@@ -1,12 +1,13 @@
-//! Structured logging to stderr, formatted like the Go server's `log` and
-//! `log/slog` output so existing log pipelines keep working.
+//! Structured logging to stderr, in stable formats so existing log
+//! pipelines keep working.
 //!
-//! * [`Format::Std`] — Go's default logger, `2006/01/02 15:04:05 msg`, with
-//!   slog records as `LEVEL msg k=v ...` (what `slog.Default()` prints).
-//! * [`Format::Json`] — `slog.JSONHandler`.
-//! * [`Format::Text`] — `slog.TextHandler`.
+//! * [`Format::Std`] — plain lines, `2006/01/02 15:04:05 msg`, with
+//!   structured records as `LEVEL msg k=v ...`; used until a format is
+//!   configured.
+//! * [`Format::Json`] — one JSON object per record.
+//! * [`Format::Text`] — logfmt-style `key=value` records.
 //!
-//! Logs never go to stdout, which carries the stdio JSON-RPC stream.
+//! Logs are never written to stdout, which carries the stdio JSON-RPC stream.
 
 use std::io::Write;
 use std::sync::OnceLock;
@@ -15,11 +16,11 @@ use std::time::Duration;
 /// Output format.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {
-    /// Go standard `log` format.
+    /// Plain timestamped lines.
     Std,
-    /// slog JSON.
+    /// JSON records.
     Json,
-    /// slog text (logfmt).
+    /// Text records (logfmt).
     Text,
 }
 
@@ -128,9 +129,8 @@ fn now_local() -> time::OffsetDateTime {
     time::OffsetDateTime::now_local().unwrap_or_else(|_| time::OffsetDateTime::now_utc())
 }
 
-/// Go `log.Printf`. Once a slog format is configured (Go's
-/// `slog.SetDefault`), standard-logger output becomes an INFO record in that
-/// format, as in Go.
+/// Logs a plain message. Once a structured format is configured, the
+/// message becomes an INFO record in that format.
 pub fn printf(msg: impl AsRef<str>) {
     if config().format != Format::Std {
         log(Level::Info, msg.as_ref().trim_end_matches('\n'), &[]);
@@ -196,7 +196,7 @@ pub fn log(level: Level, msg: &str, attrs: &[(&str, Val)]) {
                 };
                 m.insert((*k).to_string(), jv);
             }
-            let mut b = crate::go::json::to_go_json_bytes(&serde_json::Value::Object(m));
+            let mut b = crate::wire::json::to_json_bytes(&serde_json::Value::Object(m));
             b.push(b'\n');
             let _ = std::io::stderr().write_all(&b);
         }
@@ -243,9 +243,9 @@ fn rfc3339_millis() -> String {
 fn text_value(s: &str) -> String {
     let needs_quote = s.is_empty()
         || s.chars()
-            .any(|c| c == ' ' || c == '=' || c == '"' || !crate::go::fmt::is_print(c));
+            .any(|c| c == ' ' || c == '=' || c == '"' || !crate::wire::fmt::is_print(c));
     if needs_quote {
-        crate::go::fmt::quote(s)
+        crate::wire::fmt::quote(s)
     } else {
         s.to_string()
     }
@@ -255,13 +255,14 @@ fn text_attr(k: &str, v: &Val) -> String {
     let vs = match v {
         Val::Str(s) => text_value(s),
         Val::Int(i) => i.to_string(),
-        Val::Dur(d) => go_duration(*d),
+        Val::Dur(d) => duration_string(*d),
     };
     format!("{k}={vs}")
 }
 
-/// Go `time.Duration.String()`.
-pub fn go_duration(d: Duration) -> String {
+/// Formats a duration compactly: `0s`, `850ns`, `1.5µs`, `12ms`,
+/// `2.5s`, `1m30s`, `1h0m0s`.
+pub fn duration_string(d: Duration) -> String {
     let ns = d.as_nanos();
     if ns == 0 {
         return "0s".into();
@@ -303,11 +304,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn durations_match_go() {
-        assert_eq!(go_duration(Duration::from_nanos(1_234_567)), "1.234567ms");
-        assert_eq!(go_duration(Duration::from_micros(350)), "350µs");
-        assert_eq!(go_duration(Duration::from_millis(2500)), "2.5s");
-        assert_eq!(go_duration(Duration::from_secs(90)), "1m30s");
-        assert_eq!(go_duration(Duration::ZERO), "0s");
+    fn durations() {
+        assert_eq!(
+            duration_string(Duration::from_nanos(1_234_567)),
+            "1.234567ms"
+        );
+        assert_eq!(duration_string(Duration::from_micros(350)), "350µs");
+        assert_eq!(duration_string(Duration::from_millis(2500)), "2.5s");
+        assert_eq!(duration_string(Duration::from_secs(90)), "1m30s");
+        assert_eq!(duration_string(Duration::ZERO), "0s");
     }
 }

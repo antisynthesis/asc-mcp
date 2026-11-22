@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/accessibility.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Accessibility declaration tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerAccessibilityTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_accessibility_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -234,7 +231,7 @@ pub(super) fn register_accessibility_tools(r: &mut Registry) {
     );
 }
 
-go_struct! {
+json_struct! {
 pub(crate) struct AccessibilitySupportParams ("tools.accessibilitySupportParams", "accessibilitySupportParams") {
     pub(crate) supports_audio_descriptions: Option<bool> => "supports_audio_descriptions";
     pub(crate) supports_captions: Option<bool> => "supports_captions";
@@ -248,15 +245,15 @@ pub(crate) struct AccessibilitySupportParams ("tools.accessibilitySupportParams"
 }
 }
 
-/// Ported from `Registry.handleListAccessibilityDeclarations`.
+/// Handles `list_accessibility_declarations`.
 async fn handle_list_accessibility_declarations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        fields: GoMap<GoSlice<String>> => "fields";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        fields: JsonMap<JsonSlice<String>> => "fields";
     }
     }
     let mut params = Params::default();
@@ -270,7 +267,7 @@ async fn handle_list_accessibility_declarations(c: Arc<Client>, args: Args) -> H
 
     let limit = clamp_limit(params.limit);
 
-    let opts = list_opts(limit, &params.filter, &GoSlice::nil(), &params.fields, &GoSlice::nil());
+    let opts = list_opts(limit, &params.filter, &JsonSlice::nil(), &params.fields, &JsonSlice::nil());
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_accessibility_declarations(&params.app_id, opts.as_ref())).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to list accessibility declarations: {e}"))),
@@ -279,9 +276,9 @@ async fn handle_list_accessibility_declarations(c: Arc<Client>, args: Args) -> H
     Ok(list_result(&format_accessibility_declarations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAccessibilityDeclaration`.
+/// Handles `get_accessibility_declaration`.
 async fn handle_get_accessibility_declaration(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { DeclarationID string \"json:\\\"declaration_id\\\"\" }", "") {
         declaration_id: String => "declaration_id";
     }
@@ -303,9 +300,9 @@ async fn handle_get_accessibility_declaration(c: Arc<Client>, args: Args) -> Han
     Ok(data_result(&format_accessibility_declaration(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateAccessibilityDeclaration`.
+/// Handles `create_accessibility_declaration`.
 async fn handle_create_accessibility_declaration(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; DeviceFamily string \"json:\\\"device_family\\\"\"; tools.accessibilitySupportParams }", "") {
         app_id: String => "app_id";
         device_family: String => "device_family";
@@ -355,9 +352,9 @@ async fn handle_create_accessibility_declaration(c: Arc<Client>, args: Args) -> 
     Ok(data_result(&format!("Created accessibility declaration:\n{}", format_accessibility_declaration(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateAccessibilityDeclaration`.
+/// Handles `update_accessibility_declaration`.
 async fn handle_update_accessibility_declaration(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { DeclarationID string \"json:\\\"declaration_id\\\"\"; Publish *bool \"json:\\\"publish\\\"\"; tools.accessibilitySupportParams }", "") {
         declaration_id: String => "declaration_id";
         publish: Option<bool> => "publish";
@@ -401,9 +398,9 @@ async fn handle_update_accessibility_declaration(c: Arc<Client>, args: Args) -> 
     Ok(data_result(&format!("Accessibility declaration updated:\n{}", format_accessibility_declaration(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteAccessibilityDeclaration`.
+/// Handles `delete_accessibility_declaration`.
 async fn handle_delete_accessibility_declaration(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { DeclarationID string \"json:\\\"declaration_id\\\"\" }", "") {
         declaration_id: String => "declaration_id";
     }
@@ -424,7 +421,7 @@ async fn handle_delete_accessibility_declaration(c: Arc<Client>, args: Args) -> 
     Ok(CallToolResult::success("Accessibility declaration deleted successfully"))
 }
 
-/// The `limit <= 0 → 50; limit > 200 → 200` clamp the Go handlers inline.
+/// Clamps a page size: `limit <= 0 → 50; limit > 200 → 200`.
 fn clamp_limit(limit: i64) -> i64 {
     let mut limit = limit;
     if limit <= 0 {
@@ -436,7 +433,6 @@ fn clamp_limit(limit: i64) -> i64 {
     limit
 }
 
-/// Ported from `formatAccessibilityDeclarations`.
 fn format_accessibility_declarations(declarations: &[AccessibilityDeclaration]) -> String {
     if declarations.is_empty() {
         return "No accessibility declarations found".into();
@@ -453,7 +449,6 @@ fn format_accessibility_declarations(declarations: &[AccessibilityDeclaration]) 
     sb
 }
 
-/// Ported from `formatAccessibilityDeclaration`.
 fn format_accessibility_declaration(decl: &AccessibilityDeclaration) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "Declaration ID: {}", decl.id);

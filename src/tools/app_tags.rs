@@ -1,14 +1,11 @@
-//! Ported from internal/asc/tools/app_tags.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! App tag tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 use super::pricing::format_territories;
 
-/// Ported from `Registry.registerAppTagTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_app_tag_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -129,17 +126,17 @@ pub(super) fn register_app_tag_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListAppTags`.
+/// Handles `list_app_tags`.
 async fn handle_list_app_tags(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -164,9 +161,9 @@ async fn handle_list_app_tags(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&format_app_tags(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleUpdateAppTag`.
+/// Handles `update_app_tag`.
 async fn handle_update_app_tag(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppTagID string \"json:\\\"app_tag_id\\\"\"; VisibleInAppStore *bool \"json:\\\"visible_in_app_store\\\"\" }", "") {
         app_tag_id: String => "app_tag_id";
         visible_in_app_store: Option<bool> => "visible_in_app_store";
@@ -196,9 +193,9 @@ async fn handle_update_app_tag(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format!("App tag updated:\n{}", format_app_tag(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleListAppTagTerritories`.
+/// Handles `list_app_tag_territories`.
 async fn handle_list_app_tag_territories(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppTagID string \"json:\\\"app_tag_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\" }", "") {
         app_tag_id: String => "app_tag_id";
         limit: i64 => "limit";
@@ -227,7 +224,6 @@ async fn handle_list_app_tag_territories(c: Arc<Client>, args: Args) -> HandlerR
     Ok(list_result(&format_territories(&resp.data), &resp.data, &resp.links))
 }
 
-/// Go `formatAppTags`.
 fn format_app_tags(tags: &[AppTag]) -> String {
     if tags.is_empty() {
         return "No app tags found".to_string();
@@ -241,7 +237,6 @@ fn format_app_tags(tags: &[AppTag]) -> String {
     sb
 }
 
-/// Go `formatAppTag`.
 fn format_app_tag(tag: &AppTag) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "App Tag ID: {}", tag.id);

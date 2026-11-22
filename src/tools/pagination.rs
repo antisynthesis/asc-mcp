@@ -1,12 +1,12 @@
 //! Shared helpers for list tools: pagination cursors, list options and
-//! result construction (ported from internal/asc/tools/pagination.go).
+//! result construction.
 
 use serde_json::{Map, Value};
 
 use crate::api::model::PagedDocumentLinks;
 use crate::api::{Client, ListOptions, Result};
-use crate::go::{GoDecode, GoEncode, GoMap, GoSlice, json as gojson};
 use crate::mcp::{CallToolResult, text_content};
+use crate::wire::{JsonDecode, JsonEncode, JsonMap, JsonSlice, json as wirejson};
 
 /// The JSON Schema entry list tools use to opt into pagination.
 pub fn cursor_property() -> Value {
@@ -16,13 +16,13 @@ pub fn cursor_property() -> Value {
     })
 }
 
-/// Go `listOpts`: assembles list options, or `None` when nothing is set.
+/// Assembles list options, or `None` when nothing is set.
 pub fn list_opts(
     limit: i64,
-    filter: &GoMap<GoSlice<String>>,
-    sort: &GoSlice<String>,
-    fields: &GoMap<GoSlice<String>>,
-    include: &GoSlice<String>,
+    filter: &JsonMap<JsonSlice<String>>,
+    sort: &JsonSlice<String>,
+    fields: &JsonMap<JsonSlice<String>>,
+    include: &JsonSlice<String>,
 ) -> Option<ListOptions> {
     if limit <= 0 && filter.is_empty() && sort.is_empty() && fields.is_empty() && include.is_empty()
     {
@@ -37,23 +37,23 @@ pub fn list_opts(
     })
 }
 
-/// Go `listOpts(limit, nil, nil, nil, nil)`.
+/// List options carrying only a limit (`None` when `limit <= 0`).
 pub fn limit_opts(limit: i64) -> Option<ListOptions> {
     list_opts(
         limit,
-        &GoMap::nil(),
-        &GoSlice::nil(),
-        &GoMap::nil(),
-        &GoSlice::nil(),
+        &JsonMap::nil(),
+        &JsonSlice::nil(),
+        &JsonMap::nil(),
+        &JsonSlice::nil(),
     )
 }
 
-/// Go `paginatedFetch`: the first page via `fetch_first` when `cursor` is
+/// Fetches the first page via `fetch_first` when `cursor` is
 /// empty, otherwise the page at the cursor URL (host-checked by
 /// [`Client::get_url`]).
 pub async fn paginated_fetch<T, F, Fut>(client: &Client, cursor: &str, fetch_first: F) -> Result<T>
 where
-    T: GoDecode + Default,
+    T: JsonDecode + Default,
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<T>>,
 {
@@ -61,33 +61,33 @@ where
         return fetch_first().await;
     }
     let data = client.get_url(cursor).await?;
-    gojson::from_slice(&data)
+    wirejson::from_slice(&data)
         .map_err(|e| crate::api::Error::msg(format!("failed to parse paginated response: {e}")))
 }
 
-/// Go `paginationFooter`.
 pub fn pagination_footer(next_url: &str) -> String {
     if next_url.is_empty() {
         return String::new();
     }
     format!(
         "\n\n_More results available. Call again with `cursor={}` to fetch the next page._",
-        crate::go::fmt::quote(next_url)
+        crate::wire::fmt::quote(next_url)
     )
 }
 
-/// Go `newListResult(content, data, links)` with non-nil `data`: text plus
+/// A list result: text plus
 /// the next-page footer, and structured content
 /// `{data, hasMore, links, nextPage}`.
-pub fn list_result<D: GoEncode + ?Sized>(
+pub fn list_result<D: JsonEncode + ?Sized>(
     content: &str,
     data: &D,
     links: &PagedDocumentLinks,
 ) -> CallToolResult {
-    list_result_value(content, Some(gojson::to_value(data)), links)
+    list_result_value(content, Some(wirejson::to_value(data)), links)
 }
 
-/// Go `newListResult` with an explicit (possibly nil) data value.
+/// A list result with an explicit data value; `None` yields text only (no
+/// structured content).
 pub fn list_result_value(
     content: &str,
     data: Option<Value>,
@@ -99,30 +99,30 @@ pub fn list_result_value(
         ..Default::default()
     };
     if let Some(data) = data {
-        // Go marshals the map[string]any with sorted keys.
+        // Keys are inserted in sorted order.
         let mut m = Map::new();
         m.insert("data".into(), data);
         m.insert("hasMore".into(), Value::Bool(!links.next.is_empty()));
-        m.insert("links".into(), gojson::to_value(links));
+        m.insert("links".into(), wirejson::to_value(links));
         m.insert("nextPage".into(), Value::String(links.next.clone()));
         res.structured_content = Some(Value::Object(m));
     }
     res
 }
 
-/// Go `newDataResult(content, data)` with non-nil `data`.
-pub fn data_result<D: GoEncode + ?Sized>(content: &str, data: &D) -> CallToolResult {
+/// A text result with `data` as structured content.
+pub fn data_result<D: JsonEncode + ?Sized>(content: &str, data: &D) -> CallToolResult {
     let mut res = CallToolResult::success(content);
-    res.structured_content = Some(gojson::to_value(data));
+    res.structured_content = Some(wirejson::to_value(data));
     res
 }
 
-/// Go `newDataResult(content, nil)`: text only.
+/// A text-only result.
 pub fn text_result(content: &str) -> CallToolResult {
     CallToolResult::success(content)
 }
 
-/// Go `mcp.NewErrorResult(text)`.
+/// An `isError` tool result carrying `text`.
 pub fn error_result(text: impl Into<String>) -> CallToolResult {
     CallToolResult::error(text)
 }

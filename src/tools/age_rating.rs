@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/age_rating.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Age rating tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerAgeRatingTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_age_rating_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -164,9 +161,9 @@ pub(super) fn register_age_rating_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleGetAgeRatingDeclaration`.
+/// Handles `get_age_rating_declaration`.
 async fn handle_get_age_rating_declaration(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppInfoID string \"json:\\\"app_info_id\\\"\" }", "") {
         app_info_id: String => "app_info_id";
     }
@@ -188,9 +185,9 @@ async fn handle_get_age_rating_declaration(c: Arc<Client>, args: Args) -> Handle
     Ok(data_result(&format_age_rating_declaration(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateAgeRatingDeclaration`.
+/// Handles `update_age_rating_declaration`.
 async fn handle_update_age_rating_declaration(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { DeclarationID string \"json:\\\"declaration_id\\\"\"; AlcoholTobaccoOrDrugUseOrReferences *string \"json:\\\"alcohol_tobacco_or_drug_use_or_references\\\"\"; Contests *string \"json:\\\"contests\\\"\"; GamblingSimulated *string \"json:\\\"gambling_simulated\\\"\"; HorrorOrFearThemes *string \"json:\\\"horror_or_fear_themes\\\"\"; MatureOrSuggestiveThemes *string \"json:\\\"mature_or_suggestive_themes\\\"\"; MedicalOrTreatmentInformation *string \"json:\\\"medical_or_treatment_information\\\"\"; ProfanityOrCrudeHumor *string \"json:\\\"profanity_or_crude_humor\\\"\"; SexualContentGraphicAndNudity *string \"json:\\\"sexual_content_graphic_and_nudity\\\"\"; SexualContentOrNudity *string \"json:\\\"sexual_content_or_nudity\\\"\"; ViolenceCartoonOrFantasy *string \"json:\\\"violence_cartoon_or_fantasy\\\"\"; ViolenceRealistic *string \"json:\\\"violence_realistic\\\"\"; ViolenceRealisticProlongedGraphicOrSadistic *string \"json:\\\"violence_realistic_prolonged_graphic_or_sadistic\\\"\"; Gambling *bool \"json:\\\"gambling\\\"\"; UnrestrictedWebAccess *bool \"json:\\\"unrestricted_web_access\\\"\"; SeventeenPlus *bool \"json:\\\"seventeen_plus\\\"\" }", "") {
         declaration_id: String => "declaration_id";
         alcohol_tobacco_or_drug_use_or_references: Option<String> => "alcohol_tobacco_or_drug_use_or_references";
@@ -219,7 +216,7 @@ async fn handle_update_age_rating_declaration(c: Arc<Client>, args: Args) -> Han
         return Ok(error_result("declaration_id is required"));
     }
 
-    // Note: horror_or_fear_themes is accepted but, as in Go, not sent.
+    // Note: horror_or_fear_themes is accepted but intentionally not sent.
     let req = AgeRatingDeclarationUpdateRequest {
         data: AgeRatingDeclarationUpdateData {
             type_: "ageRatingDeclarations".into(),
@@ -254,15 +251,15 @@ async fn handle_update_age_rating_declaration(c: Arc<Client>, args: Args) -> Han
     Ok(data_result(&format!("Age rating declaration updated:\n{}", format_age_rating_declaration(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleListTerritoryAgeRatings`.
+/// Handles `list_territory_age_ratings`.
 async fn handle_list_territory_age_ratings(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppInfoID string \"json:\\\"app_info_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_info_id: String => "app_info_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -282,7 +279,7 @@ async fn handle_list_territory_age_ratings(c: Arc<Client>, args: Args) -> Handle
         limit = 200;
     }
 
-    let opts = list_opts(limit, &GoMap::nil(), &GoSlice::nil(), &params.fields, &params.include);
+    let opts = list_opts(limit, &JsonMap::nil(), &JsonSlice::nil(), &params.fields, &params.include);
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_territory_age_ratings(&params.app_info_id, opts.as_ref())).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to list territory age ratings: {e}"))),
@@ -291,7 +288,6 @@ async fn handle_list_territory_age_ratings(c: Arc<Client>, args: Args) -> Handle
     Ok(list_result(&format_territory_age_ratings(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `formatTerritoryAgeRatings`.
 fn format_territory_age_ratings(ratings: &[TerritoryAgeRating]) -> String {
     if ratings.is_empty() {
         return "No territory age ratings found".to_string();
@@ -311,7 +307,6 @@ fn format_territory_age_ratings(ratings: &[TerritoryAgeRating]) -> String {
     sb
 }
 
-/// Ported from `stringValue`.
 fn string_value(s: &Option<String>) -> String {
     match s {
         None => String::new(),
@@ -319,7 +314,6 @@ fn string_value(s: &Option<String>) -> String {
     }
 }
 
-/// Ported from `formatAgeRatingDeclaration`.
 fn format_age_rating_declaration(decl: &AgeRatingDeclaration) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", decl.id);

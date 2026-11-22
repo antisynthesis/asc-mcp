@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/appclips.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! App Clip tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerAppClipTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_app_clip_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -245,17 +242,17 @@ pub(super) fn register_app_clip_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListAppClips`.
+/// Handles `list_app_clips`.
 async fn handle_list_app_clips(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -284,9 +281,9 @@ async fn handle_list_app_clips(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&format_app_clips(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAppClip`.
+/// Handles `get_app_clip`.
 async fn handle_get_app_clip(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppClipID string \"json:\\\"app_clip_id\\\"\" }", "") {
         app_clip_id: String => "app_clip_id";
     }
@@ -308,17 +305,17 @@ async fn handle_get_app_clip(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_app_clip(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleListAppClipDefaultExperiences`.
+/// Handles `list_app_clip_default_experiences`.
 async fn handle_list_app_clip_default_experiences(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppClipID string \"json:\\\"app_clip_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_clip_id: String => "app_clip_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -347,9 +344,9 @@ async fn handle_list_app_clip_default_experiences(c: Arc<Client>, args: Args) ->
     Ok(list_result(&format_app_clip_default_experiences(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAppClipDefaultExperience`.
+/// Handles `get_app_clip_default_experience`.
 async fn handle_get_app_clip_default_experience(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ExperienceID string \"json:\\\"experience_id\\\"\" }", "") {
         experience_id: String => "experience_id";
     }
@@ -371,17 +368,17 @@ async fn handle_get_app_clip_default_experience(c: Arc<Client>, args: Args) -> H
     Ok(data_result(&format_app_clip_default_experience(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleListAppClipAdvancedExperiences`.
+/// Handles `list_app_clip_advanced_experiences`.
 async fn handle_list_app_clip_advanced_experiences(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppClipID string \"json:\\\"app_clip_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_clip_id: String => "app_clip_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -410,9 +407,9 @@ async fn handle_list_app_clip_advanced_experiences(c: Arc<Client>, args: Args) -
     Ok(list_result(&format_app_clip_advanced_experiences(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAppClipAdvancedExperience`.
+/// Handles `get_app_clip_advanced_experience`.
 async fn handle_get_app_clip_advanced_experience(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ExperienceID string \"json:\\\"experience_id\\\"\" }", "") {
         experience_id: String => "experience_id";
     }
@@ -434,7 +431,6 @@ async fn handle_get_app_clip_advanced_experience(c: Arc<Client>, args: Args) -> 
     Ok(data_result(&format_app_clip_advanced_experience(&resp.data), &resp.data))
 }
 
-/// Ported from `formatAppClips`.
 fn format_app_clips(clips: &[AppClip]) -> String {
     if clips.is_empty() {
         return "No app clips found".into();
@@ -451,7 +447,6 @@ fn format_app_clips(clips: &[AppClip]) -> String {
     sb
 }
 
-/// Ported from `formatAppClip`.
 fn format_app_clip(clip: &AppClip) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", clip.id);
@@ -459,7 +454,6 @@ fn format_app_clip(clip: &AppClip) -> String {
     sb
 }
 
-/// Ported from `formatAppClipDefaultExperiences`.
 fn format_app_clip_default_experiences(experiences: &[AppClipDefaultExperience]) -> String {
     if experiences.is_empty() {
         return "No app clip default experiences found".into();
@@ -476,7 +470,6 @@ fn format_app_clip_default_experiences(experiences: &[AppClipDefaultExperience])
     sb
 }
 
-/// Ported from `formatAppClipDefaultExperience`.
 fn format_app_clip_default_experience(exp: &AppClipDefaultExperience) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", exp.id);
@@ -486,7 +479,6 @@ fn format_app_clip_default_experience(exp: &AppClipDefaultExperience) -> String 
     sb
 }
 
-/// Ported from `formatAppClipAdvancedExperiences`.
 fn format_app_clip_advanced_experiences(experiences: &[AppClipAdvancedExperience]) -> String {
     if experiences.is_empty() {
         return "No app clip advanced experiences found".into();
@@ -503,7 +495,6 @@ fn format_app_clip_advanced_experiences(experiences: &[AppClipAdvancedExperience
     sb
 }
 
-/// Ported from `formatAppClipAdvancedExperience`.
 fn format_app_clip_advanced_experience(exp: &AppClipAdvancedExperience) -> String {
     let a = &exp.attributes;
     let mut sb = String::new();

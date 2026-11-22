@@ -1,7 +1,7 @@
 //! Query option helpers for App Store Connect list endpoints.
 
-use crate::go::url::Values;
-use crate::go::{GoMap, GoSlice};
+use crate::wire::url::Values;
+use crate::wire::{JsonMap, JsonSlice};
 
 /// The JSON:API query parameters every list endpoint accepts:
 ///
@@ -17,13 +17,13 @@ pub struct ListOptions {
     /// Page size.
     pub limit: i64,
     /// `filter[...]` parameters.
-    pub filter: GoMap<GoSlice<String>>,
+    pub filter: JsonMap<JsonSlice<String>>,
     /// Sort fields.
-    pub sort: GoSlice<String>,
+    pub sort: JsonSlice<String>,
     /// Sparse fieldsets.
-    pub fields: GoMap<GoSlice<String>>,
+    pub fields: JsonMap<JsonSlice<String>>,
     /// Related resources to include.
-    pub include: GoSlice<String>,
+    pub include: JsonSlice<String>,
 }
 
 impl ListOptions {
@@ -47,7 +47,7 @@ impl ListOptions {
     }
 }
 
-fn write_bracketed_map(q: &mut Values, prefix: &str, m: &GoMap<GoSlice<String>>) {
+fn write_bracketed_map(q: &mut Values, prefix: &str, m: &JsonMap<JsonSlice<String>>) {
     for (k, vs) in m.iter() {
         let vs = strip_empty(vs);
         if vs.is_empty() {
@@ -71,17 +71,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn apply_matches_go() {
+    fn apply_writes_query() {
         let mut o = ListOptions {
             limit: 25,
             ..Default::default()
         };
         o.filter.insert(
             "platform",
-            GoSlice::from(vec!["IOS".into(), " ".into(), "MAC_OS".into()]),
+            JsonSlice::from(vec!["IOS".into(), " ".into(), "MAC_OS".into()]),
         );
         o.filter
-            .insert("empty", GoSlice::from(vec!["".to_string()]));
+            .insert("empty", JsonSlice::from(vec!["".to_string()]));
         o.sort = vec!["-createdDate".to_string(), "".into()].into();
         o.include = vec!["app".to_string()].into();
         let mut q = Values::new();
@@ -92,11 +92,11 @@ mod tests {
         );
     }
 
-    fn strings(v: &[&str]) -> GoSlice<String> {
+    fn strings(v: &[&str]) -> JsonSlice<String> {
         v.iter().map(|s| s.to_string()).collect()
     }
 
-    // Go: TestListOptions_Apply_Empty (Go's nil receiver is Option::None
+    // Default options add no query parameters (absent options are `None`
     // at the call sites, which skip apply).
     #[test]
     fn apply_empty() {
@@ -109,7 +109,6 @@ mod tests {
         );
     }
 
-    // Go: TestListOptions_Apply_AllFields
     #[test]
     fn apply_all_fields() {
         let mut o = ListOptions {
@@ -132,7 +131,6 @@ mod tests {
         assert_eq!(q.get("include"), "builds,appStoreVersions");
     }
 
-    // Go: TestListOptions_StripsEmptyValues
     #[test]
     fn strips_empty_values() {
         let mut o = ListOptions::default();

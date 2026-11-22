@@ -1,7 +1,4 @@
-//! Ported from internal/asc/tools/commerce_pricing.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! In-app purchase and subscription pricing and availability tools.
 
 #![allow(unused_imports)]
 
@@ -9,7 +6,7 @@ use super::prelude::*;
 use super::commerce_versions::rel;
 use super::pricing::{format_app_price_point, format_app_price_points, format_subscription_price_point, format_subscription_price_points, format_territories};
 
-/// Ported from `Registry.registerCommercePricingTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_commerce_pricing_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -716,7 +713,7 @@ pub(super) fn register_commerce_pricing_tools(r: &mut Registry) {
     );
 }
 
-go_struct! {
+json_struct! {
 pub(crate) struct InlinePriceParams ("tools.inlinePriceParams", "inlinePriceParams") {
     pub(crate) price_point_id: String => "price_point_id";
     pub(crate) start_date: String => "start_date";
@@ -724,9 +721,9 @@ pub(crate) struct InlinePriceParams ("tools.inlinePriceParams", "inlinePricePara
 }
 }
 
-/// Ported from `Registry.handleListInAppPurchasePricePoints`.
+/// Handles `list_in_app_purchase_price_points`.
 async fn handle_list_in_app_purchase_price_points(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { IAPID string \"json:\\\"iap_id\\\"\"; tools.commerceListParams }", "") {
         iap_id: String => "iap_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -747,9 +744,9 @@ async fn handle_list_in_app_purchase_price_points(c: Arc<Client>, args: Args) ->
     Ok(list_result(&format_in_app_purchase_price_points(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetInAppPurchasePriceSchedule`.
+/// Handles `get_in_app_purchase_price_schedule`.
 async fn handle_get_in_app_purchase_price_schedule(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { IAPID string \"json:\\\"iap_id\\\"\" }", "") {
         iap_id: String => "iap_id";
     }
@@ -768,13 +765,13 @@ async fn handle_get_in_app_purchase_price_schedule(c: Arc<Client>, args: Args) -
     Ok(data_result(&format!("In-App Purchase Price Schedule ID: {}\n", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleSetInAppPurchasePriceSchedule`.
+/// Handles `set_in_app_purchase_price_schedule`.
 async fn handle_set_in_app_purchase_price_schedule(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { IAPID string \"json:\\\"iap_id\\\"\"; BaseTerritoryID string \"json:\\\"base_territory_id\\\"\"; Prices []tools.inlinePriceParams \"json:\\\"prices\\\"\" }", "") {
         iap_id: String => "iap_id";
         base_territory_id: String => "base_territory_id";
-        prices: GoSlice<InlinePriceParams> => "prices";
+        prices: JsonSlice<InlinePriceParams> => "prices";
     }
     }
     let mut params = Params::default();
@@ -813,10 +810,10 @@ async fn handle_set_in_app_purchase_price_schedule(c: Arc<Client>, args: Args) -
             relationships: InAppPurchasePriceScheduleCreateRelationships {
                 in_app_purchase: rel("inAppPurchases", &params.iap_id),
                 base_territory: rel("territories", &params.base_territory_id),
-                manual_prices: RelationshipDataList { data: GoSlice::from(price_refs) },
+                manual_prices: RelationshipDataList { data: JsonSlice::from(price_refs) },
             },
         },
-        included: GoSlice::from(included),
+        included: JsonSlice::from(included),
     };
     let resp = match c.create_in_app_purchase_price_schedule(&req).await {
         Ok(r) => r,
@@ -825,9 +822,9 @@ async fn handle_set_in_app_purchase_price_schedule(c: Arc<Client>, args: Args) -
     Ok(data_result(&format!("In-app purchase price schedule set: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleListInAppPurchasePriceSchedulePrices`.
+/// Handles `list_in_app_purchase_price_schedule_prices`.
 async fn handle_list_in_app_purchase_price_schedule_prices(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PriceScheduleID string \"json:\\\"price_schedule_id\\\"\"; PriceType string \"json:\\\"price_type\\\"\"; tools.commerceListParams }", "") {
         price_schedule_id: String => "price_schedule_id";
         price_type: String => "price_type";
@@ -852,9 +849,9 @@ async fn handle_list_in_app_purchase_price_schedule_prices(c: Arc<Client>, args:
     Ok(list_result(&format_in_app_purchase_prices(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetInAppPurchaseAvailability`.
+/// Handles `get_in_app_purchase_availability`.
 async fn handle_get_in_app_purchase_availability(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { IAPID string \"json:\\\"iap_id\\\"\" }", "") {
         iap_id: String => "iap_id";
     }
@@ -882,12 +879,12 @@ async fn handle_get_in_app_purchase_availability(c: Arc<Client>, args: Args) -> 
     Ok(data_result(&sb, &resp.data))
 }
 
-/// Ported from `Registry.handleSetInAppPurchaseAvailability`.
+/// Handles `set_in_app_purchase_availability`.
 async fn handle_set_in_app_purchase_availability(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { IAPID string \"json:\\\"iap_id\\\"\"; TerritoryIDs []string \"json:\\\"territory_ids\\\"\"; AvailableInNewTerritories bool \"json:\\\"available_in_new_territories\\\"\" }", "") {
         iap_id: String => "iap_id";
-        territory_ids: GoSlice<String> => "territory_ids";
+        territory_ids: JsonSlice<String> => "territory_ids";
         available_in_new_territories: bool => "available_in_new_territories";
     }
     }
@@ -918,9 +915,9 @@ async fn handle_set_in_app_purchase_availability(c: Arc<Client>, args: Args) -> 
     Ok(data_result(&format!("In-app purchase availability set: {} ({} territories)", resp.data.id, params.territory_ids.len()), &resp.data))
 }
 
-/// Ported from `Registry.handleListInAppPurchaseAvailableTerritories`.
+/// Handles `list_in_app_purchase_available_territories`.
 async fn handle_list_in_app_purchase_available_territories(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AvailabilityID string \"json:\\\"availability_id\\\"\"; tools.commerceListParams }", "") {
         availability_id: String => "availability_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -941,9 +938,9 @@ async fn handle_list_in_app_purchase_available_territories(c: Arc<Client>, args:
     Ok(list_result(&format_territories(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListSubscriptionPlanAvailabilities`.
+/// Handles `list_subscription_plan_availabilities`.
 async fn handle_list_subscription_plan_availabilities(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubscriptionID string \"json:\\\"subscription_id\\\"\"; tools.commerceListParams }", "") {
         subscription_id: String => "subscription_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -964,9 +961,9 @@ async fn handle_list_subscription_plan_availabilities(c: Arc<Client>, args: Args
     Ok(list_result(&format_subscription_plan_availabilities(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetSubscriptionPlanAvailability`.
+/// Handles `get_subscription_plan_availability`.
 async fn handle_get_subscription_plan_availability(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AvailabilityID string \"json:\\\"availability_id\\\"\" }", "") {
         availability_id: String => "availability_id";
     }
@@ -992,13 +989,13 @@ async fn handle_get_subscription_plan_availability(c: Arc<Client>, args: Args) -
     Ok(data_result(&sb, &resp.data))
 }
 
-/// Ported from `Registry.handleCreateSubscriptionPlanAvailability`.
+/// Handles `create_subscription_plan_availability`.
 async fn handle_create_subscription_plan_availability(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubscriptionID string \"json:\\\"subscription_id\\\"\"; PlanType string \"json:\\\"plan_type\\\"\"; TerritoryIDs []string \"json:\\\"territory_ids\\\"\"; AvailableInNewTerritories *bool \"json:\\\"available_in_new_territories\\\"\" }", "") {
         subscription_id: String => "subscription_id";
         plan_type: String => "plan_type";
-        territory_ids: GoSlice<String> => "territory_ids";
+        territory_ids: JsonSlice<String> => "territory_ids";
         available_in_new_territories: Option<bool> => "available_in_new_territories";
     }
     }
@@ -1035,12 +1032,12 @@ async fn handle_create_subscription_plan_availability(c: Arc<Client>, args: Args
     Ok(data_result(&format!("Subscription plan availability created:\n{}", format_subscription_plan_availability(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateSubscriptionPlanAvailability`.
+/// Handles `update_subscription_plan_availability`.
 async fn handle_update_subscription_plan_availability(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AvailabilityID string \"json:\\\"availability_id\\\"\"; TerritoryIDs []string \"json:\\\"territory_ids\\\"\"; AvailableInNewTerritories *bool \"json:\\\"available_in_new_territories\\\"\" }", "") {
         availability_id: String => "availability_id";
-        territory_ids: GoSlice<String> => "territory_ids";
+        territory_ids: JsonSlice<String> => "territory_ids";
         available_in_new_territories: Option<bool> => "available_in_new_territories";
     }
     }
@@ -1077,9 +1074,9 @@ async fn handle_update_subscription_plan_availability(c: Arc<Client>, args: Args
     Ok(data_result(&format!("Subscription plan availability updated:\n{}", format_subscription_plan_availability(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleListSubscriptionPlanAvailableTerritories`.
+/// Handles `list_subscription_plan_available_territories`.
 async fn handle_list_subscription_plan_available_territories(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AvailabilityID string \"json:\\\"availability_id\\\"\"; tools.commerceListParams }", "") {
         availability_id: String => "availability_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -1100,9 +1097,9 @@ async fn handle_list_subscription_plan_available_territories(c: Arc<Client>, arg
     Ok(list_result(&format_territories(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetSubscriptionPricePoint`.
+/// Handles `get_subscription_price_point`.
 async fn handle_get_subscription_price_point(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PricePointID string \"json:\\\"price_point_id\\\"\" }", "") {
         price_point_id: String => "price_point_id";
     }
@@ -1121,9 +1118,9 @@ async fn handle_get_subscription_price_point(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&format_subscription_price_point(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleListSubscriptionPricePointEqualizations`.
+/// Handles `list_subscription_price_point_equalizations`.
 async fn handle_list_subscription_price_point_equalizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PricePointID string \"json:\\\"price_point_id\\\"\"; tools.commerceListParams }", "") {
         price_point_id: String => "price_point_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -1144,9 +1141,9 @@ async fn handle_list_subscription_price_point_equalizations(c: Arc<Client>, args
     Ok(list_result(&format_subscription_price_points(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListSubscriptionPricePointAdjustedEqualizations`.
+/// Handles `list_subscription_price_point_adjusted_equalizations`.
 async fn handle_list_subscription_price_point_adjusted_equalizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PricePointID string \"json:\\\"price_point_id\\\"\"; UpfrontPricePointID string \"json:\\\"upfront_price_point_id\\\"\"; PlanType string \"json:\\\"plan_type\\\"\"; tools.commerceListParams }", "") {
         price_point_id: String => "price_point_id";
         upfront_price_point_id: String => "upfront_price_point_id";
@@ -1163,12 +1160,12 @@ async fn handle_list_subscription_price_point_adjusted_equalizations(c: Arc<Clie
     }
     // upfrontPricePointId and planType are ordinary JSON:API filters; fold
     // the dedicated arguments into whatever filter map the caller supplied.
-    let mut filter: GoMap<GoSlice<String>> = GoMap::from_map(params.commerce_list_params.filter.iter().map(|(k, v)| (k.clone(), v.clone())).collect());
+    let mut filter: JsonMap<JsonSlice<String>> = JsonMap::from_map(params.commerce_list_params.filter.iter().map(|(k, v)| (k.clone(), v.clone())).collect());
     if !params.upfront_price_point_id.is_empty() {
-        filter.insert("upfrontPricePointId", GoSlice::from(vec![params.upfront_price_point_id.clone()]));
+        filter.insert("upfrontPricePointId", JsonSlice::from(vec![params.upfront_price_point_id.clone()]));
     }
     if !params.plan_type.is_empty() {
-        filter.insert("planType", GoSlice::from(vec![params.plan_type.clone()]));
+        filter.insert("planType", JsonSlice::from(vec![params.plan_type.clone()]));
     }
     params.commerce_list_params.filter = filter;
     let opts = params.commerce_list_params.opts(100);
@@ -1179,13 +1176,13 @@ async fn handle_list_subscription_price_point_adjusted_equalizations(c: Arc<Clie
     Ok(list_result(&format_subscription_price_points(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleSetAppPriceSchedule`.
+/// Handles `set_app_price_schedule`.
 async fn handle_set_app_price_schedule(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; BaseTerritoryID string \"json:\\\"base_territory_id\\\"\"; Prices []tools.inlinePriceParams \"json:\\\"prices\\\"\" }", "") {
         app_id: String => "app_id";
         base_territory_id: String => "base_territory_id";
-        prices: GoSlice<InlinePriceParams> => "prices";
+        prices: JsonSlice<InlinePriceParams> => "prices";
     }
     }
     let mut params = Params::default();
@@ -1219,10 +1216,10 @@ async fn handle_set_app_price_schedule(c: Arc<Client>, args: Args) -> HandlerRes
             relationships: AppPriceScheduleCreateRelationships {
                 app: rel("apps", &params.app_id),
                 base_territory: rel("territories", &params.base_territory_id),
-                manual_prices: RelationshipDataList { data: GoSlice::from(price_refs) },
+                manual_prices: RelationshipDataList { data: JsonSlice::from(price_refs) },
             },
         },
-        included: GoSlice::from(included),
+        included: JsonSlice::from(included),
     };
     let resp = match c.create_app_price_schedule(&req).await {
         Ok(r) => r,
@@ -1231,9 +1228,9 @@ async fn handle_set_app_price_schedule(c: Arc<Client>, args: Args) -> HandlerRes
     Ok(data_result(&format!("App price schedule set: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleGetAppPricePoint`.
+/// Handles `get_app_price_point`.
 async fn handle_get_app_price_point(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PricePointID string \"json:\\\"price_point_id\\\"\" }", "") {
         price_point_id: String => "price_point_id";
     }
@@ -1252,9 +1249,9 @@ async fn handle_get_app_price_point(c: Arc<Client>, args: Args) -> HandlerResult
     Ok(data_result(&format_app_price_point(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleListAppPricePointEqualizations`.
+/// Handles `list_app_price_point_equalizations`.
 async fn handle_list_app_price_point_equalizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PricePointID string \"json:\\\"price_point_id\\\"\"; tools.commerceListParams }", "") {
         price_point_id: String => "price_point_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -1275,7 +1272,7 @@ async fn handle_list_app_price_point_equalizations(c: Arc<Client>, args: Args) -
     Ok(list_result(&format_app_price_points(&resp.data), &resp.data, &resp.links))
 }
 
-/// Go `inlinePriceAttributes`: the optional scheduling window of an inline
+/// The optional scheduling window of an inline
 /// price, `None` when the caller gave neither date.
 fn inline_price_attributes(price: &InlinePriceParams) -> Option<CommercePriceInlineAttributes> {
     if price.start_date.is_empty() && price.end_date.is_empty() {
@@ -1284,12 +1281,10 @@ fn inline_price_attributes(price: &InlinePriceParams) -> Option<CommercePriceInl
     Some(CommercePriceInlineAttributes { start_date: price.start_date.clone(), end_date: price.end_date.clone() })
 }
 
-/// Go `territoryIdentifiers`.
-fn territory_identifiers(ids: &[String]) -> GoSlice<ResourceIdentifier> {
+fn territory_identifiers(ids: &[String]) -> JsonSlice<ResourceIdentifier> {
     ids.iter().map(|id| ResourceIdentifier { type_: "territories".into(), id: id.clone() }).collect()
 }
 
-/// Go `formatInAppPurchasePricePoints`.
 fn format_in_app_purchase_price_points(price_points: &[InAppPurchasePricePoint]) -> String {
     if price_points.is_empty() {
         return "No in-app purchase price points found".to_string();
@@ -1305,7 +1300,6 @@ fn format_in_app_purchase_price_points(price_points: &[InAppPurchasePricePoint])
     sb
 }
 
-/// Go `formatInAppPurchasePrices`.
 fn format_in_app_purchase_prices(prices: &[InAppPurchasePrice]) -> String {
     if prices.is_empty() {
         return "No prices found".to_string();
@@ -1326,7 +1320,6 @@ fn format_in_app_purchase_prices(prices: &[InAppPurchasePrice]) -> String {
     sb
 }
 
-/// Go `formatSubscriptionPlanAvailabilities`.
 fn format_subscription_plan_availabilities(availabilities: &[SubscriptionPlanAvailability]) -> String {
     if availabilities.is_empty() {
         return "No subscription plan availabilities found".to_string();
@@ -1340,7 +1333,6 @@ fn format_subscription_plan_availabilities(availabilities: &[SubscriptionPlanAva
     sb
 }
 
-/// Go `formatSubscriptionPlanAvailability`.
 fn format_subscription_plan_availability(a: &SubscriptionPlanAvailability) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", a.id);

@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/commerce_versions.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! In-app purchase and subscription version tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerCommerceVersionTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_commerce_version_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -1021,17 +1018,17 @@ pub(super) fn register_commerce_version_tools(r: &mut Registry) {
     );
 }
 
-go_struct! {
+json_struct! {
 pub(crate) struct CommerceListParams ("tools.commerceListParams", "commerceListParams") {
     pub(crate) limit: i64 => "limit";
     pub(crate) cursor: String => "cursor";
-    pub(crate) filter: GoMap<GoSlice<String>> => "filter";
-    pub(crate) fields: GoMap<GoSlice<String>> => "fields";
-    pub(crate) include: GoSlice<String> => "include";
+    pub(crate) filter: JsonMap<JsonSlice<String>> => "filter";
+    pub(crate) fields: JsonMap<JsonSlice<String>> => "fields";
+    pub(crate) include: JsonSlice<String> => "include";
 }
 }
 
-go_struct! {
+json_struct! {
 pub(crate) struct CommerceImageCreateParams ("tools.commerceImageCreateParams", "commerceImageCreateParams") {
     pub(crate) version_id: String => "version_id";
     pub(crate) file_name: String => "file_name";
@@ -1039,23 +1036,23 @@ pub(crate) struct CommerceImageCreateParams ("tools.commerceImageCreateParams", 
 }
 }
 
-go_struct! {
+json_struct! {
 pub(crate) struct CommerceVersionRow ("tools.commerceVersionRow", "commerceVersionRow") {
     pub(crate) id: String => "ID";
     pub(crate) attributes: CommerceVersionAttributes => "Attributes";
 }
 }
 
-go_struct! {
+json_struct! {
 pub(crate) struct CommerceImageRow ("tools.commerceImageRow", "commerceImageRow") {
     pub(crate) id: String => "ID";
     pub(crate) attributes: CommerceImageAttributes => "Attributes";
 }
 }
 
-/// Ported from `Registry.handleCreateInAppPurchaseVersion`.
+/// Handles `create_in_app_purchase_version`.
 async fn handle_create_in_app_purchase_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { IAPID string \"json:\\\"iap_id\\\"\" }", "") {
         iap_id: String => "iap_id";
     }
@@ -1080,9 +1077,9 @@ async fn handle_create_in_app_purchase_version(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("In-app purchase version created:\n{}", format_commerce_version(&resp.data.id, &resp.data.attributes)), &resp.data))
 }
 
-/// Ported from `Registry.handleGetInAppPurchaseVersion`.
+/// Handles `get_in_app_purchase_version`.
 async fn handle_get_in_app_purchase_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\" }", "") {
         version_id: String => "version_id";
     }
@@ -1101,9 +1098,9 @@ async fn handle_get_in_app_purchase_version(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&format_commerce_version(&resp.data.id, &resp.data.attributes), &resp.data))
 }
 
-/// Ported from `Registry.handleListInAppPurchaseVersions`.
+/// Handles `list_in_app_purchase_versions`.
 async fn handle_list_in_app_purchase_versions(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { IAPID string \"json:\\\"iap_id\\\"\"; tools.commerceListParams }", "") {
         iap_id: String => "iap_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -1125,9 +1122,9 @@ async fn handle_list_in_app_purchase_versions(c: Arc<Client>, args: Args) -> Han
     Ok(list_result(&format_commerce_versions(&versions), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListInAppPurchaseVersionLocalizations`.
+/// Handles `list_in_app_purchase_version_localizations`.
 async fn handle_list_in_app_purchase_version_localizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; tools.commerceListParams }", "") {
         version_id: String => "version_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -1148,9 +1145,9 @@ async fn handle_list_in_app_purchase_version_localizations(c: Arc<Client>, args:
     Ok(list_result(&format_commerce_localizations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleCreateInAppPurchaseLocalization`.
+/// Handles `create_in_app_purchase_localization`.
 async fn handle_create_in_app_purchase_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; Locale string \"json:\\\"locale\\\"\"; Name string \"json:\\\"name\\\"\"; Description string \"json:\\\"description\\\"\" }", "") {
         version_id: String => "version_id";
         locale: String => "locale";
@@ -1189,9 +1186,9 @@ async fn handle_create_in_app_purchase_localization(c: Arc<Client>, args: Args) 
     Ok(data_result(&format!("In-app purchase localization created:\n{}", format_commerce_localization(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateInAppPurchaseLocalization`.
+/// Handles `update_in_app_purchase_localization`.
 async fn handle_update_in_app_purchase_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; Name string \"json:\\\"name\\\"\"; Description string \"json:\\\"description\\\"\" }", "") {
         localization_id: String => "localization_id";
         name: String => "name";
@@ -1219,9 +1216,9 @@ async fn handle_update_in_app_purchase_localization(c: Arc<Client>, args: Args) 
     Ok(data_result(&format!("In-app purchase localization updated:\n{}", format_commerce_localization(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteInAppPurchaseLocalization`.
+/// Handles `delete_in_app_purchase_localization`.
 async fn handle_delete_in_app_purchase_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -1239,9 +1236,9 @@ async fn handle_delete_in_app_purchase_localization(c: Arc<Client>, args: Args) 
     Ok(CallToolResult::success("In-app purchase localization deleted successfully"))
 }
 
-/// Ported from `Registry.handleListInAppPurchaseVersionImages`.
+/// Handles `list_in_app_purchase_version_images`.
 async fn handle_list_in_app_purchase_version_images(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; tools.commerceListParams }", "") {
         version_id: String => "version_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -1263,7 +1260,7 @@ async fn handle_list_in_app_purchase_version_images(c: Arc<Client>, args: Args) 
     Ok(list_result(&format_commerce_images(&images), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleCreateInAppPurchaseImage`.
+/// Handles `create_in_app_purchase_image`.
 async fn handle_create_in_app_purchase_image(c: Arc<Client>, args: Args) -> HandlerResult {
     let params = match parse_commerce_image_create(&args) {
         Ok(p) => p,
@@ -1283,7 +1280,7 @@ async fn handle_create_in_app_purchase_image(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&format!("In-app purchase image reserved:\n{}", format_commerce_image(&image_row(&resp.data.id, &resp.data.attributes))), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateInAppPurchaseImage`.
+/// Handles `update_in_app_purchase_image`.
 async fn handle_update_in_app_purchase_image(c: Arc<Client>, args: Args) -> HandlerResult {
     let (image_id, uploaded) = match parse_commerce_image_update(&args) {
         Ok(p) => p,
@@ -1303,9 +1300,9 @@ async fn handle_update_in_app_purchase_image(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&format!("In-app purchase image updated:\n{}", format_commerce_image(&image_row(&resp.data.id, &resp.data.attributes))), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteInAppPurchaseImage`.
+/// Handles `delete_in_app_purchase_image`.
 async fn handle_delete_in_app_purchase_image(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ImageID string \"json:\\\"image_id\\\"\" }", "") {
         image_id: String => "image_id";
     }
@@ -1323,9 +1320,9 @@ async fn handle_delete_in_app_purchase_image(c: Arc<Client>, args: Args) -> Hand
     Ok(CallToolResult::success("In-app purchase image deleted successfully"))
 }
 
-/// Ported from `Registry.handleCreateSubscriptionVersion`.
+/// Handles `create_subscription_version`.
 async fn handle_create_subscription_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubscriptionID string \"json:\\\"subscription_id\\\"\" }", "") {
         subscription_id: String => "subscription_id";
     }
@@ -1350,9 +1347,9 @@ async fn handle_create_subscription_version(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&format!("Subscription version created:\n{}", format_commerce_version(&resp.data.id, &resp.data.attributes)), &resp.data))
 }
 
-/// Ported from `Registry.handleGetSubscriptionVersion`.
+/// Handles `get_subscription_version`.
 async fn handle_get_subscription_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\" }", "") {
         version_id: String => "version_id";
     }
@@ -1371,9 +1368,9 @@ async fn handle_get_subscription_version(c: Arc<Client>, args: Args) -> HandlerR
     Ok(data_result(&format_commerce_version(&resp.data.id, &resp.data.attributes), &resp.data))
 }
 
-/// Ported from `Registry.handleListSubscriptionVersions`.
+/// Handles `list_subscription_versions`.
 async fn handle_list_subscription_versions(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubscriptionID string \"json:\\\"subscription_id\\\"\"; tools.commerceListParams }", "") {
         subscription_id: String => "subscription_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -1395,9 +1392,9 @@ async fn handle_list_subscription_versions(c: Arc<Client>, args: Args) -> Handle
     Ok(list_result(&format_commerce_versions(&versions), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListSubscriptionVersionLocalizations`.
+/// Handles `list_subscription_version_localizations`.
 async fn handle_list_subscription_version_localizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; tools.commerceListParams }", "") {
         version_id: String => "version_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -1423,9 +1420,9 @@ async fn handle_list_subscription_version_localizations(c: Arc<Client>, args: Ar
     Ok(list_result(&format_commerce_localizations(&locs), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleCreateSubscriptionLocalization`.
+/// Handles `create_subscription_localization`.
 async fn handle_create_subscription_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; Locale string \"json:\\\"locale\\\"\"; Name string \"json:\\\"name\\\"\"; Description string \"json:\\\"description\\\"\" }", "") {
         version_id: String => "version_id";
         locale: String => "locale";
@@ -1465,9 +1462,9 @@ async fn handle_create_subscription_localization(c: Arc<Client>, args: Args) -> 
     Ok(data_result(&format!("Subscription localization created:\n{}", format_commerce_localization(&row)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateSubscriptionLocalization`.
+/// Handles `update_subscription_localization`.
 async fn handle_update_subscription_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; Name string \"json:\\\"name\\\"\"; Description string \"json:\\\"description\\\"\" }", "") {
         localization_id: String => "localization_id";
         name: String => "name";
@@ -1496,9 +1493,9 @@ async fn handle_update_subscription_localization(c: Arc<Client>, args: Args) -> 
     Ok(data_result(&format!("Subscription localization updated:\n{}", format_commerce_localization(&row)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteSubscriptionLocalization`.
+/// Handles `delete_subscription_localization`.
 async fn handle_delete_subscription_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -1516,9 +1513,9 @@ async fn handle_delete_subscription_localization(c: Arc<Client>, args: Args) -> 
     Ok(CallToolResult::success("Subscription localization deleted successfully"))
 }
 
-/// Ported from `Registry.handleListSubscriptionVersionImages`.
+/// Handles `list_subscription_version_images`.
 async fn handle_list_subscription_version_images(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; tools.commerceListParams }", "") {
         version_id: String => "version_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -1540,7 +1537,7 @@ async fn handle_list_subscription_version_images(c: Arc<Client>, args: Args) -> 
     Ok(list_result(&format_commerce_images(&images), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleCreateSubscriptionImage`.
+/// Handles `create_subscription_image`.
 async fn handle_create_subscription_image(c: Arc<Client>, args: Args) -> HandlerResult {
     let params = match parse_commerce_image_create(&args) {
         Ok(p) => p,
@@ -1560,7 +1557,7 @@ async fn handle_create_subscription_image(c: Arc<Client>, args: Args) -> Handler
     Ok(data_result(&format!("Subscription image reserved:\n{}", format_commerce_image(&image_row(&resp.data.id, &resp.data.attributes))), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateSubscriptionImage`.
+/// Handles `update_subscription_image`.
 async fn handle_update_subscription_image(c: Arc<Client>, args: Args) -> HandlerResult {
     let (image_id, uploaded) = match parse_commerce_image_update(&args) {
         Ok(p) => p,
@@ -1580,9 +1577,9 @@ async fn handle_update_subscription_image(c: Arc<Client>, args: Args) -> Handler
     Ok(data_result(&format!("Subscription image updated:\n{}", format_commerce_image(&image_row(&resp.data.id, &resp.data.attributes))), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteSubscriptionImage`.
+/// Handles `delete_subscription_image`.
 async fn handle_delete_subscription_image(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ImageID string \"json:\\\"image_id\\\"\" }", "") {
         image_id: String => "image_id";
     }
@@ -1600,9 +1597,9 @@ async fn handle_delete_subscription_image(c: Arc<Client>, args: Args) -> Handler
     Ok(CallToolResult::success("Subscription image deleted successfully"))
 }
 
-/// Ported from `Registry.handleCreateSubscriptionGroupVersion`.
+/// Handles `create_subscription_group_version`.
 async fn handle_create_subscription_group_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GroupID string \"json:\\\"group_id\\\"\" }", "") {
         group_id: String => "group_id";
     }
@@ -1627,9 +1624,9 @@ async fn handle_create_subscription_group_version(c: Arc<Client>, args: Args) ->
     Ok(data_result(&format!("Subscription group version created:\n{}", format_commerce_version(&resp.data.id, &resp.data.attributes)), &resp.data))
 }
 
-/// Ported from `Registry.handleGetSubscriptionGroupVersion`.
+/// Handles `get_subscription_group_version`.
 async fn handle_get_subscription_group_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\" }", "") {
         version_id: String => "version_id";
     }
@@ -1648,9 +1645,9 @@ async fn handle_get_subscription_group_version(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format_commerce_version(&resp.data.id, &resp.data.attributes), &resp.data))
 }
 
-/// Ported from `Registry.handleListSubscriptionGroupVersions`.
+/// Handles `list_subscription_group_versions`.
 async fn handle_list_subscription_group_versions(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GroupID string \"json:\\\"group_id\\\"\"; tools.commerceListParams }", "") {
         group_id: String => "group_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -1672,9 +1669,9 @@ async fn handle_list_subscription_group_versions(c: Arc<Client>, args: Args) -> 
     Ok(list_result(&format_commerce_versions(&versions), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListSubscriptionGroupVersionLocalizations`.
+/// Handles `list_subscription_group_version_localizations`.
 async fn handle_list_subscription_group_version_localizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; tools.commerceListParams }", "") {
         version_id: String => "version_id";
         commerce_list_params: CommerceListParams => "commerceListParams", flatten;
@@ -1695,9 +1692,9 @@ async fn handle_list_subscription_group_version_localizations(c: Arc<Client>, ar
     Ok(list_result(&format_subscription_group_localizations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleCreateSubscriptionGroupLocalization`.
+/// Handles `create_subscription_group_localization`.
 async fn handle_create_subscription_group_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; Locale string \"json:\\\"locale\\\"\"; Name string \"json:\\\"name\\\"\"; CustomAppName string \"json:\\\"custom_app_name\\\"\" }", "") {
         version_id: String => "version_id";
         locale: String => "locale";
@@ -1736,9 +1733,9 @@ async fn handle_create_subscription_group_localization(c: Arc<Client>, args: Arg
     Ok(data_result(&format!("Subscription group localization created:\n{}", format_subscription_group_localization(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateSubscriptionGroupLocalization`.
+/// Handles `update_subscription_group_localization`.
 async fn handle_update_subscription_group_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; Name string \"json:\\\"name\\\"\"; CustomAppName string \"json:\\\"custom_app_name\\\"\" }", "") {
         localization_id: String => "localization_id";
         name: String => "name";
@@ -1769,9 +1766,9 @@ async fn handle_update_subscription_group_localization(c: Arc<Client>, args: Arg
     Ok(data_result(&format!("Subscription group localization updated:\n{}", format_subscription_group_localization(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteSubscriptionGroupLocalization`.
+/// Handles `delete_subscription_group_localization`.
 async fn handle_delete_subscription_group_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -1790,7 +1787,7 @@ async fn handle_delete_subscription_group_localization(c: Arc<Client>, args: Arg
 }
 
 impl CommerceListParams {
-    /// Go `commerceListParams.opts`: clamps the limit the same way every
+    /// Clamps the limit the same way every
     /// other list tool does and assembles the query options.
     pub(crate) fn opts(&self, default_limit: i64) -> Option<ListOptions> {
         let mut limit = self.limit;
@@ -1800,7 +1797,7 @@ impl CommerceListParams {
         if limit > 200 {
             limit = 200;
         }
-        list_opts(limit, &self.filter, &GoSlice::nil(), &self.fields, &self.include)
+        list_opts(limit, &self.filter, &JsonSlice::nil(), &self.fields, &self.include)
     }
 }
 
@@ -1809,8 +1806,8 @@ pub(crate) fn rel(t: &str, id: &str) -> RelationshipData {
     RelationshipData { data: ResourceIdentifier { type_: t.to_string(), id: id.to_string() } }
 }
 
-/// Go `parseCommerceImageCreate`.
-// Mirrors Go's (value, *mcp.ToolsCallResult) return pair.
+/// Decodes and validates the image-create arguments; `Err` is the tool
+/// result to return to the caller.
 #[allow(clippy::result_large_err)]
 fn parse_commerce_image_create(args: &Args) -> Result<CommerceImageCreateParams, CallToolResult> {
     let mut params = CommerceImageCreateParams::default();
@@ -1829,11 +1826,12 @@ fn parse_commerce_image_create(args: &Args) -> Result<CommerceImageCreateParams,
     Ok(params)
 }
 
-/// Go `parseCommerceImageUpdate`.
-// Mirrors Go's (value, *mcp.ToolsCallResult) return pair.
+/// Decodes and validates the image-update arguments (image ID and the
+/// optional `uploaded` flag); `Err` is the tool result to return to the
+/// caller.
 #[allow(clippy::result_large_err)]
 fn parse_commerce_image_update(args: &Args) -> Result<(String, Option<bool>), CallToolResult> {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ImageID string \"json:\\\"image_id\\\"\"; Uploaded *bool \"json:\\\"uploaded\\\"\" }", "") {
         image_id: String => "image_id";
         uploaded: Option<bool> => "uploaded";
@@ -1850,7 +1848,6 @@ fn parse_commerce_image_update(args: &Args) -> Result<(String, Option<bool>), Ca
     Ok((params.image_id, uploaded))
 }
 
-/// Go `formatCommerceVersions`.
 fn format_commerce_versions(versions: &[CommerceVersionRow]) -> String {
     if versions.is_empty() {
         return "No versions found".to_string();
@@ -1864,7 +1861,6 @@ fn format_commerce_versions(versions: &[CommerceVersionRow]) -> String {
     sb
 }
 
-/// Go `formatCommerceVersion`.
 fn format_commerce_version(id: &str, attrs: &CommerceVersionAttributes) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", id);
@@ -1877,7 +1873,6 @@ fn format_commerce_version(id: &str, attrs: &CommerceVersionAttributes) -> Strin
     sb
 }
 
-/// Go `formatCommerceLocalizations`.
 fn format_commerce_localizations(locs: &[InAppPurchaseLocalization]) -> String {
     if locs.is_empty() {
         return "No localizations found".to_string();
@@ -1891,7 +1886,6 @@ fn format_commerce_localizations(locs: &[InAppPurchaseLocalization]) -> String {
     sb
 }
 
-/// Go `formatCommerceLocalization`.
 fn format_commerce_localization(loc: &InAppPurchaseLocalization) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", loc.id);
@@ -1906,7 +1900,6 @@ fn format_commerce_localization(loc: &InAppPurchaseLocalization) -> String {
     sb
 }
 
-/// Go `formatSubscriptionGroupLocalizations`.
 fn format_subscription_group_localizations(locs: &[SubscriptionGroupLocalization]) -> String {
     if locs.is_empty() {
         return "No subscription group localizations found".to_string();
@@ -1920,7 +1913,6 @@ fn format_subscription_group_localizations(locs: &[SubscriptionGroupLocalization
     sb
 }
 
-/// Go `formatSubscriptionGroupLocalization`.
 fn format_subscription_group_localization(loc: &SubscriptionGroupLocalization) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", loc.id);
@@ -1935,7 +1927,6 @@ fn format_subscription_group_localization(loc: &SubscriptionGroupLocalization) -
     sb
 }
 
-/// Go `formatCommerceImages`.
 fn format_commerce_images(images: &[CommerceImageRow]) -> String {
     if images.is_empty() {
         return "No images found".to_string();
@@ -1949,7 +1940,6 @@ fn format_commerce_images(images: &[CommerceImageRow]) -> String {
     sb
 }
 
-/// Go `formatCommerceImage`.
 fn format_commerce_image(img: &CommerceImageRow) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", img.id);

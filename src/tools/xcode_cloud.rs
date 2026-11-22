@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/xcode_cloud.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Xcode Cloud tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerXcodeCloudTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_xcode_cloud_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -268,17 +265,17 @@ pub(super) fn register_xcode_cloud_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListCiProducts`.
+/// Handles `list_ci_products`.
 async fn handle_list_ci_products(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -303,9 +300,9 @@ async fn handle_list_ci_products(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&format_ci_products(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetCiProduct`.
+/// Handles `get_ci_product`.
 async fn handle_get_ci_product(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ProductID string \"json:\\\"product_id\\\"\" }", "") {
         product_id: String => "product_id";
     }
@@ -327,17 +324,17 @@ async fn handle_get_ci_product(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_ci_product(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleListCiWorkflows`.
+/// Handles `list_ci_workflows`.
 async fn handle_list_ci_workflows(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ProductID string \"json:\\\"product_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         product_id: String => "product_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -366,9 +363,9 @@ async fn handle_list_ci_workflows(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&format_ci_workflows(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetCiWorkflow`.
+/// Handles `get_ci_workflow`.
 async fn handle_get_ci_workflow(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { WorkflowID string \"json:\\\"workflow_id\\\"\" }", "") {
         workflow_id: String => "workflow_id";
     }
@@ -390,17 +387,17 @@ async fn handle_get_ci_workflow(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_ci_workflow(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleListCiBuildRuns`.
+/// Handles `list_ci_build_runs`.
 async fn handle_list_ci_build_runs(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { WorkflowID string \"json:\\\"workflow_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         workflow_id: String => "workflow_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -429,9 +426,9 @@ async fn handle_list_ci_build_runs(c: Arc<Client>, args: Args) -> HandlerResult 
     Ok(list_result(&format_ci_build_runs(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetCiBuildRun`.
+/// Handles `get_ci_build_run`.
 async fn handle_get_ci_build_run(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BuildRunID string \"json:\\\"build_run_id\\\"\" }", "") {
         build_run_id: String => "build_run_id";
     }
@@ -453,9 +450,9 @@ async fn handle_get_ci_build_run(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_ci_build_run(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleStartCiBuildRun`.
+/// Handles `start_ci_build_run`.
 async fn handle_start_ci_build_run(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { WorkflowID string \"json:\\\"workflow_id\\\"\" }", "") {
         workflow_id: String => "workflow_id";
     }
@@ -480,7 +477,6 @@ async fn handle_start_ci_build_run(c: Arc<Client>, args: Args) -> HandlerResult 
     ))
 }
 
-/// Ported from `formatCiProducts`.
 fn format_ci_products(products: &[CiProduct]) -> String {
     if products.is_empty() {
         return "No CI products found".to_string();
@@ -495,7 +491,6 @@ fn format_ci_products(products: &[CiProduct]) -> String {
     sb
 }
 
-/// Ported from `formatCiProduct`.
 fn format_ci_product(product: &CiProduct) -> String {
     let a = &product.attributes;
     let mut sb = String::new();
@@ -508,7 +503,6 @@ fn format_ci_product(product: &CiProduct) -> String {
     sb
 }
 
-/// Ported from `formatCiWorkflows`.
 fn format_ci_workflows(workflows: &[CiWorkflow]) -> String {
     if workflows.is_empty() {
         return "No CI workflows found".to_string();
@@ -523,7 +517,6 @@ fn format_ci_workflows(workflows: &[CiWorkflow]) -> String {
     sb
 }
 
-/// Ported from `formatCiWorkflow`.
 fn format_ci_workflow(workflow: &CiWorkflow) -> String {
     let a = &workflow.attributes;
     let mut sb = String::new();
@@ -543,7 +536,6 @@ fn format_ci_workflow(workflow: &CiWorkflow) -> String {
     sb
 }
 
-/// Ported from `formatCiBuildRuns`.
 fn format_ci_build_runs(runs: &[CiBuildRun]) -> String {
     if runs.is_empty() {
         return "No CI build runs found".to_string();
@@ -558,7 +550,6 @@ fn format_ci_build_runs(runs: &[CiBuildRun]) -> String {
     sb
 }
 
-/// Ported from `formatCiBuildRun`.
 fn format_ci_build_run(run: &CiBuildRun) -> String {
     let a = &run.attributes;
     let mut sb = String::new();

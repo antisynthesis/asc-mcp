@@ -1,8 +1,9 @@
-//! A Go `time.Time` work-alike for timestamps that travel through JSON.
+//! Timestamps that travel through JSON.
 //!
-//! Parsing follows Go's `Time.UnmarshalJSON` (strict RFC 3339, with Go's
-//! exact error wording), encoding follows `time.RFC3339Nano`, and
-//! [`GoTime::format`] understands the Go reference-time layout tokens.
+//! Parsing is strict RFC 3339 with the established `parsing time ...` error
+//! wording, encoding is RFC 3339 with nanoseconds (trailing zeros trimmed),
+//! and [`Timestamp::format`] understands reference-time layout tokens
+//! (`2006-01-02 15:04:05 -0700 MST`).
 
 use std::fmt;
 
@@ -18,9 +19,9 @@ enum Zone {
 
 /// An instant plus the zone offset it was written in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct GoTime {
-    /// Seconds since 0001-01-01T00:00:00Z (Go's internal epoch); this keeps
-    /// the zero value representable.
+pub struct Timestamp {
+    /// Seconds since 0001-01-01T00:00:00Z; counting from year 1 keeps the
+    /// zero value representable.
     secs: i64,
     nsec: u32,
     zone: Zone,
@@ -29,8 +30,8 @@ pub struct GoTime {
 /// Seconds between 0001-01-01 and 1970-01-01.
 const UNIX_TO_INTERNAL: i64 = 62_135_596_800;
 
-impl Default for GoTime {
-    /// Go's zero time, `0001-01-01T00:00:00Z`.
+impl Default for Timestamp {
+    /// The zero time, `0001-01-01T00:00:00Z`.
     fn default() -> Self {
         Self {
             secs: 0,
@@ -118,22 +119,24 @@ type FormatFn<'a> = dyn Fn(&mut String) + 'a;
 
 const RFC3339: &str = "2006-01-02T15:04:05Z07:00";
 
-/// Go's `ParseError.Error()`.
+/// Formats a parse error: `parsing time "<value>" as "<layout>": cannot
+/// parse "<value elem>" as "<layout elem>"`, or `parsing time "<value>"`
+/// followed by `message` when one is given.
 fn parse_error(value: &str, layout_elem: &str, value_elem: &str, message: &str) -> String {
     if !message.is_empty() {
-        return format!("parsing time {}{message}", go_quote(value));
+        return format!("parsing time {}{message}", quote(value));
     }
     format!(
         "parsing time {} as {}: cannot parse {} as {}",
-        go_quote(value),
-        go_quote(RFC3339),
-        go_quote(value_elem),
-        go_quote(layout_elem)
+        quote(value),
+        quote(RFC3339),
+        quote(value_elem),
+        quote(layout_elem)
     )
 }
 
-fn go_quote(s: &str) -> String {
-    crate::go::fmt::quote(s)
+fn quote(s: &str) -> String {
+    crate::wire::fmt::quote(s)
 }
 
 fn digits(s: &[u8], n: usize) -> Option<u32> {
@@ -143,7 +146,8 @@ fn digits(s: &[u8], n: usize) -> Option<u32> {
     Some(s[..n].iter().fold(0, |a, b| a * 10 + (b - b'0') as u32))
 }
 
-/// Go's `parseNanoseconds` for a `.ddd` prefix of length `n`.
+/// Converts a `.ddd` fraction (separator included) to nanoseconds, using
+/// at most the first nine digits.
 fn parse_nanos(frac: &[u8]) -> u32 {
     // frac includes the leading separator.
     let ds = &frac[1..];
@@ -157,7 +161,7 @@ fn parse_nanos(frac: &[u8]) -> u32 {
     ns
 }
 
-impl GoTime {
+impl Timestamp {
     fn from_civil(c: Civil, nsec: u32, zone: Zone) -> Self {
         let days = days_from_civil(c.year, c.month, c.day);
         let local = days * 86_400 + (c.hour * 3600 + c.min * 60 + c.sec) as i64;
@@ -186,7 +190,7 @@ impl GoTime {
         self.secs - UNIX_TO_INTERNAL
     }
 
-    /// Reports whether this is Go's zero time.
+    /// Reports whether this is the zero time.
     pub fn is_zero(&self) -> bool {
         self.secs == 0 && self.nsec == 0
     }
@@ -216,13 +220,14 @@ impl GoTime {
         )
     }
 
-    /// Parses like Go's `Time.UnmarshalJSON` (strict RFC 3339).
+    /// Parses a strict RFC 3339 timestamp.
     pub fn parse_rfc3339(s: &str) -> Result<Self, String> {
         if let Some(t) = Self::parse_fast(s.as_bytes()) {
             return Ok(t);
         }
-        // Fall back to the general parser for Go's error wording, then
-        // apply the strictness checks Go layers on top of it.
+        // Fall back to the general layout parser for its error wording,
+        // then apply the extra strictness checks (two-digit hour, `.`
+        // fraction separator, in-range zone offset).
         Self::parse_layout(s)?;
         let b = s.as_bytes();
         let num2 =
@@ -230,45 +235,46 @@ impl GoTime {
         if b.len() > 12 && b[12] == b':' {
             return Err(format!(
                 "parsing time {} as {}: cannot parse {} as {}",
-                go_quote(s),
-                go_quote(RFC3339),
-                go_quote(&s[11..12]),
-                go_quote("15")
+                quote(s),
+                quote(RFC3339),
+                quote(&s[11..12]),
+                quote("15")
             ));
         }
         if b.len() > 19 && b[19] == b',' {
             return Err(format!(
                 "parsing time {} as {}: cannot parse {} as {}",
-                go_quote(s),
-                go_quote(RFC3339),
-                go_quote(","),
-                go_quote(".")
+                quote(s),
+                quote(RFC3339),
+                quote(","),
+                quote(".")
             ));
         }
         if b.last() != Some(&b'Z') && b.len() >= 6 {
             if num2(&b[b.len() - 5..]) >= 24 {
                 return Err(format!(
                     "parsing time {}: timezone hour out of range",
-                    go_quote(s)
+                    quote(s)
                 ));
             }
             if num2(&b[b.len() - 2..]) >= 60 {
                 return Err(format!(
                     "parsing time {}: timezone minute out of range",
-                    go_quote(s)
+                    quote(s)
                 ));
             }
         }
         Err(format!(
             "parsing time {} as {}: cannot parse {} as {}",
-            go_quote(s),
-            go_quote(RFC3339),
-            go_quote(s),
-            go_quote(RFC3339)
+            quote(s),
+            quote(RFC3339),
+            quote(s),
+            quote(RFC3339)
         ))
     }
 
-    /// Go's `parseRFC3339` fast path.
+    /// Fast path for well-formed RFC 3339 input; `None` sends the caller
+    /// to the general parser for an error.
     fn parse_fast(s: &[u8]) -> Option<Self> {
         if s.len() < 19
             || s[4] != b'-'
@@ -324,8 +330,7 @@ impl GoTime {
                 if *sign == b'-' {
                     off = -off;
                 }
-                // An offset of zero lands in Local (UTC in our model) and
-                // formats identically to Z.
+                // A zero offset is stored as UTC and formats as `Z`.
                 let zone = if off == 0 {
                     Zone::Utc
                 } else {
@@ -337,7 +342,7 @@ impl GoTime {
         }
     }
 
-    /// Go's general `time.Parse(time.RFC3339, s)`, used for error wording.
+    /// General parser for the RFC 3339 layout, used for error wording.
     fn parse_layout(value: &str) -> Result<Self, String> {
         let mut rest = value;
         let mut range_err = "";
@@ -466,15 +471,12 @@ impl GoTime {
         if !rest.is_empty() {
             return Err(format!(
                 "parsing time {}: extra text: {}",
-                go_quote(value),
-                go_quote(rest)
+                quote(value),
+                quote(rest)
             ));
         }
         if day < 1 || day > days_in(month, year) {
-            return Err(format!(
-                "parsing time {}: day out of range",
-                go_quote(value)
-            ));
+            return Err(format!("parsing time {}: day out of range", quote(value)));
         }
         Ok(Self::from_civil(
             Civil {
@@ -490,13 +492,14 @@ impl GoTime {
         ))
     }
 
-    /// Formats as Go's `time.RFC3339Nano` (trailing zeros trimmed, `Z`
+    /// Formats as RFC 3339 with nanoseconds (trailing zeros trimmed, `Z`
     /// for a zero offset).
     pub fn format_rfc3339_nano(&self) -> String {
         self.format("2006-01-02T15:04:05.999999999Z07:00")
     }
 
-    /// Formats with a Go reference-time layout.
+    /// Formats with a reference-time layout (`2006`, `01`, `Jan`, `15`,
+    /// `Z07:00`, ...).
     pub fn format(&self, layout: &str) -> String {
         let (c, wd) = self.civil();
         let off = self.offset();
@@ -645,8 +648,8 @@ fn fmt_offset(off: i32, colon: bool, hours_only: bool) -> String {
     }
 }
 
-/// Go's `Time.String()`: `2006-01-02 15:04:05.999999999 -0700 MST`.
-impl fmt::Display for GoTime {
+/// Displays as `2006-01-02 15:04:05.999999999 -0700 MST`.
+impl fmt::Display for Timestamp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.format("2006-01-02 15:04:05.999999999 -0700 MST"))
     }
@@ -685,13 +688,13 @@ mod tests {
             ),
         ];
         for (input, json, short, string) in cases {
-            let t = GoTime::parse_rfc3339(input).unwrap();
+            let t = Timestamp::parse_rfc3339(input).unwrap();
             assert_eq!(t.format_rfc3339_nano(), json);
             assert_eq!(t.format("2006-01-02 15:04"), short);
             assert_eq!(t.to_string(), string);
         }
         assert_eq!(
-            GoTime::default().format_rfc3339_nano(),
+            Timestamp::default().format_rfc3339_nano(),
             "0001-01-01T00:00:00Z"
         );
     }
@@ -721,7 +724,11 @@ mod tests {
             ),
         ];
         for (input, want) in cases {
-            assert_eq!(GoTime::parse_rfc3339(input).unwrap_err(), want, "{input}");
+            assert_eq!(
+                Timestamp::parse_rfc3339(input).unwrap_err(),
+                want,
+                "{input}"
+            );
         }
     }
 }

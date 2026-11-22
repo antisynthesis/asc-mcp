@@ -1,5 +1,4 @@
-//! TLS tests for the HTTP transport, ported from
-//! internal/asc/server/tls_test.go.
+//! TLS tests for the HTTP transport.
 
 mod common;
 
@@ -10,10 +9,10 @@ use asc_mcp::server::http::{HttpOptions, HttpServer, validate_tls_pair};
 use asc_mcp::tools::Registry;
 use serde_json::json;
 
-// Go's writeSelfSignedCert generated a P-256 cert for 127.0.0.1/localhost
-// at test time. Without an X.509 builder in the dependency tree, an
-// equivalent fixture (generated with openssl, valid until 2126, SEC1
-// "EC PRIVATE KEY" like the Go test's key) is embedded instead.
+// A self-signed P-256 cert for 127.0.0.1/localhost. Without an X.509
+// builder in the dependency tree, a fixture (generated with openssl, valid
+// until 2126, SEC1 "EC PRIVATE KEY") is embedded instead of generating one
+// at test time.
 const TEST_CERT: &str = "-----BEGIN CERTIFICATE-----
 MIIBxDCCAWugAwIBAgIULE0y+t9DAAqvKmaN5ZbDamxlTcAwCgYIKoZIzj0EAwIw
 FzEVMBMGA1UEAwwMYXNjLW1jcC10ZXN0MCAXDTI2MTEyMjE2MTcyMVoYDzIxMjYx
@@ -61,7 +60,6 @@ fn server() -> HttpServer {
     HttpServer::new(Arc::new(Registry::new(None)), HttpOptions::default())
 }
 
-// Go: TestValidateTLSPair
 #[test]
 fn validate_tls_pair_cases() {
     let (dir, cert, key) = write_cert();
@@ -81,7 +79,6 @@ fn validate_tls_pair_cases() {
     assert_eq!(validate_tls_pair(&cert, &key), Ok(true));
 }
 
-// Go: TestListenAndServe_TLS
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn listen_and_serve_tls() {
     let (_dir, cert, key) = write_cert();
@@ -103,7 +100,7 @@ async fn listen_and_serve_tls() {
     };
 
     // rustls never negotiates below TLS 1.2; pinning the client minimum
-    // makes the Go test's ">= TLS 1.2" check explicit.
+    // makes the ">= TLS 1.2" requirement explicit.
     let client = reqwest::Client::builder()
         .no_proxy()
         .danger_accept_invalid_certs(true)
@@ -152,7 +149,6 @@ async fn listen_and_serve_tls() {
     res.unwrap().expect("shutdown error");
 }
 
-// Go: TestListenAndServe_TLSConfigError
 #[tokio::test]
 async fn listen_and_serve_tls_config_error() {
     let err = server()
@@ -170,10 +166,10 @@ async fn listen_and_serve_tls_config_error() {
     );
 }
 
-/// Go-style ":port" addresses are accepted (difference 4 keeps them valid
-/// even though the default is now 127.0.0.1:8080).
+/// Port-only ":port" addresses are accepted (and listen on all interfaces)
+/// even though the default is 127.0.0.1:8080.
 #[tokio::test]
-async fn listen_accepts_go_style_port_only_addr() {
+async fn listen_accepts_port_only_addr() {
     let port = {
         let l = std::net::TcpListener::bind("0.0.0.0:0").unwrap();
         l.local_addr().unwrap().port()

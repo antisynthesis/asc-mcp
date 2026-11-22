@@ -203,7 +203,7 @@ impl HttpServer {
 }
 
 fn resolve_addr(addr: &str) -> Result<SocketAddr, String> {
-    // Accept Go-style ":8080" as all interfaces.
+    // Accept ":8080" (no host) as all interfaces.
     let a = if let Some(port) = addr.strip_prefix(':') {
         format!("0.0.0.0:{port}")
     } else {
@@ -227,10 +227,14 @@ pub fn validate_tls_pair(cert: &str, key: &str) -> Result<bool, String> {
         }
         _ => {}
     }
-    std::fs::metadata(cert)
-        .map_err(|e| format!("tls cert: {}", crate::go::os::path_error("stat", cert, &e)))?;
+    std::fs::metadata(cert).map_err(|e| {
+        format!(
+            "tls cert: {}",
+            crate::wire::os::path_error("stat", cert, &e)
+        )
+    })?;
     std::fs::metadata(key)
-        .map_err(|e| format!("tls key: {}", crate::go::os::path_error("stat", key, &e)))?;
+        .map_err(|e| format!("tls key: {}", crate::wire::os::path_error("stat", key, &e)))?;
     Ok(true)
 }
 
@@ -241,7 +245,7 @@ fn plain_headers() -> [(header::HeaderName, &'static str); 2] {
     ]
 }
 
-/// Go `http.Error`: plain text with a trailing newline.
+/// A plain-text error response with a trailing newline.
 fn http_error(status: StatusCode, msg: &str) -> AxResponse {
     (status, plain_headers(), format!("{msg}\n")).into_response()
 }
@@ -407,7 +411,7 @@ async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
     if body.len() > MAX_HTTP_BODY_SIZE {
         return http_error(StatusCode::PAYLOAD_TOO_LARGE, "request body too large");
     }
-    let req = match crate::go::json::parse(&body).and_then(|v| Request::from_value(&v)) {
+    let req = match crate::wire::json::parse(&body).and_then(|v| Request::from_value(&v)) {
         Ok(r) => r,
         Err(e) => {
             return json_response(
@@ -488,9 +492,9 @@ async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
     r
 }
 
-/// Go `io.ReadAll(io.LimitReader(body, limit))`: reads at most `limit`
-/// bytes and stops there, so an oversized body is truncated (and then
-/// rejected with 413 by the caller) instead of failing as a read error.
+/// Reads at most `limit` bytes and stops there, so an oversized body is
+/// truncated (and then rejected with 413 by the caller) instead of failing
+/// as a read error.
 /// (`axum::body::to_bytes` errors once the limit is exceeded, which turned
 /// oversized bodies into 400s.)
 async fn read_body_limited(body: Body, limit: usize) -> Result<Vec<u8>, axum::Error> {
@@ -639,9 +643,9 @@ fn sse_response(status: StatusCode, out: &Outcome) -> AxResponse {
     let mut body = String::new();
     for n in &out.notifications {
         body.push_str("event: message\ndata: ");
-        body.push_str(&String::from_utf8_lossy(
-            &crate::go::json::to_go_json_bytes(n),
-        ));
+        body.push_str(&String::from_utf8_lossy(&crate::wire::json::to_json_bytes(
+            n,
+        )));
         body.push_str("\n\n");
     }
     body.push_str("event: message\ndata: ");

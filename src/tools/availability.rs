@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/availability.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! App availability tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerAvailabilityTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_availability_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -126,9 +123,9 @@ pub(super) fn register_availability_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleGetAppAvailability`.
+/// Handles `get_app_availability`.
 async fn handle_get_app_availability(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\" }", "") {
         app_id: String => "app_id";
     }
@@ -150,13 +147,13 @@ async fn handle_get_app_availability(c: Arc<Client>, args: Args) -> HandlerResul
     Ok(data_result(&format_app_availability(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateAppAvailability`.
+/// Handles `create_app_availability`.
 async fn handle_create_app_availability(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; AvailableInNewTerritories *bool \"json:\\\"available_in_new_territories\\\"\"; TerritoryIDs []string \"json:\\\"territory_ids\\\"\" }", "") {
         app_id: String => "app_id";
         available_in_new_territories: Option<bool> => "available_in_new_territories";
-        territory_ids: GoSlice<String> => "territory_ids";
+        territory_ids: JsonSlice<String> => "territory_ids";
     }
     }
     let mut params = Params::default();
@@ -173,8 +170,8 @@ async fn handle_create_app_availability(c: Arc<Client>, args: Args) -> HandlerRe
     // The v2 endpoint takes territory availabilities as inline-created
     // resources referenced by temporary IDs.
     let available = true;
-    let mut refs: GoSlice<ResourceIdentifier> = GoSlice::nil();
-    let mut included: GoSlice<TerritoryAvailabilityInlineCreate> = GoSlice::nil();
+    let mut refs: JsonSlice<ResourceIdentifier> = JsonSlice::nil();
+    let mut included: JsonSlice<TerritoryAvailabilityInlineCreate> = JsonSlice::nil();
     for tid in params.territory_ids.iter() {
         let temp_id = format!("${{{tid}}}");
         refs.push(ResourceIdentifier { type_: "territoryAvailabilities".into(), id: temp_id.clone() });
@@ -208,17 +205,17 @@ async fn handle_create_app_availability(c: Arc<Client>, args: Args) -> HandlerRe
     Ok(data_result(&format!("App availability created:\n{}", format_app_availability(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleListTerritoryAvailabilities`.
+/// Handles `list_territory_availabilities`.
 async fn handle_list_territory_availabilities(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AvailabilityID string \"json:\\\"availability_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         availability_id: String => "availability_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -247,7 +244,6 @@ async fn handle_list_territory_availabilities(c: Arc<Client>, args: Args) -> Han
     Ok(list_result(&format_territory_availabilities(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `formatAppAvailability`.
 fn format_app_availability(avail: &AppAvailability) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", avail.id);
@@ -255,7 +251,6 @@ fn format_app_availability(avail: &AppAvailability) -> String {
     sb
 }
 
-/// Ported from `formatTerritoryAvailabilities`.
 fn format_territory_availabilities(availabilities: &[TerritoryAvailability]) -> String {
     if availabilities.is_empty() {
         return "No territory availabilities found".to_string();

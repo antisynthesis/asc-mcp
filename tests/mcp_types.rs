@@ -1,21 +1,19 @@
-//! MCP type tests, ported from internal/asc/mcp/types_test.go.
+//! MCP type tests.
 //!
-//! Go modelled every wire shape as a struct; the Rust port builds most
-//! result shapes in the dispatcher, so the Go marshal/unmarshal round
-//! trips are pinned here on the dispatcher's output instead.
+//! Most result shapes are built in the dispatcher rather than as dedicated
+//! types, so their wire encoding is pinned here on the dispatcher's output.
 
 mod common;
 
 use std::sync::{Arc, Mutex};
 
-use asc_mcp::go::json::to_go_json_bytes;
 use asc_mcp::mcp::{self, CallToolResult, Request, RequestMeta, Response, Tool, text_content};
 use asc_mcp::server::dispatch::{self, Dispatcher, Session, server_info_meta};
 use asc_mcp::tools::{Handler, HandlerFuture, Registry};
+use asc_mcp::wire::json::to_json_bytes;
 use common::*;
 use serde_json::{Value, json};
 
-// Go: TestConstants
 #[test]
 fn constants() {
     assert_eq!(mcp::JSONRPC_VERSION, "2.0");
@@ -43,7 +41,6 @@ fn constants() {
     assert_eq!(mcp::MODERN_PROTOCOL_VERSIONS, ["2026-07-28"]);
 }
 
-// Go: TestNegotiateProtocolVersion
 #[test]
 fn negotiate_protocol_version() {
     for (name, requested, want) in [
@@ -72,7 +69,6 @@ fn negotiate_protocol_version() {
     }
 }
 
-// Go: TestRequest_IsNotification
 #[test]
 fn request_is_notification() {
     assert!(
@@ -94,7 +90,6 @@ fn request_is_notification() {
     );
 }
 
-// Go: TestErrorCodes
 #[test]
 fn error_codes() {
     assert_eq!(mcp::ERR_PARSE, -32700);
@@ -107,7 +102,6 @@ fn error_codes() {
     assert_eq!(mcp::ERR_UNSUPPORTED_PROTOCOL_VERSION, -32022);
 }
 
-// Go: TestRequest_JSON
 #[test]
 fn request_json() {
     let r = Request::from_value(&json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}})).unwrap();
@@ -129,7 +123,7 @@ fn request_json() {
         .unwrap();
     assert_eq!(r.method, "notifications/initialized");
     assert!(r.is_notification());
-    // Go's wording for type errors is kept.
+    // Type errors use the established decoder wording.
     assert_eq!(
         Request::from_value(&json!([1])).unwrap_err(),
         "json: cannot unmarshal array into Go value of type mcp.Request"
@@ -140,7 +134,6 @@ fn request_json() {
     );
 }
 
-// Go: TestResponse_JSON
 #[test]
 fn response_json() {
     let ok: Value = serde_json::from_slice(
@@ -162,7 +155,7 @@ fn response_json() {
     assert_eq!(err["error"]["code"], mcp::ERR_METHOD_NOT_FOUND);
     assert_eq!(err["error"]["message"], "Method not found");
     assert_eq!(err["error"]["data"], "unknown_method");
-    // Null data is omitted, like Go's omitempty `any`.
+    // Null data is omitted (omitempty).
     let bare = String::from_utf8(
         Response::error(None, mcp::ERR_PARSE, "Parse error", Value::Null).to_bytes(),
     )
@@ -173,8 +166,8 @@ fn response_json() {
     );
 }
 
-// Go: TestInitializeParams_JSON + TestInitializeResult_JSON, through the
-// dispatcher that owns the Rust InitializeParams type.
+// Initialize params and result, through the dispatcher that owns the
+// InitializeParams type.
 #[tokio::test]
 async fn initialize_params_and_result() {
     let d = Dispatcher::new(Arc::new(Registry::new(None)));
@@ -196,7 +189,7 @@ async fn initialize_params_and_result() {
     assert_eq!(r["serverInfo"]["name"], dispatch::SERVER_NAME);
     assert_eq!(r["serverInfo"]["title"], dispatch::SERVER_TITLE);
     assert_eq!(r["serverInfo"]["version"], dispatch::SERVER_VERSION);
-    // Malformed params are invalid params with Go's decoder message.
+    // Malformed params are invalid params with the decoder's message.
     let v = dispatch(
         &d,
         &Session::new(),
@@ -206,7 +199,6 @@ async fn initialize_params_and_result() {
     assert_eq!(v["error"]["code"], mcp::ERR_INVALID_PARAMS);
 }
 
-// Go: TestTool_JSON
 #[test]
 fn tool_json() {
     let t = Tool::from_json(
@@ -221,12 +213,11 @@ fn tool_json() {
     assert_eq!(t.input_schema()["required"], json!(["param1"]));
     // The definition is advertised verbatim, field order included.
     assert_eq!(
-        String::from_utf8(to_go_json_bytes(&t.def)).unwrap(),
+        String::from_utf8(to_json_bytes(&t.def)).unwrap(),
         r#"{"name":"test_tool","description":"A test tool","inputSchema":{"type":"object","properties":{"param1":{"type":"string","description":"First parameter"},"param2":{"type":"integer","default":10}},"required":["param1"]}}"#
     );
 }
 
-// Go: TestToolsCallParams_JSON: name and raw arguments reach the handler.
 #[tokio::test]
 async fn tools_call_params() {
     let seen: Arc<Mutex<Option<Value>>> = Arc::default();
@@ -256,12 +247,11 @@ async fn tools_call_params() {
     assert_eq!(*seen.lock().unwrap(), None, "absent arguments stay absent");
 }
 
-// Go: TestToolsCallResult_JSON + TestToolsCallResult_ResultType
 #[test]
 fn tools_call_result_json() {
     let ok = CallToolResult::success("ok");
     assert_eq!(
-        String::from_utf8(to_go_json_bytes(&ok.to_value())).unwrap(),
+        String::from_utf8(to_json_bytes(&ok.to_value())).unwrap(),
         r#"{"content":[{"type":"text","text":"ok"}]}"#
     );
     let err = CallToolResult::error("Error message").to_value();
@@ -273,7 +263,7 @@ fn tools_call_result_json() {
     }
     .to_value();
     assert_eq!(modern["resultType"], mcp::RESULT_TYPE_COMPLETE);
-    // Structured content: Some(Null) is Go's typed-nil `null`; None omits.
+    // Structured content: Some(Null) is an explicit `null`; None omits.
     let typed_nil = CallToolResult {
         structured_content: Some(Value::Null),
         ..CallToolResult::success("x")
@@ -293,17 +283,15 @@ fn tools_call_result_json() {
     );
 }
 
-// Go: TestNewTextContent
 #[test]
 fn new_text_content() {
     let c = text_content("Hello, World!");
     assert_eq!(c["type"], "text");
     assert_eq!(c["text"], "Hello, World!");
-    // Go's `text,omitempty`.
+    // An empty text is omitted (omitempty).
     assert_eq!(text_content(""), json!({"type": "text"}));
 }
 
-// Go: TestNewSuccessResult
 #[test]
 fn new_success_result() {
     let r = CallToolResult::success("Operation completed");
@@ -313,7 +301,6 @@ fn new_success_result() {
     assert_eq!(r.text(), "Operation completed");
 }
 
-// Go: TestNewErrorResult
 #[test]
 fn new_error_result() {
     let r = CallToolResult::error("Something went wrong");
@@ -323,7 +310,6 @@ fn new_error_result() {
     assert_eq!(r.text(), "Something went wrong");
 }
 
-// Go: TestToolsListResult_JSON + TestToolsListResult_ModernFields
 #[tokio::test]
 async fn tools_list_result_shapes() {
     let mut r = empty_registry();
@@ -336,7 +322,7 @@ async fn tools_list_result_shapes() {
     let d = Dispatcher::new(Arc::new(r));
     let sess = Session::new();
     initialize(&d, &sess).await;
-    // Legacy shape is byte-identical to Go's.
+    // The legacy shape is pinned byte for byte.
     let out = d
         .dispatch(
             &req(json!({"jsonrpc":"2.0","id":1,"method":"tools/list"})),
@@ -358,7 +344,6 @@ async fn tools_list_result_shapes() {
     assert_eq!(v["result"]["ttlMs"], dispatch::CACHE_TTL_MS);
 }
 
-// Go: TestParseRequestMeta
 #[test]
 fn parse_request_meta() {
     // full modern _meta
@@ -417,12 +402,12 @@ fn parse_request_meta() {
         .is_err()
     );
 
-    // Go's "malformed params JSON" (`{`) cannot reach the Rust parser,
-    // which takes parsed values; params of the wrong type is the analog.
+    // Syntactically malformed params (`{`) never reach this parser, which
+    // takes parsed values; params of the wrong type are rejected instead.
     assert!(RequestMeta::parse(Some(&json!("{"))).is_err());
     assert!(RequestMeta::parse(Some(&json!({"_meta": 5}))).is_err());
 
-    // Difference 5: non-object (including null) clientCapabilities.
+    // Non-object (including null) clientCapabilities are rejected.
     assert!(
         RequestMeta::parse(Some(
             &json!({"_meta":{"io.modelcontextprotocol/clientCapabilities":null}})
@@ -444,15 +429,14 @@ fn parse_request_meta() {
     );
 }
 
-// Go: TestResultTypeConstants (Rust defines only "complete"; the server
-// never returns input_required).
+// Result type and cache scope constants (only "complete" is defined; the
+// server never returns input_required).
 #[test]
 fn result_type_constants() {
     assert_eq!(mcp::RESULT_TYPE_COMPLETE, "complete");
     assert_eq!(mcp::CACHE_SCOPE_PUBLIC, "public");
 }
 
-// Go: TestMetaKeyConstants
 #[test]
 fn meta_key_constants() {
     assert_eq!(
@@ -472,7 +456,6 @@ fn meta_key_constants() {
     );
 }
 
-// Go: TestDiscoverResult_JSON
 #[tokio::test]
 async fn discover_result_json() {
     let d = Dispatcher::new(Arc::new(Registry::new(None)));
@@ -505,7 +488,6 @@ async fn discover_result_json() {
     assert!(r["_meta"].get(mcp::META_SERVER_INFO).is_some());
 }
 
-// Go: TestUnsupportedProtocolVersionData_JSON
 #[tokio::test]
 async fn unsupported_protocol_version_data_json() {
     let d = Dispatcher::new(Arc::new(Registry::new(None)));
@@ -515,7 +497,6 @@ async fn unsupported_protocol_version_data_json() {
     assert_eq!(data["requested"], "1999-01-01");
 }
 
-// Go: TestServerInfoMeta
 #[test]
 fn server_info_meta_shape() {
     let m = server_info_meta();

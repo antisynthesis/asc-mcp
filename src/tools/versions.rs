@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/versions.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! App Store version and submission tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerVersionSubmissionTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_version_submission_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -372,9 +369,9 @@ pub(super) fn register_version_submission_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListAppStoreVersions`.
+/// Handles `list_app_store_versions`.
 async fn handle_list_app_store_versions(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
@@ -405,9 +402,9 @@ async fn handle_list_app_store_versions(c: Arc<Client>, args: Args) -> HandlerRe
     Ok(data_result(&format_app_store_versions(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleGetAppStoreVersion`.
+/// Handles `get_app_store_version`.
 async fn handle_get_app_store_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\" }", "") {
         version_id: String => "version_id";
     }
@@ -429,9 +426,9 @@ async fn handle_get_app_store_version(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(data_result(&format_app_store_version(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateAppStoreVersion`.
+/// Handles `create_app_store_version`.
 async fn handle_create_app_store_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; VersionString string \"json:\\\"version_string\\\"\"; Platform string \"json:\\\"platform\\\"\"; Copyright string \"json:\\\"copyright\\\"\"; ReleaseType string \"json:\\\"release_type\\\"\" }", "") {
         app_id: String => "app_id";
         version_string: String => "version_string";
@@ -483,9 +480,9 @@ async fn handle_create_app_store_version(c: Arc<Client>, args: Args) -> HandlerR
     ))
 }
 
-/// Ported from `Registry.handleUpdateAppStoreVersion`.
+/// Handles `update_app_store_version`.
 async fn handle_update_app_store_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; VersionString string \"json:\\\"version_string\\\"\"; Copyright string \"json:\\\"copyright\\\"\"; ReleaseType string \"json:\\\"release_type\\\"\" }", "") {
         version_id: String => "version_id";
         version_string: String => "version_string";
@@ -523,9 +520,9 @@ async fn handle_update_app_store_version(c: Arc<Client>, args: Args) -> HandlerR
     Ok(data_result(&format!("Updated app store version: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteAppStoreVersion`.
+/// Handles `delete_app_store_version`.
 async fn handle_delete_app_store_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\" }", "") {
         version_id: String => "version_id";
     }
@@ -546,9 +543,9 @@ async fn handle_delete_app_store_version(c: Arc<Client>, args: Args) -> HandlerR
     Ok(CallToolResult::success("App store version deleted successfully"))
 }
 
-/// Ported from `Registry.handleSubmitAppForReview`.
+/// Handles `submit_app_for_review`.
 async fn handle_submit_app_for_review(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; VersionID string \"json:\\\"version_id\\\"\"; Platform string \"json:\\\"platform\\\"\" }", "") {
         app_id: String => "app_id";
         version_id: String => "version_id";
@@ -627,9 +624,9 @@ async fn handle_submit_app_for_review(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(data_result(&format!("App submitted for review (review submission ID: {})", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleGetAppStoreReviewDetail`.
+/// Handles `get_app_store_review_detail`.
 async fn handle_get_app_store_review_detail(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\" }", "") {
         version_id: String => "version_id";
     }
@@ -651,9 +648,9 @@ async fn handle_get_app_store_review_detail(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&format_review_detail(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateAppStoreReviewDetail`.
+/// Handles `create_app_store_review_detail`.
 async fn handle_create_app_store_review_detail(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; ContactFirstName string \"json:\\\"contact_first_name\\\"\"; ContactLastName string \"json:\\\"contact_last_name\\\"\"; ContactPhone string \"json:\\\"contact_phone\\\"\"; ContactEmail string \"json:\\\"contact_email\\\"\"; DemoAccountName string \"json:\\\"demo_account_name\\\"\"; DemoAccountPassword string \"json:\\\"demo_account_password\\\"\"; DemoAccountRequired *bool \"json:\\\"demo_account_required\\\"\"; Notes string \"json:\\\"notes\\\"\" }", "") {
         version_id: String => "version_id";
         contact_first_name: String => "contact_first_name";
@@ -704,9 +701,9 @@ async fn handle_create_app_store_review_detail(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("Created review detail: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateAppStoreReviewDetail`.
+/// Handles `update_app_store_review_detail`.
 async fn handle_update_app_store_review_detail(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { DetailID string \"json:\\\"detail_id\\\"\"; ContactFirstName string \"json:\\\"contact_first_name\\\"\"; ContactLastName string \"json:\\\"contact_last_name\\\"\"; ContactPhone string \"json:\\\"contact_phone\\\"\"; ContactEmail string \"json:\\\"contact_email\\\"\"; DemoAccountName string \"json:\\\"demo_account_name\\\"\"; DemoAccountPassword string \"json:\\\"demo_account_password\\\"\"; DemoAccountRequired *bool \"json:\\\"demo_account_required\\\"\"; Notes string \"json:\\\"notes\\\"\" }", "") {
         detail_id: String => "detail_id";
         contact_first_name: String => "contact_first_name";
@@ -753,7 +750,6 @@ async fn handle_update_app_store_review_detail(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("Updated review detail: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `formatAppStoreVersions`.
 fn format_app_store_versions(versions: &[AppStoreVersion]) -> String {
     if versions.is_empty() {
         return "No app store versions found".into();
@@ -770,7 +766,6 @@ fn format_app_store_versions(versions: &[AppStoreVersion]) -> String {
     sb
 }
 
-/// Ported from `formatAppStoreVersion`.
 fn format_app_store_version(version: &AppStoreVersion) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", version.id);
@@ -789,7 +784,6 @@ fn format_app_store_version(version: &AppStoreVersion) -> String {
     sb
 }
 
-/// Ported from `formatReviewDetail`.
 fn format_review_detail(detail: &AppStoreReviewDetail) -> String {
     let a = &detail.attributes;
     let mut sb = String::new();

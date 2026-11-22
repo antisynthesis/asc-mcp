@@ -14,12 +14,12 @@ mod all;
 pub mod pagination;
 include!("modules.rs");
 
-/// Raw tool arguments: Go's `json.RawMessage` (`None` when the request had
-/// no `arguments` member).
+/// Raw tool arguments, kept verbatim (`None` when the request had no
+/// `arguments` member).
 pub type Args = Option<Value>;
 
 /// A handler outcome. `Err` carries a message that is reported to the
-/// client as an `isError` tool result (Go handlers' `return nil, err`).
+/// client as an `isError` tool result.
 pub type HandlerResult = Result<CallToolResult, String>;
 
 /// A boxed handler future.
@@ -89,9 +89,9 @@ impl Registry {
         // Run on its own task so a panicking handler is reported as a tool
         // error instead of tearing down the connection. The task is
         // aborted if this future is dropped (client cancellation, a closed
-        // HTTP connection, or the tool-call timeout), mirroring Go's
-        // context cancellation: the handler must not keep running, and
-        // keep calling the API, after nobody is waiting for it.
+        // HTTP connection, or the tool-call timeout): the handler must not
+        // keep running, and keep calling the API, after nobody is waiting
+        // for it.
         struct AbortOnDrop(tokio::task::JoinHandle<HandlerResult>);
         impl Drop for AbortOnDrop {
             fn drop(&mut self) {
@@ -144,14 +144,16 @@ pub(crate) mod prelude {
     pub(crate) use super::{Args, HandlerResult, Registry, handler, tool};
     pub(crate) use crate::api::model::*;
     pub(crate) use crate::api::{self, Client, ListOptions, sha256_hex};
-    pub(crate) use crate::go::fmt::{bool_v, float_prec, float_v, quote, slice_v};
-    pub(crate) use crate::go::json::{self as gojson, unmarshal_args};
-    pub(crate) use crate::go::url::Values;
-    pub(crate) use crate::go::{GoBytes, GoDecode, GoEncode, GoMap, GoSlice, GoTime, RawMessage};
-    pub(crate) use crate::go_struct;
+    pub(crate) use crate::json_struct;
     pub(crate) use crate::mcp::CallToolResult;
+    pub(crate) use crate::wire::fmt::{bool_v, float_prec, float_v, quote, slice_v};
+    pub(crate) use crate::wire::json::{self as wirejson, unmarshal_args};
+    pub(crate) use crate::wire::url::Values;
+    pub(crate) use crate::wire::{
+        Base64Bytes, JsonDecode, JsonEncode, JsonMap, JsonSlice, RawMessage, Timestamp,
+    };
 
-    // Types shared across tool files (one Go package).
+    // Types shared across tool files.
     pub(crate) use super::commerce_versions::CommerceListParams;
     pub(crate) use super::gamecenter_content::GcListParams;
 }

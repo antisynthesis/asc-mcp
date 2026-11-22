@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/sandbox.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Sandbox tester tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerSandboxTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_sandbox_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -125,16 +122,16 @@ pub(super) fn register_sandbox_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListSandboxTesters`.
+/// Handles `list_sandbox_testers`.
 async fn handle_list_sandbox_testers(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -159,9 +156,9 @@ async fn handle_list_sandbox_testers(c: Arc<Client>, args: Args) -> HandlerResul
     Ok(list_result(&format_sandbox_testers(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleUpdateSandboxTester`.
+/// Handles `update_sandbox_tester`.
 async fn handle_update_sandbox_tester(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { TesterID string \"json:\\\"tester_id\\\"\"; Territory string \"json:\\\"territory\\\"\"; Interruptable *bool \"json:\\\"interruptable\\\"\"; SubscriptionRenewalRate string \"json:\\\"subscription_renewal_rate\\\"\" }", "") {
         tester_id: String => "tester_id";
         territory: String => "territory";
@@ -198,11 +195,11 @@ async fn handle_update_sandbox_tester(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(data_result(&format!("Sandbox tester updated:\n{}", format_sandbox_tester(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleClearSandboxTesterPurchaseHistory`.
+/// Handles `clear_sandbox_tester_purchase_history`.
 async fn handle_clear_sandbox_tester_purchase_history(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { TesterIDs []string \"json:\\\"tester_ids\\\"\" }", "") {
-        tester_ids: GoSlice<String> => "tester_ids";
+        tester_ids: JsonSlice<String> => "tester_ids";
     }
     }
     let mut params = Params::default();
@@ -214,7 +211,7 @@ async fn handle_clear_sandbox_tester_purchase_history(c: Arc<Client>, args: Args
         return Ok(error_result("tester_ids is required"));
     }
 
-    let mut testers: GoSlice<ResourceIdentifier> = GoSlice::nil();
+    let mut testers: JsonSlice<ResourceIdentifier> = JsonSlice::nil();
     for id in params.tester_ids.iter() {
         testers.push(ResourceIdentifier { type_: "sandboxTesters".into(), id: id.clone() });
     }
@@ -243,7 +240,6 @@ async fn handle_clear_sandbox_tester_purchase_history(c: Arc<Client>, args: Args
     ))
 }
 
-/// Ported from `formatSandboxTesters`.
 fn format_sandbox_testers(testers: &[SandboxTester]) -> String {
     if testers.is_empty() {
         return "No sandbox testers found".to_string();
@@ -260,7 +256,6 @@ fn format_sandbox_testers(testers: &[SandboxTester]) -> String {
     sb
 }
 
-/// Ported from `formatSandboxTester`.
 fn format_sandbox_tester(tester: &SandboxTester) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", tester.id);

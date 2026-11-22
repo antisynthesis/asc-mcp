@@ -58,7 +58,7 @@ impl RecordedRequest {
     }
     /// A decoded query parameter (first value), if present.
     pub fn query_param(&self, key: &str) -> Option<String> {
-        let v = crate::go::url::Values::parse(&self.query).ok()?;
+        let v = crate::wire::url::Values::parse(&self.query).ok()?;
         v.has(key).then(|| v.get(key).to_string())
     }
 }

@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/builds.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Build tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerBuildTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_build_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -87,17 +84,17 @@ pub(super) fn register_build_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListBuilds`.
+/// Handles `list_builds`.
 async fn handle_list_builds(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params { limit: 20, ..Default::default() };
@@ -144,9 +141,9 @@ async fn handle_list_builds(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&sb, &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetBuild`.
+/// Handles `get_build`.
 async fn handle_get_build(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BuildID string \"json:\\\"build_id\\\"\" }", "") {
         build_id: String => "build_id";
     }

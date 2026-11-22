@@ -6,7 +6,7 @@ use super::model::APIErrorDetail;
 
 /// The structured error returned by the App Store Connect API.
 ///
-/// Mirrors Go's `*api.APIError`: callers can inspect the status to
+/// Callers can inspect the status to
 /// distinguish authentication failures, missing resources, validation
 /// errors and transient server errors.
 #[derive(Debug, Clone, Default)]
@@ -54,9 +54,8 @@ impl ApiError {
     }
 }
 
-/// An error from the API layer: a message (worded as the Go server worded
-/// it, including wrapping prefixes) plus the underlying [`ApiError`] when
-/// one is in the chain (Go's `errors.As`).
+/// An error from the API layer: a message (including any wrapping
+/// prefixes) plus the underlying [`ApiError`] when one is in the chain.
 #[derive(Debug, Clone)]
 pub struct Error {
     msg: String,
@@ -68,7 +67,7 @@ pub struct Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 impl Error {
-    /// A plain error (Go `fmt.Errorf` / `errors.New`).
+    /// A plain message error.
     pub fn msg(msg: impl Into<String>) -> Self {
         Self {
             msg: msg.into(),
@@ -86,8 +85,8 @@ impl Error {
         }
     }
 
-    /// Go `fmt.Errorf("<prefix>: %w", err)`: prefixes the message and keeps
-    /// the wrapped API error reachable.
+    /// Prefixes the message (`<prefix>: <msg>`) and keeps the wrapped API
+    /// error reachable.
     pub fn wrap(self, prefix: impl fmt::Display) -> Self {
         Self {
             msg: format!("{prefix}: {}", self.msg),
@@ -96,7 +95,7 @@ impl Error {
         }
     }
 
-    /// Go `errors.As(err, &apiErr)`.
+    /// The API error in the chain, if any.
     pub fn api(&self) -> Option<&ApiError> {
         self.api.as_deref()
     }
@@ -125,9 +124,9 @@ impl fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-/// Go `json.Unmarshal(data, &resp)` wrapped as the client methods do:
+/// Decodes a response body, wrapping failures as
 /// `failed to unmarshal response: <json error>`.
-pub fn decode<T: crate::go::GoDecode + Default>(data: &[u8]) -> Result<T> {
-    crate::go::json::from_slice(data)
+pub fn decode<T: crate::wire::JsonDecode + Default>(data: &[u8]) -> Result<T> {
+    crate::wire::json::from_slice(data)
         .map_err(|e| Error::msg(format!("failed to unmarshal response: {e}")))
 }

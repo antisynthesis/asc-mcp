@@ -91,7 +91,7 @@ impl Request {
         let Value::Object(m) = v else {
             return Err(format!(
                 "json: cannot unmarshal {} into Go value of type mcp.Request",
-                crate::go::json::kind(v)
+                crate::wire::json::kind(v)
             ));
         };
         let mut r = Request::default();
@@ -137,7 +137,7 @@ impl Request {
 fn field_type_err(v: &Value, field: &str, ty: &str) -> String {
     format!(
         "json: cannot unmarshal {} into Go struct field Request.{field} of type {ty}",
-        crate::go::json::kind(v)
+        crate::wire::json::kind(v)
     )
 }
 
@@ -199,10 +199,10 @@ impl Response {
         }
     }
 
-    /// Serializes to bytes with Go-compatible escaping.
+    /// Serializes to compact bytes with HTML-safe escaping.
     pub fn to_bytes(&self) -> Vec<u8> {
         let v = serde_json::to_value(self).unwrap_or(Value::Null);
-        crate::go::json::to_go_json_bytes(&v)
+        crate::wire::json::to_json_bytes(&v)
     }
 }
 
@@ -270,8 +270,8 @@ pub fn text_content(text: impl Into<String>) -> Value {
 pub struct CallToolResult {
     /// Content blocks.
     pub content: Vec<Value>,
-    /// Structured content. `Some(Value::Null)` serializes as `null` (Go's
-    /// typed-nil case); `None` omits the member.
+    /// Structured content. `Some(Value::Null)` serializes as an explicit
+    /// `null`; `None` omits the member.
     pub structured_content: Option<Value>,
     /// Whether the tool reported an execution error.
     pub is_error: bool,
@@ -282,7 +282,7 @@ pub struct CallToolResult {
 }
 
 impl CallToolResult {
-    /// A successful text result (Go `mcp.NewSuccessResult`).
+    /// A successful text result.
     pub fn success(text: impl Into<String>) -> Self {
         Self {
             content: vec![text_content(text)],
@@ -290,8 +290,8 @@ impl CallToolResult {
         }
     }
 
-    /// An error result (Go `mcp.NewErrorResult`): a successful JSON-RPC
-    /// response with `isError: true` so the model can self-correct.
+    /// An error result: a successful JSON-RPC response with `isError: true`
+    /// so the model can self-correct.
     pub fn error(text: impl Into<String>) -> Self {
         Self {
             content: vec![text_content(text)],
@@ -308,7 +308,8 @@ impl CallToolResult {
             .unwrap_or("")
     }
 
-    /// Serializes in Go's field order.
+    /// Serializes in wire field order: `content`, `structuredContent`,
+    /// `isError`, `resultType`, `_meta` (optional members omitted when unset).
     pub fn to_value(&self) -> Value {
         let mut m = Map::new();
         m.insert("content".into(), Value::Array(self.content.clone()));
@@ -355,7 +356,7 @@ impl RequestMeta {
         let Value::Object(p) = params else {
             return Err(format!(
                 "json: cannot unmarshal {} into Go value of type struct {{ Meta map[string]json.RawMessage \"json:\\\"_meta\\\"\" }}",
-                crate::go::json::kind(params)
+                crate::wire::json::kind(params)
             ));
         };
         let Some(m) = p.get("_meta") else {
@@ -367,7 +368,7 @@ impl RequestMeta {
             other => {
                 return Err(format!(
                     "json: cannot unmarshal {} into Go struct field .Meta of type map[string]json.RawMessage",
-                    crate::go::json::kind(other)
+                    crate::wire::json::kind(other)
                 ));
             }
         };
@@ -377,7 +378,7 @@ impl RequestMeta {
                 other => {
                     return Err(format!(
                         "_meta key {META_PROTOCOL_VERSION} must be a string, got {}",
-                        crate::go::json::kind(other)
+                        crate::wire::json::kind(other)
                     ));
                 }
             }
@@ -388,7 +389,7 @@ impl RequestMeta {
                 other => {
                     return Err(format!(
                         "_meta key {META_CLIENT_CAPABILITIES} must be an object, got {}",
-                        crate::go::json::kind(other)
+                        crate::wire::json::kind(other)
                     ));
                 }
             }
@@ -399,7 +400,7 @@ impl RequestMeta {
     }
 }
 
-/// Go `mcp.NegotiateProtocolVersion`: echoes a legacy version this server
+/// Negotiates the handshake version: echoes a legacy version this server
 /// knows, else answers the preferred legacy version. 2026-07-28 is never
 /// negotiated here because it has no handshake.
 pub fn negotiate_protocol_version(requested: &str) -> &'static str {

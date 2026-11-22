@@ -1,5 +1,4 @@
-//! Shared helpers for the protocol-layer integration tests (ported from
-//! the Go `server` package's test helpers).
+//! Shared helpers for the protocol-layer integration tests.
 
 #![allow(dead_code)]
 
@@ -16,7 +15,7 @@ use asc_mcp::server::dispatch::{Dispatcher, Outcome, Session};
 use asc_mcp::tools::{Handler, HandlerFuture, HandlerResult, Registry};
 use serde_json::{Value, json};
 
-/// Writes [`TEST_PRIVATE_KEY`] to a temp dir (Go `testSetup`); keep the
+/// Writes [`TEST_PRIVATE_KEY`] to a temp dir; keep the
 /// returned dir alive for as long as the path is used.
 pub fn write_test_key() -> (tempfile::TempDir, PathBuf) {
     let dir = tempfile::tempdir().expect("tempdir");
@@ -26,7 +25,7 @@ pub fn write_test_key() -> (tempfile::TempDir, PathBuf) {
     (dir, path)
 }
 
-/// A client whose API calls go nowhere useful (fake tools never call it).
+/// A client pointed at an unused local port (fake tools never call it).
 pub fn dummy_client() -> Arc<Client> {
     Arc::new(Client::with_token_provider(
         test_token_provider(),
@@ -39,7 +38,7 @@ pub fn empty_registry() -> Registry {
     Registry::empty(Some(dummy_client()))
 }
 
-/// Go `registerFakeTool`: installs a test-only tool.
+/// Installs a test-only tool.
 pub fn register_fake<F, Fut>(r: &mut Registry, name: &str, f: F)
 where
     F: Fn() -> Fut + Send + Sync + 'static,
@@ -71,7 +70,7 @@ pub fn req(v: Value) -> Request {
     Request::from_value(&v).expect("valid request")
 }
 
-/// Go `modernMeta`: params carrying the 2026-07-28 `_meta` keys.
+/// Params carrying the 2026-07-28 `_meta` keys.
 pub fn modern_meta(version: &str, with_caps: bool) -> Value {
     let mut meta = serde_json::Map::new();
     meta.insert(mcp::META_PROTOCOL_VERSION.into(), json!(version));

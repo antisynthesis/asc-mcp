@@ -39,7 +39,7 @@ impl TokenProvider {
         let data = std::fs::read(private_key_path).map_err(|e| {
             Error::msg(format!(
                 "failed to read private key: {}",
-                crate::go::os::path_error("open", private_key_path, &e)
+                crate::wire::os::path_error("open", private_key_path, &e)
             ))
         })?;
         let key = parse_private_key(&data).map_err(|e| e.wrap("failed to parse private key"))?;
@@ -78,7 +78,7 @@ impl TokenProvider {
                 .map(|d| d.as_secs())
                 .unwrap_or(0)
         };
-        // Go marshals map[string]... with sorted keys.
+        // Header and claims are encoded with sorted keys.
         let header = serde_json::json!({"alg": "ES256", "kid": self.key_id, "typ": "JWT"});
         let payload = serde_json::json!({
             "aud": "appstoreconnect-v1",
@@ -88,7 +88,7 @@ impl TokenProvider {
         });
         let enc = |v: &serde_json::Value| {
             base64::engine::general_purpose::URL_SAFE_NO_PAD
-                .encode(crate::go::json::to_go_json_bytes(v))
+                .encode(crate::wire::json::to_json_bytes(v))
         };
         let signing_input = format!("{}.{}", enc(&header), enc(&payload));
         let sig: Signature = self.key.sign(signing_input.as_bytes());
@@ -126,7 +126,7 @@ pub fn parse_private_key(data: &[u8]) -> Result<SigningKey> {
     match p256::SecretKey::from_pkcs8_der(&der) {
         Ok(k) => Ok(SigningKey::from(k)),
         Err(e) => {
-            // Distinguish "valid PKCS#8 but not an EC key" like Go does.
+            // Distinguish "valid PKCS#8 but not an EC key" from malformed input.
             if let Ok(info) = p256::pkcs8::PrivateKeyInfo::try_from(der.as_slice()) {
                 if info.algorithm.oid
                     != p256::pkcs8::ObjectIdentifier::new_unwrap("1.2.840.10045.2.1")
@@ -141,7 +141,7 @@ pub fn parse_private_key(data: &[u8]) -> Result<SigningKey> {
     }
 }
 
-/// Decodes the first PEM block (any label), like Go's `pem.Decode`.
+/// Decodes the first PEM block (any label).
 fn pem_first_block(text: &str) -> Option<Vec<u8>> {
     let start = text.find("-----BEGIN ")?;
     let rest = &text[start..];
@@ -185,9 +185,7 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         );
     }
 
-    // ---- Ported from internal/asc/api/auth_test.go ----
-
-    /// Go `generateTestKey`: a fresh P-256 key as PKCS#8 PEM.
+    /// A fresh P-256 key as PKCS#8 PEM.
     fn generate_test_key() -> String {
         use p256::pkcs8::{EncodePrivateKey, LineEnding};
         let key = p256::SecretKey::random(&mut rand::rngs::OsRng);
@@ -196,7 +194,6 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
             .to_string()
     }
 
-    /// Go `createTestKeyFile`.
     fn create_test_key_file(content: &str) -> (tempfile::TempDir, String) {
         let dir = tempfile::tempdir().expect("tempdir");
         let path = dir.path().join("test_key.p8");
@@ -211,7 +208,6 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         serde_json::from_slice(&raw).expect("json")
     }
 
-    // Go: TestNewTokenProvider
     #[test]
     fn new_token_provider() {
         let (_dir, path) = create_test_key_file(&generate_test_key());
@@ -234,7 +230,6 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         );
     }
 
-    // Go: TestParsePrivateKey
     #[test]
     fn parse_private_key_cases() {
         // valid P-256 key (the curve is fixed by the p256 key type)
@@ -251,7 +246,6 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         assert!(err.to_string().contains("failed to parse PKCS8"), "{err}");
     }
 
-    // Go: TestTokenProvider_GetToken
     #[test]
     fn get_token_is_cached() {
         let (_dir, path) = create_test_key_file(&generate_test_key());
@@ -277,7 +271,6 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         assert!(tp.verify_token(&t));
     }
 
-    // Go: TestTokenProvider_GenerateToken
     #[test]
     fn generate_token_claims() {
         let (_dir, path) = create_test_key_file(&generate_test_key());
@@ -304,7 +297,7 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
             expires > expected - minute && expires < expected + minute,
             "expiry not ~15 minutes out"
         );
-        // Go's payload key order (sorted map keys).
+        // Claims are encoded with sorted keys.
         let raw = base64::engine::general_purpose::URL_SAFE_NO_PAD
             .decode(parts[1])
             .unwrap();
@@ -315,8 +308,7 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         );
     }
 
-    // Go: TestTokenProvider_VerifyToken + TestSplitToken (Rust splits with
-    // str::split, so the cases are expressed through verify_token).
+    // Malformed, tampered and foreign-key tokens all fail verification.
     #[test]
     fn verify_token_cases() {
         let (_dir, path) = create_test_key_file(&generate_test_key());
@@ -346,8 +338,8 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         assert!(!other.verify_token(&token));
     }
 
-    // Go: TestBase64URLEncode. Rust uses the base64 crate's URL-safe,
-    // unpadded engine directly; pin the vectors and the token encoding.
+    // JWT segments use URL-safe, unpadded base64; pin the vectors and the
+    // token encoding.
     #[test]
     fn base64_url_encoding() {
         let enc = |b: &[u8]| base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(b);
@@ -367,7 +359,6 @@ F0/2CD8o78kLt+HscMinCoX4VzgQesmeeIkuqHorgRmewtK0pYSODykS
         assert_eq!(sig.len(), 64);
     }
 
-    // Go: TestTokenProvider_ConcurrentAccess
     #[test]
     fn concurrent_access() {
         let (_dir, path) = create_test_key_file(&generate_test_key());

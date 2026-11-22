@@ -1,6 +1,8 @@
-//! Go `fmt`/`strconv` formatting helpers used to reproduce tool output.
+//! Value formatting helpers for tool output text (quoted strings, floats,
+//! lists, nil markers).
 
-/// Go `strconv.Quote` (what `%q` prints for a string).
+/// Double-quotes a string, escaping quotes, backslashes and
+/// non-printable characters (`\n`, `\x01`, `\u200b`, ...).
 pub fn quote(s: &str) -> String {
     let mut out = String::with_capacity(s.len() + 2);
     out.push('"');
@@ -27,8 +29,8 @@ pub fn quote(s: &str) -> String {
     out
 }
 
-/// Approximates Go's `strconv.IsPrint`: graphic characters plus the
-/// ASCII space; control, format, separator (other than U+0020) and
+/// Reports whether [`quote`] prints `c` verbatim: graphic characters plus
+/// the ASCII space; control, format, separator (other than U+0020) and
 /// private-use characters are not printable.
 pub fn is_print(c: char) -> bool {
     let u = c as u32;
@@ -46,7 +48,9 @@ pub fn is_print(c: char) -> bool {
         | 0xE000..=0xF8FF | 0xF0000..=0x10FFFF | 0xFFFE | 0xFFFF)
 }
 
-/// Go `%v` (and `%g`) for a float64.
+/// Formats a float64 with the shortest digits, switching to exponent
+/// notation (two-digit exponent, e.g. `1e+06`) outside `[1e-4, 1e6)`;
+/// non-finite values print as `NaN`, `+Inf` and `-Inf`.
 pub fn float_v(f: f64) -> String {
     if f.is_nan() {
         return "NaN".into();
@@ -76,28 +80,27 @@ pub fn float_v(f: f64) -> String {
     }
 }
 
-/// Go `%.Nf` for a float64 (round half to even on the exact binary value,
-/// which is what Rust's formatter also does).
+/// Formats a float64 with `prec` decimal places (rounding the exact binary
+/// value, half to even).
 pub fn float_prec(f: f64, prec: usize) -> String {
     format!("{f:.prec$}")
 }
 
-/// Go `%v` for a `[]string`: `[a b c]`.
+/// Formats a list as `[a b c]`.
 pub fn slice_v<T: std::fmt::Display>(items: &[T]) -> String {
     let parts: Vec<String> = items.iter().map(|i| i.to_string()).collect();
     format!("[{}]", parts.join(" "))
 }
 
-/// Go `%v` for a bool.
+/// Formats a bool as `true` or `false`.
 pub fn bool_v(b: bool) -> &'static str {
     if b { "true" } else { "false" }
 }
 
-/// Go `%v` for a pointer that is printed only when nil (`<nil>`).
+/// The marker printed for an absent value.
 pub const NIL: &str = "<nil>";
 
-/// Go `strings.Title`-free helper: Go `%s` of an error is its message;
-/// provided for symmetry when porting.
+/// An error's message, for use alongside the other formatting helpers.
 pub fn err_s<E: std::fmt::Display>(e: &E) -> String {
     e.to_string()
 }
@@ -107,12 +110,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn quote_matches_go() {
+    fn quote_escapes() {
         assert_eq!(quote("a\"b\n\x01é☺\u{200b}"), "\"a\\\"b\\n\\x01é☺\\u200b\"");
     }
 
     #[test]
-    fn float_v_matches_go() {
+    fn float_v_formatting() {
         let cases = [
             (0.0, "0"),
             (1.0, "1"),

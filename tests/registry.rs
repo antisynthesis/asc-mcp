@@ -1,4 +1,4 @@
-//! Tool registry tests, ported from internal/asc/tools/registry_test.go.
+//! Tool registry tests.
 
 mod common;
 
@@ -12,7 +12,7 @@ use asc_mcp::tools::{CallError, Handler, HandlerFuture, Registry};
 use common::*;
 use serde_json::json;
 
-/// Every tool the Go registry advertised (Go: TestRegistry_ListTools).
+/// Every tool the registry advertises.
 const EXPECTED_TOOLS: &[&str] = &[
     // App tools
     "list_apps",
@@ -428,7 +428,6 @@ fn key_client() -> (tempfile::TempDir, Arc<Client>) {
     (dir, Arc::new(client))
 }
 
-// Go: TestNewRegistry
 #[test]
 fn new_registry() {
     let (_dir, client) = key_client();
@@ -441,7 +440,6 @@ fn new_registry() {
     assert!(r.get("no_such_tool").is_none());
 }
 
-// Go: TestRegistry_ListTools
 #[test]
 fn list_tools() {
     let r = Registry::new(None);
@@ -478,7 +476,7 @@ fn list_tools() {
     }
 }
 
-/// Registration order is deterministic (Go's NewRegistry order).
+/// Registration order is deterministic.
 #[test]
 fn list_tools_order_is_stable() {
     let a: Vec<String> = Registry::new(None)
@@ -495,7 +493,6 @@ fn list_tools_order_is_stable() {
     assert_eq!(&a[..3], ["list_apps", "get_app", "get_app_versions"]);
 }
 
-// Go: TestRegistry_CallTool_UnknownTool
 #[tokio::test]
 async fn call_tool_unknown_tool() {
     let (_dir, client) = key_client();
@@ -519,11 +516,9 @@ async fn call_tool_without_client() {
     );
 }
 
-// Go: TestRegistry_CallTool_MissingArgumentIsToolError. These handlers
-// belong to the tool ports outside the protocol layer; run with
-// `--ignored` once they are ported.
+// A missing required argument is a tool error, not a protocol error. The
+// handlers live outside the protocol layer; run with `--ignored`.
 #[tokio::test]
-#[ignore = "exercises tool handlers outside the protocol layer (other ports)"]
 async fn call_tool_missing_argument_is_tool_error() {
     let (_dir, client) = key_client();
     let r = Registry::new(Some(client));
@@ -594,7 +589,7 @@ async fn call_tool_missing_argument_is_tool_error() {
     }
 }
 
-/// The same convention, pinned now on the already-ported app tools.
+/// The same convention, pinned on the app tools (which run without `--ignored`).
 #[tokio::test]
 async fn call_tool_missing_argument_is_tool_error_app_tools() {
     let mock = MockApi::start(|req| panic!("no API call expected, got {}", req.path)).await;
@@ -610,8 +605,7 @@ async fn call_tool_missing_argument_is_tool_error_app_tools() {
     assert!(mock.requests().is_empty());
 }
 
-/// A real handler end to end against the mock API (Go's skipped
-/// TestHandleListApps_Integration).
+/// A real handler end to end against the mock API.
 #[tokio::test]
 async fn call_tool_list_apps_against_mock() {
     let mock = MockApi::start(|req| {
@@ -635,7 +629,6 @@ async fn call_tool_list_apps_against_mock() {
     );
 }
 
-// Go: TestRegistry_Register
 #[tokio::test]
 async fn register() {
     let mut r = Registry::empty(Some(dummy_client()));
@@ -656,7 +649,6 @@ async fn register() {
     assert_eq!(res.text(), "custom result");
 }
 
-// Go: TestToolInputSchemas
 #[test]
 fn tool_input_schemas() {
     let r = Registry::new(None);

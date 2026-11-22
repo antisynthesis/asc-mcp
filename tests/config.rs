@@ -1,5 +1,4 @@
-//! Configuration loading tests, ported from
-//! internal/asc/config/config_test.go.
+//! Configuration loading tests.
 //!
 //! Every case mutates the process environment, so they run sequentially
 //! inside one test function (this binary has no other tests).
@@ -38,7 +37,6 @@ fn expect_err(r: Result<Config, String>, contains: &str, case: &str) {
     }
 }
 
-// Go: TestLoad + TestLoad_EmptyValues
 #[test]
 fn load_cases() {
     let dir = tempfile::tempdir().unwrap();

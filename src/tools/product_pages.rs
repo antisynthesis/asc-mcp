@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/product_pages.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Custom product page and experiment tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerProductPagesTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_product_pages_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -363,17 +360,17 @@ pub(super) fn register_product_pages_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListAppCustomProductPages`.
+/// Handles `list_app_custom_product_pages`.
 async fn handle_list_app_custom_product_pages(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -402,9 +399,9 @@ async fn handle_list_app_custom_product_pages(c: Arc<Client>, args: Args) -> Han
     Ok(list_result(&format_app_custom_product_pages(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAppCustomProductPage`.
+/// Handles `get_app_custom_product_page`.
 async fn handle_get_app_custom_product_page(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PageID string \"json:\\\"page_id\\\"\" }", "") {
         page_id: String => "page_id";
     }
@@ -426,9 +423,9 @@ async fn handle_get_app_custom_product_page(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&format_app_custom_product_page(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateAppCustomProductPage`.
+/// Handles `create_app_custom_product_page`.
 async fn handle_create_app_custom_product_page(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Name string \"json:\\\"name\\\"\" }", "") {
         app_id: String => "app_id";
         name: String => "name";
@@ -462,9 +459,9 @@ async fn handle_create_app_custom_product_page(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("Custom product page created:\n{}", format_app_custom_product_page(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateAppCustomProductPage`.
+/// Handles `update_app_custom_product_page`.
 async fn handle_update_app_custom_product_page(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PageID string \"json:\\\"page_id\\\"\"; Name string \"json:\\\"name\\\"\"; Visible *bool \"json:\\\"visible\\\"\" }", "") {
         page_id: String => "page_id";
         name: String => "name";
@@ -496,9 +493,9 @@ async fn handle_update_app_custom_product_page(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("Custom product page updated:\n{}", format_app_custom_product_page(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteAppCustomProductPage`.
+/// Handles `delete_app_custom_product_page`.
 async fn handle_delete_app_custom_product_page(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PageID string \"json:\\\"page_id\\\"\" }", "") {
         page_id: String => "page_id";
     }
@@ -519,18 +516,18 @@ async fn handle_delete_app_custom_product_page(c: Arc<Client>, args: Args) -> Ha
     Ok(CallToolResult::success("Custom product page deleted"))
 }
 
-/// Ported from `Registry.handleListAppStoreVersionExperiments`.
+/// Handles `list_app_store_version_experiments`.
 async fn handle_list_app_store_version_experiments(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; VersionID string \"json:\\\"version_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         version_id: String => "version_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -566,9 +563,9 @@ async fn handle_list_app_store_version_experiments(c: Arc<Client>, args: Args) -
     Ok(list_result(&format_app_store_version_experiments(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAppStoreVersionExperiment`.
+/// Handles `get_app_store_version_experiment`.
 async fn handle_get_app_store_version_experiment(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ExperimentID string \"json:\\\"experiment_id\\\"\" }", "") {
         experiment_id: String => "experiment_id";
     }
@@ -590,9 +587,9 @@ async fn handle_get_app_store_version_experiment(c: Arc<Client>, args: Args) -> 
     Ok(data_result(&format_app_store_version_experiment(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateAppStoreVersionExperiment`.
+/// Handles `create_app_store_version_experiment`.
 async fn handle_create_app_store_version_experiment(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Name string \"json:\\\"name\\\"\"; Platform string \"json:\\\"platform\\\"\"; TrafficProportion int \"json:\\\"traffic_proportion\\\"\" }", "") {
         app_id: String => "app_id";
         name: String => "name";
@@ -636,9 +633,9 @@ async fn handle_create_app_store_version_experiment(c: Arc<Client>, args: Args) 
     Ok(data_result(&format!("Experiment created:\n{}", format_app_store_version_experiment(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateAppStoreVersionExperiment`.
+/// Handles `update_app_store_version_experiment`.
 async fn handle_update_app_store_version_experiment(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ExperimentID string \"json:\\\"experiment_id\\\"\"; Name string \"json:\\\"name\\\"\"; TrafficProportion *int \"json:\\\"traffic_proportion\\\"\"; Started *bool \"json:\\\"started\\\"\" }", "") {
         experiment_id: String => "experiment_id";
         name: String => "name";
@@ -675,9 +672,9 @@ async fn handle_update_app_store_version_experiment(c: Arc<Client>, args: Args) 
     Ok(data_result(&format!("Experiment updated:\n{}", format_app_store_version_experiment(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteAppStoreVersionExperiment`.
+/// Handles `delete_app_store_version_experiment`.
 async fn handle_delete_app_store_version_experiment(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ExperimentID string \"json:\\\"experiment_id\\\"\" }", "") {
         experiment_id: String => "experiment_id";
     }
@@ -698,7 +695,6 @@ async fn handle_delete_app_store_version_experiment(c: Arc<Client>, args: Args) 
     Ok(CallToolResult::success("Experiment deleted"))
 }
 
-/// Ported from `formatAppCustomProductPages`.
 fn format_app_custom_product_pages(pages: &[AppCustomProductPage]) -> String {
     if pages.is_empty() {
         return "No custom product pages found".into();
@@ -715,7 +711,6 @@ fn format_app_custom_product_pages(pages: &[AppCustomProductPage]) -> String {
     sb
 }
 
-/// Ported from `formatAppCustomProductPage`.
 fn format_app_custom_product_page(page: &AppCustomProductPage) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", page.id);
@@ -727,7 +722,6 @@ fn format_app_custom_product_page(page: &AppCustomProductPage) -> String {
     sb
 }
 
-/// Ported from `formatAppStoreVersionExperiments`.
 fn format_app_store_version_experiments(experiments: &[AppStoreVersionExperiment]) -> String {
     if experiments.is_empty() {
         return "No experiments found".into();
@@ -744,7 +738,6 @@ fn format_app_store_version_experiments(experiments: &[AppStoreVersionExperiment
     sb
 }
 
-/// Ported from `formatAppStoreVersionExperiment`.
 fn format_app_store_version_experiment(exp: &AppStoreVersionExperiment) -> String {
     let a = &exp.attributes;
     let mut sb = String::new();

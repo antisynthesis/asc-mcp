@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/testflight.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! TestFlight group and tester tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerTestFlightTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_test_flight_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -278,17 +275,17 @@ pub(super) fn register_test_flight_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListBetaGroups`.
+/// Handles `list_beta_groups`.
 async fn handle_list_beta_groups(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
@@ -330,9 +327,9 @@ async fn handle_list_beta_groups(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&sb, &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleCreateBetaGroup`.
+/// Handles `create_beta_group`.
 async fn handle_create_beta_group(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Name string \"json:\\\"name\\\"\"; PublicLinkEnabled bool \"json:\\\"public_link_enabled\\\"\"; FeedbackEnabled bool \"json:\\\"feedback_enabled\\\"\" }", "") {
         app_id: String => "app_id";
         name: String => "name";
@@ -383,9 +380,9 @@ async fn handle_create_beta_group(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&sb, &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteBetaGroup`.
+/// Handles `delete_beta_group`.
 async fn handle_delete_beta_group(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BetaGroupID string \"json:\\\"beta_group_id\\\"\" }", "") {
         beta_group_id: String => "beta_group_id";
     }
@@ -406,17 +403,17 @@ async fn handle_delete_beta_group(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(CallToolResult::success(format!("Successfully deleted beta group {}", params.beta_group_id)))
 }
 
-/// Ported from `Registry.handleListBetaTesters`.
+/// Handles `list_beta_testers`.
 async fn handle_list_beta_testers(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BetaGroupID string \"json:\\\"beta_group_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         beta_group_id: String => "beta_group_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
@@ -454,14 +451,14 @@ async fn handle_list_beta_testers(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&sb, &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleInviteBetaTester`.
+/// Handles `invite_beta_tester`.
 async fn handle_invite_beta_tester(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Email string \"json:\\\"email\\\"\"; FirstName string \"json:\\\"first_name\\\"\"; LastName string \"json:\\\"last_name\\\"\"; BetaGroupIDs []string \"json:\\\"beta_group_ids\\\"\" }", "") {
         email: String => "email";
         first_name: String => "first_name";
         last_name: String => "last_name";
-        beta_group_ids: GoSlice<String> => "beta_group_ids";
+        beta_group_ids: JsonSlice<String> => "beta_group_ids";
     }
     }
     let mut params = Params::default();
@@ -491,7 +488,7 @@ async fn handle_invite_beta_tester(c: Arc<Client>, args: Args) -> HandlerResult 
             groups.push(ResourceIdentifier { type_: "betaGroups".into(), id: id.clone() });
         }
         req.data.relationships = Some(BetaTesterCreateRelationships {
-            beta_groups: Some(RelationshipDataList { data: GoSlice::from(groups) }),
+            beta_groups: Some(RelationshipDataList { data: JsonSlice::from(groups) }),
             ..Default::default()
         });
     }
@@ -509,9 +506,9 @@ async fn handle_invite_beta_tester(c: Arc<Client>, args: Args) -> HandlerResult 
     Ok(data_result(&sb, &resp.data))
 }
 
-/// Ported from `Registry.handleRemoveBetaTester`.
+/// Handles `remove_beta_tester`.
 async fn handle_remove_beta_tester(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BetaTesterID string \"json:\\\"beta_tester_id\\\"\" }", "") {
         beta_tester_id: String => "beta_tester_id";
     }
@@ -532,9 +529,9 @@ async fn handle_remove_beta_tester(c: Arc<Client>, args: Args) -> HandlerResult 
     Ok(CallToolResult::success(format!("Successfully removed beta tester {}", params.beta_tester_id)))
 }
 
-/// Ported from `Registry.handleAddTesterToGroup`.
+/// Handles `add_tester_to_group`.
 async fn handle_add_tester_to_group(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BetaGroupID string \"json:\\\"beta_group_id\\\"\"; BetaTesterID string \"json:\\\"beta_tester_id\\\"\" }", "") {
         beta_group_id: String => "beta_group_id";
         beta_tester_id: String => "beta_tester_id";

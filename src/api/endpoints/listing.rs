@@ -1,23 +1,19 @@
 // App Store Connect API endpoints for the "listing" area.
-//
-// Signatures were generated from the Go declarations; bodies are ported by
-// hand from the Go file named in each method's todo!/comment and must
-// preserve the exact request path, query and body.
 
 #[allow(unused_imports)]
 use crate::api::{
     Client, Error, ListOptions, MAX_UPLOAD_SIZE, Result, decode, model::*, sha256_hex,
 };
 #[allow(unused_imports)]
-use crate::go::{
-    GoBytes, GoMap, GoSlice, GoTime, RawMessage, json,
+use crate::wire::{
+    Base64Bytes, JsonMap, JsonSlice, RawMessage, Timestamp, json,
     url::{self, Values},
 };
 #[allow(unused_imports)]
 use serde_json::Value;
 
 impl Client {
-    /// CreateAppCustomProductPage creates a custom product page.
+    /// Creates a custom product page.
     pub async fn create_app_custom_product_page(
         &self,
         req: &AppCustomProductPageCreateRequest,
@@ -26,13 +22,13 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAppEvent creates a new app event.
+    /// Creates a new app event.
     pub async fn create_app_event(&self, req: &AppEventCreateRequest) -> Result<AppEventResponse> {
         let data = self.post("/v1/appEvents", Some(req)).await?;
         decode(&data)
     }
 
-    /// CreateAppInfoLocalization creates a new app info localization.
+    /// Creates a new app info localization.
     pub async fn create_app_info_localization(
         &self,
         req: &AppInfoLocalizationCreateRequest,
@@ -41,7 +37,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAppPreview creates a new preview.
+    /// Creates a new preview.
     pub async fn create_app_preview(
         &self,
         req: &AppPreviewCreateRequest,
@@ -50,7 +46,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAppScreenshot creates a new screenshot.
+    /// Creates a new screenshot.
     pub async fn create_app_screenshot(
         &self,
         req: &AppScreenshotCreateRequest,
@@ -59,7 +55,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAppStoreReviewDetail creates review details for a version.
+    /// Creates review details for a version.
     pub async fn create_app_store_review_detail(
         &self,
         req: &AppStoreReviewDetailCreateRequest,
@@ -68,7 +64,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAppStoreVersion creates a new app store version.
+    /// Creates a new app store version.
     pub async fn create_app_store_version(
         &self,
         req: &AppStoreVersionCreateRequest,
@@ -77,7 +73,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAppStoreVersionExperiment creates a v2 experiment attached to an app.
+    /// Creates a v2 experiment attached to an app.
     pub async fn create_app_store_version_experiment(
         &self,
         req: &AppStoreVersionExperimentCreateRequest,
@@ -88,7 +84,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAppStoreVersionLocalization creates a new version localization.
+    /// Creates a new version localization.
     pub async fn create_app_store_version_localization(
         &self,
         req: &AppStoreVersionLocalizationCreateRequest,
@@ -99,7 +95,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateAppStoreVersionPhasedRelease creates a phased release.
+    /// Creates a phased release.
     pub async fn create_app_store_version_phased_release(
         &self,
         req: &AppStoreVersionPhasedReleaseCreateRequest,
@@ -110,7 +106,7 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteAppCustomProductPage deletes a custom product page.
+    /// Deletes a custom product page.
     pub async fn delete_app_custom_product_page(&self, page_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/appCustomProductPages/{}",
@@ -119,13 +115,13 @@ impl Client {
         .await
     }
 
-    /// DeleteAppEvent deletes an app event.
+    /// Deletes an app event.
     pub async fn delete_app_event(&self, event_id: &str) -> Result<()> {
         self.delete(&format!("/v1/appEvents/{}", url::path_escape(event_id)))
             .await
     }
 
-    /// DeleteAppInfoLocalization deletes an app info localization.
+    /// Deletes an app info localization.
     pub async fn delete_app_info_localization(&self, localization_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/appInfoLocalizations/{}",
@@ -134,13 +130,13 @@ impl Client {
         .await
     }
 
-    /// DeleteAppPreview deletes a preview.
+    /// Deletes a preview.
     pub async fn delete_app_preview(&self, preview_id: &str) -> Result<()> {
         self.delete(&format!("/v1/appPreviews/{}", url::path_escape(preview_id)))
             .await
     }
 
-    /// DeleteAppScreenshot deletes a screenshot.
+    /// Deletes a screenshot.
     pub async fn delete_app_screenshot(&self, screenshot_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/appScreenshots/{}",
@@ -149,7 +145,7 @@ impl Client {
         .await
     }
 
-    /// DeleteAppStoreVersion deletes an app store version.
+    /// Deletes an app store version.
     pub async fn delete_app_store_version(&self, version_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/appStoreVersions/{}",
@@ -158,7 +154,7 @@ impl Client {
         .await
     }
 
-    /// DeleteAppStoreVersionExperiment deletes a v2 experiment.
+    /// Deletes a v2 experiment.
     pub async fn delete_app_store_version_experiment(&self, experiment_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v2/appStoreVersionExperiments/{}",
@@ -167,7 +163,7 @@ impl Client {
         .await
     }
 
-    /// DeleteAppStoreVersionLocalization deletes a version localization.
+    /// Deletes a version localization.
     pub async fn delete_app_store_version_localization(&self, localization_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/appStoreVersionLocalizations/{}",
@@ -176,7 +172,7 @@ impl Client {
         .await
     }
 
-    /// DeleteAppStoreVersionPhasedRelease deletes a phased release.
+    /// Deletes a phased release.
     pub async fn delete_app_store_version_phased_release(
         &self,
         phased_release_id: &str,
@@ -188,7 +184,7 @@ impl Client {
         .await
     }
 
-    /// GetAppClip returns a single app clip by ID.
+    /// Returns a single app clip by ID.
     pub async fn get_app_clip(&self, app_clip_id: &str) -> Result<AppClipResponse> {
         let data = self
             .get(
@@ -199,7 +195,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppClipAdvancedExperience returns a single advanced experience.
+    /// Returns a single advanced experience.
     pub async fn get_app_clip_advanced_experience(
         &self,
         experience_id: &str,
@@ -216,7 +212,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppClipDefaultExperience returns a single default experience.
+    /// Returns a single default experience.
     pub async fn get_app_clip_default_experience(
         &self,
         experience_id: &str,
@@ -233,7 +229,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppCustomProductPage returns a single custom product page.
+    /// Returns a single custom product page.
     pub async fn get_app_custom_product_page(
         &self,
         page_id: &str,
@@ -247,7 +243,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppEvent returns a single app event by ID.
+    /// Returns a single app event by ID.
     pub async fn get_app_event(&self, event_id: &str) -> Result<AppEventResponse> {
         let data = self
             .get(
@@ -258,7 +254,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppInfoLocalization returns a single app info localization by ID.
+    /// Returns a single app info localization by ID.
     pub async fn get_app_info_localization(
         &self,
         localization_id: &str,
@@ -275,7 +271,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppInfos returns app infos for an app.
+    /// Returns app infos for an app.
     pub async fn get_app_infos(&self, app_id: &str) -> Result<AppInfosResponse> {
         let data = self
             .get(
@@ -286,7 +282,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppPreview returns a single preview by ID.
+    /// Returns a single preview by ID.
     pub async fn get_app_preview(&self, preview_id: &str) -> Result<AppPreviewResponse> {
         let data = self
             .get(
@@ -297,7 +293,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppScreenshot returns a single screenshot by ID.
+    /// Returns a single screenshot by ID.
     pub async fn get_app_screenshot(&self, screenshot_id: &str) -> Result<AppScreenshotResponse> {
         let data = self
             .get(
@@ -308,7 +304,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppStoreReviewDetail returns review details for a version.
+    /// Returns review details for a version.
     pub async fn get_app_store_review_detail(
         &self,
         version_id: &str,
@@ -325,7 +321,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppStoreVersion returns a single app store version by ID.
+    /// Returns a single app store version by ID.
     pub async fn get_app_store_version(&self, version_id: &str) -> Result<AppStoreVersionResponse> {
         let data = self
             .get(
@@ -336,7 +332,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppStoreVersionExperiment returns a single v2 experiment.
+    /// Returns a single v2 experiment.
     pub async fn get_app_store_version_experiment(
         &self,
         experiment_id: &str,
@@ -353,7 +349,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppStoreVersionLocalization returns a single version localization by ID.
+    /// Returns a single version localization by ID.
     pub async fn get_app_store_version_localization(
         &self,
         localization_id: &str,
@@ -370,7 +366,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetAppStoreVersionPhasedRelease returns phased release for a version.
+    /// Returns phased release for a version.
     pub async fn get_app_store_version_phased_release(
         &self,
         version_id: &str,
@@ -387,7 +383,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppClipAdvancedExperiences returns advanced experiences for an app clip.
+    /// Returns advanced experiences for an app clip.
     pub async fn list_app_clip_advanced_experiences(
         &self,
         app_clip_id: &str,
@@ -409,7 +405,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppClipDefaultExperiences returns default experiences for an app clip.
+    /// Returns default experiences for an app clip.
     pub async fn list_app_clip_default_experiences(
         &self,
         app_clip_id: &str,
@@ -431,7 +427,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppClips returns app clips for an app.
+    /// Returns app clips for an app.
     pub async fn list_app_clips(
         &self,
         app_id: &str,
@@ -450,7 +446,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppCustomProductPages returns custom product pages for an app.
+    /// Returns custom product pages for an app.
     pub async fn list_app_custom_product_pages(
         &self,
         app_id: &str,
@@ -472,7 +468,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppEvents returns app events for an app.
+    /// Returns app events for an app.
     pub async fn list_app_events(
         &self,
         app_id: &str,
@@ -491,7 +487,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppInfoLocalizations returns localizations for an app info.
+    /// Returns localizations for an app info.
     pub async fn list_app_info_localizations(
         &self,
         app_info_id: &str,
@@ -513,7 +509,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppPreviewSets returns preview sets for a version localization.
+    /// Returns preview sets for a version localization.
     pub async fn list_app_preview_sets(
         &self,
         localization_id: &str,
@@ -535,7 +531,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppPreviews returns previews for a preview set.
+    /// Returns previews for a preview set.
     pub async fn list_app_previews(
         &self,
         preview_set_id: &str,
@@ -557,7 +553,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppScreenshotSets returns screenshot sets for a version localization.
+    /// Returns screenshot sets for a version localization.
     pub async fn list_app_screenshot_sets(
         &self,
         localization_id: &str,
@@ -579,7 +575,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppScreenshots returns screenshots for a screenshot set.
+    /// Returns screenshots for a screenshot set.
     pub async fn list_app_screenshots(
         &self,
         screenshot_set_id: &str,
@@ -601,7 +597,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppStoreVersionExperiments returns v2 experiments for a version.
+    /// Returns v2 experiments for a version.
     pub async fn list_app_store_version_experiments(
         &self,
         version_id: &str,
@@ -623,7 +619,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppStoreVersionExperimentsForApp returns v2 experiments for an app.
+    /// Returns v2 experiments for an app.
     pub async fn list_app_store_version_experiments_for_app(
         &self,
         app_id: &str,
@@ -645,7 +641,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListAppStoreVersionLocalizations returns localizations for a version.
+    /// Returns localizations for a version.
     pub async fn list_app_store_version_localizations(
         &self,
         version_id: &str,
@@ -667,7 +663,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAppCustomProductPage updates a custom product page.
+    /// Updates a custom product page.
     pub async fn update_app_custom_product_page(
         &self,
         page_id: &str,
@@ -682,7 +678,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAppEvent updates an app event.
+    /// Updates an app event.
     pub async fn update_app_event(
         &self,
         event_id: &str,
@@ -697,7 +693,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAppInfoLocalization updates an app info localization.
+    /// Updates an app info localization.
     pub async fn update_app_info_localization(
         &self,
         localization_id: &str,
@@ -715,7 +711,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAppPreview commits an uploaded preview by sending its SHA-256
+    /// Commits an uploaded preview by sending its SHA-256
     /// checksum and uploaded=true. Also used to update the preview frame
     /// timecode after upload.
     pub async fn update_app_preview(
@@ -732,7 +728,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAppScreenshot updates a screenshot.
+    /// Updates a screenshot.
     pub async fn update_app_screenshot(
         &self,
         screenshot_id: &str,
@@ -747,7 +743,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAppStoreReviewAttachment updates a review attachment.
+    /// Updates a review attachment.
     pub async fn update_app_store_review_attachment(
         &self,
         attachment_id: &str,
@@ -765,7 +761,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAppStoreReviewDetail updates review details.
+    /// Updates review details.
     pub async fn update_app_store_review_detail(
         &self,
         detail_id: &str,
@@ -780,7 +776,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAppStoreVersion updates an app store version.
+    /// Updates an app store version.
     pub async fn update_app_store_version(
         &self,
         version_id: &str,
@@ -795,7 +791,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAppStoreVersionExperiment updates a v2 experiment.
+    /// Updates a v2 experiment.
     pub async fn update_app_store_version_experiment(
         &self,
         experiment_id: &str,
@@ -813,7 +809,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAppStoreVersionLocalization updates a version localization.
+    /// Updates a version localization.
     pub async fn update_app_store_version_localization(
         &self,
         localization_id: &str,
@@ -831,7 +827,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateAppStoreVersionPhasedRelease updates a phased release.
+    /// Updates a phased release.
     pub async fn update_app_store_version_phased_release(
         &self,
         phased_release_id: &str,
@@ -849,7 +845,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateRoutingAppCoverage updates routing app coverage.
+    /// Updates routing app coverage.
     pub async fn update_routing_app_coverage(
         &self,
         coverage_id: &str,
@@ -864,7 +860,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateReviewSubmission creates a review submission for an app.
+    /// Creates a review submission for an app.
     pub async fn create_review_submission(
         &self,
         req: &ReviewSubmissionCreateRequest,
@@ -873,7 +869,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateReviewSubmissionItem attaches an item to a review submission.
+    /// Attaches an item to a review submission.
     pub async fn create_review_submission_item(
         &self,
         req: &ReviewSubmissionItemCreateRequest,
@@ -882,7 +878,7 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteReviewSubmissionItem removes an item from a review submission.
+    /// Removes an item from a review submission.
     pub async fn delete_review_submission_item(&self, item_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/reviewSubmissionItems/{}",
@@ -891,7 +887,7 @@ impl Client {
         .await
     }
 
-    /// GetReviewSubmission returns a single review submission.
+    /// Returns a single review submission.
     pub async fn get_review_submission(
         &self,
         submission_id: &str,
@@ -905,7 +901,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListReviewSubmissionItems returns the items attached to a review submission.
+    /// Returns the items attached to a review submission.
     pub async fn list_review_submission_items(
         &self,
         submission_id: &str,
@@ -927,7 +923,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListReviewSubmissions returns review submissions for an app.
+    /// Returns review submissions for an app.
     pub async fn list_review_submissions(
         &self,
         app_id: &str,
@@ -946,7 +942,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateReviewSubmission updates a review submission. Setting submitted=true
+    /// Updates a review submission. Setting submitted=true
     /// submits it for review; setting canceled=true cancels it.
     pub async fn update_review_submission(
         &self,
@@ -962,7 +958,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UploadAppPreview reserves, uploads, and commits an app preview video.
+    /// Reserves, uploads, and commits an app preview video.
     /// The MIME type defaults to video/mp4 if not provided.
     pub async fn upload_app_preview(
         &self,
@@ -1029,7 +1025,7 @@ impl Client {
         self.update_app_preview(&reservation.data.id, &commit).await
     }
 
-    /// UploadAppScreenshot reserves, uploads, and commits a screenshot in
+    /// Reserves, uploads, and commits a screenshot in
     /// one call. The reservation is created against the supplied screenshot
     /// set; the response includes the final screenshot record after the
     /// commit PATCH has been accepted.
@@ -1090,7 +1086,7 @@ impl Client {
             .await
     }
 
-    /// UploadAppStoreReviewAttachment reserves, uploads, and commits a
+    /// Reserves, uploads, and commits a
     /// review attachment (typically a PDF or screenshot) bound to an App
     /// Store review detail.
     pub async fn upload_app_store_review_attachment(
@@ -1159,8 +1155,6 @@ mod tests {
     use crate::api::model::*;
     use crate::api::sha256_hex;
     use crate::api::testutil::{MockApi, MockResponse};
-
-    // Ported from internal/asc/api/client_review_submissions_test.go.
 
     #[tokio::test]
     async fn client_list_review_submissions() {
@@ -1316,8 +1310,6 @@ mod tests {
         assert_eq!(resp.data.id, "item-1");
         assert_eq!(mock.requests().len(), 1);
     }
-
-    // Ported from internal/asc/api/upload_test.go (the Upload* helpers).
 
     #[tokio::test]
     async fn upload_app_screenshot_end_to_end() {

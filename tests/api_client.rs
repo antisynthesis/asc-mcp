@@ -1,5 +1,5 @@
-//! API client tests, ported from internal/asc/api/client_test.go and the
-//! PerformUploadOperations / Sha256Hex parts of upload_test.go.
+//! API client tests: requests, error classification, retries, cursors,
+//! cancellation, upload operations and SHA-256 hashing.
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -9,10 +9,9 @@ use asc_mcp::api::client::{MAX_RESPONSE_SIZE, USER_AGENT};
 use asc_mcp::api::model::{RequestHeader, UploadOperation};
 use asc_mcp::api::testutil::{MockApi, MockResponse, test_token_provider};
 use asc_mcp::api::{Client, ListOptions, sha256_hex};
-use asc_mcp::go::url::Values;
+use asc_mcp::wire::url::Values;
 use serde_json::{Value, json};
 
-// Go: TestClient_Get
 #[tokio::test]
 async fn get() {
     let mock = MockApi::start(|_| MockResponse::json(200, r#"{"status":"ok"}"#)).await;
@@ -31,7 +30,6 @@ async fn get() {
     assert_eq!(r.header("content-type"), Some("application/json"));
 }
 
-// Go: TestClient_Get_WithQuery
 #[tokio::test]
 async fn get_with_query() {
     let mock = MockApi::start(|_| MockResponse::json(200, "{}")).await;
@@ -44,7 +42,6 @@ async fn get_with_query() {
     assert_eq!(r.query_param("filter").as_deref(), Some("test"));
 }
 
-// Go: TestClient_Post
 #[tokio::test]
 async fn post() {
     let mock = MockApi::start(|_| MockResponse::json(201, r#"{"id":"123"}"#)).await;
@@ -59,7 +56,6 @@ async fn post() {
     assert_eq!(r.json()["name"], "test");
 }
 
-// Go: TestClient_Delete
 #[tokio::test]
 async fn delete() {
     let mock = MockApi::start(|_| MockResponse::empty(204)).await;
@@ -71,7 +67,6 @@ async fn delete() {
     );
 }
 
-// Go: TestClient_ErrorResponse
 #[tokio::test]
 async fn error_response() {
     for (name, status, body, contains) in [
@@ -89,8 +84,8 @@ async fn error_response() {
         ),
         ("not found", 404, "{}", "API error (404)"),
     ] {
-        // Go used 500 for the second case; 5xx is retried with backoff, so
-        // a non-retryable status keeps this test fast. The 5xx path is
+        // 5xx is retried with backoff, so a non-retryable status keeps this
+        // test fast. The 5xx path is
         // covered by `retries_5xx`.
         let mock = MockApi::start(move |_| MockResponse::json(status, body)).await;
         let err = mock.client().get("/test", None).await.expect_err(name);
@@ -109,9 +104,8 @@ async fn error_response_raw_body() {
     assert_eq!(err.to_string(), r#"API error (404): {"message": "gone"}"#);
 }
 
-// Go: TestClient_ContextCancellation. Rust callers cancel by dropping the
-// future; a deadline around a request to a server that never answers
-// must resolve promptly.
+// Callers cancel a request by dropping its future; a deadline around a
+// request to a server that never answers must resolve promptly.
 #[tokio::test]
 async fn cancellation() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -129,7 +123,6 @@ async fn cancellation() {
     assert!(started.elapsed() < Duration::from_secs(5));
 }
 
-// Go: TestClient_ListApps
 #[tokio::test]
 async fn list_apps() {
     let mock = MockApi::start(|req| {
@@ -156,7 +149,6 @@ async fn list_apps() {
     );
 }
 
-// Go: TestClient_GetApp
 #[tokio::test]
 async fn get_app() {
     let mock = MockApi::start(|req| {
@@ -168,9 +160,7 @@ async fn get_app() {
     assert_eq!(resp.data.id, "123");
 }
 
-// Go: TestClient_ListBuilds (endpoint ported outside the core layer)
 #[tokio::test]
-#[ignore = "endpoint method ported outside the protocol/core layer"]
 async fn list_builds() {
     let mock = MockApi::start(|req| {
         assert_eq!(req.path, "/v1/builds");
@@ -195,9 +185,7 @@ async fn list_builds() {
     assert_eq!(resp.data.len(), 1);
 }
 
-// Go: TestClient_ListBetaGroups (endpoint ported outside the core layer)
 #[tokio::test]
-#[ignore = "endpoint method ported outside the protocol/core layer"]
 async fn list_beta_groups() {
     let mock = MockApi::start(|_| {
         MockResponse::json(
@@ -221,9 +209,7 @@ async fn list_beta_groups() {
     assert_eq!(resp.data[0].attributes.name, "External Testers");
 }
 
-// Go: TestClient_ListDevices (endpoint ported outside the core layer)
 #[tokio::test]
-#[ignore = "endpoint method ported outside the protocol/core layer"]
 async fn list_devices() {
     let mock = MockApi::start(|_| {
         MockResponse::json(
@@ -243,7 +229,6 @@ async fn list_devices() {
     assert_eq!(resp.data.len(), 1);
 }
 
-// Go: TestClient_SendsAcceptAndUserAgent
 #[tokio::test]
 async fn sends_accept_and_user_agent() {
     let mock = MockApi::start(|_| MockResponse::json(200, "{}")).await;
@@ -254,7 +239,6 @@ async fn sends_accept_and_user_agent() {
     assert!(USER_AGENT.starts_with("asc-mcp/"));
 }
 
-// Go: TestClient_APIErrorIsTyped
 #[tokio::test]
 async fn api_error_is_typed() {
     let mock = MockApi::start(|_| {
@@ -265,7 +249,7 @@ async fn api_error_is_typed() {
     let api = err.api().expect("expected an ApiError in the chain");
     assert!(api.is_auth(), "403 should be classified as auth error");
     assert_eq!(api.status_code, 403);
-    // Wrapping keeps the typed error reachable (Go errors.As through %w).
+    // Wrapping keeps the typed error reachable.
     let wrapped = err.wrap("failed to list");
     assert_eq!(wrapped.api().map(|a| a.status_code), Some(403));
     assert!(
@@ -275,7 +259,6 @@ async fn api_error_is_typed() {
     );
 }
 
-// Go: TestClient_Retries5xx
 #[tokio::test]
 async fn retries_5xx() {
     let attempts = Arc::new(AtomicUsize::new(0));
@@ -320,7 +303,6 @@ async fn retries_429_with_retry_after() {
     );
 }
 
-// Go: TestClient_NoRetryOn400
 #[tokio::test]
 async fn no_retry_on_400() {
     let attempts = Arc::new(AtomicUsize::new(0));
@@ -352,7 +334,6 @@ async fn no_retry_post_on_transport_error() {
     assert_eq!(accepted.load(Ordering::SeqCst), 1);
 }
 
-// Go: TestClient_RespectsMaxResponseSize
 #[tokio::test]
 async fn respects_max_response_size() {
     let big = Arc::new("a".repeat(MAX_RESPONSE_SIZE + 2048));
@@ -369,7 +350,6 @@ async fn respects_max_response_size() {
     );
 }
 
-// Go: TestClient_EscapesPathIDs
 #[tokio::test]
 async fn escapes_path_ids() {
     let mock =
@@ -384,7 +364,6 @@ async fn escapes_path_ids() {
     );
 }
 
-// Go: TestClient_GetURL_FollowsSameHost
 #[tokio::test]
 async fn get_url_follows_same_host() {
     let mock = MockApi::start(|_| MockResponse::json(200, r#"{"ok":true}"#)).await;
@@ -398,7 +377,6 @@ async fn get_url_follows_same_host() {
     );
 }
 
-// Go: TestClient_GetURL_RejectsCrossHost
 #[tokio::test]
 async fn get_url_rejects_cross_host() {
     let mock = MockApi::start(|_| panic!("server should not be hit for cross-host cursor")).await;
@@ -439,7 +417,6 @@ fn op(url: String, offset: i64, length: i64, header: Option<&str>) -> UploadOper
     o
 }
 
-// Go: TestPerformUploadOperations_HappyPath
 #[tokio::test]
 async fn perform_upload_operations_happy_path() {
     let storage = MockApi::start(|_| MockResponse::empty(200)).await;
@@ -467,7 +444,6 @@ async fn perform_upload_operations_happy_path() {
     assert!(reqs.iter().all(|r| r.header("authorization").is_none()));
 }
 
-// Go: TestPerformUploadOperations_BoundsCheck
 #[tokio::test]
 async fn perform_upload_operations_bounds_check() {
     let client = Client::with_token_provider(test_token_provider(), "http://localhost");
@@ -496,7 +472,6 @@ async fn perform_upload_operations_bounds_check() {
     );
 }
 
-// Go: TestPerformUploadOperations_ServerError
 #[tokio::test]
 async fn perform_upload_operations_server_error() {
     let srv = MockApi::start(|_| MockResponse {
@@ -528,7 +503,6 @@ async fn perform_upload_operations_default_method() {
     assert_eq!(storage.requests()[0].method, "PUT");
 }
 
-// Go: TestSha256Hex_KnownValue
 #[test]
 fn sha256_hex_known_value() {
     // SHA-256 of "abc" per FIPS 180-4 test vectors.

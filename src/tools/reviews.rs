@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/reviews.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Customer review tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerCustomerReviewTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_customer_review_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -193,17 +190,17 @@ pub(super) fn register_customer_review_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListCustomerReviews`.
+/// Handles `list_customer_reviews`.
 async fn handle_list_customer_reviews(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -232,9 +229,9 @@ async fn handle_list_customer_reviews(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(list_result(&format_customer_reviews(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetCustomerReview`.
+/// Handles `get_customer_review`.
 async fn handle_get_customer_review(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ReviewID string \"json:\\\"review_id\\\"\" }", "") {
         review_id: String => "review_id";
     }
@@ -256,9 +253,9 @@ async fn handle_get_customer_review(c: Arc<Client>, args: Args) -> HandlerResult
     Ok(data_result(&format_customer_review(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateCustomerReviewResponse`.
+/// Handles `create_customer_review_response`.
 async fn handle_create_customer_review_response(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ReviewID string \"json:\\\"review_id\\\"\"; ResponseBody string \"json:\\\"response_body\\\"\" }", "") {
         review_id: String => "review_id";
         response_body: String => "response_body";
@@ -296,9 +293,9 @@ async fn handle_create_customer_review_response(c: Arc<Client>, args: Args) -> H
     Ok(data_result(&format!("Created review response: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteCustomerReviewResponse`.
+/// Handles `delete_customer_review_response`.
 async fn handle_delete_customer_review_response(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ResponseID string \"json:\\\"response_id\\\"\" }", "") {
         response_id: String => "response_id";
     }
@@ -319,16 +316,16 @@ async fn handle_delete_customer_review_response(c: Arc<Client>, args: Args) -> H
     Ok(CallToolResult::success("Review response deleted successfully"))
 }
 
-/// Ported from `Registry.handleListCustomerReviewSummarizations`.
+/// Handles `list_customer_review_summarizations`.
 async fn handle_list_customer_review_summarizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -348,7 +345,7 @@ async fn handle_list_customer_review_summarizations(c: Arc<Client>, args: Args) 
         limit = 200;
     }
 
-    let opts = list_opts(limit, &params.filter, &GoSlice::nil(), &params.fields, &params.include);
+    let opts = list_opts(limit, &params.filter, &JsonSlice::nil(), &params.fields, &params.include);
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_customer_review_summarizations(&params.app_id, opts.as_ref())).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to list customer review summarizations: {e}"))),
@@ -357,7 +354,6 @@ async fn handle_list_customer_review_summarizations(c: Arc<Client>, args: Args) 
     Ok(list_result(&format_customer_review_summarizations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `formatCustomerReviews`.
 fn format_customer_reviews(reviews: &[CustomerReview]) -> String {
     if reviews.is_empty() {
         return "No customer reviews found".to_string();
@@ -372,7 +368,6 @@ fn format_customer_reviews(reviews: &[CustomerReview]) -> String {
     sb
 }
 
-/// Ported from `formatCustomerReview`.
 fn format_customer_review(review: &CustomerReview) -> String {
     let a = &review.attributes;
     let mut sb = String::new();
@@ -396,7 +391,6 @@ fn format_customer_review(review: &CustomerReview) -> String {
     sb
 }
 
-/// Ported from `formatCustomerReviewSummarizations`.
 fn format_customer_review_summarizations(summaries: &[CustomerReviewSummarization]) -> String {
     if summaries.is_empty() {
         return "No customer review summarizations found".to_string();

@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/users.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! User and invitation tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerUserTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_user_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -290,16 +287,16 @@ pub(super) fn register_user_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListUsers`.
+/// Handles `list_users`.
 async fn handle_list_users(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -324,9 +321,9 @@ async fn handle_list_users(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&format_users(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetUser`.
+/// Handles `get_user`.
 async fn handle_get_user(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { UserID string \"json:\\\"user_id\\\"\" }", "") {
         user_id: String => "user_id";
     }
@@ -348,12 +345,12 @@ async fn handle_get_user(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_user(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateUser`.
+/// Handles `update_user`.
 async fn handle_update_user(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { UserID string \"json:\\\"user_id\\\"\"; Roles []string \"json:\\\"roles\\\"\"; AllAppsVisible *bool \"json:\\\"all_apps_visible\\\"\" }", "") {
         user_id: String => "user_id";
-        roles: GoSlice<String> => "roles";
+        roles: JsonSlice<String> => "roles";
         all_apps_visible: Option<bool> => "all_apps_visible";
     }
     }
@@ -387,9 +384,9 @@ async fn handle_update_user(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format!("User updated successfully:\n{}", format_user(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteUser`.
+/// Handles `delete_user`.
 async fn handle_delete_user(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { UserID string \"json:\\\"user_id\\\"\" }", "") {
         user_id: String => "user_id";
     }
@@ -410,16 +407,16 @@ async fn handle_delete_user(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(CallToolResult::success("User removed successfully"))
 }
 
-/// Ported from `Registry.handleListUserInvitations`.
+/// Handles `list_user_invitations`.
 async fn handle_list_user_invitations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -444,9 +441,9 @@ async fn handle_list_user_invitations(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(list_result(&format_user_invitations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetUserInvitation`.
+/// Handles `get_user_invitation`.
 async fn handle_get_user_invitation(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { InvitationID string \"json:\\\"invitation_id\\\"\" }", "") {
         invitation_id: String => "invitation_id";
     }
@@ -468,14 +465,14 @@ async fn handle_get_user_invitation(c: Arc<Client>, args: Args) -> HandlerResult
     Ok(data_result(&format_user_invitation(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateUserInvitation`.
+/// Handles `create_user_invitation`.
 async fn handle_create_user_invitation(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Email string \"json:\\\"email\\\"\"; FirstName string \"json:\\\"first_name\\\"\"; LastName string \"json:\\\"last_name\\\"\"; Roles []string \"json:\\\"roles\\\"\"; AllAppsVisible *bool \"json:\\\"all_apps_visible\\\"\" }", "") {
         email: String => "email";
         first_name: String => "first_name";
         last_name: String => "last_name";
-        roles: GoSlice<String> => "roles";
+        roles: JsonSlice<String> => "roles";
         all_apps_visible: Option<bool> => "all_apps_visible";
     }
     }
@@ -517,9 +514,9 @@ async fn handle_create_user_invitation(c: Arc<Client>, args: Args) -> HandlerRes
     Ok(data_result(&format!("User invitation sent:\n{}", format_user_invitation(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteUserInvitation`.
+/// Handles `delete_user_invitation`.
 async fn handle_delete_user_invitation(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { InvitationID string \"json:\\\"invitation_id\\\"\" }", "") {
         invitation_id: String => "invitation_id";
     }
@@ -540,7 +537,6 @@ async fn handle_delete_user_invitation(c: Arc<Client>, args: Args) -> HandlerRes
     Ok(CallToolResult::success("User invitation deleted"))
 }
 
-/// Ported from `formatUsers`.
 fn format_users(users: &[User]) -> String {
     if users.is_empty() {
         return "No users found".to_string();
@@ -557,7 +553,6 @@ fn format_users(users: &[User]) -> String {
     sb
 }
 
-/// Ported from `formatUser`.
 fn format_user(user: &User) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", user.id);
@@ -571,7 +566,6 @@ fn format_user(user: &User) -> String {
     sb
 }
 
-/// Ported from `formatUserInvitations`.
 fn format_user_invitations(invitations: &[UserInvitation]) -> String {
     if invitations.is_empty() {
         return "No pending user invitations found".to_string();
@@ -588,7 +582,6 @@ fn format_user_invitations(invitations: &[UserInvitation]) -> String {
     sb
 }
 
-/// Ported from `formatUserInvitation`.
 fn format_user_invitation(inv: &UserInvitation) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", inv.id);

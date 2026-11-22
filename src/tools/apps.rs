@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/apps.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! App tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerAppTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_app_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -112,16 +109,16 @@ pub(super) fn register_app_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListApps`.
+/// Handles `list_apps`.
 async fn handle_list_apps(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
@@ -161,9 +158,9 @@ async fn handle_list_apps(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(list_result(&sb, &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetApp`.
+/// Handles `get_app`.
 async fn handle_get_app(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\" }", "") {
         app_id: String => "app_id";
     }
@@ -198,9 +195,9 @@ async fn handle_get_app(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&sb, &resp.data))
 }
 
-/// Ported from `Registry.handleGetAppVersions`.
+/// Handles `get_app_versions`.
 async fn handle_get_app_versions(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";

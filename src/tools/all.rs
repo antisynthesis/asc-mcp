@@ -1,8 +1,9 @@
-// @generated registration order, mirroring tools.NewRegistry in Go.
+// @generated registration order.
 
 use super::Registry;
 
-/// Registers every built-in tool in the Go registry's order.
+/// Registers every built-in tool in the canonical order (the order
+/// `tools/list` reports).
 pub(super) fn register_all(r: &mut Registry) {
     super::apps::register_app_tools(r);
     super::builds::register_build_tools(r);

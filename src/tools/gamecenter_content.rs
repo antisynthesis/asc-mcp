@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/gamecenter_content.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Shared Game Center content tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerGameCenterContentTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_game_center_content_tools(r: &mut Registry) {
     super::gamecenter_leaderboard_sets::register_game_center_leaderboard_set_tools(r);
     super::gamecenter_activities::register_game_center_activity_tools(r);
@@ -15,18 +12,18 @@ pub(super) fn register_game_center_content_tools(r: &mut Registry) {
     super::gamecenter_submissions::register_game_center_submission_tools(r);
 }
 
-go_struct! {
+json_struct! {
 pub(crate) struct GcListParams ("tools.gcListParams", "gcListParams") {
     pub(crate) limit: i64 => "limit";
     pub(crate) cursor: String => "cursor";
-    pub(crate) filter: GoMap<GoSlice<String>> => "filter";
-    pub(crate) fields: GoMap<GoSlice<String>> => "fields";
-    pub(crate) include: GoSlice<String> => "include";
+    pub(crate) filter: JsonMap<JsonSlice<String>> => "filter";
+    pub(crate) fields: JsonMap<JsonSlice<String>> => "fields";
+    pub(crate) include: JsonSlice<String> => "include";
 }
 }
 
 
-/// Go `gcLimit`: clamps a caller-supplied page size to the range the App
+/// Clamps a caller-supplied page size to the range the App
 /// Store Connect API accepts, defaulting to 50.
 pub(crate) fn gc_limit(limit: i64) -> i64 {
     if limit <= 0 {
@@ -39,8 +36,8 @@ pub(crate) fn gc_limit(limit: i64) -> i64 {
 }
 
 impl GcListParams {
-    /// Go `gcListParams.opts`: list options with the limit already clamped.
+    /// List options with the limit already clamped.
     pub(crate) fn opts(&self) -> Option<ListOptions> {
-        list_opts(gc_limit(self.limit), &self.filter, &GoSlice::nil(), &self.fields, &self.include)
+        list_opts(gc_limit(self.limit), &self.filter, &JsonSlice::nil(), &self.fields, &self.include)
     }
 }

@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/beta_feedback.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! TestFlight feedback tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerBetaFeedbackTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_beta_feedback_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -249,15 +246,15 @@ pub(super) fn register_beta_feedback_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListBetaFeedbackCrashes`.
+/// Handles `list_beta_feedback_crashes`.
 async fn handle_list_beta_feedback_crashes(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
     }
     }
     let mut params = Params::default();
@@ -277,7 +274,7 @@ async fn handle_list_beta_feedback_crashes(c: Arc<Client>, args: Args) -> Handle
         limit = 200;
     }
 
-    let opts = list_opts(limit, &params.filter, &params.sort, &GoMap::nil(), &GoSlice::nil());
+    let opts = list_opts(limit, &params.filter, &params.sort, &JsonMap::nil(), &JsonSlice::nil());
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_beta_feedback_crash_submissions(&params.app_id, opts.as_ref())).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to list beta feedback crashes: {e}"))),
@@ -292,9 +289,9 @@ async fn handle_list_beta_feedback_crashes(c: Arc<Client>, args: Args) -> Handle
     Ok(list_result(&content, &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetBetaFeedbackCrash`.
+/// Handles `get_beta_feedback_crash`.
 async fn handle_get_beta_feedback_crash(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubmissionID string \"json:\\\"submission_id\\\"\" }", "") {
         submission_id: String => "submission_id";
     }
@@ -316,9 +313,9 @@ async fn handle_get_beta_feedback_crash(c: Arc<Client>, args: Args) -> HandlerRe
     Ok(data_result(&format_beta_feedback_submission(&resp.data.id, &resp.data.attributes), &resp.data))
 }
 
-/// Ported from `Registry.handleGetBetaFeedbackCrashLog`.
+/// Handles `get_beta_feedback_crash_log`.
 async fn handle_get_beta_feedback_crash_log(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubmissionID string \"json:\\\"submission_id\\\"\" }", "") {
         submission_id: String => "submission_id";
     }
@@ -346,9 +343,9 @@ async fn handle_get_beta_feedback_crash_log(c: Arc<Client>, args: Args) -> Handl
     ))
 }
 
-/// Ported from `Registry.handleDeleteBetaFeedbackCrash`.
+/// Handles `delete_beta_feedback_crash`.
 async fn handle_delete_beta_feedback_crash(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubmissionID string \"json:\\\"submission_id\\\"\" }", "") {
         submission_id: String => "submission_id";
     }
@@ -369,15 +366,15 @@ async fn handle_delete_beta_feedback_crash(c: Arc<Client>, args: Args) -> Handle
     Ok(CallToolResult::success("Beta feedback crash submission deleted successfully"))
 }
 
-/// Ported from `Registry.handleListBetaFeedbackScreenshots`.
+/// Handles `list_beta_feedback_screenshots`.
 async fn handle_list_beta_feedback_screenshots(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
     }
     }
     let mut params = Params::default();
@@ -397,7 +394,7 @@ async fn handle_list_beta_feedback_screenshots(c: Arc<Client>, args: Args) -> Ha
         limit = 200;
     }
 
-    let opts = list_opts(limit, &params.filter, &params.sort, &GoMap::nil(), &GoSlice::nil());
+    let opts = list_opts(limit, &params.filter, &params.sort, &JsonMap::nil(), &JsonSlice::nil());
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_beta_feedback_screenshot_submissions(&params.app_id, opts.as_ref())).await {
         Ok(r) => r,
         Err(e) => return Ok(error_result(format!("Failed to list beta feedback screenshots: {e}"))),
@@ -412,9 +409,9 @@ async fn handle_list_beta_feedback_screenshots(c: Arc<Client>, args: Args) -> Ha
     Ok(list_result(&content, &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetBetaFeedbackScreenshot`.
+/// Handles `get_beta_feedback_screenshot`.
 async fn handle_get_beta_feedback_screenshot(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubmissionID string \"json:\\\"submission_id\\\"\" }", "") {
         submission_id: String => "submission_id";
     }
@@ -436,9 +433,9 @@ async fn handle_get_beta_feedback_screenshot(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&format_beta_feedback_submission(&resp.data.id, &resp.data.attributes), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteBetaFeedbackScreenshot`.
+/// Handles `delete_beta_feedback_screenshot`.
 async fn handle_delete_beta_feedback_screenshot(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubmissionID string \"json:\\\"submission_id\\\"\" }", "") {
         submission_id: String => "submission_id";
     }
@@ -459,9 +456,9 @@ async fn handle_delete_beta_feedback_screenshot(c: Arc<Client>, args: Args) -> H
     Ok(CallToolResult::success("Beta feedback screenshot submission deleted successfully"))
 }
 
-/// Ported from `Registry.handleGetBetaBuildUsageMetrics`.
+/// Handles `get_beta_build_usage_metrics`.
 async fn handle_get_beta_build_usage_metrics(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BuildID string \"json:\\\"build_id\\\"\"; Limit int \"json:\\\"limit\\\"\" }", "") {
         build_id: String => "build_id";
         limit: i64 => "limit";
@@ -489,8 +486,9 @@ async fn handle_get_beta_build_usage_metrics(c: Arc<Client>, args: Args) -> Hand
     Ok(list_result(&format_beta_build_usages(&params.build_id, &resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `formatBetaFeedbackList`: shares the "Found N ..." framing
-/// between the two feedback list tools.
+/// Formats a feedback list: "No <noun> found", or the shared "Found N ..."
+/// framing around the entries `write` appends. Used by the two feedback
+/// list tools.
 fn format_beta_feedback_list(noun: &str, count: usize, write: impl FnOnce(&mut String)) -> String {
     if count == 0 {
         return format!("No {noun} found");
@@ -501,7 +499,6 @@ fn format_beta_feedback_list(noun: &str, count: usize, write: impl FnOnce(&mut S
     sb
 }
 
-/// Ported from `formatBetaFeedbackSubmission`.
 fn format_beta_feedback_submission(id: &str, attrs: &BetaFeedbackDeviceAttributes) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "Submission ID: {}", id);
@@ -542,7 +539,6 @@ fn format_beta_feedback_submission(id: &str, attrs: &BetaFeedbackDeviceAttribute
     sb
 }
 
-/// Ported from `formatBetaBuildUsages`.
 fn format_beta_build_usages(build_id: &str, groups: &[BetaBuildUsageGroup]) -> String {
     let mut points = 0usize;
     for group in groups {

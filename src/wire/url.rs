@@ -1,4 +1,4 @@
-//! Go `net/url` escaping and `url.Values` encoding.
+//! URL escaping and query-string encoding.
 
 use std::collections::BTreeMap;
 
@@ -20,12 +20,10 @@ fn escape(s: &str, keep: impl Fn(u8) -> bool, space_plus: bool) -> String {
     out
 }
 
-/// Go `url.QueryEscape`.
 pub fn query_escape(s: &str) -> String {
     escape(s, is_unreserved, true)
 }
 
-/// Go `url.PathEscape`.
 pub fn path_escape(s: &str) -> String {
     escape(
         s,
@@ -34,7 +32,6 @@ pub fn path_escape(s: &str) -> String {
     )
 }
 
-/// Go `url.QueryUnescape`.
 pub fn query_unescape(s: &str) -> Result<String, String> {
     let b = s.as_bytes();
     let mut out = Vec::with_capacity(b.len());
@@ -54,7 +51,7 @@ pub fn query_unescape(s: &str) -> Result<String, String> {
                         let bad: String = s[i..].chars().take(3).collect();
                         return Err(format!(
                             "invalid URL escape {}",
-                            crate::go::fmt::quote(&bad)
+                            crate::wire::fmt::quote(&bad)
                         ));
                     }
                 }
@@ -72,7 +69,7 @@ pub fn query_unescape(s: &str) -> Result<String, String> {
     Ok(String::from_utf8_lossy(&out).into_owned())
 }
 
-/// Go `url.Values`: an ordered multimap whose `encode` sorts by key.
+/// Query parameters: a multimap whose `encode` sorts by key.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Values(BTreeMap<String, Vec<String>>);
 
@@ -81,15 +78,12 @@ impl Values {
     pub fn new() -> Self {
         Self::default()
     }
-    /// Go `Values.Set`.
     pub fn set(&mut self, k: impl Into<String>, v: impl Into<String>) {
         self.0.insert(k.into(), vec![v.into()]);
     }
-    /// Go `Values.Add`.
     pub fn add(&mut self, k: impl Into<String>, v: impl Into<String>) {
         self.0.entry(k.into()).or_default().push(v.into());
     }
-    /// Go `Values.Get`.
     pub fn get(&self, k: &str) -> &str {
         self.0
             .get(k)
@@ -97,15 +91,13 @@ impl Values {
             .map(String::as_str)
             .unwrap_or("")
     }
-    /// Go `Values.Has`.
     pub fn has(&self, k: &str) -> bool {
         self.0.contains_key(k)
     }
-    /// Go `Values.Del`.
     pub fn del(&mut self, k: &str) {
         self.0.remove(k);
     }
-    /// Number of keys (Go `len(values)`).
+    /// Number of keys.
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -117,7 +109,6 @@ impl Values {
     pub fn iter(&self) -> impl Iterator<Item = (&String, &Vec<String>)> {
         self.0.iter()
     }
-    /// Go `Values.Encode`.
     pub fn encode(&self) -> String {
         let mut out = String::new();
         for (k, vs) in &self.0 {
@@ -133,7 +124,6 @@ impl Values {
         }
         out
     }
-    /// Go `url.ParseQuery`.
     pub fn parse(query: &str) -> Result<Self, String> {
         let mut out = Self::new();
         let mut first_err: Option<String> = None;
@@ -174,7 +164,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn escapes_match_go() {
+    fn escapes() {
         assert_eq!(
             path_escape("a b/c;d,e?f$&+:=@"),
             "a%20b%2Fc%3Bd%2Ce%3Ff$&+:=@"

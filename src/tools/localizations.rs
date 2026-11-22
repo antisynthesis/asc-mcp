@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/localizations.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! App info and version localization tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerAppInfoLocalizationTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_app_info_localization_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -233,7 +230,7 @@ pub(super) fn register_app_info_localization_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.registerVersionLocalizationTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_version_localization_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -442,16 +439,16 @@ pub(super) fn register_version_localization_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListAppInfoLocalizations`.
+/// Handles `list_app_info_localizations`.
 async fn handle_list_app_info_localizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppInfoID string \"json:\\\"app_info_id\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_info_id: String => "app_info_id";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -472,9 +469,9 @@ async fn handle_list_app_info_localizations(c: Arc<Client>, args: Args) -> Handl
     Ok(list_result(&format_app_info_localizations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAppInfoLocalization`.
+/// Handles `get_app_info_localization`.
 async fn handle_get_app_info_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -496,9 +493,9 @@ async fn handle_get_app_info_localization(c: Arc<Client>, args: Args) -> Handler
     Ok(data_result(&format_app_info_localization(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateAppInfoLocalization`.
+/// Handles `create_app_info_localization`.
 async fn handle_create_app_info_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppInfoID string \"json:\\\"app_info_id\\\"\"; Locale string \"json:\\\"locale\\\"\"; Name string \"json:\\\"name\\\"\"; Subtitle string \"json:\\\"subtitle\\\"\"; PrivacyPolicyURL string \"json:\\\"privacy_policy_url\\\"\"; PrivacyChoicesURL string \"json:\\\"privacy_choices_url\\\"\"; PrivacyPolicyText string \"json:\\\"privacy_policy_text\\\"\" }", "") {
         app_info_id: String => "app_info_id";
         locale: String => "locale";
@@ -548,9 +545,9 @@ async fn handle_create_app_info_localization(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&result, &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateAppInfoLocalization`.
+/// Handles `update_app_info_localization`.
 async fn handle_update_app_info_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; Name string \"json:\\\"name\\\"\"; Subtitle string \"json:\\\"subtitle\\\"\"; PrivacyPolicyURL string \"json:\\\"privacy_policy_url\\\"\"; PrivacyChoicesURL string \"json:\\\"privacy_choices_url\\\"\"; PrivacyPolicyText string \"json:\\\"privacy_policy_text\\\"\" }", "") {
         localization_id: String => "localization_id";
         name: String => "name";
@@ -592,9 +589,9 @@ async fn handle_update_app_info_localization(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&result, &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteAppInfoLocalization`.
+/// Handles `delete_app_info_localization`.
 async fn handle_delete_app_info_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -615,9 +612,9 @@ async fn handle_delete_app_info_localization(c: Arc<Client>, args: Args) -> Hand
     Ok(CallToolResult::success("Successfully deleted app info localization"))
 }
 
-/// Ported from `Registry.handleGetAppInfos`.
+/// Handles `get_app_infos`.
 async fn handle_get_app_infos(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\" }", "") {
         app_id: String => "app_id";
     }
@@ -639,16 +636,16 @@ async fn handle_get_app_infos(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_app_infos(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleListVersionLocalizations`.
+/// Handles `list_version_localizations`.
 async fn handle_list_version_localizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         version_id: String => "version_id";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -669,9 +666,9 @@ async fn handle_list_version_localizations(c: Arc<Client>, args: Args) -> Handle
     Ok(list_result(&format_version_localizations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetVersionLocalization`.
+/// Handles `get_version_localization`.
 async fn handle_get_version_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -693,9 +690,9 @@ async fn handle_get_version_localization(c: Arc<Client>, args: Args) -> HandlerR
     Ok(data_result(&format_version_localization(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateVersionLocalization`.
+/// Handles `create_version_localization`.
 async fn handle_create_version_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; Locale string \"json:\\\"locale\\\"\"; Description string \"json:\\\"description\\\"\"; Keywords string \"json:\\\"keywords\\\"\"; WhatsNew string \"json:\\\"whats_new\\\"\"; PromotionalText string \"json:\\\"promotional_text\\\"\"; MarketingURL string \"json:\\\"marketing_url\\\"\"; SupportURL string \"json:\\\"support_url\\\"\" }", "") {
         version_id: String => "version_id";
         locale: String => "locale";
@@ -749,9 +746,9 @@ async fn handle_create_version_localization(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&result, &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateVersionLocalization`.
+/// Handles `update_version_localization`.
 async fn handle_update_version_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; Description string \"json:\\\"description\\\"\"; Keywords string \"json:\\\"keywords\\\"\"; WhatsNew string \"json:\\\"whats_new\\\"\"; PromotionalText string \"json:\\\"promotional_text\\\"\"; MarketingURL string \"json:\\\"marketing_url\\\"\"; SupportURL string \"json:\\\"support_url\\\"\" }", "") {
         localization_id: String => "localization_id";
         description: String => "description";
@@ -795,9 +792,9 @@ async fn handle_update_version_localization(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&result, &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteVersionLocalization`.
+/// Handles `delete_version_localization`.
 async fn handle_delete_version_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -820,7 +817,6 @@ async fn handle_delete_version_localization(c: Arc<Client>, args: Args) -> Handl
 
 // Formatting helpers
 
-/// Ported from `formatAppInfos`.
 fn format_app_infos(infos: &[AppInfo]) -> String {
     if infos.is_empty() {
         return "No app infos found.".into();
@@ -840,7 +836,6 @@ fn format_app_infos(infos: &[AppInfo]) -> String {
     result
 }
 
-/// Ported from `formatAppInfoLocalizations`.
 fn format_app_info_localizations(localizations: &[AppInfoLocalization]) -> String {
     if localizations.is_empty() {
         return "No localizations found.".into();
@@ -856,7 +851,6 @@ fn format_app_info_localizations(localizations: &[AppInfoLocalization]) -> Strin
     result
 }
 
-/// Ported from `formatAppInfoLocalization`.
 fn format_app_info_localization(loc: &AppInfoLocalization) -> String {
     let a = &loc.attributes;
     let mut result = format!("ID: {}\n", loc.id);
@@ -879,7 +873,6 @@ fn format_app_info_localization(loc: &AppInfoLocalization) -> String {
     result
 }
 
-/// Ported from `formatVersionLocalizations`.
 fn format_version_localizations(localizations: &[AppStoreVersionLocalization]) -> String {
     if localizations.is_empty() {
         return "No localizations found.".into();
@@ -895,10 +888,10 @@ fn format_version_localizations(localizations: &[AppStoreVersionLocalization]) -
     result
 }
 
-/// Go `s[:n] + "..."` on a string longer than `n` bytes. A cut through a
-/// multi-byte character leaves invalid UTF-8 bytes, each of which Go's JSON
-/// encoder later emits as U+FFFD; reproduce that here.
-fn go_truncate_ellipsis(s: &str, n: usize) -> String {
+/// Truncates a string longer than `n` bytes to `n` bytes plus `...`. A cut
+/// through a multi-byte character leaves invalid UTF-8 bytes, each of which
+/// is emitted on the wire as U+FFFD.
+fn truncate_ellipsis(s: &str, n: usize) -> String {
     let mut b = n;
     while !s.is_char_boundary(b) {
         b -= 1;
@@ -911,20 +904,19 @@ fn go_truncate_ellipsis(s: &str, n: usize) -> String {
     out
 }
 
-/// Ported from `formatVersionLocalization`.
 fn format_version_localization(loc: &AppStoreVersionLocalization) -> String {
     let a = &loc.attributes;
     let mut result = format!("ID: {}\n", loc.id);
     let _ = writeln!(result, "Locale: {}", a.locale);
     if !a.description.is_empty() {
-        let desc = if a.description.len() > 200 { go_truncate_ellipsis(&a.description, 200) } else { a.description.clone() };
+        let desc = if a.description.len() > 200 { truncate_ellipsis(&a.description, 200) } else { a.description.clone() };
         let _ = writeln!(result, "Description: {}", desc);
     }
     if !a.keywords.is_empty() {
         let _ = writeln!(result, "Keywords: {}", a.keywords);
     }
     if !a.whats_new.is_empty() {
-        let whats_new = if a.whats_new.len() > 200 { go_truncate_ellipsis(&a.whats_new, 200) } else { a.whats_new.clone() };
+        let whats_new = if a.whats_new.len() > 200 { truncate_ellipsis(&a.whats_new, 200) } else { a.whats_new.clone() };
         let _ = writeln!(result, "What's New: {}", whats_new);
     }
     if !a.promotional_text.is_empty() {

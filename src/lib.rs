@@ -3,8 +3,8 @@
 pub mod api;
 pub mod cli;
 pub mod config;
-pub mod go;
 pub mod logging;
 pub mod mcp;
 pub mod server;
 pub mod tools;
+pub mod wire;

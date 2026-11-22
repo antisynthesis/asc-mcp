@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/promoted_purchases.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Promoted purchase, offer code and win-back offer tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerPromotedPurchasesTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_promoted_purchases_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -550,17 +547,17 @@ pub(super) fn register_promoted_purchases_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListPromotedPurchases`.
+/// Handles `list_promoted_purchases`.
 async fn handle_list_promoted_purchases(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -589,9 +586,9 @@ async fn handle_list_promoted_purchases(c: Arc<Client>, args: Args) -> HandlerRe
     Ok(list_result(&format_promoted_purchases(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetPromotedPurchase`.
+/// Handles `get_promoted_purchase`.
 async fn handle_get_promoted_purchase(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PromotedPurchaseID string \"json:\\\"promoted_purchase_id\\\"\" }", "") {
         promoted_purchase_id: String => "promoted_purchase_id";
     }
@@ -613,9 +610,9 @@ async fn handle_get_promoted_purchase(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(data_result(&format_promoted_purchase(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreatePromotedPurchase`.
+/// Handles `create_promoted_purchase`.
 async fn handle_create_promoted_purchase(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; InAppPurchaseID string \"json:\\\"in_app_purchase_id\\\"\"; Enabled *bool \"json:\\\"enabled\\\"\"; VisibleForAllUsers *bool \"json:\\\"visible_for_all_users\\\"\" }", "") {
         app_id: String => "app_id";
         in_app_purchase_id: String => "in_app_purchase_id";
@@ -656,9 +653,9 @@ async fn handle_create_promoted_purchase(c: Arc<Client>, args: Args) -> HandlerR
     Ok(data_result(&format!("Promoted purchase created:\n{}", format_promoted_purchase(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdatePromotedPurchase`.
+/// Handles `update_promoted_purchase`.
 async fn handle_update_promoted_purchase(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PromotedPurchaseID string \"json:\\\"promoted_purchase_id\\\"\"; Enabled *bool \"json:\\\"enabled\\\"\"; VisibleForAllUsers *bool \"json:\\\"visible_for_all_users\\\"\" }", "") {
         promoted_purchase_id: String => "promoted_purchase_id";
         enabled: Option<bool> => "enabled";
@@ -693,9 +690,9 @@ async fn handle_update_promoted_purchase(c: Arc<Client>, args: Args) -> HandlerR
     Ok(data_result(&format!("Promoted purchase updated:\n{}", format_promoted_purchase(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeletePromotedPurchase`.
+/// Handles `delete_promoted_purchase`.
 async fn handle_delete_promoted_purchase(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PromotedPurchaseID string \"json:\\\"promoted_purchase_id\\\"\" }", "") {
         promoted_purchase_id: String => "promoted_purchase_id";
     }
@@ -716,17 +713,17 @@ async fn handle_delete_promoted_purchase(c: Arc<Client>, args: Args) -> HandlerR
     Ok(CallToolResult::success("Promoted purchase deleted"))
 }
 
-/// Ported from `Registry.handleListSubscriptionOfferCodes`.
+/// Handles `list_subscription_offer_codes`.
 async fn handle_list_subscription_offer_codes(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubscriptionID string \"json:\\\"subscription_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         subscription_id: String => "subscription_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -755,9 +752,9 @@ async fn handle_list_subscription_offer_codes(c: Arc<Client>, args: Args) -> Han
     Ok(list_result(&format_subscription_offer_codes(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetSubscriptionOfferCode`.
+/// Handles `get_subscription_offer_code`.
 async fn handle_get_subscription_offer_code(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OfferCodeID string \"json:\\\"offer_code_id\\\"\" }", "") {
         offer_code_id: String => "offer_code_id";
     }
@@ -779,13 +776,13 @@ async fn handle_get_subscription_offer_code(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&format_subscription_offer_code(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateSubscriptionOfferCode`.
+/// Handles `create_subscription_offer_code`.
 async fn handle_create_subscription_offer_code(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubscriptionID string \"json:\\\"subscription_id\\\"\"; Name string \"json:\\\"name\\\"\"; CustomerEligibilities []string \"json:\\\"customer_eligibilities\\\"\"; OfferEligibility string \"json:\\\"offer_eligibility\\\"\"; Duration string \"json:\\\"duration\\\"\"; OfferMode string \"json:\\\"offer_mode\\\"\"; NumberOfPeriods int \"json:\\\"number_of_periods\\\"\" }", "") {
         subscription_id: String => "subscription_id";
         name: String => "name";
-        customer_eligibilities: GoSlice<String> => "customer_eligibilities";
+        customer_eligibilities: JsonSlice<String> => "customer_eligibilities";
         offer_eligibility: String => "offer_eligibility";
         duration: String => "duration";
         offer_mode: String => "offer_mode";
@@ -828,9 +825,9 @@ async fn handle_create_subscription_offer_code(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("Subscription offer code created:\n{}", format_subscription_offer_code(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateSubscriptionOfferCode`.
+/// Handles `update_subscription_offer_code`.
 async fn handle_update_subscription_offer_code(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OfferCodeID string \"json:\\\"offer_code_id\\\"\"; Active *bool \"json:\\\"active\\\"\" }", "") {
         offer_code_id: String => "offer_code_id";
         active: Option<bool> => "active";
@@ -861,17 +858,17 @@ async fn handle_update_subscription_offer_code(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("Subscription offer code updated:\n{}", format_subscription_offer_code(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleListWinBackOffers`.
+/// Handles `list_win_back_offers`.
 async fn handle_list_win_back_offers(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubscriptionID string \"json:\\\"subscription_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         subscription_id: String => "subscription_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -900,9 +897,9 @@ async fn handle_list_win_back_offers(c: Arc<Client>, args: Args) -> HandlerResul
     Ok(list_result(&format_win_back_offers(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetWinBackOffer`.
+/// Handles `get_win_back_offer`.
 async fn handle_get_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OfferID string \"json:\\\"offer_id\\\"\" }", "") {
         offer_id: String => "offer_id";
     }
@@ -924,9 +921,9 @@ async fn handle_get_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResult 
     Ok(data_result(&format_win_back_offer(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateWinBackOffer`.
+/// Handles `create_win_back_offer`.
 async fn handle_create_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubscriptionID string \"json:\\\"subscription_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\"; OfferID string \"json:\\\"offer_id\\\"\"; Duration string \"json:\\\"duration\\\"\"; OfferMode string \"json:\\\"offer_mode\\\"\"; PeriodCount int \"json:\\\"period_count\\\"\"; Priority string \"json:\\\"priority\\\"\"; PromotionIntent string \"json:\\\"promotion_intent\\\"\"; PriceIDs []string \"json:\\\"price_ids\\\"\" }", "") {
         subscription_id: String => "subscription_id";
         reference_name: String => "reference_name";
@@ -936,7 +933,7 @@ async fn handle_create_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResu
         period_count: i64 => "period_count";
         priority: String => "priority";
         promotion_intent: String => "promotion_intent";
-        price_ids: GoSlice<String> => "price_ids";
+        price_ids: JsonSlice<String> => "price_ids";
     }
     }
     let mut params = Params::default();
@@ -948,7 +945,7 @@ async fn handle_create_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResu
         return Ok(error_result("subscription_id, reference_name, and offer_id are required"));
     }
 
-    let mut prices: GoSlice<ResourceIdentifier> = GoSlice::nil();
+    let mut prices: JsonSlice<ResourceIdentifier> = JsonSlice::nil();
     for pid in params.price_ids.iter() {
         prices.push(ResourceIdentifier { type_: "winBackOfferPrices".into(), id: pid.clone() });
     }
@@ -983,9 +980,9 @@ async fn handle_create_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(data_result(&format!("Win-back offer created:\n{}", format_win_back_offer(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateWinBackOffer`.
+/// Handles `update_win_back_offer`.
 async fn handle_update_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OfferID string \"json:\\\"offer_id\\\"\"; Priority string \"json:\\\"priority\\\"\"; PromotionIntent string \"json:\\\"promotion_intent\\\"\" }", "") {
         offer_id: String => "offer_id";
         priority: String => "priority";
@@ -1021,9 +1018,9 @@ async fn handle_update_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(data_result(&format!("Win-back offer updated:\n{}", format_win_back_offer(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteWinBackOffer`.
+/// Handles `delete_win_back_offer`.
 async fn handle_delete_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { OfferID string \"json:\\\"offer_id\\\"\" }", "") {
         offer_id: String => "offer_id";
     }
@@ -1044,7 +1041,6 @@ async fn handle_delete_win_back_offer(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(CallToolResult::success("Win-back offer deleted"))
 }
 
-/// Ported from `formatPromotedPurchases`.
 fn format_promoted_purchases(purchases: &[PromotedPurchase]) -> String {
     if purchases.is_empty() {
         return "No promoted purchases found".to_string();
@@ -1061,7 +1057,6 @@ fn format_promoted_purchases(purchases: &[PromotedPurchase]) -> String {
     sb
 }
 
-/// Ported from `formatPromotedPurchase`.
 fn format_promoted_purchase(p: &PromotedPurchase) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", p.id);
@@ -1073,7 +1068,6 @@ fn format_promoted_purchase(p: &PromotedPurchase) -> String {
     sb
 }
 
-/// Ported from `formatSubscriptionOfferCodes`.
 fn format_subscription_offer_codes(codes: &[SubscriptionOfferCode]) -> String {
     if codes.is_empty() {
         return "No subscription offer codes found".to_string();
@@ -1090,7 +1084,6 @@ fn format_subscription_offer_codes(codes: &[SubscriptionOfferCode]) -> String {
     sb
 }
 
-/// Ported from `formatSubscriptionOfferCode`.
 fn format_subscription_offer_code(c: &SubscriptionOfferCode) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", c.id);
@@ -1111,7 +1104,6 @@ fn format_subscription_offer_code(c: &SubscriptionOfferCode) -> String {
     sb
 }
 
-/// Ported from `formatWinBackOffers`.
 fn format_win_back_offers(offers: &[WinBackOffer]) -> String {
     if offers.is_empty() {
         return "No win-back offers found".to_string();
@@ -1128,7 +1120,6 @@ fn format_win_back_offers(offers: &[WinBackOffer]) -> String {
     sb
 }
 
-/// Ported from `formatWinBackOffer`.
 fn format_win_back_offer(o: &WinBackOffer) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", o.id);

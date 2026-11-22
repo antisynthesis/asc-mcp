@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/gamecenter_challenges.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Game Center challenge tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerGameCenterChallengeTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_game_center_challenge_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -487,9 +484,9 @@ pub(super) fn register_game_center_challenge_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListGameCenterChallenges`.
+/// Handles `list_game_center_challenges`.
 async fn handle_list_game_center_challenges(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GameCenterDetailID string \"json:\\\"game_center_detail_id\\\"\"; tools.gcListParams }", "") {
         game_center_detail_id: String => "game_center_detail_id";
         gc_list_params: GcListParams => "gcListParams", flatten;
@@ -513,9 +510,9 @@ async fn handle_list_game_center_challenges(c: Arc<Client>, args: Args) -> Handl
     Ok(list_result(&format_game_center_challenges(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetGameCenterChallenge`.
+/// Handles `get_game_center_challenge`.
 async fn handle_get_game_center_challenge(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ChallengeID string \"json:\\\"challenge_id\\\"\" }", "") {
         challenge_id: String => "challenge_id";
     }
@@ -537,9 +534,9 @@ async fn handle_get_game_center_challenge(c: Arc<Client>, args: Args) -> Handler
     Ok(data_result(&format_game_center_challenge(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateGameCenterChallenge`.
+/// Handles `create_game_center_challenge`.
 async fn handle_create_game_center_challenge(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GameCenterDetailID string \"json:\\\"game_center_detail_id\\\"\"; GameCenterGroupID string \"json:\\\"game_center_group_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\"; VendorIdentifier string \"json:\\\"vendor_identifier\\\"\"; ChallengeType string \"json:\\\"challenge_type\\\"\"; LeaderboardID string \"json:\\\"leaderboard_id\\\"\"; Repeatable *bool \"json:\\\"repeatable\\\"\" }", "") {
         game_center_detail_id: String => "game_center_detail_id";
         game_center_group_id: String => "game_center_group_id";
@@ -575,7 +572,7 @@ async fn handle_create_game_center_challenge(c: Arc<Client>, args: Args) -> Hand
     // client-chosen temporary ID.
     let mut rels = GameCenterChallengeCreateRelationships {
         versions: Some(RelationshipDataList {
-            data: GoSlice::from(vec![ResourceIdentifier { type_: "gameCenterChallengeVersions".into(), id: "${new-version}".into() }]),
+            data: JsonSlice::from(vec![ResourceIdentifier { type_: "gameCenterChallengeVersions".into(), id: "${new-version}".into() }]),
         }),
         ..Default::default()
     };
@@ -605,7 +602,7 @@ async fn handle_create_game_center_challenge(c: Arc<Client>, args: Args) -> Hand
             },
             relationships: rels,
         },
-        included: GoSlice::from(vec![GameCenterVersionInlineCreate { type_: "gameCenterChallengeVersions".into(), id: "${new-version}".into() }]),
+        included: JsonSlice::from(vec![GameCenterVersionInlineCreate { type_: "gameCenterChallengeVersions".into(), id: "${new-version}".into() }]),
     };
 
     let resp = match c.create_game_center_challenge(&req).await {
@@ -616,9 +613,9 @@ async fn handle_create_game_center_challenge(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&format!("Created challenge: {} (ID: {})", resp.data.attributes.reference_name, resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateGameCenterChallenge`.
+/// Handles `update_game_center_challenge`.
 async fn handle_update_game_center_challenge(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ChallengeID string \"json:\\\"challenge_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\"; LeaderboardID string \"json:\\\"leaderboard_id\\\"\"; Repeatable *bool \"json:\\\"repeatable\\\"\"; Archived *bool \"json:\\\"archived\\\"\" }", "") {
         challenge_id: String => "challenge_id";
         reference_name: String => "reference_name";
@@ -664,9 +661,9 @@ async fn handle_update_game_center_challenge(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&format!("Updated challenge: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteGameCenterChallenge`.
+/// Handles `delete_game_center_challenge`.
 async fn handle_delete_game_center_challenge(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ChallengeID string \"json:\\\"challenge_id\\\"\" }", "") {
         challenge_id: String => "challenge_id";
     }
@@ -687,9 +684,9 @@ async fn handle_delete_game_center_challenge(c: Arc<Client>, args: Args) -> Hand
     Ok(CallToolResult::success("Challenge deleted successfully"))
 }
 
-/// Ported from `Registry.handleListGameCenterChallengeVersions`.
+/// Handles `list_game_center_challenge_versions`.
 async fn handle_list_game_center_challenge_versions(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ChallengeID string \"json:\\\"challenge_id\\\"\"; tools.gcListParams }", "") {
         challenge_id: String => "challenge_id";
         gc_list_params: GcListParams => "gcListParams", flatten;
@@ -713,9 +710,9 @@ async fn handle_list_game_center_challenge_versions(c: Arc<Client>, args: Args) 
     Ok(list_result(&format_game_center_challenge_versions(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetGameCenterChallengeVersion`.
+/// Handles `get_game_center_challenge_version`.
 async fn handle_get_game_center_challenge_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\" }", "") {
         version_id: String => "version_id";
     }
@@ -737,9 +734,9 @@ async fn handle_get_game_center_challenge_version(c: Arc<Client>, args: Args) ->
     Ok(data_result(&format_game_center_challenge_version(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateGameCenterChallengeVersion`.
+/// Handles `create_game_center_challenge_version`.
 async fn handle_create_game_center_challenge_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ChallengeID string \"json:\\\"challenge_id\\\"\" }", "") {
         challenge_id: String => "challenge_id";
     }
@@ -772,9 +769,9 @@ async fn handle_create_game_center_challenge_version(c: Arc<Client>, args: Args)
     Ok(data_result(&format!("Created challenge version: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleListGameCenterChallengeLocalizations`.
+/// Handles `list_game_center_challenge_localizations`.
 async fn handle_list_game_center_challenge_localizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; tools.gcListParams }", "") {
         version_id: String => "version_id";
         gc_list_params: GcListParams => "gcListParams", flatten;
@@ -798,9 +795,9 @@ async fn handle_list_game_center_challenge_localizations(c: Arc<Client>, args: A
     Ok(list_result(&format_game_center_challenge_localizations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleCreateGameCenterChallengeLocalization`.
+/// Handles `create_game_center_challenge_localization`.
 async fn handle_create_game_center_challenge_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; Locale string \"json:\\\"locale\\\"\"; Name string \"json:\\\"name\\\"\"; Description string \"json:\\\"description\\\"\" }", "") {
         version_id: String => "version_id";
         locale: String => "locale";
@@ -847,9 +844,9 @@ async fn handle_create_game_center_challenge_localization(c: Arc<Client>, args: 
     Ok(data_result(&format!("Created challenge localization {} for {}", resp.data.id, params.locale), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateGameCenterChallengeLocalization`.
+/// Handles `update_game_center_challenge_localization`.
 async fn handle_update_game_center_challenge_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; Name string \"json:\\\"name\\\"\"; Description string \"json:\\\"description\\\"\" }", "") {
         localization_id: String => "localization_id";
         name: String => "name";
@@ -887,9 +884,9 @@ async fn handle_update_game_center_challenge_localization(c: Arc<Client>, args: 
     Ok(data_result(&format!("Updated challenge localization: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteGameCenterChallengeLocalization`.
+/// Handles `delete_game_center_challenge_localization`.
 async fn handle_delete_game_center_challenge_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -910,9 +907,9 @@ async fn handle_delete_game_center_challenge_localization(c: Arc<Client>, args: 
     Ok(CallToolResult::success("Challenge localization deleted successfully"))
 }
 
-/// Ported from `Registry.handleUploadGameCenterChallengeImage`.
+/// Handles `upload_game_center_challenge_image`.
 async fn handle_upload_game_center_challenge_image(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; VersionID string \"json:\\\"version_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; FilePath string \"json:\\\"file_path\\\"\"; FileDataBase64 string \"json:\\\"file_data_base64\\\"\" }", "") {
         localization_id: String => "localization_id";
         version_id: String => "version_id";
@@ -947,7 +944,6 @@ async fn handle_upload_game_center_challenge_image(c: Arc<Client>, args: Args) -
     Ok(data_result(&text, &resp.data))
 }
 
-/// Ported from `formatGameCenterChallenges`.
 fn format_game_center_challenges(challenges: &[GameCenterChallenge]) -> String {
     if challenges.is_empty() {
         return "No Game Center challenges found".into();
@@ -964,7 +960,6 @@ fn format_game_center_challenges(challenges: &[GameCenterChallenge]) -> String {
     sb
 }
 
-/// Ported from `formatGameCenterChallenge`.
 fn format_game_center_challenge(challenge: &GameCenterChallenge) -> String {
     let a = &challenge.attributes;
     let mut sb = String::new();
@@ -979,7 +974,6 @@ fn format_game_center_challenge(challenge: &GameCenterChallenge) -> String {
     sb
 }
 
-/// Ported from `formatGameCenterChallengeVersions`.
 fn format_game_center_challenge_versions(versions: &[GameCenterChallengeVersion]) -> String {
     if versions.is_empty() {
         return "No Game Center challenge versions found".into();
@@ -996,7 +990,6 @@ fn format_game_center_challenge_versions(versions: &[GameCenterChallengeVersion]
     sb
 }
 
-/// Ported from `formatGameCenterChallengeVersion`.
 fn format_game_center_challenge_version(version: &GameCenterChallengeVersion) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", version.id);
@@ -1005,7 +998,6 @@ fn format_game_center_challenge_version(version: &GameCenterChallengeVersion) ->
     sb
 }
 
-/// Ported from `formatGameCenterChallengeLocalizations`.
 fn format_game_center_challenge_localizations(localizations: &[GameCenterChallengeLocalization]) -> String {
     if localizations.is_empty() {
         return "No Game Center challenge localizations found".into();

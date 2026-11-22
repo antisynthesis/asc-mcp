@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/misc.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! EULA, category and alternative distribution tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerMiscTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_misc_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -460,9 +457,9 @@ pub(super) fn register_misc_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleGetEndUserLicenseAgreement`.
+/// Handles `get_end_user_license_agreement`.
 async fn handle_get_end_user_license_agreement(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\" }", "") {
         app_id: String => "app_id";
     }
@@ -484,13 +481,13 @@ async fn handle_get_end_user_license_agreement(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format_end_user_license_agreement(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateEndUserLicenseAgreement`.
+/// Handles `create_end_user_license_agreement`.
 async fn handle_create_end_user_license_agreement(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; AgreementText string \"json:\\\"agreement_text\\\"\"; TerritoryIDs []string \"json:\\\"territory_ids\\\"\" }", "") {
         app_id: String => "app_id";
         agreement_text: String => "agreement_text";
-        territory_ids: GoSlice<String> => "territory_ids";
+        territory_ids: JsonSlice<String> => "territory_ids";
     }
     }
     let mut params = Params::default();
@@ -502,7 +499,7 @@ async fn handle_create_end_user_license_agreement(c: Arc<Client>, args: Args) ->
         return Ok(error_result("app_id and agreement_text are required"));
     }
 
-    let mut territories: GoSlice<ResourceIdentifier> = GoSlice::nil();
+    let mut territories: JsonSlice<ResourceIdentifier> = JsonSlice::nil();
     for tid in params.territory_ids.iter() {
         territories.push(ResourceIdentifier { type_: "territories".into(), id: tid.clone() });
     }
@@ -526,9 +523,9 @@ async fn handle_create_end_user_license_agreement(c: Arc<Client>, args: Args) ->
     Ok(data_result(&format!("EULA created:\n{}", format_end_user_license_agreement(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateEndUserLicenseAgreement`.
+/// Handles `update_end_user_license_agreement`.
 async fn handle_update_end_user_license_agreement(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { EULAID string \"json:\\\"eula_id\\\"\"; AgreementText string \"json:\\\"agreement_text\\\"\" }", "") {
         eula_id: String => "eula_id";
         agreement_text: String => "agreement_text";
@@ -560,9 +557,9 @@ async fn handle_update_end_user_license_agreement(c: Arc<Client>, args: Args) ->
     Ok(data_result(&format!("EULA updated:\n{}", format_end_user_license_agreement(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteEndUserLicenseAgreement`.
+/// Handles `delete_end_user_license_agreement`.
 async fn handle_delete_end_user_license_agreement(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { EULAID string \"json:\\\"eula_id\\\"\" }", "") {
         eula_id: String => "eula_id";
     }
@@ -583,16 +580,16 @@ async fn handle_delete_end_user_license_agreement(c: Arc<Client>, args: Args) ->
     Ok(CallToolResult::success("EULA deleted (reverted to standard Apple EULA)"))
 }
 
-/// Ported from `Registry.handleListAppCategories`.
+/// Handles `list_app_categories`.
 async fn handle_list_app_categories(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -617,9 +614,9 @@ async fn handle_list_app_categories(c: Arc<Client>, args: Args) -> HandlerResult
     Ok(list_result(&format_app_categories(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAppCategory`.
+/// Handles `get_app_category`.
 async fn handle_get_app_category(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { CategoryID string \"json:\\\"category_id\\\"\" }", "") {
         category_id: String => "category_id";
     }
@@ -641,16 +638,16 @@ async fn handle_get_app_category(c: Arc<Client>, args: Args) -> HandlerResult {
     Ok(data_result(&format_app_category(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleListAlternativeDistributionKeys`.
+/// Handles `list_alternative_distribution_keys`.
 async fn handle_list_alternative_distribution_keys(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -669,9 +666,9 @@ async fn handle_list_alternative_distribution_keys(c: Arc<Client>, args: Args) -
     Ok(list_result(&format_alternative_distribution_keys(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAlternativeDistributionKey`.
+/// Handles `get_alternative_distribution_key`.
 async fn handle_get_alternative_distribution_key(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { KeyID string \"json:\\\"key_id\\\"\" }", "") {
         key_id: String => "key_id";
     }
@@ -693,9 +690,9 @@ async fn handle_get_alternative_distribution_key(c: Arc<Client>, args: Args) -> 
     Ok(data_result(&format_alternative_distribution_key(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateAlternativeDistributionKey`.
+/// Handles `create_alternative_distribution_key`.
 async fn handle_create_alternative_distribution_key(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\" }", "") {
         app_id: String => "app_id";
     }
@@ -727,9 +724,9 @@ async fn handle_create_alternative_distribution_key(c: Arc<Client>, args: Args) 
     Ok(data_result(&format!("Alternative distribution key created:\n{}", format_alternative_distribution_key(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteAlternativeDistributionKey`.
+/// Handles `delete_alternative_distribution_key`.
 async fn handle_delete_alternative_distribution_key(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { KeyID string \"json:\\\"key_id\\\"\" }", "") {
         key_id: String => "key_id";
     }
@@ -750,9 +747,9 @@ async fn handle_delete_alternative_distribution_key(c: Arc<Client>, args: Args) 
     Ok(CallToolResult::success("Alternative distribution key deleted"))
 }
 
-/// Ported from `Registry.handleGetAlternativeDistributionPackage`.
+/// Handles `get_alternative_distribution_package`.
 async fn handle_get_alternative_distribution_package(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\" }", "") {
         version_id: String => "version_id";
     }
@@ -774,9 +771,9 @@ async fn handle_get_alternative_distribution_package(c: Arc<Client>, args: Args)
     Ok(data_result(&format!("Alternative Distribution Package ID: {}\n", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleGetMarketplaceSearchDetail`.
+/// Handles `get_marketplace_search_detail`.
 async fn handle_get_marketplace_search_detail(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\" }", "") {
         app_id: String => "app_id";
     }
@@ -798,9 +795,9 @@ async fn handle_get_marketplace_search_detail(c: Arc<Client>, args: Args) -> Han
     Ok(data_result(&format_marketplace_search_detail(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateMarketplaceSearchDetail`.
+/// Handles `create_marketplace_search_detail`.
 async fn handle_create_marketplace_search_detail(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; CatalogURL string \"json:\\\"catalog_url\\\"\" }", "") {
         app_id: String => "app_id";
         catalog_url: String => "catalog_url";
@@ -833,9 +830,9 @@ async fn handle_create_marketplace_search_detail(c: Arc<Client>, args: Args) -> 
     Ok(data_result(&format!("Marketplace search detail created:\n{}", format_marketplace_search_detail(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateMarketplaceSearchDetail`.
+/// Handles `update_marketplace_search_detail`.
 async fn handle_update_marketplace_search_detail(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { DetailID string \"json:\\\"detail_id\\\"\"; CatalogURL string \"json:\\\"catalog_url\\\"\" }", "") {
         detail_id: String => "detail_id";
         catalog_url: String => "catalog_url";
@@ -866,9 +863,9 @@ async fn handle_update_marketplace_search_detail(c: Arc<Client>, args: Args) -> 
     Ok(data_result(&format!("Marketplace search detail updated:\n{}", format_marketplace_search_detail(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteMarketplaceSearchDetail`.
+/// Handles `delete_marketplace_search_detail`.
 async fn handle_delete_marketplace_search_detail(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { DetailID string \"json:\\\"detail_id\\\"\" }", "") {
         detail_id: String => "detail_id";
     }
@@ -889,7 +886,7 @@ async fn handle_delete_marketplace_search_detail(c: Arc<Client>, args: Args) -> 
     Ok(CallToolResult::success("Marketplace search detail deleted"))
 }
 
-/// The `limit <= 0 → 50; limit > 200 → 200` clamp the Go handlers inline.
+/// Clamps a page size: `limit <= 0 → 50; limit > 200 → 200`.
 fn clamp_limit(limit: i64) -> i64 {
     let mut limit = limit;
     if limit <= 0 {
@@ -901,27 +898,25 @@ fn clamp_limit(limit: i64) -> i64 {
     limit
 }
 
-/// Go `s[:n] + "..."` on a string: slices bytes (possibly mid-rune) and
-/// renders the result the way Go's JSON encoder would.
-fn go_truncate(s: &str, n: usize) -> String {
+/// Truncates to `n` bytes plus `...`: slices bytes (possibly mid-character)
+/// and renders invalid bytes as U+FFFD, as on the wire.
+fn truncate_bytes(s: &str, n: usize) -> String {
     let mut b = s.as_bytes()[..n].to_vec();
     b.extend_from_slice(b"...");
-    super::reports::go_string(&b)
+    super::reports::lossy_string(&b)
 }
 
-/// Ported from `formatEndUserLicenseAgreement`.
 fn format_end_user_license_agreement(eula: &EndUserLicenseAgreement) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", eula.id);
     let mut text = eula.attributes.agreement_text.clone();
     if text.len() > 500 {
-        text = go_truncate(&text, 500);
+        text = truncate_bytes(&text, 500);
     }
     let _ = write!(sb, "Agreement Text:\n{}\n", text);
     sb
 }
 
-/// Ported from `formatAppCategories`.
 fn format_app_categories(categories: &[AppCategory]) -> String {
     if categories.is_empty() {
         return "No app categories found".into();
@@ -938,7 +933,6 @@ fn format_app_categories(categories: &[AppCategory]) -> String {
     sb
 }
 
-/// Ported from `formatAppCategory`.
 fn format_app_category(c: &AppCategory) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", c.id);
@@ -948,7 +942,6 @@ fn format_app_category(c: &AppCategory) -> String {
     sb
 }
 
-/// Ported from `formatAlternativeDistributionKeys`.
 fn format_alternative_distribution_keys(keys: &[AlternativeDistributionKey]) -> String {
     if keys.is_empty() {
         return "No alternative distribution keys found".into();
@@ -965,7 +958,6 @@ fn format_alternative_distribution_keys(keys: &[AlternativeDistributionKey]) -> 
     sb
 }
 
-/// Ported from `formatAlternativeDistributionKey`.
 fn format_alternative_distribution_key(k: &AlternativeDistributionKey) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", k.id);
@@ -973,14 +965,13 @@ fn format_alternative_distribution_key(k: &AlternativeDistributionKey) -> String
         // Show truncated public key
         let mut pk = k.attributes.public_key.clone();
         if pk.len() > 100 {
-            pk = go_truncate(&pk, 100);
+            pk = truncate_bytes(&pk, 100);
         }
         let _ = writeln!(sb, "Public Key: {}", pk);
     }
     sb
 }
 
-/// Ported from `formatMarketplaceSearchDetail`.
 fn format_marketplace_search_detail(d: &MarketplaceSearchDetail) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", d.id);

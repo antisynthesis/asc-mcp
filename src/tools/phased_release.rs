@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/phased_release.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Phased release tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerPhasedReleaseTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_phased_release_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -122,9 +119,9 @@ pub(super) fn register_phased_release_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleGetPhasedRelease`.
+/// Handles `get_phased_release`.
 async fn handle_get_phased_release(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\" }", "") {
         version_id: String => "version_id";
     }
@@ -146,9 +143,9 @@ async fn handle_get_phased_release(c: Arc<Client>, args: Args) -> HandlerResult 
     Ok(data_result(&format_phased_release(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreatePhasedRelease`.
+/// Handles `create_phased_release`.
 async fn handle_create_phased_release(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; State string \"json:\\\"state\\\"\" }", "") {
         version_id: String => "version_id";
         state: String => "state";
@@ -186,9 +183,9 @@ async fn handle_create_phased_release(c: Arc<Client>, args: Args) -> HandlerResu
     ))
 }
 
-/// Ported from `Registry.handleUpdatePhasedRelease`.
+/// Handles `update_phased_release`.
 async fn handle_update_phased_release(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PhasedReleaseID string \"json:\\\"phased_release_id\\\"\"; State string \"json:\\\"state\\\"\" }", "") {
         phased_release_id: String => "phased_release_id";
         state: String => "state";
@@ -225,9 +222,9 @@ async fn handle_update_phased_release(c: Arc<Client>, args: Args) -> HandlerResu
     ))
 }
 
-/// Ported from `Registry.handleDeletePhasedRelease`.
+/// Handles `delete_phased_release`.
 async fn handle_delete_phased_release(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { PhasedReleaseID string \"json:\\\"phased_release_id\\\"\" }", "") {
         phased_release_id: String => "phased_release_id";
     }
@@ -248,7 +245,6 @@ async fn handle_delete_phased_release(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(CallToolResult::success("Phased release deleted - app will release to all users"))
 }
 
-/// Ported from `formatPhasedRelease`.
 fn format_phased_release(pr: &AppStoreVersionPhasedRelease) -> String {
     let mut result = format!("Phased Release ID: {}\n", pr.id);
     let _ = writeln!(result, "State: {}", pr.attributes.phased_release_state);

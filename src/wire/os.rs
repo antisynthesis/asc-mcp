@@ -1,8 +1,8 @@
-//! Go `os` error wording (`*fs.PathError`).
+//! File-system error wording: `<op> <path>: <reason>`.
 
 use std::io;
 
-/// Go's description of an `errno` (the text after the path).
+/// The lower-case description of an I/O error (the text after the path).
 pub fn errno_text(e: &io::Error) -> String {
     match e.kind() {
         io::ErrorKind::NotFound => "no such file or directory".into(),
@@ -27,7 +27,8 @@ pub fn errno_text(e: &io::Error) -> String {
     }
 }
 
-/// Go `&fs.PathError{Op: op, Path: path, Err: e}.Error()`.
+/// Formats a path error as `<op> <path>: <reason>`, e.g.
+/// `open key.p8: no such file or directory`.
 pub fn path_error(op: &str, path: &str, e: &io::Error) -> String {
     format!("{op} {path}: {}", errno_text(e))
 }

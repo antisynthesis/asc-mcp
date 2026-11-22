@@ -1,6 +1,5 @@
-//! Streamable HTTP transport tests, ported from
-//! internal/asc/server/http_test.go, plus the 2026-07-28 behaviours that
-//! intentionally differ from Go.
+//! Streamable HTTP transport tests: sessions, Origin checks, headers,
+//! body limits, metrics, and the 2026-07-28 stateless protocol.
 
 mod common;
 
@@ -71,7 +70,6 @@ async fn send(srv: &HttpServer, req: Request<Body>) -> Resp {
     }
 }
 
-/// Go `postJSON`.
 async fn post(srv: &HttpServer, body: impl Into<Body>, headers: &[(&str, &str)]) -> Resp {
     let mut b = Request::builder()
         .method(Method::POST)
@@ -116,7 +114,6 @@ fn err_code(v: &Value) -> i64 {
         .unwrap_or_else(|| panic!("expected error, got {v}"))
 }
 
-// Go: TestHTTP_InitializeAssignsSessionID
 #[tokio::test]
 async fn initialize_assigns_session_id() {
     let srv = server();
@@ -131,7 +128,6 @@ async fn initialize_assigns_session_id() {
     assert_eq!(srv.session_count(), 1);
 }
 
-// Go: TestHTTP_RequiresSessionAfterInit
 #[tokio::test]
 async fn requires_session_after_init() {
     let r = post_json(
@@ -143,7 +139,6 @@ async fn requires_session_after_init() {
     assert_eq!(r.status, StatusCode::BAD_REQUEST);
 }
 
-// Go: TestHTTP_UnknownSession
 #[tokio::test]
 async fn unknown_session() {
     let r = post_json(
@@ -155,7 +150,6 @@ async fn unknown_session() {
     assert_eq!(r.status, StatusCode::NOT_FOUND);
 }
 
-// Go: TestHTTP_EndToEndToolsList
 #[tokio::test]
 async fn end_to_end_tools_list() {
     let srv = server();
@@ -202,7 +196,6 @@ async fn legacy_unsupported_protocol_version_header() {
     assert_eq!(r.status, StatusCode::BAD_REQUEST);
 }
 
-// Go: TestHTTP_PingWithoutInit
 #[tokio::test]
 async fn ping_without_init() {
     let srv = server();
@@ -218,7 +211,6 @@ async fn ping_without_init() {
     assert_eq!(v["result"], json!({}));
 }
 
-// Go: TestHTTP_DeleteSession
 #[tokio::test]
 async fn delete_session() {
     let srv = server();
@@ -244,14 +236,12 @@ async fn delete_session() {
     assert_eq!(srv.session_count(), 0);
 }
 
-// Go: TestHTTP_GetReturns405
 #[tokio::test]
 async fn get_returns_405() {
     let r = get(&server(), "/mcp").await;
     assert_eq!(r.status, StatusCode::METHOD_NOT_ALLOWED);
 }
 
-// Go: TestHTTP_RejectsOversizedBody
 #[tokio::test]
 async fn rejects_oversized_body() {
     let big = "x".repeat(MAX_HTTP_BODY_SIZE + 100);
@@ -259,14 +249,12 @@ async fn rejects_oversized_body() {
     assert_eq!(r.status, StatusCode::PAYLOAD_TOO_LARGE);
 }
 
-// Go: TestHTTP_HealthEndpoint
 #[tokio::test]
 async fn health_endpoint() {
     let r = get(&server(), "/healthz").await;
     assert_eq!(r.status, StatusCode::OK);
 }
 
-// Go: TestHTTP_OriginAllowlist
 #[tokio::test]
 async fn origin_allowlist() {
     let srv = server_with(HttpOptions {
@@ -279,9 +267,8 @@ async fn origin_allowlist() {
     assert_eq!(r.status, StatusCode::OK);
 }
 
-/// Intentional difference from Go, which allowed every Origin when the
-/// allow-list was empty: a present Origin must be loopback (any port), the
-/// server's own origin, or listed; a missing Origin is allowed.
+/// With an empty allow-list, a present Origin must be loopback (any port),
+/// the server's own origin, or listed; a missing Origin is allowed.
 #[tokio::test]
 async fn origin_defaults_reject_foreign_origins() {
     let srv = server();
@@ -336,7 +323,6 @@ async fn origin_defaults_reject_foreign_origins() {
     assert_eq!(r.status, StatusCode::OK, "missing Origin must be allowed");
 }
 
-// Go: TestHTTP_Auth_MissingToken
 #[tokio::test]
 async fn auth_missing_token() {
     let srv = server_with(HttpOptions {
@@ -352,7 +338,6 @@ async fn auth_missing_token() {
     );
 }
 
-// Go: TestHTTP_Auth_WrongToken
 #[tokio::test]
 async fn auth_wrong_token() {
     let srv = server_with(HttpOptions {
@@ -363,7 +348,6 @@ async fn auth_wrong_token() {
     assert_eq!(r.status, StatusCode::UNAUTHORIZED);
 }
 
-// Go: TestHTTP_Auth_CorrectToken
 #[tokio::test]
 async fn auth_correct_token() {
     let srv = server_with(HttpOptions {
@@ -381,7 +365,6 @@ async fn auth_correct_token() {
     }
 }
 
-// Go: TestHTTP_Auth_DoesNotGateHealthz
 #[tokio::test]
 async fn auth_does_not_gate_healthz() {
     let srv = server_with(HttpOptions {
@@ -391,7 +374,6 @@ async fn auth_does_not_gate_healthz() {
     assert_eq!(get(&srv, "/healthz").await.status, StatusCode::OK);
 }
 
-// Go: TestHTTP_Modern_DiscoverWithoutProtocolVersionHeader
 #[tokio::test]
 async fn modern_discover_without_protocol_version_header() {
     let r = post_json(
@@ -411,7 +393,7 @@ async fn modern_discover_without_protocol_version_header() {
     );
 }
 
-/// Intentional difference from Go: MCP-Protocol-Version is validated on
+/// MCP-Protocol-Version is validated on
 /// a modern server/discover too, once the body names a version.
 #[tokio::test]
 async fn modern_discover_validates_protocol_version_header() {
@@ -434,7 +416,7 @@ async fn modern_discover_validates_protocol_version_header() {
     )
     .await;
     assert_eq!(r.status, StatusCode::OK);
-    // An explicit unsupported version is -32022 (difference 1).
+    // An explicit unsupported version is -32022.
     let body = json!({"jsonrpc":"2.0","id":1,"method":"server/discover","params":modern_meta("2099-01-01", true)});
     let r = post_json(
         &srv,
@@ -449,7 +431,6 @@ async fn modern_discover_validates_protocol_version_header() {
     assert_eq!(err_code(&r.json()), mcp::ERR_UNSUPPORTED_PROTOCOL_VERSION);
 }
 
-// Go: TestHTTP_Modern_ToolsListSessionless
 #[tokio::test]
 async fn modern_tools_list_sessionless() {
     let srv = server();
@@ -476,7 +457,6 @@ async fn modern_tools_list_sessionless() {
     assert_eq!(srv.session_count(), 0);
 }
 
-// Go: TestHTTP_Modern_IgnoresSessionHeader
 #[tokio::test]
 async fn modern_ignores_session_header() {
     let r = post_json(
@@ -493,7 +473,6 @@ async fn modern_ignores_session_header() {
     assert_eq!(r.header(SESSION_HEADER), "", "never echoed");
 }
 
-// Go: TestHTTP_Modern_MethodHeaderMismatch
 #[tokio::test]
 async fn modern_method_header_mismatch() {
     let r = post_json(
@@ -509,7 +488,6 @@ async fn modern_method_header_mismatch() {
     assert_eq!(err_code(&r.json()), mcp::ERR_HEADER_MISMATCH);
 }
 
-// Go: TestHTTP_Modern_MissingMethodHeader
 #[tokio::test]
 async fn modern_missing_method_header() {
     let r = post_json(
@@ -523,7 +501,7 @@ async fn modern_missing_method_header() {
     assert_eq!(err_code(&r.json()), mcp::ERR_HEADER_MISMATCH);
 }
 
-/// Intentional difference from Go: Mcp-Method and MCP-Protocol-Version
+/// Mcp-Method and MCP-Protocol-Version
 /// are compared byte-exactly; only Mcp-Name honours the base64 sentinel.
 #[tokio::test]
 async fn modern_method_and_version_headers_are_not_decoded() {
@@ -558,7 +536,7 @@ async fn modern_method_and_version_headers_are_not_decoded() {
     assert_eq!(err_code(&r.json()), mcp::ERR_HEADER_MISMATCH);
 }
 
-/// Intentional difference from Go: a modern MCP-Protocol-Version header
+/// A modern MCP-Protocol-Version header
 /// routes the request to the stateless path even without body `_meta`; it
 /// then fails as invalid params, never with the legacy session errors.
 #[tokio::test]
@@ -603,7 +581,6 @@ async fn server_with_failing_api() -> (HttpServer, MockApi) {
     )
 }
 
-// Go: TestHTTP_Modern_ToolsCallMissingNameHeader
 #[tokio::test]
 async fn modern_tools_call_missing_name_header() {
     let r = post_json(
@@ -619,7 +596,6 @@ async fn modern_tools_call_missing_name_header() {
     assert_eq!(err_code(&r.json()), mcp::ERR_HEADER_MISMATCH);
 }
 
-// Go: TestHTTP_Modern_ToolsCallNameHeaderMatch
 #[tokio::test]
 async fn modern_tools_call_name_header_match() {
     let (srv, mock) = server_with_failing_api().await;
@@ -642,7 +618,6 @@ async fn modern_tools_call_name_header_match() {
     assert_eq!(mock.requests().len(), 1, "the call must reach the API");
 }
 
-// Go: TestHTTP_Modern_NameHeaderBase64
 #[tokio::test]
 async fn modern_name_header_base64() {
     let (srv, _mock) = server_with_failing_api().await;
@@ -663,7 +638,6 @@ async fn modern_name_header_base64() {
     assert_eq!(r.status, StatusCode::OK, "sentinel-encoded name accepted");
 }
 
-// Go: TestHTTP_Modern_ProtocolVersionHeaderMismatch
 #[tokio::test]
 async fn modern_protocol_version_header_mismatch() {
     let r = post_json(
@@ -679,7 +653,6 @@ async fn modern_protocol_version_header_mismatch() {
     assert_eq!(err_code(&r.json()), mcp::ERR_HEADER_MISMATCH);
 }
 
-// Go: TestHTTP_Modern_UnsupportedProtocolVersion
 #[tokio::test]
 async fn modern_unsupported_protocol_version() {
     let body = json!({"jsonrpc":"2.0","id":1,"method":"tools/list","params":modern_meta("2024-11-05", true)});
@@ -703,7 +676,6 @@ async fn modern_unsupported_protocol_version() {
     );
 }
 
-// Go: TestHTTP_Modern_UnknownMethod
 #[tokio::test]
 async fn modern_unknown_method() {
     let r = post_json(
@@ -788,7 +760,6 @@ async fn modern_subscriptions_listen_is_sse() {
     assert_eq!(events[1]["result"]["_meta"][mcp::META_SUBSCRIPTION_ID], 5);
 }
 
-// Go: TestDecodeHeaderValue
 #[test]
 fn decode_header_value_cases() {
     let utf8 = format!(
@@ -816,7 +787,6 @@ fn decode_header_value_cases() {
     }
 }
 
-// Go: TestStatusForModernError (plus -32600/-32700, which Rust maps to 400)
 #[test]
 fn status_for_modern_error_cases() {
     for (code, want) in [
@@ -836,8 +806,7 @@ fn status_for_modern_error_cases() {
     }
 }
 
-// Go: TestHTTP_MetricsEndpoint. Intentional difference: no go_* runtime
-// metrics (there is no Go runtime); asc_mcp_* and process_* remain.
+// The metrics endpoint exposes asc_mcp_* and process_* metrics.
 #[tokio::test]
 async fn metrics_endpoint() {
     let srv = server();
@@ -862,7 +831,6 @@ async fn metrics_endpoint() {
     assert!(body.contains("process_"), "process metrics missing");
 }
 
-// Go: TestHTTP_MetricsRecordRequests
 #[tokio::test]
 async fn metrics_record_requests() {
     let srv = server();
@@ -879,7 +847,6 @@ async fn metrics_record_requests() {
     assert_eq!(m.sessions_created.get(), 1.0);
 }
 
-// Go: TestHTTP_MetricsAuthFailure
 #[tokio::test]
 async fn metrics_auth_failure() {
     let srv = server_with(HttpOptions {

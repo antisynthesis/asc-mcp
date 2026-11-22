@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/diagnostics.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Diagnostics, review attachment and routing coverage tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerDiagnosticsTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_diagnostics_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -399,17 +396,17 @@ pub(super) fn register_diagnostics_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListPerfPowerMetrics`.
+/// Handles `list_perf_power_metrics`.
 async fn handle_list_perf_power_metrics(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -432,17 +429,17 @@ async fn handle_list_perf_power_metrics(c: Arc<Client>, args: Args) -> HandlerRe
     Ok(list_result(&format_perf_power_metrics(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListDiagnosticSignatures`.
+/// Handles `list_diagnostic_signatures`.
 async fn handle_list_diagnostic_signatures(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BuildID string \"json:\\\"build_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         build_id: String => "build_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -465,17 +462,17 @@ async fn handle_list_diagnostic_signatures(c: Arc<Client>, args: Args) -> Handle
     Ok(list_result(&format_diagnostic_signatures(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListDiagnosticLogs`.
+/// Handles `list_diagnostic_logs`.
 async fn handle_list_diagnostic_logs(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SignatureID string \"json:\\\"signature_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         signature_id: String => "signature_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -498,17 +495,17 @@ async fn handle_list_diagnostic_logs(c: Arc<Client>, args: Args) -> HandlerResul
     Ok(list_result(&format_diagnostic_logs(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleListAppStoreReviewAttachments`.
+/// Handles `list_app_store_review_attachments`.
 async fn handle_list_app_store_review_attachments(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         version_id: String => "version_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -531,9 +528,9 @@ async fn handle_list_app_store_review_attachments(c: Arc<Client>, args: Args) ->
     Ok(list_result(&format_app_store_review_attachments(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetAppStoreReviewAttachment`.
+/// Handles `get_app_store_review_attachment`.
 async fn handle_get_app_store_review_attachment(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AttachmentID string \"json:\\\"attachment_id\\\"\" }", "") {
         attachment_id: String => "attachment_id";
     }
@@ -555,9 +552,9 @@ async fn handle_get_app_store_review_attachment(c: Arc<Client>, args: Args) -> H
     Ok(data_result(&format_app_store_review_attachment(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateAppStoreReviewAttachment`.
+/// Handles `create_app_store_review_attachment`.
 async fn handle_create_app_store_review_attachment(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ReviewDetailID string \"json:\\\"review_detail_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; FileSize int \"json:\\\"file_size\\\"\" }", "") {
         review_detail_id: String => "review_detail_id";
         file_name: String => "file_name";
@@ -593,9 +590,9 @@ async fn handle_create_app_store_review_attachment(c: Arc<Client>, args: Args) -
     Ok(data_result(&format!("Review attachment reservation created:\n{}", format_app_store_review_attachment(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteAppStoreReviewAttachment`.
+/// Handles `delete_app_store_review_attachment`.
 async fn handle_delete_app_store_review_attachment(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AttachmentID string \"json:\\\"attachment_id\\\"\" }", "") {
         attachment_id: String => "attachment_id";
     }
@@ -616,9 +613,9 @@ async fn handle_delete_app_store_review_attachment(c: Arc<Client>, args: Args) -
     Ok(CallToolResult::success("Review attachment deleted"))
 }
 
-/// Ported from `Registry.handleGetRoutingAppCoverage`.
+/// Handles `get_routing_app_coverage`.
 async fn handle_get_routing_app_coverage(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\" }", "") {
         version_id: String => "version_id";
     }
@@ -640,9 +637,9 @@ async fn handle_get_routing_app_coverage(c: Arc<Client>, args: Args) -> HandlerR
     Ok(data_result(&format_routing_app_coverage(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateRoutingAppCoverage`.
+/// Handles `create_routing_app_coverage`.
 async fn handle_create_routing_app_coverage(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; FileSize int \"json:\\\"file_size\\\"\" }", "") {
         version_id: String => "version_id";
         file_name: String => "file_name";
@@ -678,9 +675,9 @@ async fn handle_create_routing_app_coverage(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&format!("Routing app coverage reservation created:\n{}", format_routing_app_coverage(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteRoutingAppCoverage`.
+/// Handles `delete_routing_app_coverage`.
 async fn handle_delete_routing_app_coverage(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { CoverageID string \"json:\\\"coverage_id\\\"\" }", "") {
         coverage_id: String => "coverage_id";
     }
@@ -701,7 +698,7 @@ async fn handle_delete_routing_app_coverage(c: Arc<Client>, args: Args) -> Handl
     Ok(CallToolResult::success("Routing app coverage deleted"))
 }
 
-/// The `limit <= 0 → 50; limit > 200 → 200` clamp the Go handlers inline.
+/// Clamps a page size: `limit <= 0 → 50; limit > 200 → 200`.
 fn clamp_limit(limit: i64) -> i64 {
     let mut limit = limit;
     if limit <= 0 {
@@ -713,7 +710,6 @@ fn clamp_limit(limit: i64) -> i64 {
     limit
 }
 
-/// Ported from `formatPerfPowerMetrics`.
 fn format_perf_power_metrics(metrics: &[PerfPowerMetric]) -> String {
     if metrics.is_empty() {
         return "No performance metrics found".into();
@@ -733,7 +729,6 @@ fn format_perf_power_metrics(metrics: &[PerfPowerMetric]) -> String {
     sb
 }
 
-/// Ported from `formatDiagnosticSignatures`.
 fn format_diagnostic_signatures(signatures: &[DiagnosticSignature]) -> String {
     if signatures.is_empty() {
         return "No diagnostic signatures found".into();
@@ -753,7 +748,6 @@ fn format_diagnostic_signatures(signatures: &[DiagnosticSignature]) -> String {
     sb
 }
 
-/// Ported from `formatDiagnosticLogs`.
 fn format_diagnostic_logs(logs: &[DiagnosticLog]) -> String {
     if logs.is_empty() {
         return "No diagnostic logs found".into();
@@ -770,7 +764,6 @@ fn format_diagnostic_logs(logs: &[DiagnosticLog]) -> String {
     sb
 }
 
-/// Ported from `formatAppStoreReviewAttachments`.
 fn format_app_store_review_attachments(attachments: &[AppStoreReviewAttachment]) -> String {
     if attachments.is_empty() {
         return "No review attachments found".into();
@@ -787,7 +780,6 @@ fn format_app_store_review_attachments(attachments: &[AppStoreReviewAttachment])
     sb
 }
 
-/// Ported from `formatAppStoreReviewAttachment`.
 fn format_app_store_review_attachment(a: &AppStoreReviewAttachment) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", a.id);
@@ -799,7 +791,6 @@ fn format_app_store_review_attachment(a: &AppStoreReviewAttachment) -> String {
     sb
 }
 
-/// Ported from `formatRoutingAppCoverage`.
 fn format_routing_app_coverage(coverage: &RoutingAppCoverage) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", coverage.id);

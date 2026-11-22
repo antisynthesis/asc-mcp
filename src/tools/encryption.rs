@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/encryption.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Export compliance (encryption declaration) tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerEncryptionTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_encryption_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -172,17 +169,17 @@ pub(super) fn register_encryption_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListEncryptionDeclarations`.
+/// Handles `list_encryption_declarations`.
 async fn handle_list_encryption_declarations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -207,9 +204,9 @@ async fn handle_list_encryption_declarations(c: Arc<Client>, args: Args) -> Hand
     Ok(list_result(&format_encryption_declarations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetEncryptionDeclaration`.
+/// Handles `get_encryption_declaration`.
 async fn handle_get_encryption_declaration(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { DeclarationID string \"json:\\\"declaration_id\\\"\" }", "") {
         declaration_id: String => "declaration_id";
     }
@@ -231,9 +228,9 @@ async fn handle_get_encryption_declaration(c: Arc<Client>, args: Args) -> Handle
     Ok(data_result(&format_encryption_declaration(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateEncryptionDeclaration`.
+/// Handles `create_encryption_declaration`.
 async fn handle_create_encryption_declaration(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; UsesEncryption bool \"json:\\\"uses_encryption\\\"\"; Exempt bool \"json:\\\"exempt\\\"\"; ContainsProprietaryCryptography bool \"json:\\\"contains_proprietary_cryptography\\\"\"; ContainsThirdPartyCryptography bool \"json:\\\"contains_third_party_cryptography\\\"\"; AvailableOnFrenchStore bool \"json:\\\"available_on_french_store\\\"\"; AppDescription string \"json:\\\"app_description\\\"\"; CodeValue string \"json:\\\"code_value\\\"\" }", "") {
         app_id: String => "app_id";
         uses_encryption: bool => "uses_encryption";
@@ -280,9 +277,9 @@ async fn handle_create_encryption_declaration(c: Arc<Client>, args: Args) -> Han
     Ok(data_result(&format!("Created encryption declaration: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleAssignBuildToEncryptionDeclaration`.
+/// Handles `assign_build_to_encryption_declaration`.
 async fn handle_assign_build_to_encryption_declaration(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { DeclarationID string \"json:\\\"declaration_id\\\"\"; BuildID string \"json:\\\"build_id\\\"\" }", "") {
         declaration_id: String => "declaration_id";
         build_id: String => "build_id";
@@ -307,7 +304,6 @@ async fn handle_assign_build_to_encryption_declaration(c: Arc<Client>, args: Arg
     Ok(CallToolResult::success("Build assigned to encryption declaration successfully"))
 }
 
-/// Ported from `formatEncryptionDeclarations`.
 fn format_encryption_declarations(declarations: &[AppEncryptionDeclaration]) -> String {
     if declarations.is_empty() {
         return "No encryption declarations found".to_string();
@@ -324,7 +320,6 @@ fn format_encryption_declarations(declarations: &[AppEncryptionDeclaration]) -> 
     sb
 }
 
-/// Ported from `formatEncryptionDeclaration`.
 fn format_encryption_declaration(decl: &AppEncryptionDeclaration) -> String {
     let a = &decl.attributes;
     let mut sb = String::new();

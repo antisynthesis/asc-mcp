@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/gamecenter_activities.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Game Center activity tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerGameCenterActivityTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_game_center_activity_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -546,9 +543,9 @@ pub(super) fn register_game_center_activity_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListGameCenterActivities`.
+/// Handles `list_game_center_activities`.
 async fn handle_list_game_center_activities(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GameCenterDetailID string \"json:\\\"game_center_detail_id\\\"\"; tools.gcListParams }", "") {
         game_center_detail_id: String => "game_center_detail_id";
         gc_list_params: GcListParams => "gcListParams", flatten;
@@ -572,9 +569,9 @@ async fn handle_list_game_center_activities(c: Arc<Client>, args: Args) -> Handl
     Ok(list_result(&format_game_center_activities(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetGameCenterActivity`.
+/// Handles `get_game_center_activity`.
 async fn handle_get_game_center_activity(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ActivityID string \"json:\\\"activity_id\\\"\" }", "") {
         activity_id: String => "activity_id";
     }
@@ -596,9 +593,9 @@ async fn handle_get_game_center_activity(c: Arc<Client>, args: Args) -> HandlerR
     Ok(data_result(&format_game_center_activity(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateGameCenterActivity`.
+/// Handles `create_game_center_activity`.
 async fn handle_create_game_center_activity(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { GameCenterDetailID string \"json:\\\"game_center_detail_id\\\"\"; GameCenterGroupID string \"json:\\\"game_center_group_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\"; VendorIdentifier string \"json:\\\"vendor_identifier\\\"\"; PlayStyle string \"json:\\\"play_style\\\"\"; MinimumPlayersCount *int \"json:\\\"minimum_players_count\\\"\"; MaximumPlayersCount *int \"json:\\\"maximum_players_count\\\"\"; SupportsPartyCode *bool \"json:\\\"supports_party_code\\\"\"; Properties map[string]string \"json:\\\"properties\\\"\"; FallbackURL string \"json:\\\"fallback_url\\\"\" }", "") {
         game_center_detail_id: String => "game_center_detail_id";
         game_center_group_id: String => "game_center_group_id";
@@ -608,7 +605,7 @@ async fn handle_create_game_center_activity(c: Arc<Client>, args: Args) -> Handl
         minimum_players_count: Option<i64> => "minimum_players_count";
         maximum_players_count: Option<i64> => "maximum_players_count";
         supports_party_code: Option<bool> => "supports_party_code";
-        properties: GoMap<String> => "properties";
+        properties: JsonMap<String> => "properties";
         fallback_url: String => "fallback_url";
     }
     }
@@ -631,7 +628,7 @@ async fn handle_create_game_center_activity(c: Arc<Client>, args: Args) -> Handl
     // client-chosen temporary ID; it carries the fallback URL.
     let mut rels = GameCenterActivityCreateRelationships {
         versions: Some(RelationshipDataList {
-            data: GoSlice::from(vec![ResourceIdentifier { type_: "gameCenterActivityVersions".into(), id: "${new-version}".into() }]),
+            data: JsonSlice::from(vec![ResourceIdentifier { type_: "gameCenterActivityVersions".into(), id: "${new-version}".into() }]),
         }),
         ..Default::default()
     };
@@ -668,7 +665,7 @@ async fn handle_create_game_center_activity(c: Arc<Client>, args: Args) -> Handl
             },
             relationships: rels,
         },
-        included: GoSlice::from(vec![inline]),
+        included: JsonSlice::from(vec![inline]),
     };
 
     let resp = match c.create_game_center_activity(&req).await {
@@ -679,9 +676,9 @@ async fn handle_create_game_center_activity(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&format!("Created activity: {} (ID: {})", resp.data.attributes.reference_name, resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateGameCenterActivity`.
+/// Handles `update_game_center_activity`.
 async fn handle_update_game_center_activity(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ActivityID string \"json:\\\"activity_id\\\"\"; ReferenceName string \"json:\\\"reference_name\\\"\"; PlayStyle string \"json:\\\"play_style\\\"\"; MinimumPlayersCount *int \"json:\\\"minimum_players_count\\\"\"; MaximumPlayersCount *int \"json:\\\"maximum_players_count\\\"\"; SupportsPartyCode *bool \"json:\\\"supports_party_code\\\"\"; Properties map[string]string \"json:\\\"properties\\\"\"; Archived *bool \"json:\\\"archived\\\"\" }", "") {
         activity_id: String => "activity_id";
         reference_name: String => "reference_name";
@@ -689,7 +686,7 @@ async fn handle_update_game_center_activity(c: Arc<Client>, args: Args) -> Handl
         minimum_players_count: Option<i64> => "minimum_players_count";
         maximum_players_count: Option<i64> => "maximum_players_count";
         supports_party_code: Option<bool> => "supports_party_code";
-        properties: GoMap<String> => "properties";
+        properties: JsonMap<String> => "properties";
         archived: Option<bool> => "archived";
     }
     }
@@ -726,9 +723,9 @@ async fn handle_update_game_center_activity(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&format!("Updated activity: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteGameCenterActivity`.
+/// Handles `delete_game_center_activity`.
 async fn handle_delete_game_center_activity(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ActivityID string \"json:\\\"activity_id\\\"\" }", "") {
         activity_id: String => "activity_id";
     }
@@ -749,9 +746,9 @@ async fn handle_delete_game_center_activity(c: Arc<Client>, args: Args) -> Handl
     Ok(CallToolResult::success("Activity deleted successfully"))
 }
 
-/// Ported from `Registry.handleListGameCenterActivityVersions`.
+/// Handles `list_game_center_activity_versions`.
 async fn handle_list_game_center_activity_versions(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ActivityID string \"json:\\\"activity_id\\\"\"; tools.gcListParams }", "") {
         activity_id: String => "activity_id";
         gc_list_params: GcListParams => "gcListParams", flatten;
@@ -775,9 +772,9 @@ async fn handle_list_game_center_activity_versions(c: Arc<Client>, args: Args) -
     Ok(list_result(&format_game_center_activity_versions(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetGameCenterActivityVersion`.
+/// Handles `get_game_center_activity_version`.
 async fn handle_get_game_center_activity_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\" }", "") {
         version_id: String => "version_id";
     }
@@ -799,9 +796,9 @@ async fn handle_get_game_center_activity_version(c: Arc<Client>, args: Args) -> 
     Ok(data_result(&format_game_center_activity_version(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateGameCenterActivityVersion`.
+/// Handles `create_game_center_activity_version`.
 async fn handle_create_game_center_activity_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ActivityID string \"json:\\\"activity_id\\\"\"; FallbackURL string \"json:\\\"fallback_url\\\"\" }", "") {
         activity_id: String => "activity_id";
         fallback_url: String => "fallback_url";
@@ -839,9 +836,9 @@ async fn handle_create_game_center_activity_version(c: Arc<Client>, args: Args) 
     Ok(data_result(&format!("Created activity version: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateGameCenterActivityVersion`.
+/// Handles `update_game_center_activity_version`.
 async fn handle_update_game_center_activity_version(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; FallbackURL string \"json:\\\"fallback_url\\\"\" }", "") {
         version_id: String => "version_id";
         fallback_url: String => "fallback_url";
@@ -875,9 +872,9 @@ async fn handle_update_game_center_activity_version(c: Arc<Client>, args: Args) 
     Ok(data_result(&format!("Updated activity version: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleListGameCenterActivityLocalizations`.
+/// Handles `list_game_center_activity_localizations`.
 async fn handle_list_game_center_activity_localizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; tools.gcListParams }", "") {
         version_id: String => "version_id";
         gc_list_params: GcListParams => "gcListParams", flatten;
@@ -901,9 +898,9 @@ async fn handle_list_game_center_activity_localizations(c: Arc<Client>, args: Ar
     Ok(list_result(&format_game_center_activity_localizations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleCreateGameCenterActivityLocalization`.
+/// Handles `create_game_center_activity_localization`.
 async fn handle_create_game_center_activity_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { VersionID string \"json:\\\"version_id\\\"\"; Locale string \"json:\\\"locale\\\"\"; Name string \"json:\\\"name\\\"\"; Description string \"json:\\\"description\\\"\" }", "") {
         version_id: String => "version_id";
         locale: String => "locale";
@@ -950,9 +947,9 @@ async fn handle_create_game_center_activity_localization(c: Arc<Client>, args: A
     Ok(data_result(&format!("Created activity localization {} for {}", resp.data.id, params.locale), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateGameCenterActivityLocalization`.
+/// Handles `update_game_center_activity_localization`.
 async fn handle_update_game_center_activity_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; Name string \"json:\\\"name\\\"\"; Description string \"json:\\\"description\\\"\" }", "") {
         localization_id: String => "localization_id";
         name: String => "name";
@@ -990,9 +987,9 @@ async fn handle_update_game_center_activity_localization(c: Arc<Client>, args: A
     Ok(data_result(&format!("Updated activity localization: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteGameCenterActivityLocalization`.
+/// Handles `delete_game_center_activity_localization`.
 async fn handle_delete_game_center_activity_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -1013,9 +1010,9 @@ async fn handle_delete_game_center_activity_localization(c: Arc<Client>, args: A
     Ok(CallToolResult::success("Activity localization deleted successfully"))
 }
 
-/// Ported from `Registry.handleUploadGameCenterActivityImage`.
+/// Handles `upload_game_center_activity_image`.
 async fn handle_upload_game_center_activity_image(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; VersionID string \"json:\\\"version_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; FilePath string \"json:\\\"file_path\\\"\"; FileDataBase64 string \"json:\\\"file_data_base64\\\"\" }", "") {
         localization_id: String => "localization_id";
         version_id: String => "version_id";
@@ -1050,7 +1047,6 @@ async fn handle_upload_game_center_activity_image(c: Arc<Client>, args: Args) ->
     Ok(data_result(&text, &resp.data))
 }
 
-/// Ported from `formatGameCenterActivities`.
 fn format_game_center_activities(activities: &[GameCenterActivity]) -> String {
     if activities.is_empty() {
         return "No Game Center activities found".into();
@@ -1067,7 +1063,6 @@ fn format_game_center_activities(activities: &[GameCenterActivity]) -> String {
     sb
 }
 
-/// Ported from `formatGameCenterActivity`.
 fn format_game_center_activity(activity: &GameCenterActivity) -> String {
     let a = &activity.attributes;
     let mut sb = String::new();
@@ -1085,7 +1080,6 @@ fn format_game_center_activity(activity: &GameCenterActivity) -> String {
     sb
 }
 
-/// Ported from `formatGameCenterActivityVersions`.
 fn format_game_center_activity_versions(versions: &[GameCenterActivityVersion]) -> String {
     if versions.is_empty() {
         return "No Game Center activity versions found".into();
@@ -1102,7 +1096,6 @@ fn format_game_center_activity_versions(versions: &[GameCenterActivityVersion]) 
     sb
 }
 
-/// Ported from `formatGameCenterActivityVersion`.
 fn format_game_center_activity_version(version: &GameCenterActivityVersion) -> String {
     let a = &version.attributes;
     let mut sb = String::new();
@@ -1115,7 +1108,6 @@ fn format_game_center_activity_version(version: &GameCenterActivityVersion) -> S
     sb
 }
 
-/// Ported from `formatGameCenterActivityLocalizations`.
 fn format_game_center_activity_localizations(localizations: &[GameCenterActivityLocalization]) -> String {
     if localizations.is_empty() {
         return "No Game Center activity localizations found".into();

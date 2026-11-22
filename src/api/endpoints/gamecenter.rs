@@ -1,21 +1,17 @@
 // App Store Connect API endpoints for the "gamecenter" area.
-//
-// Signatures were generated from the Go declarations; bodies are ported by
-// hand from the Go file named in each method's todo!/comment and must
-// preserve the exact request path, query and body.
 
 #[allow(unused_imports)]
 use crate::api::{Client, Error, ListOptions, MAX_UPLOAD_SIZE, Result, decode, model::*};
 #[allow(unused_imports)]
-use crate::go::{
-    GoBytes, GoMap, GoSlice, GoTime, RawMessage, json,
+use crate::wire::{
+    Base64Bytes, JsonMap, JsonSlice, RawMessage, Timestamp, json,
     url::{self, Values},
 };
 #[allow(unused_imports)]
 use serde_json::Value;
 
 impl Client {
-    /// CreateGameCenterAchievement creates a new achievement via the v2 Game Center API.
+    /// Creates a new achievement via the v2 Game Center API.
     pub async fn create_game_center_achievement(
         &self,
         req: &GameCenterAchievementCreateRequest,
@@ -24,7 +20,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateGameCenterLeaderboard creates a new leaderboard via the v2 Game Center API.
+    /// Creates a new leaderboard via the v2 Game Center API.
     pub async fn create_game_center_leaderboard(
         &self,
         req: &GameCenterLeaderboardCreateRequest,
@@ -33,7 +29,7 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteGameCenterAchievement deletes an achievement.
+    /// Deletes an achievement.
     pub async fn delete_game_center_achievement(&self, achievement_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v2/gameCenterAchievements/{}",
@@ -42,7 +38,7 @@ impl Client {
         .await
     }
 
-    /// DeleteGameCenterLeaderboard deletes a leaderboard.
+    /// Deletes a leaderboard.
     pub async fn delete_game_center_leaderboard(&self, leaderboard_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v2/gameCenterLeaderboards/{}",
@@ -51,7 +47,7 @@ impl Client {
         .await
     }
 
-    /// GetGameCenterAchievement returns a single achievement.
+    /// Returns a single achievement.
     pub async fn get_game_center_achievement(
         &self,
         achievement_id: &str,
@@ -68,7 +64,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetGameCenterDetail returns game center details for an app.
+    /// Returns game center details for an app.
     pub async fn get_game_center_detail(&self, app_id: &str) -> Result<GameCenterDetailResponse> {
         let data = self
             .get(
@@ -79,7 +75,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetGameCenterLeaderboard returns a single leaderboard.
+    /// Returns a single leaderboard.
     pub async fn get_game_center_leaderboard(
         &self,
         leaderboard_id: &str,
@@ -96,7 +92,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterAchievements returns achievements for a game center detail via the v2 Game Center API.
+    /// Returns achievements for a game center detail via the v2 Game Center API.
     pub async fn list_game_center_achievements(
         &self,
         game_center_detail_id: &str,
@@ -118,7 +114,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterLeaderboards returns leaderboards for a game center detail via the v2 Game Center API.
+    /// Returns leaderboards for a game center detail via the v2 Game Center API.
     pub async fn list_game_center_leaderboards(
         &self,
         game_center_detail_id: &str,
@@ -140,7 +136,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateGameCenterAchievement updates an achievement.
+    /// Updates an achievement.
     pub async fn update_game_center_achievement(
         &self,
         achievement_id: &str,
@@ -158,7 +154,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateGameCenterLeaderboard updates a leaderboard.
+    /// Updates a leaderboard.
     pub async fn update_game_center_leaderboard(
         &self,
         leaderboard_id: &str,
@@ -176,7 +172,7 @@ impl Client {
         decode(&data)
     }
 
-    /// AddGameCenterLeaderboardSetMembers adds leaderboards to a leaderboard set.
+    /// Adds leaderboards to a leaderboard set.
     pub async fn add_game_center_leaderboard_set_members(
         &self,
         leaderboard_set_id: &str,
@@ -193,7 +189,7 @@ impl Client {
         Ok(())
     }
 
-    /// CreateGameCenterActivity creates an activity along with its initial version.
+    /// Creates an activity along with its initial version.
     pub async fn create_game_center_activity(
         &self,
         req: &GameCenterActivityCreateRequest,
@@ -202,7 +198,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateGameCenterActivityLocalization creates an activity localization.
+    /// Creates an activity localization.
     pub async fn create_game_center_activity_localization(
         &self,
         req: &GameCenterActivityLocalizationCreateRequest,
@@ -213,7 +209,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateGameCenterActivityVersion opens a new editable version of an activity.
+    /// Opens a new editable version of an activity.
     pub async fn create_game_center_activity_version(
         &self,
         req: &GameCenterActivityVersionCreateRequest,
@@ -224,7 +220,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateGameCenterChallenge creates a challenge along with its initial version.
+    /// Creates a challenge along with its initial version.
     pub async fn create_game_center_challenge(
         &self,
         req: &GameCenterChallengeCreateRequest,
@@ -233,7 +229,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateGameCenterChallengeLocalization creates a challenge localization.
+    /// Creates a challenge localization.
     pub async fn create_game_center_challenge_localization(
         &self,
         req: &GameCenterChallengeLocalizationCreateRequest,
@@ -244,7 +240,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateGameCenterChallengeVersion opens a new editable version of a challenge.
+    /// Opens a new editable version of a challenge.
     pub async fn create_game_center_challenge_version(
         &self,
         req: &GameCenterChallengeVersionCreateRequest,
@@ -255,7 +251,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateGameCenterLeaderboardEntrySubmission submits a leaderboard score for
+    /// Submits a leaderboard score for
     /// a player on the game server's behalf.
     pub async fn create_game_center_leaderboard_entry_submission(
         &self,
@@ -267,7 +263,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateGameCenterLeaderboardSet creates a leaderboard set via the v2 Game Center API.
+    /// Creates a leaderboard set via the v2 Game Center API.
     pub async fn create_game_center_leaderboard_set(
         &self,
         req: &GameCenterLeaderboardSetCreateRequest,
@@ -278,7 +274,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateGameCenterLeaderboardSetLocalization creates a leaderboard set localization.
+    /// Creates a leaderboard set localization.
     pub async fn create_game_center_leaderboard_set_localization(
         &self,
         req: &GameCenterLeaderboardSetLocalizationCreateRequest,
@@ -289,7 +285,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateGameCenterLeaderboardSetMemberLocalization names a leaderboard
+    /// Names a leaderboard
     /// within a leaderboard set for one locale.
     pub async fn create_game_center_leaderboard_set_member_localization(
         &self,
@@ -301,7 +297,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateGameCenterLeaderboardSetVersion opens a new editable version of a leaderboard set.
+    /// Opens a new editable version of a leaderboard set.
     pub async fn create_game_center_leaderboard_set_version(
         &self,
         req: &GameCenterLeaderboardSetVersionCreateRequest,
@@ -312,7 +308,7 @@ impl Client {
         decode(&data)
     }
 
-    /// CreateGameCenterPlayerAchievementSubmission submits achievement progress
+    /// Submits achievement progress
     /// for a player on the game server's behalf.
     pub async fn create_game_center_player_achievement_submission(
         &self,
@@ -324,7 +320,7 @@ impl Client {
         decode(&data)
     }
 
-    /// DeleteGameCenterActivity deletes an activity.
+    /// Deletes an activity.
     pub async fn delete_game_center_activity(&self, activity_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/gameCenterActivities/{}",
@@ -333,7 +329,7 @@ impl Client {
         .await
     }
 
-    /// DeleteGameCenterActivityLocalization deletes an activity localization.
+    /// Deletes an activity localization.
     pub async fn delete_game_center_activity_localization(
         &self,
         localization_id: &str,
@@ -345,7 +341,7 @@ impl Client {
         .await
     }
 
-    /// DeleteGameCenterChallenge deletes a challenge.
+    /// Deletes a challenge.
     pub async fn delete_game_center_challenge(&self, challenge_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v1/gameCenterChallenges/{}",
@@ -354,7 +350,7 @@ impl Client {
         .await
     }
 
-    /// DeleteGameCenterChallengeLocalization deletes a challenge localization.
+    /// Deletes a challenge localization.
     pub async fn delete_game_center_challenge_localization(
         &self,
         localization_id: &str,
@@ -366,7 +362,7 @@ impl Client {
         .await
     }
 
-    /// DeleteGameCenterLeaderboardSet deletes a leaderboard set.
+    /// Deletes a leaderboard set.
     pub async fn delete_game_center_leaderboard_set(&self, leaderboard_set_id: &str) -> Result<()> {
         self.delete(&format!(
             "/v2/gameCenterLeaderboardSets/{}",
@@ -375,7 +371,7 @@ impl Client {
         .await
     }
 
-    /// DeleteGameCenterLeaderboardSetLocalization deletes a leaderboard set localization.
+    /// Deletes a leaderboard set localization.
     pub async fn delete_game_center_leaderboard_set_localization(
         &self,
         localization_id: &str,
@@ -387,7 +383,7 @@ impl Client {
         .await
     }
 
-    /// DeleteGameCenterLeaderboardSetMemberLocalization deletes a member localization.
+    /// Deletes a member localization.
     pub async fn delete_game_center_leaderboard_set_member_localization(
         &self,
         localization_id: &str,
@@ -399,7 +395,7 @@ impl Client {
         .await
     }
 
-    /// GetGameCenterActivity returns a single activity.
+    /// Returns a single activity.
     pub async fn get_game_center_activity(
         &self,
         activity_id: &str,
@@ -413,7 +409,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetGameCenterActivityVersion returns a single activity version.
+    /// Returns a single activity version.
     pub async fn get_game_center_activity_version(
         &self,
         version_id: &str,
@@ -430,7 +426,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetGameCenterChallenge returns a single challenge.
+    /// Returns a single challenge.
     pub async fn get_game_center_challenge(
         &self,
         challenge_id: &str,
@@ -447,7 +443,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetGameCenterChallengeVersion returns a single challenge version.
+    /// Returns a single challenge version.
     pub async fn get_game_center_challenge_version(
         &self,
         version_id: &str,
@@ -464,7 +460,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetGameCenterLeaderboardSet returns a single leaderboard set.
+    /// Returns a single leaderboard set.
     pub async fn get_game_center_leaderboard_set(
         &self,
         leaderboard_set_id: &str,
@@ -481,7 +477,7 @@ impl Client {
         decode(&data)
     }
 
-    /// GetGameCenterLeaderboardSetVersion returns a single leaderboard set version.
+    /// Returns a single leaderboard set version.
     pub async fn get_game_center_leaderboard_set_version(
         &self,
         version_id: &str,
@@ -498,7 +494,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterActivities returns the activities for a game center detail.
+    /// Returns the activities for a game center detail.
     pub async fn list_game_center_activities(
         &self,
         game_center_detail_id: &str,
@@ -520,7 +516,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterActivityLocalizations returns the localizations of an activity version.
+    /// Returns the localizations of an activity version.
     pub async fn list_game_center_activity_localizations(
         &self,
         version_id: &str,
@@ -542,7 +538,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterActivityVersions returns the versions of an activity.
+    /// Returns the versions of an activity.
     pub async fn list_game_center_activity_versions(
         &self,
         activity_id: &str,
@@ -564,7 +560,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterChallengeLocalizations returns the localizations of a challenge version.
+    /// Returns the localizations of a challenge version.
     pub async fn list_game_center_challenge_localizations(
         &self,
         version_id: &str,
@@ -586,7 +582,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterChallengeVersions returns the versions of a challenge.
+    /// Returns the versions of a challenge.
     pub async fn list_game_center_challenge_versions(
         &self,
         challenge_id: &str,
@@ -608,7 +604,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterChallenges returns the challenges for a game center detail.
+    /// Returns the challenges for a game center detail.
     pub async fn list_game_center_challenges(
         &self,
         game_center_detail_id: &str,
@@ -630,7 +626,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterLeaderboardSetLocalizations returns the localizations of a
+    /// Returns the localizations of a
     /// leaderboard set version.
     pub async fn list_game_center_leaderboard_set_localizations(
         &self,
@@ -653,7 +649,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterLeaderboardSetMemberLocalizations returns the per-set names
+    /// Returns the per-set names
     /// of leaderboards. The API requires at least one of the
     /// filter[gameCenterLeaderboardSet] / filter[gameCenterLeaderboard] filters,
     /// which the caller supplies through opts.
@@ -674,7 +670,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterLeaderboardSetMembers returns the leaderboards that belong
+    /// Returns the leaderboards that belong
     /// to a leaderboard set.
     pub async fn list_game_center_leaderboard_set_members(
         &self,
@@ -697,7 +693,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterLeaderboardSetVersions returns the versions of a leaderboard set.
+    /// Returns the versions of a leaderboard set.
     pub async fn list_game_center_leaderboard_set_versions(
         &self,
         leaderboard_set_id: &str,
@@ -719,7 +715,7 @@ impl Client {
         decode(&data)
     }
 
-    /// ListGameCenterLeaderboardSets returns the leaderboard sets for a game
+    /// Returns the leaderboard sets for a game
     /// center detail via the v2 Game Center API.
     pub async fn list_game_center_leaderboard_sets(
         &self,
@@ -742,7 +738,7 @@ impl Client {
         decode(&data)
     }
 
-    /// RemoveGameCenterLeaderboardSetMembers removes leaderboards from a
+    /// Removes leaderboards from a
     /// leaderboard set. The linkages travel in the DELETE body.
     pub async fn remove_game_center_leaderboard_set_members(
         &self,
@@ -759,7 +755,7 @@ impl Client {
         .await
     }
 
-    /// UpdateGameCenterActivity updates an activity.
+    /// Updates an activity.
     pub async fn update_game_center_activity(
         &self,
         activity_id: &str,
@@ -774,7 +770,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateGameCenterActivityLocalization updates an activity localization.
+    /// Updates an activity localization.
     pub async fn update_game_center_activity_localization(
         &self,
         localization_id: &str,
@@ -792,7 +788,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateGameCenterActivityVersion updates an activity version's fallback URL.
+    /// Updates an activity version's fallback URL.
     pub async fn update_game_center_activity_version(
         &self,
         version_id: &str,
@@ -810,7 +806,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateGameCenterChallenge updates a challenge.
+    /// Updates a challenge.
     pub async fn update_game_center_challenge(
         &self,
         challenge_id: &str,
@@ -828,7 +824,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateGameCenterChallengeLocalization updates a challenge localization.
+    /// Updates a challenge localization.
     pub async fn update_game_center_challenge_localization(
         &self,
         localization_id: &str,
@@ -846,7 +842,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateGameCenterLeaderboardSet updates a leaderboard set.
+    /// Updates a leaderboard set.
     pub async fn update_game_center_leaderboard_set(
         &self,
         leaderboard_set_id: &str,
@@ -864,7 +860,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateGameCenterLeaderboardSetLocalization updates a leaderboard set localization.
+    /// Updates a leaderboard set localization.
     pub async fn update_game_center_leaderboard_set_localization(
         &self,
         localization_id: &str,
@@ -882,7 +878,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UpdateGameCenterLeaderboardSetMemberLocalization updates a member localization.
+    /// Updates a member localization.
     pub async fn update_game_center_leaderboard_set_member_localization(
         &self,
         localization_id: &str,
@@ -900,7 +896,7 @@ impl Client {
         decode(&data)
     }
 
-    /// UploadGameCenterActivityImage uploads an activity image. Passing a
+    /// Uploads an activity image. Passing a
     /// localization ID sets that locale's image; passing a version ID instead
     /// sets the version's default image.
     pub async fn upload_game_center_activity_image(
@@ -910,7 +906,7 @@ impl Client {
         file_name: &str,
         body: &[u8],
     ) -> Result<GameCenterImageResponse> {
-        let mut rels: GoMap<Option<RelationshipData>> = GoMap::from_map(Default::default());
+        let mut rels: JsonMap<Option<RelationshipData>> = JsonMap::from_map(Default::default());
         if !localization_id.is_empty() {
             rels.insert(
                 "localization",
@@ -943,7 +939,7 @@ impl Client {
         .await
     }
 
-    /// UploadGameCenterChallengeImage uploads a challenge image. Passing a
+    /// Uploads a challenge image. Passing a
     /// localization ID sets that locale's image; passing a version ID instead
     /// sets the version's default image.
     pub async fn upload_game_center_challenge_image(
@@ -953,7 +949,7 @@ impl Client {
         file_name: &str,
         body: &[u8],
     ) -> Result<GameCenterImageResponse> {
-        let mut rels: GoMap<Option<RelationshipData>> = GoMap::from_map(Default::default());
+        let mut rels: JsonMap<Option<RelationshipData>> = JsonMap::from_map(Default::default());
         if !localization_id.is_empty() {
             rels.insert(
                 "localization",
@@ -986,7 +982,7 @@ impl Client {
         .await
     }
 
-    /// UploadGameCenterLeaderboardSetImage uploads the image shown for a
+    /// Uploads the image shown for a
     /// leaderboard set localization.
     pub async fn upload_game_center_leaderboard_set_image(
         &self,
@@ -994,7 +990,7 @@ impl Client {
         file_name: &str,
         body: &[u8],
     ) -> Result<GameCenterImageResponse> {
-        let mut rels: GoMap<Option<RelationshipData>> = GoMap::from_map(Default::default());
+        let mut rels: JsonMap<Option<RelationshipData>> = JsonMap::from_map(Default::default());
         rels.insert(
             "localization",
             Some(RelationshipData {
@@ -1036,7 +1032,7 @@ impl Client {
         &self,
         collection_path: &str,
         resource_type: &str,
-        relationships: GoMap<Option<RelationshipData>>,
+        relationships: JsonMap<Option<RelationshipData>>,
         file_name: &str,
         body: &[u8],
     ) -> Result<GameCenterImageResponse> {
@@ -1165,7 +1161,7 @@ mod tests {
                 relationships: GameCenterLeaderboardSetCreateRelationships {
                     game_center_detail: Some(rel("gameCenterDetails", "gc-1")),
                     versions: RelationshipDataList {
-                        data: GoSlice::from(vec![rid(
+                        data: JsonSlice::from(vec![rid(
                             "gameCenterLeaderboardSetVersions",
                             "${new-version}",
                         )]),
@@ -1173,7 +1169,7 @@ mod tests {
                     ..Default::default()
                 },
             },
-            included: GoSlice::from(vec![GameCenterVersionInlineCreate {
+            included: JsonSlice::from(vec![GameCenterVersionInlineCreate {
                 type_: "gameCenterLeaderboardSetVersions".into(),
                 id: "${new-version}".into(),
             }]),
@@ -1213,7 +1209,7 @@ mod tests {
         for (name, want_method) in [("add", "POST"), ("remove", "DELETE")] {
             let mock = MockApi::start(|_| MockResponse::empty(204)).await;
             let linkages = RelationshipDataList {
-                data: GoSlice::from(vec![
+                data: JsonSlice::from(vec![
                     rid("gameCenterLeaderboards", "lb-1"),
                     rid("gameCenterLeaderboards", "lb-2"),
                 ]),
@@ -1344,7 +1340,7 @@ mod tests {
                 relationships: GameCenterActivityCreateRelationships {
                     game_center_detail: Some(rel("gameCenterDetails", "gc-1")),
                     versions: Some(RelationshipDataList {
-                        data: GoSlice::from(vec![rid(
+                        data: JsonSlice::from(vec![rid(
                             "gameCenterActivityVersions",
                             "${new-version}",
                         )]),
@@ -1352,7 +1348,7 @@ mod tests {
                     ..Default::default()
                 },
             },
-            included: GoSlice::from(vec![GameCenterActivityVersionInlineCreate {
+            included: JsonSlice::from(vec![GameCenterActivityVersionInlineCreate {
                 type_: "gameCenterActivityVersions".into(),
                 id: "${new-version}".into(),
                 attributes: Some(GameCenterActivityVersionInlineCreateAttributes {
@@ -1447,7 +1443,7 @@ mod tests {
                     game_center_detail: Some(rel("gameCenterDetails", "gc-1")),
                     leaderboard_v2: Some(rel("gameCenterLeaderboards", "lb-1")),
                     versions: Some(RelationshipDataList {
-                        data: GoSlice::from(vec![rid(
+                        data: JsonSlice::from(vec![rid(
                             "gameCenterChallengeVersions",
                             "${new-version}",
                         )]),
@@ -1455,7 +1451,7 @@ mod tests {
                     ..Default::default()
                 },
             },
-            included: GoSlice::from(vec![GameCenterVersionInlineCreate {
+            included: JsonSlice::from(vec![GameCenterVersionInlineCreate {
                 type_: "gameCenterChallengeVersions".into(),
                 id: "${new-version}".into(),
             }]),
@@ -1820,10 +1816,10 @@ mod tests {
                     .await
                     .map(|_| ()),
                 _ => {
-                    let mut filter = GoMap::nil();
+                    let mut filter = JsonMap::nil();
                     filter.insert(
                         "gameCenterLeaderboardSet",
-                        GoSlice::from(vec!["set-1".to_string()]),
+                        JsonSlice::from(vec!["set-1".to_string()]),
                     );
                     let opts = ListOptions {
                         filter,

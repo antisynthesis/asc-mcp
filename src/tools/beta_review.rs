@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/beta_review.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! TestFlight beta review, license and localization tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerBetaReviewTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_beta_review_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -579,16 +576,16 @@ pub(super) fn register_beta_review_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListBetaAppReviewSubmissions`.
+/// Handles `list_beta_app_review_submissions`.
 async fn handle_list_beta_app_review_submissions(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -613,9 +610,9 @@ async fn handle_list_beta_app_review_submissions(c: Arc<Client>, args: Args) -> 
     Ok(list_result(&format_beta_app_review_submissions(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetBetaAppReviewSubmission`.
+/// Handles `get_beta_app_review_submission`.
 async fn handle_get_beta_app_review_submission(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { SubmissionID string \"json:\\\"submission_id\\\"\" }", "") {
         submission_id: String => "submission_id";
     }
@@ -637,9 +634,9 @@ async fn handle_get_beta_app_review_submission(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format_beta_app_review_submission(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateBetaAppReviewSubmission`.
+/// Handles `create_beta_app_review_submission`.
 async fn handle_create_beta_app_review_submission(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BuildID string \"json:\\\"build_id\\\"\" }", "") {
         build_id: String => "build_id";
     }
@@ -675,9 +672,9 @@ async fn handle_create_beta_app_review_submission(c: Arc<Client>, args: Args) ->
     ))
 }
 
-/// Ported from `Registry.handleGetBetaLicenseAgreement`.
+/// Handles `get_beta_license_agreement`.
 async fn handle_get_beta_license_agreement(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\" }", "") {
         app_id: String => "app_id";
     }
@@ -699,9 +696,9 @@ async fn handle_get_beta_license_agreement(c: Arc<Client>, args: Args) -> Handle
     Ok(data_result(&format_beta_license_agreement(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateBetaLicenseAgreement`.
+/// Handles `update_beta_license_agreement`.
 async fn handle_update_beta_license_agreement(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AgreementID string \"json:\\\"agreement_id\\\"\"; AgreementText string \"json:\\\"agreement_text\\\"\" }", "") {
         agreement_id: String => "agreement_id";
         agreement_text: String => "agreement_text";
@@ -732,17 +729,17 @@ async fn handle_update_beta_license_agreement(c: Arc<Client>, args: Args) -> Han
     Ok(data_result(&format!("Beta license agreement updated:\n{}", format_beta_license_agreement(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleListBetaAppLocalizations`.
+/// Handles `list_beta_app_localizations`.
 async fn handle_list_beta_app_localizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -771,9 +768,9 @@ async fn handle_list_beta_app_localizations(c: Arc<Client>, args: Args) -> Handl
     Ok(list_result(&format_beta_app_localizations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetBetaAppLocalization`.
+/// Handles `get_beta_app_localization`.
 async fn handle_get_beta_app_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -795,9 +792,9 @@ async fn handle_get_beta_app_localization(c: Arc<Client>, args: Args) -> Handler
     Ok(data_result(&format_beta_app_localization(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateBetaAppLocalization`.
+/// Handles `create_beta_app_localization`.
 async fn handle_create_beta_app_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Locale string \"json:\\\"locale\\\"\"; Description string \"json:\\\"description\\\"\"; FeedbackEmail string \"json:\\\"feedback_email\\\"\"; MarketingURL string \"json:\\\"marketing_url\\\"\"; PrivacyPolicyURL string \"json:\\\"privacy_policy_url\\\"\" }", "") {
         app_id: String => "app_id";
         locale: String => "locale";
@@ -843,9 +840,9 @@ async fn handle_create_beta_app_localization(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&format!("Beta app localization created:\n{}", format_beta_app_localization(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateBetaAppLocalization`.
+/// Handles `update_beta_app_localization`.
 async fn handle_update_beta_app_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; Description string \"json:\\\"description\\\"\"; FeedbackEmail string \"json:\\\"feedback_email\\\"\"; MarketingURL string \"json:\\\"marketing_url\\\"\"; PrivacyPolicyURL string \"json:\\\"privacy_policy_url\\\"\" }", "") {
         localization_id: String => "localization_id";
         description: String => "description";
@@ -885,9 +882,9 @@ async fn handle_update_beta_app_localization(c: Arc<Client>, args: Args) -> Hand
     Ok(data_result(&format!("Beta app localization updated:\n{}", format_beta_app_localization(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteBetaAppLocalization`.
+/// Handles `delete_beta_app_localization`.
 async fn handle_delete_beta_app_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -908,17 +905,17 @@ async fn handle_delete_beta_app_localization(c: Arc<Client>, args: Args) -> Hand
     Ok(CallToolResult::success("Beta app localization deleted"))
 }
 
-/// Ported from `Registry.handleListBetaBuildLocalizations`.
+/// Handles `list_beta_build_localizations`.
 async fn handle_list_beta_build_localizations(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BuildID string \"json:\\\"build_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         build_id: String => "build_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -947,9 +944,9 @@ async fn handle_list_beta_build_localizations(c: Arc<Client>, args: Args) -> Han
     Ok(list_result(&format_beta_build_localizations(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetBetaBuildLocalization`.
+/// Handles `get_beta_build_localization`.
 async fn handle_get_beta_build_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -971,9 +968,9 @@ async fn handle_get_beta_build_localization(c: Arc<Client>, args: Args) -> Handl
     Ok(data_result(&format_beta_build_localization(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleCreateBetaBuildLocalization`.
+/// Handles `create_beta_build_localization`.
 async fn handle_create_beta_build_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BuildID string \"json:\\\"build_id\\\"\"; Locale string \"json:\\\"locale\\\"\"; WhatsNew string \"json:\\\"whats_new\\\"\" }", "") {
         build_id: String => "build_id";
         locale: String => "locale";
@@ -1012,9 +1009,9 @@ async fn handle_create_beta_build_localization(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("Beta build localization created:\n{}", format_beta_build_localization(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateBetaBuildLocalization`.
+/// Handles `update_beta_build_localization`.
 async fn handle_update_beta_build_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\"; WhatsNew string \"json:\\\"whats_new\\\"\" }", "") {
         localization_id: String => "localization_id";
         whats_new: String => "whats_new";
@@ -1045,9 +1042,9 @@ async fn handle_update_beta_build_localization(c: Arc<Client>, args: Args) -> Ha
     Ok(data_result(&format!("Beta build localization updated:\n{}", format_beta_build_localization(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleDeleteBetaBuildLocalization`.
+/// Handles `delete_beta_build_localization`.
 async fn handle_delete_beta_build_localization(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { LocalizationID string \"json:\\\"localization_id\\\"\" }", "") {
         localization_id: String => "localization_id";
     }
@@ -1068,9 +1065,9 @@ async fn handle_delete_beta_build_localization(c: Arc<Client>, args: Args) -> Ha
     Ok(CallToolResult::success("Beta build localization deleted"))
 }
 
-/// Ported from `Registry.handleGetBuildBetaDetail`.
+/// Handles `get_build_beta_detail`.
 async fn handle_get_build_beta_detail(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { BuildID string \"json:\\\"build_id\\\"\" }", "") {
         build_id: String => "build_id";
     }
@@ -1092,9 +1089,9 @@ async fn handle_get_build_beta_detail(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(data_result(&format_build_beta_detail(&resp.data), &resp.data))
 }
 
-/// Ported from `Registry.handleUpdateBuildBetaDetail`.
+/// Handles `update_build_beta_detail`.
 async fn handle_update_build_beta_detail(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { DetailID string \"json:\\\"detail_id\\\"\"; AutoNotifyEnabled *bool \"json:\\\"auto_notify_enabled\\\"\" }", "") {
         detail_id: String => "detail_id";
         auto_notify_enabled: Option<bool> => "auto_notify_enabled";
@@ -1125,7 +1122,6 @@ async fn handle_update_build_beta_detail(c: Arc<Client>, args: Args) -> HandlerR
     Ok(data_result(&format!("Build beta detail updated:\n{}", format_build_beta_detail(&resp.data)), &resp.data))
 }
 
-/// Ported from `formatBetaAppReviewSubmissions`.
 fn format_beta_app_review_submissions(submissions: &[BetaAppReviewSubmission]) -> String {
     if submissions.is_empty() {
         return "No beta app review submissions found".to_string();
@@ -1140,7 +1136,6 @@ fn format_beta_app_review_submissions(submissions: &[BetaAppReviewSubmission]) -
     sb
 }
 
-/// Ported from `formatBetaAppReviewSubmission`.
 fn format_beta_app_review_submission(sub: &BetaAppReviewSubmission) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", sub.id);
@@ -1151,10 +1146,9 @@ fn format_beta_app_review_submission(sub: &BetaAppReviewSubmission) -> String {
     sb
 }
 
-/// Go `s[:n]` on a valid UTF-8 string, rendered the way Go's JSON encoder
-/// emits it: a rune split by the cut leaves invalid trailing bytes, each of
-/// which becomes U+FFFD.
-fn go_byte_prefix(s: &str, n: usize) -> String {
+/// The first `n` bytes of `s` as wire text: a character split by the cut
+/// leaves invalid trailing bytes, each of which becomes U+FFFD.
+fn byte_prefix(s: &str, n: usize) -> String {
     if s.len() <= n {
         return s.to_string();
     }
@@ -1169,14 +1163,13 @@ fn go_byte_prefix(s: &str, n: usize) -> String {
     out
 }
 
-/// Ported from `formatBetaLicenseAgreement`.
 fn format_beta_license_agreement(agreement: &BetaLicenseAgreement) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", agreement.id);
     if !agreement.attributes.agreement_text.is_empty() {
         let mut text = agreement.attributes.agreement_text.clone();
         if text.len() > 500 {
-            text = go_byte_prefix(&text, 500) + "...";
+            text = byte_prefix(&text, 500) + "...";
         }
         let _ = write!(sb, "Agreement Text:\n{}\n", text);
     } else {
@@ -1185,7 +1178,6 @@ fn format_beta_license_agreement(agreement: &BetaLicenseAgreement) -> String {
     sb
 }
 
-/// Ported from `formatBetaAppLocalizations`.
 fn format_beta_app_localizations(localizations: &[BetaAppLocalization]) -> String {
     if localizations.is_empty() {
         return "No beta app localizations found".to_string();
@@ -1200,7 +1192,6 @@ fn format_beta_app_localizations(localizations: &[BetaAppLocalization]) -> Strin
     sb
 }
 
-/// Ported from `formatBetaAppLocalization`.
 fn format_beta_app_localization(loc: &BetaAppLocalization) -> String {
     let a = &loc.attributes;
     let mut sb = String::new();
@@ -1221,7 +1212,6 @@ fn format_beta_app_localization(loc: &BetaAppLocalization) -> String {
     sb
 }
 
-/// Ported from `formatBetaBuildLocalizations`.
 fn format_beta_build_localizations(localizations: &[BetaBuildLocalization]) -> String {
     if localizations.is_empty() {
         return "No beta build localizations found".to_string();
@@ -1236,7 +1226,6 @@ fn format_beta_build_localizations(localizations: &[BetaBuildLocalization]) -> S
     sb
 }
 
-/// Ported from `formatBetaBuildLocalization`.
 fn format_beta_build_localization(loc: &BetaBuildLocalization) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", loc.id);
@@ -1247,7 +1236,6 @@ fn format_beta_build_localization(loc: &BetaBuildLocalization) -> String {
     sb
 }
 
-/// Ported from `formatBuildBetaDetail`.
 fn format_build_beta_detail(detail: &BuildBetaDetail) -> String {
     let a = &detail.attributes;
     let mut sb = String::new();
@@ -1263,12 +1251,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn go_byte_prefix_splits_runes_like_go() {
-        assert_eq!(go_byte_prefix("abc", 5), "abc");
+    fn byte_prefix_splits_runes() {
+        assert_eq!(byte_prefix("abc", 5), "abc");
         // "é" is 2 bytes; cutting after 1 byte leaves one invalid byte.
-        assert_eq!(go_byte_prefix("aé", 2), "a\u{FFFD}");
+        assert_eq!(byte_prefix("aé", 2), "a\u{FFFD}");
         // "€" is 3 bytes; cutting after 2 leaves two invalid bytes.
-        assert_eq!(go_byte_prefix("€x", 2), "\u{FFFD}\u{FFFD}");
-        assert_eq!(go_byte_prefix("€x", 3), "€");
+        assert_eq!(byte_prefix("€x", 2), "\u{FFFD}\u{FFFD}");
+        assert_eq!(byte_prefix("€x", 3), "€");
     }
 }

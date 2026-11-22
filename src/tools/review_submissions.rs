@@ -1,13 +1,10 @@
-//! Ported from internal/asc/tools/review_submissions.go.
-//!
-//! Tool definitions were generated from the Go registry's runtime output so
-//! names, descriptions, schemas and annotations match exactly.
+//! Review submission tools.
 
 #![allow(unused_imports)]
 
 use super::prelude::*;
 
-/// Ported from `Registry.registerReviewSubmissionTools`.
+/// Registers this module's tools in definition order.
 pub(super) fn register_review_submission_tools(r: &mut Registry) {
     r.register(
         tool(r##"{
@@ -245,17 +242,17 @@ pub(super) fn register_review_submission_tools(r: &mut Registry) {
     );
 }
 
-/// Ported from `Registry.handleListReviewSubmissions`.
+/// Handles `list_review_submissions`.
 async fn handle_list_review_submissions(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Limit int \"json:\\\"limit\\\"\"; Cursor string \"json:\\\"cursor\\\"\"; Filter map[string][]string \"json:\\\"filter\\\"\"; Sort []string \"json:\\\"sort\\\"\"; Fields map[string][]string \"json:\\\"fields\\\"\"; Include []string \"json:\\\"include\\\"\" }", "") {
         app_id: String => "app_id";
         limit: i64 => "limit";
         cursor: String => "cursor";
-        filter: GoMap<GoSlice<String>> => "filter";
-        sort: GoSlice<String> => "sort";
-        fields: GoMap<GoSlice<String>> => "fields";
-        include: GoSlice<String> => "include";
+        filter: JsonMap<JsonSlice<String>> => "filter";
+        sort: JsonSlice<String> => "sort";
+        fields: JsonMap<JsonSlice<String>> => "fields";
+        include: JsonSlice<String> => "include";
     }
     }
     let mut params = Params::default();
@@ -284,9 +281,9 @@ async fn handle_list_review_submissions(c: Arc<Client>, args: Args) -> HandlerRe
     Ok(list_result(&format_review_submissions(&resp.data), &resp.data, &resp.links))
 }
 
-/// Ported from `Registry.handleGetReviewSubmission`.
+/// Handles `get_review_submission`.
 async fn handle_get_review_submission(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ReviewSubmissionID string \"json:\\\"review_submission_id\\\"\" }", "") {
         review_submission_id: String => "review_submission_id";
     }
@@ -321,9 +318,9 @@ async fn handle_get_review_submission(c: Arc<Client>, args: Args) -> HandlerResu
     Ok(data_result(&sb, &resp.data))
 }
 
-/// Ported from `Registry.handleCreateReviewSubmission`.
+/// Handles `create_review_submission`.
 async fn handle_create_review_submission(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { AppID string \"json:\\\"app_id\\\"\"; Platform string \"json:\\\"platform\\\"\" }", "") {
         app_id: String => "app_id";
         platform: String => "platform";
@@ -358,9 +355,9 @@ async fn handle_create_review_submission(c: Arc<Client>, args: Args) -> HandlerR
     Ok(data_result(&format!("Review submission created:\n{}", format_review_submission(&resp.data)), &resp.data))
 }
 
-/// Ported from `Registry.handleAddReviewSubmissionItem`.
+/// Handles `add_review_submission_item`.
 async fn handle_add_review_submission_item(c: Arc<Client>, args: Args) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ReviewSubmissionID string \"json:\\\"review_submission_id\\\"\"; AppStoreVersionID string \"json:\\\"app_store_version_id\\\"\"; AppCustomProductPageVersionID string \"json:\\\"app_custom_product_page_version_id\\\"\"; AppStoreVersionExperimentID string \"json:\\\"app_store_version_experiment_id\\\"\"; AppEventID string \"json:\\\"app_event_id\\\"\"; GameCenterAchievementVersionID string \"json:\\\"game_center_achievement_version_id\\\"\"; GameCenterLeaderboardVersionID string \"json:\\\"game_center_leaderboard_version_id\\\"\"; GameCenterLeaderboardSetVersionID string \"json:\\\"game_center_leaderboard_set_version_id\\\"\"; GameCenterActivityVersionID string \"json:\\\"game_center_activity_version_id\\\"\"; GameCenterChallengeVersionID string \"json:\\\"game_center_challenge_version_id\\\"\"; InAppPurchaseVersionID string \"json:\\\"in_app_purchase_version_id\\\"\"; SubscriptionVersionID string \"json:\\\"subscription_version_id\\\"\"; SubscriptionGroupVersionID string \"json:\\\"subscription_group_version_id\\\"\" }", "") {
         review_submission_id: String => "review_submission_id";
         app_store_version_id: String => "app_store_version_id";
@@ -468,20 +465,20 @@ async fn handle_add_review_submission_item(c: Arc<Client>, args: Args) -> Handle
     Ok(data_result(&format!("Review submission item added: {}", resp.data.id), &resp.data))
 }
 
-/// Ported from `Registry.handleSubmitReviewSubmission`.
+/// Handles `submit_review_submission`.
 async fn handle_submit_review_submission(c: Arc<Client>, args: Args) -> HandlerResult {
     update_review_submission_state(c, args, "submit").await
 }
 
-/// Ported from `Registry.handleCancelReviewSubmission`.
+/// Handles `cancel_review_submission`.
 async fn handle_cancel_review_submission(c: Arc<Client>, args: Args) -> HandlerResult {
     update_review_submission_state(c, args, "cancel").await
 }
 
-/// Ported from `Registry.updateReviewSubmissionState`: patches a review
-/// submission with submitted=true or canceled=true depending on the action.
+/// Patches a review submission with submitted=true or canceled=true
+/// depending on the action.
 async fn update_review_submission_state(c: Arc<Client>, args: Args, action: &str) -> HandlerResult {
-    go_struct! {
+    json_struct! {
     struct Params ("struct { ReviewSubmissionID string \"json:\\\"review_submission_id\\\"\" }", "") {
         review_submission_id: String => "review_submission_id";
     }
@@ -522,7 +519,6 @@ async fn update_review_submission_state(c: Arc<Client>, args: Args, action: &str
     Ok(data_result(&format!("Review submission canceled:\n{}", format_review_submission(&resp.data)), &resp.data))
 }
 
-/// Ported from `formatReviewSubmissions`.
 fn format_review_submissions(submissions: &[ReviewSubmission]) -> String {
     if submissions.is_empty() {
         return "No review submissions found".into();
@@ -539,7 +535,6 @@ fn format_review_submissions(submissions: &[ReviewSubmission]) -> String {
     sb
 }
 
-/// Ported from `formatReviewSubmission`.
 fn format_review_submission(submission: &ReviewSubmission) -> String {
     let mut sb = String::new();
     let _ = writeln!(sb, "ID: {}", submission.id);
