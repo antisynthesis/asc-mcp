@@ -125,8 +125,18 @@ fn now_local() -> time::OffsetDateTime {
     time::OffsetDateTime::now_local().unwrap_or_else(|_| time::OffsetDateTime::now_utc())
 }
 
-/// Go `log.Printf`.
+/// Go `log.Printf`. Once a slog format is configured (Go's
+/// `slog.SetDefault`), standard-logger output becomes an INFO record in that
+/// format, as in Go.
 pub fn printf(msg: impl AsRef<str>) {
+    if config().format != Format::Std {
+        log(Level::Info, msg.as_ref().trim_end_matches('\n'), &[]);
+        return;
+    }
+    std_line(msg.as_ref());
+}
+
+fn std_line(msg: &str) {
     let t = now_local();
     let line = format!(
         "{:04}/{:02}/{:02} {:02}:{:02}:{:02} {}\n",
@@ -136,7 +146,7 @@ pub fn printf(msg: impl AsRef<str>) {
         t.hour(),
         t.minute(),
         t.second(),
-        msg.as_ref().trim_end_matches('\n')
+        msg.trim_end_matches('\n')
     );
     let _ = std::io::stderr().write_all(line.as_bytes());
 }
@@ -154,7 +164,7 @@ pub fn log(level: Level, msg: &str, attrs: &[(&str, Val)]) {
                 s.push(' ');
                 s.push_str(&text_attr(k, v));
             }
-            printf(s);
+            std_line(&s);
         }
         Format::Text => {
             let mut s = format!("time={} level={} msg={}", rfc3339_millis(), level.name(), text_value(msg));
