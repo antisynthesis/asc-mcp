@@ -78,7 +78,10 @@ jobs:
       - name: Build Rust server
         run: cargo build --locked
 
-      - name: Differential parity run
+      - name: Protocol parity (stdio and HTTP)
+        run: python3 tests/parity/protocol.py --go target/asc-mcp-go --rust target/debug/asc-mcp
+
+      - name: Tool parity (every tool, all argument variants and mock modes)
         run: python3 tests/parity/parity.py --go target/asc-mcp-go --rust target/debug/asc-mcp --jobs 4 --max-diffs 2
 
   audit:

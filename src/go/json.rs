@@ -231,43 +231,201 @@ pub fn parse(data: &[u8]) -> Result<Value, String> {
     serde_json::from_slice::<Value>(data).map_err(|e| go_syntax_error(data, &e))
 }
 
-/// Best-effort translation of a serde syntax error to Go's wording.
+/// Translates a syntax error into Go's wording by re-scanning the input
+/// with Go's validation rules (`encoding/json` `checkValid`).
 fn go_syntax_error(data: &[u8], e: &serde_json::Error) -> String {
-    if e.is_eof() {
-        return "unexpected end of JSON input".into();
-    }
-    // Locate the offending byte from serde's line/column.
-    let (line, col) = (e.line(), e.column());
-    let mut cur_line = 1;
-    let mut offset = 0;
-    for (i, b) in data.iter().enumerate() {
-        if cur_line == line {
-            offset = i + col.saturating_sub(1);
-            break;
-        }
-        if *b == b'\n' {
-            cur_line += 1;
-        }
-    }
-    let c = data.get(offset).copied().unwrap_or(b' ');
-    let first = data.iter().position(|b| !b.is_ascii_whitespace()).unwrap_or(0);
-    let quoted = quote_char(c);
-    if offset == first {
-        format!("invalid character {quoted} looking for beginning of value")
-    } else if e.to_string().contains("trailing characters") {
-        format!("invalid character {quoted} after top-level value")
-    } else {
-        format!("invalid character {quoted} looking for beginning of value")
+    match go_scan(data) {
+        Err(msg) => msg,
+        // The scanner accepted what serde rejected (e.g. invalid UTF-8,
+        // which Go tolerates); fall back to serde's description.
+        Ok(()) => e.to_string(),
     }
 }
 
+/// Go `quoteChar`.
 fn quote_char(c: u8) -> String {
     match c {
         b'\'' => "'\\''".into(),
         b'"' => "'\"'".into(),
-        c if c.is_ascii_graphic() || c == b' ' => format!("'{}'", c as char),
-        c => format!("'\\x{c:02x}'"),
+        c => {
+            let q = crate::go::fmt::quote(&char::from(c).to_string());
+            format!("'{}'", &q[1..q.len() - 1])
+        }
     }
+}
+
+/// Validates JSON exactly as Go's scanner does, returning Go's error text.
+pub fn go_scan(data: &[u8]) -> Result<(), String> {
+    struct S<'a> {
+        b: &'a [u8],
+        i: usize,
+        eof_space: bool,
+    }
+    const EOF: &str = "unexpected end of JSON input";
+    fn bad(c: u8, ctx: &str) -> String {
+        format!("invalid character {} {ctx}", quote_char(c))
+    }
+    impl S<'_> {
+        fn ws(&mut self) {
+            while self.i < self.b.len() && matches!(self.b[self.i], b' ' | b'\t' | b'\n' | b'\r') {
+                self.i += 1;
+            }
+        }
+        /// Reads a byte. At end of input Go's scanner feeds one virtual
+        /// space (so `nul` fails "in literal null"); a second read is EOF.
+        fn next(&mut self) -> Result<u8, String> {
+            match self.b.get(self.i) {
+                Some(&c) => {
+                    self.i += 1;
+                    Ok(c)
+                }
+                None if !self.eof_space => {
+                    self.eof_space = true;
+                    Ok(b' ')
+                }
+                None => Err(EOF.to_string()),
+            }
+        }
+        /// Skips whitespace, then reads a byte (EOF if none remains).
+        fn next_ns(&mut self) -> Result<u8, String> {
+            self.ws();
+            if self.i >= self.b.len() {
+                return Err(EOF.to_string());
+            }
+            self.next()
+        }
+        fn peek(&self) -> Option<u8> {
+            self.b.get(self.i).copied()
+        }
+        fn literal(&mut self, rest: &[u8], name: &str) -> Result<(), String> {
+            for &want in rest {
+                let c = self.next()?;
+                if c != want {
+                    return Err(bad(c, &format!("in literal {name} (expecting {})", quote_char(want))));
+                }
+            }
+            Ok(())
+        }
+        fn digits(&mut self) {
+            while self.peek().is_some_and(|c| c.is_ascii_digit()) {
+                self.i += 1;
+            }
+        }
+        fn number(&mut self, first: u8) -> Result<(), String> {
+            let mut c = first;
+            if c == b'-' {
+                c = self.next()?;
+                if !c.is_ascii_digit() {
+                    return Err(bad(c, "in numeric literal"));
+                }
+            }
+            if c != b'0' {
+                self.digits();
+            }
+            if self.peek() == Some(b'.') {
+                self.i += 1;
+                let c = self.next()?;
+                if !c.is_ascii_digit() {
+                    return Err(bad(c, "after decimal point in numeric literal"));
+                }
+                self.digits();
+            }
+            if matches!(self.peek(), Some(b'e' | b'E')) {
+                self.i += 1;
+                let mut c = self.next()?;
+                if c == b'+' || c == b'-' {
+                    c = self.next()?;
+                }
+                if !c.is_ascii_digit() {
+                    return Err(bad(c, "in exponent of numeric literal"));
+                }
+                self.digits();
+            }
+            Ok(())
+        }
+        fn string(&mut self) -> Result<(), String> {
+            loop {
+                let c = self.next()?;
+                match c {
+                    b'"' => return Ok(()),
+                    b'\\' => {
+                        let e = self.next()?;
+                        match e {
+                            b'"' | b'\\' | b'/' | b'b' | b'f' | b'n' | b'r' | b't' => {}
+                            b'u' => {
+                                for _ in 0..4 {
+                                    let h = self.next()?;
+                                    if !h.is_ascii_hexdigit() {
+                                        return Err(bad(h, "in \\u hexadecimal character escape"));
+                                    }
+                                }
+                            }
+                            other => return Err(bad(other, "in string escape code")),
+                        }
+                    }
+                    c if c < 0x20 => return Err(bad(c, "in string literal")),
+                    _ => {}
+                }
+            }
+        }
+        fn value(&mut self) -> Result<(), String> {
+            let c = self.next_ns()?;
+            match c {
+                b'{' => {
+                    self.ws();
+                    if self.peek() == Some(b'}') {
+                        self.i += 1;
+                        return Ok(());
+                    }
+                    loop {
+                        let c = self.next_ns()?;
+                        if c != b'"' {
+                            return Err(bad(c, "looking for beginning of object key string"));
+                        }
+                        self.string()?;
+                        let c = self.next_ns()?;
+                        if c != b':' {
+                            return Err(bad(c, "after object key"));
+                        }
+                        self.value()?;
+                        match self.next_ns()? {
+                            b',' => continue,
+                            b'}' => return Ok(()),
+                            c => return Err(bad(c, "after object key:value pair")),
+                        }
+                    }
+                }
+                b'[' => {
+                    self.ws();
+                    if self.peek() == Some(b']') {
+                        self.i += 1;
+                        return Ok(());
+                    }
+                    loop {
+                        self.value()?;
+                        match self.next_ns()? {
+                            b',' => continue,
+                            b']' => return Ok(()),
+                            c => return Err(bad(c, "after array element")),
+                        }
+                    }
+                }
+                b'"' => self.string(),
+                b'-' | b'0'..=b'9' => self.number(c),
+                b't' => self.literal(b"rue", "true"),
+                b'f' => self.literal(b"alse", "false"),
+                b'n' => self.literal(b"ull", "null"),
+                c => Err(bad(c, "looking for beginning of value")),
+            }
+        }
+    }
+    let mut s = S { b: data, i: 0, eof_space: false };
+    s.value()?;
+    s.ws();
+    if let Some(c) = s.peek() {
+        return Err(bad(c, "after top-level value"));
+    }
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -1067,6 +1225,27 @@ mod tests {
             ("[1]", "json: cannot unmarshal array into Go value of type main.Named"),
             (r#""x""#, "json: cannot unmarshal string into Go value of type main.Named"),
             ("", "unexpected end of JSON input"),
+            ("nul", "invalid character ' ' in literal null (expecting 'l')"),
+            ("1.", "invalid character ' ' after decimal point in numeric literal"),
+            ("[1,", "unexpected end of JSON input"),
+            ("-", "invalid character ' ' in numeric literal"),
+            ("tr", "invalid character ' ' in literal true (expecting 'u')"),
+            ("\"\\", "invalid character ' ' in string escape code"),
+            ("{\"a\"", "unexpected end of JSON input"),
+            ("\u{1}", "invalid character '\\x01' looking for beginning of value"),
+            ("\"ab", "unexpected end of JSON input"),
+            ("not json", "invalid character 'o' in literal null (expecting 'u')"),
+            ("{nope", "invalid character 'n' looking for beginning of object key string"),
+            ("[1 2]", "invalid character '2' after array element"),
+            (r#"{"a" 1}"#, "invalid character '1' after object key"),
+            (r#"{"a":1 "b"}"#, "invalid character '\"' after object key:value pair"),
+            ("01", "invalid character '1' after top-level value"),
+            ("-x", "invalid character 'x' in numeric literal"),
+            ("1.x", "invalid character 'x' after decimal point in numeric literal"),
+            ("1ex", "invalid character 'x' in exponent of numeric literal"),
+            (r#""\q""#, "invalid character 'q' in string escape code"),
+            (r#""\u12x4""#, "invalid character 'x' in \\u hexadecimal character escape"),
+            ("\"a\tb\"", "invalid character '\\t' in string literal"),
             (r#"{"i":"x","s":2}"#, "json: cannot unmarshal string into Go struct field Named.i of type int"),
             (r#"{"S":"case"}"#, "<nil>"),
         ];

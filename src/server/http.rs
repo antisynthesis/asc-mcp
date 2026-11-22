@@ -157,11 +157,11 @@ impl HttpServer {
                 .await
                 .map_err(|e| format!("tls config: {e}"))?;
             let mut srv = axum_server::bind_rustls(addr, cfg).handle(handle);
-            srv.http_builder().http1().header_read_timeout(Duration::from_secs(10));
+            srv.http_builder().http1().timer(hyper_util::rt::TokioTimer::new()).header_read_timeout(Duration::from_secs(10));
             srv.serve(app).await
         } else {
             let mut srv = axum_server::bind(addr).handle(handle);
-            srv.http_builder().http1().header_read_timeout(Duration::from_secs(10));
+            srv.http_builder().http1().timer(hyper_util::rt::TokioTimer::new()).header_read_timeout(Duration::from_secs(10));
             srv.serve(app).await
         };
         result.map_err(|e| e.to_string())

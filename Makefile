@@ -38,6 +38,7 @@ e2e: build
 parity:
 	@./tests/parity/build-go-reference.sh "" target/asc-mcp-go
 	@$(CARGO) build
+	@python3 tests/parity/protocol.py --go target/asc-mcp-go --rust target/debug/$(BINARY_NAME)
 	@python3 tests/parity/parity.py --go target/asc-mcp-go --rust target/debug/$(BINARY_NAME)
 
 .DEFAULT_GOAL := build
