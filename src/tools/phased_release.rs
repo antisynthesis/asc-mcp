@@ -251,11 +251,11 @@ async fn handle_delete_phased_release(c: Arc<Client>, args: Args) -> HandlerResu
 /// Ported from `formatPhasedRelease`.
 fn format_phased_release(pr: &AppStoreVersionPhasedRelease) -> String {
     let mut result = format!("Phased Release ID: {}\n", pr.id);
-    let _ = write!(result, "State: {}\n", pr.attributes.phased_release_state);
+    let _ = writeln!(result, "State: {}", pr.attributes.phased_release_state);
     if let Some(d) = &pr.attributes.start_date {
-        let _ = write!(result, "Start Date: {}\n", d.format("2006-01-02"));
+        let _ = writeln!(result, "Start Date: {}", d.format("2006-01-02"));
     }
-    let _ = write!(result, "Current Day: {}\n", pr.attributes.current_day_number);
-    let _ = write!(result, "Total Pause Duration: {} days\n", pr.attributes.total_pause_duration);
+    let _ = writeln!(result, "Current Day: {}", pr.attributes.current_day_number);
+    let _ = writeln!(result, "Total Pause Duration: {} days", pr.attributes.total_pause_duration);
     result
 }

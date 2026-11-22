@@ -150,11 +150,11 @@ async fn handle_list_apps(c: Arc<Client>, args: Args) -> HandlerResult {
     let mut sb = String::new();
     let _ = write!(sb, "Found {} apps:\n\n", resp.data.len());
     for app in resp.data.iter() {
-        let _ = write!(sb, "**{}**\n", app.attributes.name);
-        let _ = write!(sb, "  - ID: {}\n", app.id);
-        let _ = write!(sb, "  - Bundle ID: {}\n", app.attributes.bundle_id);
-        let _ = write!(sb, "  - SKU: {}\n", app.attributes.sku);
-        let _ = write!(sb, "  - Primary Locale: {}\n", app.attributes.primary_locale);
+        let _ = writeln!(sb, "**{}**", app.attributes.name);
+        let _ = writeln!(sb, "  - ID: {}", app.id);
+        let _ = writeln!(sb, "  - Bundle ID: {}", app.attributes.bundle_id);
+        let _ = writeln!(sb, "  - SKU: {}", app.attributes.sku);
+        let _ = writeln!(sb, "  - Primary Locale: {}", app.attributes.primary_locale);
         sb.push('\n');
     }
 
@@ -185,14 +185,14 @@ async fn handle_get_app(c: Arc<Client>, args: Args) -> HandlerResult {
     let app = &resp.data;
     let mut sb = String::new();
     let _ = write!(sb, "**{}**\n\n", app.attributes.name);
-    let _ = write!(sb, "- ID: {}\n", app.id);
-    let _ = write!(sb, "- Bundle ID: {}\n", app.attributes.bundle_id);
-    let _ = write!(sb, "- SKU: {}\n", app.attributes.sku);
-    let _ = write!(sb, "- Primary Locale: {}\n", app.attributes.primary_locale);
-    let _ = write!(sb, "- Made for Kids: {}\n", bool_v(app.attributes.is_or_ever_was_made_for_kids));
+    let _ = writeln!(sb, "- ID: {}", app.id);
+    let _ = writeln!(sb, "- Bundle ID: {}", app.attributes.bundle_id);
+    let _ = writeln!(sb, "- SKU: {}", app.attributes.sku);
+    let _ = writeln!(sb, "- Primary Locale: {}", app.attributes.primary_locale);
+    let _ = writeln!(sb, "- Made for Kids: {}", bool_v(app.attributes.is_or_ever_was_made_for_kids));
 
     if !app.attributes.content_rights_declaration.is_empty() {
-        let _ = write!(sb, "- Content Rights: {}\n", app.attributes.content_rights_declaration);
+        let _ = writeln!(sb, "- Content Rights: {}", app.attributes.content_rights_declaration);
     }
 
     Ok(data_result(&sb, &resp.data))
@@ -228,13 +228,13 @@ async fn handle_get_app_versions(c: Arc<Client>, args: Args) -> HandlerResult {
     let _ = write!(sb, "Found {} versions:\n\n", resp.data.len());
     for version in resp.data.iter() {
         let a = &version.attributes;
-        let _ = write!(sb, "**Version {}** ({})\n", a.version_string, a.platform);
-        let _ = write!(sb, "  - ID: {}\n", version.id);
-        let _ = write!(sb, "  - State: {}\n", a.app_store_state);
-        let _ = write!(sb, "  - Release Type: {}\n", a.release_type);
-        let _ = write!(sb, "  - Downloadable: {}\n", bool_v(a.downloadable));
+        let _ = writeln!(sb, "**Version {}** ({})", a.version_string, a.platform);
+        let _ = writeln!(sb, "  - ID: {}", version.id);
+        let _ = writeln!(sb, "  - State: {}", a.app_store_state);
+        let _ = writeln!(sb, "  - Release Type: {}", a.release_type);
+        let _ = writeln!(sb, "  - Downloadable: {}", bool_v(a.downloadable));
         if let Some(created) = &a.created_date {
-            let _ = write!(sb, "  - Created: {}\n", created.format("2006-01-02 15:04"));
+            let _ = writeln!(sb, "  - Created: {}", created.format("2006-01-02 15:04"));
         }
         sb.push('\n');
     }

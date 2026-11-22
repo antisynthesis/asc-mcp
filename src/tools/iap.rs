@@ -408,14 +408,14 @@ fn format_in_app_purchases(iaps: &[InAppPurchase]) -> String {
 /// Ported from `formatInAppPurchase`.
 fn format_in_app_purchase(iap: &InAppPurchase) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", iap.id);
-    let _ = write!(sb, "Name: {}\n", iap.attributes.name);
-    let _ = write!(sb, "Product ID: {}\n", iap.attributes.product_id);
-    let _ = write!(sb, "Type: {}\n", iap.attributes.in_app_purchase_type);
-    let _ = write!(sb, "State: {}\n", iap.attributes.state);
-    let _ = write!(sb, "Family Sharable: {}\n", iap.attributes.family_sharable);
+    let _ = writeln!(sb, "ID: {}", iap.id);
+    let _ = writeln!(sb, "Name: {}", iap.attributes.name);
+    let _ = writeln!(sb, "Product ID: {}", iap.attributes.product_id);
+    let _ = writeln!(sb, "Type: {}", iap.attributes.in_app_purchase_type);
+    let _ = writeln!(sb, "State: {}", iap.attributes.state);
+    let _ = writeln!(sb, "Family Sharable: {}", iap.attributes.family_sharable);
     if !iap.attributes.review_note.is_empty() {
-        let _ = write!(sb, "Review Note: {}\n", iap.attributes.review_note);
+        let _ = writeln!(sb, "Review Note: {}", iap.attributes.review_note);
     }
     sb
 }

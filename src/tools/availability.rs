@@ -250,8 +250,8 @@ async fn handle_list_territory_availabilities(c: Arc<Client>, args: Args) -> Han
 /// Ported from `formatAppAvailability`.
 fn format_app_availability(avail: &AppAvailability) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", avail.id);
-    let _ = write!(sb, "Available in New Territories: {}\n", avail.attributes.available_in_new_territories);
+    let _ = writeln!(sb, "ID: {}", avail.id);
+    let _ = writeln!(sb, "Available in New Territories: {}", avail.attributes.available_in_new_territories);
     sb
 }
 
@@ -265,11 +265,11 @@ fn format_territory_availabilities(availabilities: &[TerritoryAvailability]) -> 
     let _ = write!(sb, "Found {} territory availabilities:\n\n", availabilities.len());
 
     for avail in availabilities {
-        let _ = write!(sb, "ID: {}\n", avail.id);
-        let _ = write!(sb, "Available: {}\n", avail.attributes.available);
-        let _ = write!(sb, "Pre-Order Enabled: {}\n", avail.attributes.pre_order_enabled);
+        let _ = writeln!(sb, "ID: {}", avail.id);
+        let _ = writeln!(sb, "Available: {}", avail.attributes.available);
+        let _ = writeln!(sb, "Pre-Order Enabled: {}", avail.attributes.pre_order_enabled);
         if let Some(d) = &avail.attributes.release_date {
-            let _ = write!(sb, "Release Date: {}\n", d.format("2006-01-02"));
+            let _ = writeln!(sb, "Release Date: {}", d.format("2006-01-02"));
         }
         sb.push_str("\n---\n");
     }

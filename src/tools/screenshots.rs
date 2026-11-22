@@ -587,8 +587,8 @@ fn format_screenshot_sets(sets: &[AppScreenshotSet]) -> String {
     let _ = write!(sb, "Found {} screenshot sets:\n\n", sets.len());
 
     for set in sets {
-        let _ = write!(sb, "ID: {}\n", set.id);
-        let _ = write!(sb, "Display Type: {}\n", set.attributes.screenshot_display_type);
+        let _ = writeln!(sb, "ID: {}", set.id);
+        let _ = writeln!(sb, "Display Type: {}", set.attributes.screenshot_display_type);
         sb.push_str("---\n");
     }
 
@@ -615,14 +615,14 @@ fn format_screenshots(screenshots: &[AppScreenshot]) -> String {
 /// Ported from `formatScreenshot`.
 fn format_screenshot(ss: &AppScreenshot) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", ss.id);
-    let _ = write!(sb, "File Name: {}\n", ss.attributes.file_name);
-    let _ = write!(sb, "File Size: {} bytes\n", ss.attributes.file_size);
+    let _ = writeln!(sb, "ID: {}", ss.id);
+    let _ = writeln!(sb, "File Name: {}", ss.attributes.file_name);
+    let _ = writeln!(sb, "File Size: {} bytes", ss.attributes.file_size);
     if let Some(img) = &ss.attributes.image_asset {
-        let _ = write!(sb, "Dimensions: {}x{}\n", img.width, img.height);
+        let _ = writeln!(sb, "Dimensions: {}x{}", img.width, img.height);
     }
     if let Some(st) = &ss.attributes.asset_delivery_state {
-        let _ = write!(sb, "State: {}\n", st.state);
+        let _ = writeln!(sb, "State: {}", st.state);
     }
     sb
 }
@@ -637,8 +637,8 @@ fn format_preview_sets(sets: &[AppPreviewSet]) -> String {
     let _ = write!(sb, "Found {} preview sets:\n\n", sets.len());
 
     for set in sets {
-        let _ = write!(sb, "ID: {}\n", set.id);
-        let _ = write!(sb, "Preview Type: {}\n", set.attributes.preview_type);
+        let _ = writeln!(sb, "ID: {}", set.id);
+        let _ = writeln!(sb, "Preview Type: {}", set.attributes.preview_type);
         sb.push_str("---\n");
     }
 
@@ -665,17 +665,17 @@ fn format_previews(previews: &[AppPreview]) -> String {
 /// Ported from `formatPreview`.
 fn format_preview(p: &AppPreview) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", p.id);
-    let _ = write!(sb, "File Name: {}\n", p.attributes.file_name);
-    let _ = write!(sb, "File Size: {} bytes\n", p.attributes.file_size);
+    let _ = writeln!(sb, "ID: {}", p.id);
+    let _ = writeln!(sb, "File Name: {}", p.attributes.file_name);
+    let _ = writeln!(sb, "File Size: {} bytes", p.attributes.file_size);
     if !p.attributes.mime_type.is_empty() {
-        let _ = write!(sb, "MIME Type: {}\n", p.attributes.mime_type);
+        let _ = writeln!(sb, "MIME Type: {}", p.attributes.mime_type);
     }
     if !p.attributes.video_url.is_empty() {
-        let _ = write!(sb, "Video URL: {}\n", p.attributes.video_url);
+        let _ = writeln!(sb, "Video URL: {}", p.attributes.video_url);
     }
     if let Some(st) = &p.attributes.asset_delivery_state {
-        let _ = write!(sb, "State: {}\n", st.state);
+        let _ = writeln!(sb, "State: {}", st.state);
     }
     sb
 }

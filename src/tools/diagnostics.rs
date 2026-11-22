@@ -723,10 +723,10 @@ fn format_perf_power_metrics(metrics: &[PerfPowerMetric]) -> String {
     let _ = write!(sb, "Found {} performance metrics:\n\n", metrics.len());
 
     for m in metrics {
-        let _ = write!(sb, "ID: {}\n", m.id);
-        let _ = write!(sb, "Device Type: {}\n", m.attributes.device_type);
-        let _ = write!(sb, "Metric Type: {}\n", m.attributes.metric_type);
-        let _ = write!(sb, "Platform: {}\n", m.attributes.platform);
+        let _ = writeln!(sb, "ID: {}", m.id);
+        let _ = writeln!(sb, "Device Type: {}", m.attributes.device_type);
+        let _ = writeln!(sb, "Metric Type: {}", m.attributes.metric_type);
+        let _ = writeln!(sb, "Platform: {}", m.attributes.platform);
         sb.push_str("\n---\n");
     }
 
@@ -743,10 +743,10 @@ fn format_diagnostic_signatures(signatures: &[DiagnosticSignature]) -> String {
     let _ = write!(sb, "Found {} diagnostic signatures:\n\n", signatures.len());
 
     for s in signatures {
-        let _ = write!(sb, "ID: {}\n", s.id);
-        let _ = write!(sb, "Diagnostic Type: {}\n", s.attributes.diagnostic_type);
-        let _ = write!(sb, "Signature: {}\n", s.attributes.signature);
-        let _ = write!(sb, "Weight: {:.2}\n", s.attributes.weight);
+        let _ = writeln!(sb, "ID: {}", s.id);
+        let _ = writeln!(sb, "Diagnostic Type: {}", s.attributes.diagnostic_type);
+        let _ = writeln!(sb, "Signature: {}", s.attributes.signature);
+        let _ = writeln!(sb, "Weight: {:.2}", s.attributes.weight);
         sb.push_str("\n---\n");
     }
 
@@ -763,7 +763,7 @@ fn format_diagnostic_logs(logs: &[DiagnosticLog]) -> String {
     let _ = write!(sb, "Found {} diagnostic logs:\n\n", logs.len());
 
     for l in logs {
-        let _ = write!(sb, "ID: {}\n", l.id);
+        let _ = writeln!(sb, "ID: {}", l.id);
         sb.push_str("\n---\n");
     }
 
@@ -790,11 +790,11 @@ fn format_app_store_review_attachments(attachments: &[AppStoreReviewAttachment])
 /// Ported from `formatAppStoreReviewAttachment`.
 fn format_app_store_review_attachment(a: &AppStoreReviewAttachment) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", a.id);
-    let _ = write!(sb, "File Name: {}\n", a.attributes.file_name);
-    let _ = write!(sb, "File Size: {} bytes\n", a.attributes.file_size);
+    let _ = writeln!(sb, "ID: {}", a.id);
+    let _ = writeln!(sb, "File Name: {}", a.attributes.file_name);
+    let _ = writeln!(sb, "File Size: {} bytes", a.attributes.file_size);
     if let Some(st) = &a.attributes.asset_delivery_state {
-        let _ = write!(sb, "State: {}\n", st.state);
+        let _ = writeln!(sb, "State: {}", st.state);
     }
     sb
 }
@@ -802,11 +802,11 @@ fn format_app_store_review_attachment(a: &AppStoreReviewAttachment) -> String {
 /// Ported from `formatRoutingAppCoverage`.
 fn format_routing_app_coverage(coverage: &RoutingAppCoverage) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", coverage.id);
-    let _ = write!(sb, "File Name: {}\n", coverage.attributes.file_name);
-    let _ = write!(sb, "File Size: {} bytes\n", coverage.attributes.file_size);
+    let _ = writeln!(sb, "ID: {}", coverage.id);
+    let _ = writeln!(sb, "File Name: {}", coverage.attributes.file_name);
+    let _ = writeln!(sb, "File Size: {} bytes", coverage.attributes.file_size);
     if let Some(st) = &coverage.attributes.asset_delivery_state {
-        let _ = write!(sb, "State: {}\n", st.state);
+        let _ = writeln!(sb, "State: {}", st.state);
     }
     sb
 }

@@ -429,25 +429,25 @@ fn format_app_events(events: &[AppEvent]) -> String {
 fn format_app_event(event: &AppEvent) -> String {
     let a = &event.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", event.id);
-    let _ = write!(sb, "Reference Name: {}\n", a.reference_name);
+    let _ = writeln!(sb, "ID: {}", event.id);
+    let _ = writeln!(sb, "Reference Name: {}", a.reference_name);
     if !a.badge.is_empty() {
-        let _ = write!(sb, "Badge: {}\n", a.badge);
+        let _ = writeln!(sb, "Badge: {}", a.badge);
     }
     if !a.event_state.is_empty() {
-        let _ = write!(sb, "State: {}\n", a.event_state);
+        let _ = writeln!(sb, "State: {}", a.event_state);
     }
     if !a.priority.is_empty() {
-        let _ = write!(sb, "Priority: {}\n", a.priority);
+        let _ = writeln!(sb, "Priority: {}", a.priority);
     }
     if !a.purpose.is_empty() {
-        let _ = write!(sb, "Purpose: {}\n", a.purpose);
+        let _ = writeln!(sb, "Purpose: {}", a.purpose);
     }
     if !a.deep_link.is_empty() {
-        let _ = write!(sb, "Deep Link: {}\n", a.deep_link);
+        let _ = writeln!(sb, "Deep Link: {}", a.deep_link);
     }
     if !a.purchase_requirement.is_empty() {
-        let _ = write!(sb, "Purchase Requirement: {}\n", a.purchase_requirement);
+        let _ = writeln!(sb, "Purchase Requirement: {}", a.purchase_requirement);
     }
     sb
 }

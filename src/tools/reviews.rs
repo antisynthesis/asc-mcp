@@ -376,22 +376,22 @@ fn format_customer_reviews(reviews: &[CustomerReview]) -> String {
 fn format_customer_review(review: &CustomerReview) -> String {
     let a = &review.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "Review ID: {}\n", review.id);
-    let _ = write!(sb, "Rating: {}/5\n", a.rating);
+    let _ = writeln!(sb, "Review ID: {}", review.id);
+    let _ = writeln!(sb, "Rating: {}/5", a.rating);
     if !a.title.is_empty() {
-        let _ = write!(sb, "Title: {}\n", a.title);
+        let _ = writeln!(sb, "Title: {}", a.title);
     }
     if !a.body.is_empty() {
-        let _ = write!(sb, "Body: {}\n", a.body);
+        let _ = writeln!(sb, "Body: {}", a.body);
     }
     if !a.reviewer_name.is_empty() {
-        let _ = write!(sb, "Reviewer: {}\n", a.reviewer_name);
+        let _ = writeln!(sb, "Reviewer: {}", a.reviewer_name);
     }
     if !a.territory.is_empty() {
-        let _ = write!(sb, "Territory: {}\n", a.territory);
+        let _ = writeln!(sb, "Territory: {}", a.territory);
     }
     if let Some(d) = &a.created_date {
-        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02"));
+        let _ = writeln!(sb, "Created: {}", d.format("2006-01-02"));
     }
     sb
 }
@@ -406,18 +406,18 @@ fn format_customer_review_summarizations(summaries: &[CustomerReviewSummarizatio
     let _ = write!(sb, "Found {} customer review summarizations:\n\n", summaries.len());
     for summary in summaries {
         let a = &summary.attributes;
-        let _ = write!(sb, "Summarization ID: {}\n", summary.id);
+        let _ = writeln!(sb, "Summarization ID: {}", summary.id);
         if !a.platform.is_empty() {
-            let _ = write!(sb, "Platform: {}\n", a.platform);
+            let _ = writeln!(sb, "Platform: {}", a.platform);
         }
         if !a.locale.is_empty() {
-            let _ = write!(sb, "Locale: {}\n", a.locale);
+            let _ = writeln!(sb, "Locale: {}", a.locale);
         }
         if let Some(d) = &a.created_date {
-            let _ = write!(sb, "Created: {}\n", d.format("2006-01-02"));
+            let _ = writeln!(sb, "Created: {}", d.format("2006-01-02"));
         }
         if !a.text.is_empty() {
-            let _ = write!(sb, "Summary: {}\n", a.text);
+            let _ = writeln!(sb, "Summary: {}", a.text);
         }
         sb.push_str("\n---\n");
     }

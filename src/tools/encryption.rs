@@ -328,22 +328,22 @@ fn format_encryption_declarations(declarations: &[AppEncryptionDeclaration]) -> 
 fn format_encryption_declaration(decl: &AppEncryptionDeclaration) -> String {
     let a = &decl.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", decl.id);
-    let _ = write!(sb, "Uses Encryption: {}\n", a.uses_encryption);
-    let _ = write!(sb, "Exempt: {}\n", a.exempt);
-    let _ = write!(sb, "Contains Proprietary Cryptography: {}\n", a.contains_proprietary_cryptography);
-    let _ = write!(sb, "Contains Third-Party Cryptography: {}\n", a.contains_third_party_cryptography);
-    let _ = write!(sb, "Available on French Store: {}\n", a.available_on_french_store);
-    let _ = write!(sb, "Platform: {}\n", a.platform);
-    let _ = write!(sb, "State: {}\n", a.app_encryption_declaration_state);
+    let _ = writeln!(sb, "ID: {}", decl.id);
+    let _ = writeln!(sb, "Uses Encryption: {}", a.uses_encryption);
+    let _ = writeln!(sb, "Exempt: {}", a.exempt);
+    let _ = writeln!(sb, "Contains Proprietary Cryptography: {}", a.contains_proprietary_cryptography);
+    let _ = writeln!(sb, "Contains Third-Party Cryptography: {}", a.contains_third_party_cryptography);
+    let _ = writeln!(sb, "Available on French Store: {}", a.available_on_french_store);
+    let _ = writeln!(sb, "Platform: {}", a.platform);
+    let _ = writeln!(sb, "State: {}", a.app_encryption_declaration_state);
     if !a.app_description.is_empty() {
-        let _ = write!(sb, "Description: {}\n", a.app_description);
+        let _ = writeln!(sb, "Description: {}", a.app_description);
     }
     if !a.code_value.is_empty() {
-        let _ = write!(sb, "CCATS Code: {}\n", a.code_value);
+        let _ = writeln!(sb, "CCATS Code: {}", a.code_value);
     }
     if !a.document_url.is_empty() {
-        let _ = write!(sb, "Document URL: {}\n", a.document_url);
+        let _ = writeln!(sb, "Document URL: {}", a.document_url);
     }
     sb
 }

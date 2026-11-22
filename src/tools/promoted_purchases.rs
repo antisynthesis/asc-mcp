@@ -1064,11 +1064,11 @@ fn format_promoted_purchases(purchases: &[PromotedPurchase]) -> String {
 /// Ported from `formatPromotedPurchase`.
 fn format_promoted_purchase(p: &PromotedPurchase) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", p.id);
-    let _ = write!(sb, "Enabled: {}\n", p.attributes.enabled);
-    let _ = write!(sb, "Visible For All Users: {}\n", p.attributes.visible_for_all_users);
+    let _ = writeln!(sb, "ID: {}", p.id);
+    let _ = writeln!(sb, "Enabled: {}", p.attributes.enabled);
+    let _ = writeln!(sb, "Visible For All Users: {}", p.attributes.visible_for_all_users);
     if !p.attributes.state.is_empty() {
-        let _ = write!(sb, "State: {}\n", p.attributes.state);
+        let _ = writeln!(sb, "State: {}", p.attributes.state);
     }
     sb
 }
@@ -1093,20 +1093,20 @@ fn format_subscription_offer_codes(codes: &[SubscriptionOfferCode]) -> String {
 /// Ported from `formatSubscriptionOfferCode`.
 fn format_subscription_offer_code(c: &SubscriptionOfferCode) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", c.id);
-    let _ = write!(sb, "Name: {}\n", c.attributes.name);
-    let _ = write!(sb, "Active: {}\n", c.attributes.active);
+    let _ = writeln!(sb, "ID: {}", c.id);
+    let _ = writeln!(sb, "Name: {}", c.attributes.name);
+    let _ = writeln!(sb, "Active: {}", c.attributes.active);
     if !c.attributes.customer_eligibilities.is_empty() {
-        let _ = write!(sb, "Customer Eligibilities: {}\n", c.attributes.customer_eligibilities.join(", "));
+        let _ = writeln!(sb, "Customer Eligibilities: {}", c.attributes.customer_eligibilities.join(", "));
     }
     if !c.attributes.offer_mode.is_empty() {
-        let _ = write!(sb, "Offer Mode: {}\n", c.attributes.offer_mode);
+        let _ = writeln!(sb, "Offer Mode: {}", c.attributes.offer_mode);
     }
     if c.attributes.number_of_periods > 0 {
-        let _ = write!(sb, "Periods: {}\n", c.attributes.number_of_periods);
+        let _ = writeln!(sb, "Periods: {}", c.attributes.number_of_periods);
     }
     if c.attributes.total_number_of_codes > 0 {
-        let _ = write!(sb, "Total Codes: {}\n", c.attributes.total_number_of_codes);
+        let _ = writeln!(sb, "Total Codes: {}", c.attributes.total_number_of_codes);
     }
     sb
 }
@@ -1131,23 +1131,23 @@ fn format_win_back_offers(offers: &[WinBackOffer]) -> String {
 /// Ported from `formatWinBackOffer`.
 fn format_win_back_offer(o: &WinBackOffer) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", o.id);
-    let _ = write!(sb, "Reference Name: {}\n", o.attributes.reference_name);
-    let _ = write!(sb, "Offer ID: {}\n", o.attributes.offer_id);
+    let _ = writeln!(sb, "ID: {}", o.id);
+    let _ = writeln!(sb, "Reference Name: {}", o.attributes.reference_name);
+    let _ = writeln!(sb, "Offer ID: {}", o.attributes.offer_id);
     if !o.attributes.offer_mode.is_empty() {
-        let _ = write!(sb, "Offer Mode: {}\n", o.attributes.offer_mode);
+        let _ = writeln!(sb, "Offer Mode: {}", o.attributes.offer_mode);
     }
     if !o.attributes.duration.is_empty() {
-        let _ = write!(sb, "Duration: {}\n", o.attributes.duration);
+        let _ = writeln!(sb, "Duration: {}", o.attributes.duration);
     }
     if o.attributes.period_count > 0 {
-        let _ = write!(sb, "Period Count: {}\n", o.attributes.period_count);
+        let _ = writeln!(sb, "Period Count: {}", o.attributes.period_count);
     }
     if !o.attributes.priority.is_empty() {
-        let _ = write!(sb, "Priority: {}\n", o.attributes.priority);
+        let _ = writeln!(sb, "Priority: {}", o.attributes.priority);
     }
     if !o.attributes.promotion_intent.is_empty() {
-        let _ = write!(sb, "Promotion Intent: {}\n", o.attributes.promotion_intent);
+        let _ = writeln!(sb, "Promotion Intent: {}", o.attributes.promotion_intent);
     }
     sb
 }

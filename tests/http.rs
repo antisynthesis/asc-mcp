@@ -810,8 +810,8 @@ fn decode_header_value_cases() {
     for (name, input, want) in cases {
         let got = decode_header_value(input);
         match want {
-            Some(w) => assert_eq!(got.as_deref(), Ok(*w), "{name}"),
-            None => assert!(got.is_err(), "{name}: got {got:?}, want error"),
+            Some(w) => assert_eq!(got.as_deref(), Some(*w), "{name}"),
+            None => assert!(got.is_none(), "{name}: got {got:?}, want error"),
         }
     }
 }

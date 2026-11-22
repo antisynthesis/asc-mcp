@@ -454,8 +454,8 @@ fn format_app_clips(clips: &[AppClip]) -> String {
 /// Ported from `formatAppClip`.
 fn format_app_clip(clip: &AppClip) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", clip.id);
-    let _ = write!(sb, "Bundle ID: {}\n", clip.attributes.bundle_id);
+    let _ = writeln!(sb, "ID: {}", clip.id);
+    let _ = writeln!(sb, "Bundle ID: {}", clip.attributes.bundle_id);
     sb
 }
 
@@ -479,9 +479,9 @@ fn format_app_clip_default_experiences(experiences: &[AppClipDefaultExperience])
 /// Ported from `formatAppClipDefaultExperience`.
 fn format_app_clip_default_experience(exp: &AppClipDefaultExperience) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", exp.id);
+    let _ = writeln!(sb, "ID: {}", exp.id);
     if !exp.attributes.action.is_empty() {
-        let _ = write!(sb, "Action: {}\n", exp.attributes.action);
+        let _ = writeln!(sb, "Action: {}", exp.attributes.action);
     }
     sb
 }
@@ -507,22 +507,22 @@ fn format_app_clip_advanced_experiences(experiences: &[AppClipAdvancedExperience
 fn format_app_clip_advanced_experience(exp: &AppClipAdvancedExperience) -> String {
     let a = &exp.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", exp.id);
+    let _ = writeln!(sb, "ID: {}", exp.id);
     if !a.action.is_empty() {
-        let _ = write!(sb, "Action: {}\n", a.action);
+        let _ = writeln!(sb, "Action: {}", a.action);
     }
     if !a.link.is_empty() {
-        let _ = write!(sb, "Link: {}\n", a.link);
+        let _ = writeln!(sb, "Link: {}", a.link);
     }
     if !a.status.is_empty() {
-        let _ = write!(sb, "Status: {}\n", a.status);
+        let _ = writeln!(sb, "Status: {}", a.status);
     }
     if !a.business_category.is_empty() {
-        let _ = write!(sb, "Business Category: {}\n", a.business_category);
+        let _ = writeln!(sb, "Business Category: {}", a.business_category);
     }
     if !a.default_language.is_empty() {
-        let _ = write!(sb, "Default Language: {}\n", a.default_language);
+        let _ = writeln!(sb, "Default Language: {}", a.default_language);
     }
-    let _ = write!(sb, "Is Powered By: {}\n", bool_v(a.is_powered_by));
+    let _ = writeln!(sb, "Is Powered By: {}", bool_v(a.is_powered_by));
     sb
 }

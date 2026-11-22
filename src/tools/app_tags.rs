@@ -244,12 +244,12 @@ fn format_app_tags(tags: &[AppTag]) -> String {
 /// Go `formatAppTag`.
 fn format_app_tag(tag: &AppTag) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "App Tag ID: {}\n", tag.id);
+    let _ = writeln!(sb, "App Tag ID: {}", tag.id);
     if !tag.attributes.name.is_empty() {
-        let _ = write!(sb, "Name: {}\n", tag.attributes.name);
+        let _ = writeln!(sb, "Name: {}", tag.attributes.name);
     }
     if let Some(v) = tag.attributes.visible_in_app_store {
-        let _ = write!(sb, "Visible In App Store: {}\n", v);
+        let _ = writeln!(sb, "Visible In App Store: {}", v);
     }
     sb
 }

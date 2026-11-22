@@ -857,9 +857,9 @@ async fn handle_delete_game_center_leaderboard(c: Arc<Client>, args: Args) -> Ha
 /// Ported from `formatGameCenterDetail`.
 fn format_game_center_detail(detail: &GameCenterDetail) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "Game Center Detail ID: {}\n", detail.id);
-    let _ = write!(sb, "Arcade Enabled: {}\n", detail.attributes.arcade_enabled);
-    let _ = write!(sb, "Challenge Enabled: {}\n", detail.attributes.challenge_enabled);
+    let _ = writeln!(sb, "Game Center Detail ID: {}", detail.id);
+    let _ = writeln!(sb, "Arcade Enabled: {}", detail.attributes.arcade_enabled);
+    let _ = writeln!(sb, "Challenge Enabled: {}", detail.attributes.challenge_enabled);
     sb
 }
 
@@ -884,13 +884,13 @@ fn format_game_center_achievements(achievements: &[GameCenterAchievement]) -> St
 fn format_game_center_achievement(achievement: &GameCenterAchievement) -> String {
     let a = &achievement.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", achievement.id);
-    let _ = write!(sb, "Reference Name: {}\n", a.reference_name);
-    let _ = write!(sb, "Vendor ID: {}\n", a.vendor_identifier);
-    let _ = write!(sb, "Points: {}\n", a.points);
-    let _ = write!(sb, "Show Before Earned: {}\n", a.show_before_earned);
-    let _ = write!(sb, "Repeatable: {}\n", a.repeatable);
-    let _ = write!(sb, "Archived: {}\n", a.archived);
+    let _ = writeln!(sb, "ID: {}", achievement.id);
+    let _ = writeln!(sb, "Reference Name: {}", a.reference_name);
+    let _ = writeln!(sb, "Vendor ID: {}", a.vendor_identifier);
+    let _ = writeln!(sb, "Points: {}", a.points);
+    let _ = writeln!(sb, "Show Before Earned: {}", a.show_before_earned);
+    let _ = writeln!(sb, "Repeatable: {}", a.repeatable);
+    let _ = writeln!(sb, "Archived: {}", a.archived);
     sb
 }
 
@@ -915,14 +915,14 @@ pub(super) fn format_game_center_leaderboards(leaderboards: &[GameCenterLeaderbo
 fn format_game_center_leaderboard(leaderboard: &GameCenterLeaderboard) -> String {
     let a = &leaderboard.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", leaderboard.id);
-    let _ = write!(sb, "Reference Name: {}\n", a.reference_name);
-    let _ = write!(sb, "Vendor ID: {}\n", a.vendor_identifier);
-    let _ = write!(sb, "Submission Type: {}\n", a.submission_type);
-    let _ = write!(sb, "Score Sort Type: {}\n", a.score_sort_type);
+    let _ = writeln!(sb, "ID: {}", leaderboard.id);
+    let _ = writeln!(sb, "Reference Name: {}", a.reference_name);
+    let _ = writeln!(sb, "Vendor ID: {}", a.vendor_identifier);
+    let _ = writeln!(sb, "Submission Type: {}", a.submission_type);
+    let _ = writeln!(sb, "Score Sort Type: {}", a.score_sort_type);
     if !a.score_range_start.is_empty() {
-        let _ = write!(sb, "Score Range: {} - {}\n", a.score_range_start, a.score_range_end);
+        let _ = writeln!(sb, "Score Range: {} - {}", a.score_range_start, a.score_range_end);
     }
-    let _ = write!(sb, "Archived: {}\n", a.archived);
+    let _ = writeln!(sb, "Archived: {}", a.archived);
     sb
 }

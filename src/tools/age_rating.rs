@@ -301,9 +301,9 @@ fn format_territory_age_ratings(ratings: &[TerritoryAgeRating]) -> String {
     let _ = write!(sb, "Found {} territory age ratings:\n\n", ratings.len());
 
     for rating in ratings {
-        let _ = write!(sb, "ID: {}\n", rating.id);
+        let _ = writeln!(sb, "ID: {}", rating.id);
         if !rating.attributes.app_store_age_rating.is_empty() {
-            let _ = write!(sb, "App Store Age Rating: {}\n", rating.attributes.app_store_age_rating);
+            let _ = writeln!(sb, "App Store Age Rating: {}", rating.attributes.app_store_age_rating);
         }
         sb.push_str("---\n");
     }
@@ -322,47 +322,47 @@ fn string_value(s: &Option<String>) -> String {
 /// Ported from `formatAgeRatingDeclaration`.
 fn format_age_rating_declaration(decl: &AgeRatingDeclaration) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", decl.id);
+    let _ = writeln!(sb, "ID: {}", decl.id);
 
     let attrs = &decl.attributes;
     if !attrs.alcohol_tobacco_or_drug_use_or_references.is_empty() {
-        let _ = write!(sb, "Alcohol/Tobacco/Drugs: {}\n", attrs.alcohol_tobacco_or_drug_use_or_references);
+        let _ = writeln!(sb, "Alcohol/Tobacco/Drugs: {}", attrs.alcohol_tobacco_or_drug_use_or_references);
     }
     if !attrs.contests.is_empty() {
-        let _ = write!(sb, "Contests: {}\n", attrs.contests);
+        let _ = writeln!(sb, "Contests: {}", attrs.contests);
     }
     if !attrs.gambling_simulated.is_empty() {
-        let _ = write!(sb, "Simulated Gambling: {}\n", attrs.gambling_simulated);
+        let _ = writeln!(sb, "Simulated Gambling: {}", attrs.gambling_simulated);
     }
     if attrs.gambling {
         sb.push_str("Contains Gambling: Yes\n");
     }
     if !attrs.horror_or_fear_themes.is_empty() {
-        let _ = write!(sb, "Horror/Fear: {}\n", attrs.horror_or_fear_themes);
+        let _ = writeln!(sb, "Horror/Fear: {}", attrs.horror_or_fear_themes);
     }
     if !attrs.mature_or_suggestive_themes.is_empty() {
-        let _ = write!(sb, "Mature/Suggestive: {}\n", attrs.mature_or_suggestive_themes);
+        let _ = writeln!(sb, "Mature/Suggestive: {}", attrs.mature_or_suggestive_themes);
     }
     if !attrs.medical_or_treatment_information.is_empty() {
-        let _ = write!(sb, "Medical Info: {}\n", attrs.medical_or_treatment_information);
+        let _ = writeln!(sb, "Medical Info: {}", attrs.medical_or_treatment_information);
     }
     if !attrs.profanity_or_crude_humor.is_empty() {
-        let _ = write!(sb, "Profanity/Crude Humor: {}\n", attrs.profanity_or_crude_humor);
+        let _ = writeln!(sb, "Profanity/Crude Humor: {}", attrs.profanity_or_crude_humor);
     }
     if !attrs.sexual_content_graphic_and_nudity.is_empty() {
-        let _ = write!(sb, "Sexual Content (Graphic): {}\n", attrs.sexual_content_graphic_and_nudity);
+        let _ = writeln!(sb, "Sexual Content (Graphic): {}", attrs.sexual_content_graphic_and_nudity);
     }
     if !attrs.sexual_content_or_nudity.is_empty() {
-        let _ = write!(sb, "Sexual Content/Nudity: {}\n", attrs.sexual_content_or_nudity);
+        let _ = writeln!(sb, "Sexual Content/Nudity: {}", attrs.sexual_content_or_nudity);
     }
     if !attrs.violence_cartoon_or_fantasy.is_empty() {
-        let _ = write!(sb, "Violence (Cartoon): {}\n", attrs.violence_cartoon_or_fantasy);
+        let _ = writeln!(sb, "Violence (Cartoon): {}", attrs.violence_cartoon_or_fantasy);
     }
     if !attrs.violence_realistic.is_empty() {
-        let _ = write!(sb, "Violence (Realistic): {}\n", attrs.violence_realistic);
+        let _ = writeln!(sb, "Violence (Realistic): {}", attrs.violence_realistic);
     }
     if !attrs.violence_realistic_prolonged_graphic_or_sadistic.is_empty() {
-        let _ = write!(sb, "Violence (Prolonged/Graphic): {}\n", attrs.violence_realistic_prolonged_graphic_or_sadistic);
+        let _ = writeln!(sb, "Violence (Prolonged/Graphic): {}", attrs.violence_realistic_prolonged_graphic_or_sadistic);
     }
     if attrs.unrestricted_web_access {
         sb.push_str("Unrestricted Web Access: Yes\n");

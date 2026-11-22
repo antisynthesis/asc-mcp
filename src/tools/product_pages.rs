@@ -718,12 +718,12 @@ fn format_app_custom_product_pages(pages: &[AppCustomProductPage]) -> String {
 /// Ported from `formatAppCustomProductPage`.
 fn format_app_custom_product_page(page: &AppCustomProductPage) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", page.id);
-    let _ = write!(sb, "Name: {}\n", page.attributes.name);
+    let _ = writeln!(sb, "ID: {}", page.id);
+    let _ = writeln!(sb, "Name: {}", page.attributes.name);
     if !page.attributes.url.is_empty() {
-        let _ = write!(sb, "URL: {}\n", page.attributes.url);
+        let _ = writeln!(sb, "URL: {}", page.attributes.url);
     }
-    let _ = write!(sb, "Visible: {}\n", bool_v(page.attributes.visible));
+    let _ = writeln!(sb, "Visible: {}", bool_v(page.attributes.visible));
     sb
 }
 
@@ -748,15 +748,15 @@ fn format_app_store_version_experiments(experiments: &[AppStoreVersionExperiment
 fn format_app_store_version_experiment(exp: &AppStoreVersionExperiment) -> String {
     let a = &exp.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", exp.id);
-    let _ = write!(sb, "Name: {}\n", a.name);
-    let _ = write!(sb, "State: {}\n", a.state);
-    let _ = write!(sb, "Traffic Proportion: {}%\n", a.traffic_proportion);
+    let _ = writeln!(sb, "ID: {}", exp.id);
+    let _ = writeln!(sb, "Name: {}", a.name);
+    let _ = writeln!(sb, "State: {}", a.state);
+    let _ = writeln!(sb, "Traffic Proportion: {}%", a.traffic_proportion);
     if let Some(d) = &a.start_date {
-        let _ = write!(sb, "Start Date: {}\n", d.format("2006-01-02"));
+        let _ = writeln!(sb, "Start Date: {}", d.format("2006-01-02"));
     }
     if let Some(d) = &a.end_date {
-        let _ = write!(sb, "End Date: {}\n", d.format("2006-01-02"));
+        let _ = writeln!(sb, "End Date: {}", d.format("2006-01-02"));
     }
     sb
 }

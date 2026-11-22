@@ -490,32 +490,32 @@ fn format_build_uploads(uploads: &[BuildUpload]) -> String {
 fn format_build_upload(upload: &BuildUpload) -> String {
     let a = &upload.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "Build Upload ID: {}\n", upload.id);
+    let _ = writeln!(sb, "Build Upload ID: {}", upload.id);
     if !a.cf_bundle_short_version_string.is_empty() {
-        let _ = write!(sb, "Version: {} ({})\n", a.cf_bundle_short_version_string, a.cf_bundle_version);
+        let _ = writeln!(sb, "Version: {} ({})", a.cf_bundle_short_version_string, a.cf_bundle_version);
     }
     if !a.platform.is_empty() {
-        let _ = write!(sb, "Platform: {}\n", a.platform);
+        let _ = writeln!(sb, "Platform: {}", a.platform);
     }
     if let Some(state) = &a.state {
-        let _ = write!(sb, "State: {}\n", state.state);
+        let _ = writeln!(sb, "State: {}", state.state);
         for detail in state.errors.iter() {
-            let _ = write!(sb, "Error [{}]: {}\n", detail.code, detail.description);
+            let _ = writeln!(sb, "Error [{}]: {}", detail.code, detail.description);
         }
         for detail in state.warnings.iter() {
-            let _ = write!(sb, "Warning [{}]: {}\n", detail.code, detail.description);
+            let _ = writeln!(sb, "Warning [{}]: {}", detail.code, detail.description);
         }
     }
     if let Some(d) = &a.created_date {
-        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02 15:04:05"));
+        let _ = writeln!(sb, "Created: {}", d.format("2006-01-02 15:04:05"));
     }
     if let Some(d) = &a.uploaded_date {
-        let _ = write!(sb, "Uploaded: {}\n", d.format("2006-01-02 15:04:05"));
+        let _ = writeln!(sb, "Uploaded: {}", d.format("2006-01-02 15:04:05"));
     }
     if let Some(rel) = &upload.relationships {
         if let Some(build) = &rel.build {
             if !build.data.id.is_empty() {
-                let _ = write!(sb, "Build ID: {}\n", build.data.id);
+                let _ = writeln!(sb, "Build ID: {}", build.data.id);
             }
         }
     }
@@ -532,19 +532,19 @@ fn format_build_upload_files(files: &[BuildUploadFile]) -> String {
     let _ = write!(sb, "Found {} build upload files:\n\n", files.len());
     for file in files {
         let a = &file.attributes;
-        let _ = write!(sb, "File ID: {}\n", file.id);
+        let _ = writeln!(sb, "File ID: {}", file.id);
         if !a.file_name.is_empty() {
-            let _ = write!(sb, "Name: {} ({} bytes)\n", a.file_name, a.file_size);
+            let _ = writeln!(sb, "Name: {} ({} bytes)", a.file_name, a.file_size);
         }
         if !a.asset_type.is_empty() {
-            let _ = write!(sb, "Asset Type: {}\n", a.asset_type);
+            let _ = writeln!(sb, "Asset Type: {}", a.asset_type);
         }
         if !a.uti.is_empty() {
-            let _ = write!(sb, "UTI: {}\n", a.uti);
+            let _ = writeln!(sb, "UTI: {}", a.uti);
         }
         if let Some(ds) = &a.asset_delivery_state {
             if !ds.state.is_empty() {
-                let _ = write!(sb, "Delivery State: {}\n", ds.state);
+                let _ = writeln!(sb, "Delivery State: {}", ds.state);
             }
         }
         sb.push_str("\n---\n");

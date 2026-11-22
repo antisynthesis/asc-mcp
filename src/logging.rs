@@ -1,10 +1,10 @@
 //! Structured logging to stderr, formatted like the Go server's `log` and
 //! `log/slog` output so existing log pipelines keep working.
 //!
-//! * [`Format::Std`]: Go's default logger, `2006/01/02 15:04:05 msg`, with
+//! * [`Format::Std`] — Go's default logger, `2006/01/02 15:04:05 msg`, with
 //!   slog records as `LEVEL msg k=v ...` (what `slog.Default()` prints).
-//! * [`Format::Json`]: `slog.JSONHandler`.
-//! * [`Format::Text`]: `slog.TextHandler`.
+//! * [`Format::Json`] — `slog.JSONHandler`.
+//! * [`Format::Text`] — `slog.TextHandler`.
 //!
 //! Logs never go to stdout, which carries the stdio JSON-RPC stream.
 

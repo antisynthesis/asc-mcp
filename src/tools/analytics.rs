@@ -557,9 +557,9 @@ fn format_analytics_report_requests(requests: &[AnalyticsReportRequest]) -> Stri
 /// Ported from `formatAnalyticsReportRequest`.
 fn format_analytics_report_request(req: &AnalyticsReportRequest) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", req.id);
-    let _ = write!(sb, "Access Type: {}\n", req.attributes.access_type);
-    let _ = write!(sb, "Stoppable: {}\n", req.attributes.stoppable);
+    let _ = writeln!(sb, "ID: {}", req.id);
+    let _ = writeln!(sb, "Access Type: {}", req.attributes.access_type);
+    let _ = writeln!(sb, "Stoppable: {}", req.attributes.stoppable);
     sb
 }
 
@@ -573,9 +573,9 @@ fn format_analytics_reports(reports: &[AnalyticsReport]) -> String {
     let _ = write!(sb, "Found {} analytics reports:\n\n", reports.len());
 
     for report in reports {
-        let _ = write!(sb, "ID: {}\n", report.id);
-        let _ = write!(sb, "Category: {}\n", report.attributes.category);
-        let _ = write!(sb, "Name: {}\n", report.attributes.name);
+        let _ = writeln!(sb, "ID: {}", report.id);
+        let _ = writeln!(sb, "Category: {}", report.attributes.category);
+        let _ = writeln!(sb, "Name: {}", report.attributes.name);
         sb.push_str("---\n");
     }
 
@@ -592,9 +592,9 @@ fn format_analytics_report_instances(instances: &[AnalyticsReportInstance]) -> S
     let _ = write!(sb, "Found {} analytics report instances:\n\n", instances.len());
 
     for instance in instances {
-        let _ = write!(sb, "ID: {}\n", instance.id);
-        let _ = write!(sb, "Granularity: {}\n", instance.attributes.granularity);
-        let _ = write!(sb, "Processing Date: {}\n", instance.attributes.processing_date);
+        let _ = writeln!(sb, "ID: {}", instance.id);
+        let _ = writeln!(sb, "Granularity: {}", instance.attributes.granularity);
+        let _ = writeln!(sb, "Processing Date: {}", instance.attributes.processing_date);
         sb.push_str("---\n");
     }
 
@@ -611,11 +611,11 @@ fn format_analytics_report_segments(segments: &[AnalyticsReportSegment]) -> Stri
     let _ = write!(sb, "Found {} analytics report segments:\n\n", segments.len());
 
     for segment in segments {
-        let _ = write!(sb, "ID: {}\n", segment.id);
-        let _ = write!(sb, "Size: {} bytes\n", segment.attributes.size_in_bytes);
-        let _ = write!(sb, "Checksum: {}\n", segment.attributes.checksum);
+        let _ = writeln!(sb, "ID: {}", segment.id);
+        let _ = writeln!(sb, "Size: {} bytes", segment.attributes.size_in_bytes);
+        let _ = writeln!(sb, "Checksum: {}", segment.attributes.checksum);
         if !segment.attributes.url.is_empty() {
-            let _ = write!(sb, "Download URL: {}\n", segment.attributes.url);
+            let _ = writeln!(sb, "Download URL: {}", segment.attributes.url);
         }
         sb.push_str("---\n");
     }

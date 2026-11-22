@@ -263,12 +263,12 @@ fn format_sandbox_testers(testers: &[SandboxTester]) -> String {
 /// Ported from `formatSandboxTester`.
 fn format_sandbox_tester(tester: &SandboxTester) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", tester.id);
-    let _ = write!(sb, "Email: {}\n", tester.attributes.email);
-    let _ = write!(sb, "Name: {} {}\n", tester.attributes.first_name, tester.attributes.last_name);
+    let _ = writeln!(sb, "ID: {}", tester.id);
+    let _ = writeln!(sb, "Email: {}", tester.attributes.email);
+    let _ = writeln!(sb, "Name: {} {}", tester.attributes.first_name, tester.attributes.last_name);
     if !tester.attributes.app_store_territory.is_empty() {
-        let _ = write!(sb, "Territory: {}\n", tester.attributes.app_store_territory);
+        let _ = writeln!(sb, "Territory: {}", tester.attributes.app_store_territory);
     }
-    let _ = write!(sb, "Interruptable: {}\n", tester.attributes.interruptable);
+    let _ = writeln!(sb, "Interruptable: {}", tester.attributes.interruptable);
     sb
 }

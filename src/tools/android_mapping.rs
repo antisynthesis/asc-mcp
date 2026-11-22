@@ -358,14 +358,14 @@ fn format_android_to_ios_app_mappings(mappings: &[AndroidToIosAppMappingDetail])
 /// Ported from `formatAndroidToIosAppMapping`.
 fn format_android_to_ios_app_mapping(mapping: &AndroidToIosAppMappingDetail) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "Mapping ID: {}\n", mapping.id);
+    let _ = writeln!(sb, "Mapping ID: {}", mapping.id);
     if !mapping.attributes.package_name.is_empty() {
-        let _ = write!(sb, "Package Name: {}\n", mapping.attributes.package_name);
+        let _ = writeln!(sb, "Package Name: {}", mapping.attributes.package_name);
     }
     if !mapping.attributes.app_signing_key_public_certificate_sha256_fingerprints.is_empty() {
-        let _ = write!(
+        let _ = writeln!(
             sb,
-            "SHA-256 Fingerprints: {}\n",
+            "SHA-256 Fingerprints: {}",
             mapping.attributes.app_signing_key_public_certificate_sha256_fingerprints.join(", ")
         );
     }

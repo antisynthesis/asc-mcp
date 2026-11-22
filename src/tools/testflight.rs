@@ -312,17 +312,17 @@ async fn handle_list_beta_groups(c: Arc<Client>, args: Args) -> HandlerResult {
     let _ = write!(sb, "Found {} beta groups:\n\n", resp.data.len());
     for group in resp.data.iter() {
         let a = &group.attributes;
-        let _ = write!(sb, "**{}**\n", a.name);
-        let _ = write!(sb, "  - ID: {}\n", group.id);
-        let _ = write!(sb, "  - Internal Group: {}\n", a.is_internal_group);
-        let _ = write!(sb, "  - Has Access to All Builds: {}\n", a.has_access_to_all_builds);
-        let _ = write!(sb, "  - Feedback Enabled: {}\n", a.feedback_enabled);
-        let _ = write!(sb, "  - Public Link Enabled: {}\n", a.public_link_enabled);
+        let _ = writeln!(sb, "**{}**", a.name);
+        let _ = writeln!(sb, "  - ID: {}", group.id);
+        let _ = writeln!(sb, "  - Internal Group: {}", a.is_internal_group);
+        let _ = writeln!(sb, "  - Has Access to All Builds: {}", a.has_access_to_all_builds);
+        let _ = writeln!(sb, "  - Feedback Enabled: {}", a.feedback_enabled);
+        let _ = writeln!(sb, "  - Public Link Enabled: {}", a.public_link_enabled);
         if !a.public_link.is_empty() {
-            let _ = write!(sb, "  - Public Link: {}\n", a.public_link);
+            let _ = writeln!(sb, "  - Public Link: {}", a.public_link);
         }
         if let Some(d) = &a.created_date {
-            let _ = write!(sb, "  - Created: {}\n", d.format("2006-01-02"));
+            let _ = writeln!(sb, "  - Created: {}", d.format("2006-01-02"));
         }
         sb.push('\n');
     }
@@ -376,9 +376,9 @@ async fn handle_create_beta_group(c: Arc<Client>, args: Args) -> HandlerResult {
 
     let mut sb = String::new();
     let _ = write!(sb, "Successfully created beta group **{}**\n\n", resp.data.attributes.name);
-    let _ = write!(sb, "- ID: {}\n", resp.data.id);
-    let _ = write!(sb, "- Public Link Enabled: {}\n", resp.data.attributes.public_link_enabled);
-    let _ = write!(sb, "- Feedback Enabled: {}\n", resp.data.attributes.feedback_enabled);
+    let _ = writeln!(sb, "- ID: {}", resp.data.id);
+    let _ = writeln!(sb, "- Public Link Enabled: {}", resp.data.attributes.public_link_enabled);
+    let _ = writeln!(sb, "- Feedback Enabled: {}", resp.data.attributes.feedback_enabled);
 
     Ok(data_result(&sb, &resp.data))
 }
@@ -444,10 +444,10 @@ async fn handle_list_beta_testers(c: Arc<Client>, args: Args) -> HandlerResult {
         if !a.first_name.is_empty() || !a.last_name.is_empty() {
             name = format!("{} {} ({})", a.first_name, a.last_name, a.email);
         }
-        let _ = write!(sb, "**{}**\n", name);
-        let _ = write!(sb, "  - ID: {}\n", tester.id);
-        let _ = write!(sb, "  - State: {}\n", a.state);
-        let _ = write!(sb, "  - Invite Type: {}\n", a.invite_type);
+        let _ = writeln!(sb, "**{}**", name);
+        let _ = writeln!(sb, "  - ID: {}", tester.id);
+        let _ = writeln!(sb, "  - State: {}", a.state);
+        let _ = writeln!(sb, "  - Invite Type: {}", a.invite_type);
         sb.push('\n');
     }
 
@@ -503,8 +503,8 @@ async fn handle_invite_beta_tester(c: Arc<Client>, args: Args) -> HandlerResult 
 
     let mut sb = String::new();
     let _ = write!(sb, "Successfully invited beta tester **{}**\n\n", resp.data.attributes.email);
-    let _ = write!(sb, "- ID: {}\n", resp.data.id);
-    let _ = write!(sb, "- State: {}\n", resp.data.attributes.state);
+    let _ = writeln!(sb, "- ID: {}", resp.data.id);
+    let _ = writeln!(sb, "- State: {}", resp.data.attributes.state);
 
     Ok(data_result(&sb, &resp.data))
 }

@@ -1810,6 +1810,8 @@ pub(crate) fn rel(t: &str, id: &str) -> RelationshipData {
 }
 
 /// Go `parseCommerceImageCreate`.
+// Mirrors Go's (value, *mcp.ToolsCallResult) return pair.
+#[allow(clippy::result_large_err)]
 fn parse_commerce_image_create(args: &Args) -> Result<CommerceImageCreateParams, CallToolResult> {
     let mut params = CommerceImageCreateParams::default();
     if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
@@ -1828,6 +1830,8 @@ fn parse_commerce_image_create(args: &Args) -> Result<CommerceImageCreateParams,
 }
 
 /// Go `parseCommerceImageUpdate`.
+// Mirrors Go's (value, *mcp.ToolsCallResult) return pair.
+#[allow(clippy::result_large_err)]
 fn parse_commerce_image_update(args: &Args) -> Result<(String, Option<bool>), CallToolResult> {
     go_struct! {
     struct Params ("struct { ImageID string \"json:\\\"image_id\\\"\"; Uploaded *bool \"json:\\\"uploaded\\\"\" }", "") {
@@ -1863,12 +1867,12 @@ fn format_commerce_versions(versions: &[CommerceVersionRow]) -> String {
 /// Go `formatCommerceVersion`.
 fn format_commerce_version(id: &str, attrs: &CommerceVersionAttributes) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", id);
+    let _ = writeln!(sb, "ID: {}", id);
     if attrs.version > 0 {
-        let _ = write!(sb, "Version: {}\n", attrs.version);
+        let _ = writeln!(sb, "Version: {}", attrs.version);
     }
     if !attrs.state.is_empty() {
-        let _ = write!(sb, "State: {}\n", attrs.state);
+        let _ = writeln!(sb, "State: {}", attrs.state);
     }
     sb
 }
@@ -1890,14 +1894,14 @@ fn format_commerce_localizations(locs: &[InAppPurchaseLocalization]) -> String {
 /// Go `formatCommerceLocalization`.
 fn format_commerce_localization(loc: &InAppPurchaseLocalization) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", loc.id);
-    let _ = write!(sb, "Locale: {}\n", loc.attributes.locale);
-    let _ = write!(sb, "Name: {}\n", loc.attributes.name);
+    let _ = writeln!(sb, "ID: {}", loc.id);
+    let _ = writeln!(sb, "Locale: {}", loc.attributes.locale);
+    let _ = writeln!(sb, "Name: {}", loc.attributes.name);
     if !loc.attributes.description.is_empty() {
-        let _ = write!(sb, "Description: {}\n", loc.attributes.description);
+        let _ = writeln!(sb, "Description: {}", loc.attributes.description);
     }
     if !loc.attributes.state.is_empty() {
-        let _ = write!(sb, "State: {}\n", loc.attributes.state);
+        let _ = writeln!(sb, "State: {}", loc.attributes.state);
     }
     sb
 }
@@ -1919,14 +1923,14 @@ fn format_subscription_group_localizations(locs: &[SubscriptionGroupLocalization
 /// Go `formatSubscriptionGroupLocalization`.
 fn format_subscription_group_localization(loc: &SubscriptionGroupLocalization) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", loc.id);
-    let _ = write!(sb, "Locale: {}\n", loc.attributes.locale);
-    let _ = write!(sb, "Name: {}\n", loc.attributes.name);
+    let _ = writeln!(sb, "ID: {}", loc.id);
+    let _ = writeln!(sb, "Locale: {}", loc.attributes.locale);
+    let _ = writeln!(sb, "Name: {}", loc.attributes.name);
     if !loc.attributes.custom_app_name.is_empty() {
-        let _ = write!(sb, "Custom App Name: {}\n", loc.attributes.custom_app_name);
+        let _ = writeln!(sb, "Custom App Name: {}", loc.attributes.custom_app_name);
     }
     if !loc.attributes.state.is_empty() {
-        let _ = write!(sb, "State: {}\n", loc.attributes.state);
+        let _ = writeln!(sb, "State: {}", loc.attributes.state);
     }
     sb
 }
@@ -1948,18 +1952,18 @@ fn format_commerce_images(images: &[CommerceImageRow]) -> String {
 /// Go `formatCommerceImage`.
 fn format_commerce_image(img: &CommerceImageRow) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", img.id);
+    let _ = writeln!(sb, "ID: {}", img.id);
     if !img.attributes.file_name.is_empty() {
-        let _ = write!(sb, "File Name: {}\n", img.attributes.file_name);
+        let _ = writeln!(sb, "File Name: {}", img.attributes.file_name);
     }
     if img.attributes.file_size > 0 {
-        let _ = write!(sb, "File Size: {} bytes\n", img.attributes.file_size);
+        let _ = writeln!(sb, "File Size: {} bytes", img.attributes.file_size);
     }
     if !img.attributes.state.is_empty() {
-        let _ = write!(sb, "State: {}\n", img.attributes.state);
+        let _ = writeln!(sb, "State: {}", img.attributes.state);
     }
     if !img.attributes.upload_operations.is_empty() {
-        let _ = write!(sb, "Upload Operations: {}\n", img.attributes.upload_operations.len());
+        let _ = writeln!(sb, "Upload Operations: {}", img.attributes.upload_operations.len());
     }
     sb
 }

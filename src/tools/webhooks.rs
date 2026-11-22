@@ -616,16 +616,16 @@ fn format_webhooks(webhooks: &[Webhook]) -> String {
 /// Ported from `formatWebhook`.
 fn format_webhook(webhook: &Webhook) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "Webhook ID: {}\n", webhook.id);
+    let _ = writeln!(sb, "Webhook ID: {}", webhook.id);
     if !webhook.attributes.name.is_empty() {
-        let _ = write!(sb, "Name: {}\n", webhook.attributes.name);
+        let _ = writeln!(sb, "Name: {}", webhook.attributes.name);
     }
     if !webhook.attributes.url.is_empty() {
-        let _ = write!(sb, "URL: {}\n", webhook.attributes.url);
+        let _ = writeln!(sb, "URL: {}", webhook.attributes.url);
     }
-    let _ = write!(sb, "Enabled: {}\n", webhook.attributes.enabled);
+    let _ = writeln!(sb, "Enabled: {}", webhook.attributes.enabled);
     if !webhook.attributes.event_types.is_empty() {
-        let _ = write!(sb, "Event Types: {}\n", webhook.attributes.event_types.join(", "));
+        let _ = writeln!(sb, "Event Types: {}", webhook.attributes.event_types.join(", "));
     }
     sb
 }
@@ -651,25 +651,25 @@ fn format_webhook_deliveries(deliveries: &[WebhookDelivery]) -> String {
 fn format_webhook_delivery(delivery: &WebhookDelivery) -> String {
     let a = &delivery.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "Delivery ID: {}\n", delivery.id);
+    let _ = writeln!(sb, "Delivery ID: {}", delivery.id);
     if !a.delivery_state.is_empty() {
-        let _ = write!(sb, "State: {}\n", a.delivery_state);
+        let _ = writeln!(sb, "State: {}", a.delivery_state);
     }
     if a.redelivery {
         sb.push_str("Redelivery: Yes\n");
     }
     if let Some(d) = &a.created_date {
-        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02 15:04:05"));
+        let _ = writeln!(sb, "Created: {}", d.format("2006-01-02 15:04:05"));
     }
     if let Some(d) = &a.sent_date {
-        let _ = write!(sb, "Sent: {}\n", d.format("2006-01-02 15:04:05"));
+        let _ = writeln!(sb, "Sent: {}", d.format("2006-01-02 15:04:05"));
     }
     if !a.error_message.is_empty() {
-        let _ = write!(sb, "Error: {}\n", a.error_message);
+        let _ = writeln!(sb, "Error: {}", a.error_message);
     }
     if let Some(r) = &a.response {
         if r.http_status_code != 0 {
-            let _ = write!(sb, "Response Status: {}\n", r.http_status_code);
+            let _ = writeln!(sb, "Response Status: {}", r.http_status_code);
         }
     }
     sb

@@ -313,8 +313,8 @@ fn format_subscription_groups(groups: &[SubscriptionGroup]) -> String {
 /// Ported from `formatSubscriptionGroup`.
 fn format_subscription_group(group: &SubscriptionGroup) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "Group ID: {}\n", group.id);
-    let _ = write!(sb, "Reference Name: {}\n", group.attributes.reference_name);
+    let _ = writeln!(sb, "Group ID: {}", group.id);
+    let _ = writeln!(sb, "Reference Name: {}", group.attributes.reference_name);
     sb
 }
 
@@ -338,15 +338,15 @@ fn format_subscriptions(subs: &[Subscription]) -> String {
 /// Ported from `formatSubscription`.
 fn format_subscription(sub: &Subscription) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", sub.id);
-    let _ = write!(sb, "Name: {}\n", sub.attributes.name);
-    let _ = write!(sb, "Product ID: {}\n", sub.attributes.product_id);
-    let _ = write!(sb, "State: {}\n", sub.attributes.state);
-    let _ = write!(sb, "Period: {}\n", sub.attributes.subscription_period);
-    let _ = write!(sb, "Family Sharable: {}\n", sub.attributes.family_sharable);
-    let _ = write!(sb, "Group Level: {}\n", sub.attributes.group_level);
+    let _ = writeln!(sb, "ID: {}", sub.id);
+    let _ = writeln!(sb, "Name: {}", sub.attributes.name);
+    let _ = writeln!(sb, "Product ID: {}", sub.attributes.product_id);
+    let _ = writeln!(sb, "State: {}", sub.attributes.state);
+    let _ = writeln!(sb, "Period: {}", sub.attributes.subscription_period);
+    let _ = writeln!(sb, "Family Sharable: {}", sub.attributes.family_sharable);
+    let _ = writeln!(sb, "Group Level: {}", sub.attributes.group_level);
     if !sub.attributes.review_note.is_empty() {
-        let _ = write!(sb, "Review Note: {}\n", sub.attributes.review_note);
+        let _ = writeln!(sb, "Review Note: {}", sub.attributes.review_note);
     }
     sb
 }

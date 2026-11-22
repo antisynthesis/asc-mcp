@@ -765,26 +765,26 @@ fn rel_id(rel: &Option<RelationshipData>) -> Option<&str> {
 fn format_background_asset(asset: &BackgroundAsset) -> String {
     let a = &asset.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "Background Asset ID: {}\n", asset.id);
+    let _ = writeln!(sb, "Background Asset ID: {}", asset.id);
     if !a.asset_pack_identifier.is_empty() {
-        let _ = write!(sb, "Asset Pack Identifier: {}\n", a.asset_pack_identifier);
+        let _ = writeln!(sb, "Asset Pack Identifier: {}", a.asset_pack_identifier);
     }
-    let _ = write!(sb, "Archived: {}\n", a.archived);
+    let _ = writeln!(sb, "Archived: {}", a.archived);
     if a.used_bytes > 0 {
-        let _ = write!(sb, "Used Bytes: {}\n", a.used_bytes);
+        let _ = writeln!(sb, "Used Bytes: {}", a.used_bytes);
     }
     if let Some(d) = &a.created_date {
-        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02 15:04:05"));
+        let _ = writeln!(sb, "Created: {}", d.format("2006-01-02 15:04:05"));
     }
     if let Some(rel) = &asset.relationships {
         if let Some(id) = rel_id(&rel.app_store_version) {
-            let _ = write!(sb, "App Store Version ID: {}\n", id);
+            let _ = writeln!(sb, "App Store Version ID: {}", id);
         }
         if let Some(id) = rel_id(&rel.internal_beta_version) {
-            let _ = write!(sb, "Internal Beta Version ID: {}\n", id);
+            let _ = writeln!(sb, "Internal Beta Version ID: {}", id);
         }
         if let Some(id) = rel_id(&rel.external_beta_version) {
-            let _ = write!(sb, "External Beta Version ID: {}\n", id);
+            let _ = writeln!(sb, "External Beta Version ID: {}", id);
         }
     }
     sb
@@ -811,48 +811,48 @@ fn format_background_asset_versions(versions: &[BackgroundAssetVersion]) -> Stri
 fn format_background_asset_version(version: &BackgroundAssetVersion) -> String {
     let a = &version.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "Background Asset Version ID: {}\n", version.id);
+    let _ = writeln!(sb, "Background Asset Version ID: {}", version.id);
     if !a.version.is_empty() {
-        let _ = write!(sb, "Version: {}\n", a.version);
+        let _ = writeln!(sb, "Version: {}", a.version);
     }
     if !a.locale.is_empty() {
-        let _ = write!(sb, "Locale: {}\n", a.locale);
+        let _ = writeln!(sb, "Locale: {}", a.locale);
     }
     if !a.platforms.is_empty() {
-        let _ = write!(sb, "Platforms: {}\n", a.platforms.join(", "));
+        let _ = writeln!(sb, "Platforms: {}", a.platforms.join(", "));
     }
     if !a.state.is_empty() {
-        let _ = write!(sb, "State: {}\n", a.state);
+        let _ = writeln!(sb, "State: {}", a.state);
     }
     if let Some(details) = &a.state_details {
         for detail in details.errors.iter() {
-            let _ = write!(sb, "Error [{}]: {}\n", detail.code, detail.description);
+            let _ = writeln!(sb, "Error [{}]: {}", detail.code, detail.description);
         }
         for detail in details.warnings.iter() {
-            let _ = write!(sb, "Warning [{}]: {}\n", detail.code, detail.description);
+            let _ = writeln!(sb, "Warning [{}]: {}", detail.code, detail.description);
         }
         for detail in details.infos.iter() {
-            let _ = write!(sb, "Info [{}]: {}\n", detail.code, detail.description);
+            let _ = writeln!(sb, "Info [{}]: {}", detail.code, detail.description);
         }
     }
     if let Some(d) = &a.created_date {
-        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02 15:04:05"));
+        let _ = writeln!(sb, "Created: {}", d.format("2006-01-02 15:04:05"));
     }
     if let Some(rel) = &version.relationships {
         if let Some(id) = rel_id(&rel.internal_beta_release) {
-            let _ = write!(sb, "Internal Beta Release ID: {}\n", id);
+            let _ = writeln!(sb, "Internal Beta Release ID: {}", id);
         }
         if let Some(id) = rel_id(&rel.external_beta_release) {
-            let _ = write!(sb, "External Beta Release ID: {}\n", id);
+            let _ = writeln!(sb, "External Beta Release ID: {}", id);
         }
         if let Some(id) = rel_id(&rel.app_store_release) {
-            let _ = write!(sb, "App Store Release ID: {}\n", id);
+            let _ = writeln!(sb, "App Store Release ID: {}", id);
         }
         if let Some(id) = rel_id(&rel.asset_file) {
-            let _ = write!(sb, "Asset File ID: {}\n", id);
+            let _ = writeln!(sb, "Asset File ID: {}", id);
         }
         if let Some(id) = rel_id(&rel.manifest_file) {
-            let _ = write!(sb, "Manifest File ID: {}\n", id);
+            let _ = writeln!(sb, "Manifest File ID: {}", id);
         }
     }
     sb
@@ -869,15 +869,15 @@ fn format_background_asset_upload_files(files: &[BackgroundAssetUploadFile]) -> 
 
     for file in files {
         let a = &file.attributes;
-        let _ = write!(sb, "File ID: {}\n", file.id);
+        let _ = writeln!(sb, "File ID: {}", file.id);
         if !a.file_name.is_empty() {
-            let _ = write!(sb, "Name: {} ({} bytes)\n", a.file_name, a.file_size);
+            let _ = writeln!(sb, "Name: {} ({} bytes)", a.file_name, a.file_size);
         }
         if !a.asset_type.is_empty() {
-            let _ = write!(sb, "Asset Type: {}\n", a.asset_type);
+            let _ = writeln!(sb, "Asset Type: {}", a.asset_type);
         }
         if let Some(st) = a.asset_delivery_state.as_ref().filter(|s| !s.state.is_empty()) {
-            let _ = write!(sb, "Delivery State: {}\n", st.state);
+            let _ = writeln!(sb, "Delivery State: {}", st.state);
         }
         sb.push_str("\n---\n");
     }
@@ -888,15 +888,15 @@ fn format_background_asset_upload_files(files: &[BackgroundAssetUploadFile]) -> 
 /// Ported from `formatBackgroundAssetVersionRelease`.
 fn format_background_asset_version_release(release: &BackgroundAssetVersionRelease) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "Release ID: {}\n", release.id);
+    let _ = writeln!(sb, "Release ID: {}", release.id);
     if !release.type_.is_empty() {
-        let _ = write!(sb, "Type: {}\n", release.type_);
+        let _ = writeln!(sb, "Type: {}", release.type_);
     }
     if !release.attributes.state.is_empty() {
-        let _ = write!(sb, "State: {}\n", release.attributes.state);
+        let _ = writeln!(sb, "State: {}", release.attributes.state);
     }
     if let Some(id) = release.relationships.as_ref().and_then(|r| rel_id(&r.background_asset_version)) {
-        let _ = write!(sb, "Background Asset Version ID: {}\n", id);
+        let _ = writeln!(sb, "Background Asset Version ID: {}", id);
     }
     sb
 }

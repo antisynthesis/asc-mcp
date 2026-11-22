@@ -871,8 +871,8 @@ async fn handle_get_in_app_purchase_availability(c: Arc<Client>, args: Args) -> 
         Err(e) => return Ok(error_result(format!("Failed to get in-app purchase availability: {e}"))),
     };
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", resp.data.id);
-    let _ = write!(sb, "Available In New Territories: {}\n", resp.data.attributes.available_in_new_territories);
+    let _ = writeln!(sb, "ID: {}", resp.data.id);
+    let _ = writeln!(sb, "Available In New Territories: {}", resp.data.attributes.available_in_new_territories);
     // Best-effort: also show the territories the availability covers.
     if let Ok(territories) = c.list_in_app_purchase_available_territories(&resp.data.id, None).await {
         if !territories.data.is_empty() {
@@ -1297,9 +1297,9 @@ fn format_in_app_purchase_price_points(price_points: &[InAppPurchasePricePoint])
     let mut sb = String::new();
     let _ = write!(sb, "Found {} in-app purchase price points:\n\n", price_points.len());
     for pp in price_points {
-        let _ = write!(sb, "ID: {}\n", pp.id);
-        let _ = write!(sb, "Customer Price: {}\n", pp.attributes.customer_price);
-        let _ = write!(sb, "Proceeds: {}\n", pp.attributes.proceeds);
+        let _ = writeln!(sb, "ID: {}", pp.id);
+        let _ = writeln!(sb, "Customer Price: {}", pp.attributes.customer_price);
+        let _ = writeln!(sb, "Proceeds: {}", pp.attributes.proceeds);
         sb.push_str("\n---\n");
     }
     sb
@@ -1313,14 +1313,14 @@ fn format_in_app_purchase_prices(prices: &[InAppPurchasePrice]) -> String {
     let mut sb = String::new();
     let _ = write!(sb, "Found {} prices:\n\n", prices.len());
     for p in prices {
-        let _ = write!(sb, "ID: {}\n", p.id);
+        let _ = writeln!(sb, "ID: {}", p.id);
         if !p.attributes.start_date.is_empty() {
-            let _ = write!(sb, "Start Date: {}\n", p.attributes.start_date);
+            let _ = writeln!(sb, "Start Date: {}", p.attributes.start_date);
         }
         if !p.attributes.end_date.is_empty() {
-            let _ = write!(sb, "End Date: {}\n", p.attributes.end_date);
+            let _ = writeln!(sb, "End Date: {}", p.attributes.end_date);
         }
-        let _ = write!(sb, "Manual: {}\n", p.attributes.manual);
+        let _ = writeln!(sb, "Manual: {}", p.attributes.manual);
         sb.push_str("\n---\n");
     }
     sb
@@ -1343,12 +1343,12 @@ fn format_subscription_plan_availabilities(availabilities: &[SubscriptionPlanAva
 /// Go `formatSubscriptionPlanAvailability`.
 fn format_subscription_plan_availability(a: &SubscriptionPlanAvailability) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", a.id);
+    let _ = writeln!(sb, "ID: {}", a.id);
     if !a.attributes.plan_type.is_empty() {
-        let _ = write!(sb, "Plan Type: {}\n", a.attributes.plan_type);
+        let _ = writeln!(sb, "Plan Type: {}", a.attributes.plan_type);
     }
     if let Some(v) = a.attributes.available_in_new_territories {
-        let _ = write!(sb, "Available In New Territories: {}\n", v);
+        let _ = writeln!(sb, "Available In New Territories: {}", v);
     }
     sb
 }

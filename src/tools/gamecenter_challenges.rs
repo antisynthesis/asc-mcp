@@ -968,14 +968,14 @@ fn format_game_center_challenges(challenges: &[GameCenterChallenge]) -> String {
 fn format_game_center_challenge(challenge: &GameCenterChallenge) -> String {
     let a = &challenge.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", challenge.id);
-    let _ = write!(sb, "Reference Name: {}\n", a.reference_name);
-    let _ = write!(sb, "Vendor ID: {}\n", a.vendor_identifier);
+    let _ = writeln!(sb, "ID: {}", challenge.id);
+    let _ = writeln!(sb, "Reference Name: {}", a.reference_name);
+    let _ = writeln!(sb, "Vendor ID: {}", a.vendor_identifier);
     if !a.challenge_type.is_empty() {
-        let _ = write!(sb, "Challenge Type: {}\n", a.challenge_type);
+        let _ = writeln!(sb, "Challenge Type: {}", a.challenge_type);
     }
-    let _ = write!(sb, "Repeatable: {}\n", a.repeatable);
-    let _ = write!(sb, "Archived: {}\n", a.archived);
+    let _ = writeln!(sb, "Repeatable: {}", a.repeatable);
+    let _ = writeln!(sb, "Archived: {}", a.archived);
     sb
 }
 
@@ -999,9 +999,9 @@ fn format_game_center_challenge_versions(versions: &[GameCenterChallengeVersion]
 /// Ported from `formatGameCenterChallengeVersion`.
 fn format_game_center_challenge_version(version: &GameCenterChallengeVersion) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", version.id);
-    let _ = write!(sb, "Version: {}\n", version.attributes.version);
-    let _ = write!(sb, "State: {}\n", version.attributes.state);
+    let _ = writeln!(sb, "ID: {}", version.id);
+    let _ = writeln!(sb, "Version: {}", version.attributes.version);
+    let _ = writeln!(sb, "State: {}", version.attributes.state);
     sb
 }
 
@@ -1016,11 +1016,11 @@ fn format_game_center_challenge_localizations(localizations: &[GameCenterChallen
 
     for localization in localizations {
         let a = &localization.attributes;
-        let _ = write!(sb, "ID: {}\n", localization.id);
-        let _ = write!(sb, "Locale: {}\n", a.locale);
-        let _ = write!(sb, "Name: {}\n", a.name);
+        let _ = writeln!(sb, "ID: {}", localization.id);
+        let _ = writeln!(sb, "Locale: {}", a.locale);
+        let _ = writeln!(sb, "Name: {}", a.name);
         if !a.description.is_empty() {
-            let _ = write!(sb, "Description: {}\n", a.description);
+            let _ = writeln!(sb, "Description: {}", a.description);
         }
         sb.push_str("\n---\n");
     }

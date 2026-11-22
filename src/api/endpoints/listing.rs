@@ -1083,7 +1083,6 @@ impl Client {
                 attributes: AppScreenshotUpdateAttributes {
                     source_file_checksum: sha256_hex(body),
                     uploaded: Some(uploaded),
-                    ..Default::default()
                 },
             },
         };
@@ -1144,7 +1143,6 @@ impl Client {
                 attributes: AppStoreReviewAttachmentUpdateAttributes {
                     source_file_checksum: sha256_hex(body),
                     uploaded: Some(uploaded),
-                    ..Default::default()
                 },
             },
         };

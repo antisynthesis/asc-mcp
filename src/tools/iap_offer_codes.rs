@@ -875,14 +875,14 @@ fn format_in_app_purchase_offer_codes(codes: &[InAppPurchaseOfferCode]) -> Strin
 /// Go `formatInAppPurchaseOfferCode`.
 fn format_in_app_purchase_offer_code(c: &InAppPurchaseOfferCode) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", c.id);
-    let _ = write!(sb, "Name: {}\n", c.attributes.name);
+    let _ = writeln!(sb, "ID: {}", c.id);
+    let _ = writeln!(sb, "Name: {}", c.attributes.name);
     if !c.attributes.customer_eligibilities.is_empty() {
-        let _ = write!(sb, "Customer Eligibilities: {}\n", c.attributes.customer_eligibilities.join(", "));
+        let _ = writeln!(sb, "Customer Eligibilities: {}", c.attributes.customer_eligibilities.join(", "));
     }
-    let _ = write!(sb, "Active: {}\n", c.attributes.active);
-    let _ = write!(sb, "Production Codes: {}\n", c.attributes.production_code_count);
-    let _ = write!(sb, "Sandbox Codes: {}\n", c.attributes.sandbox_code_count);
+    let _ = writeln!(sb, "Active: {}", c.attributes.active);
+    let _ = writeln!(sb, "Production Codes: {}", c.attributes.production_code_count);
+    let _ = writeln!(sb, "Sandbox Codes: {}", c.attributes.sandbox_code_count);
     sb
 }
 
@@ -894,12 +894,12 @@ fn format_in_app_purchase_offer_prices(prices: &[InAppPurchaseOfferPrice]) -> St
     let mut sb = String::new();
     let _ = write!(sb, "Found {} offer prices:\n\n", prices.len());
     for p in prices {
-        let _ = write!(sb, "ID: {}\n", p.id);
+        let _ = writeln!(sb, "ID: {}", p.id);
         if let Some(t) = &p.relationships.territory {
-            let _ = write!(sb, "Territory: {}\n", t.data.id);
+            let _ = writeln!(sb, "Territory: {}", t.data.id);
         }
         if let Some(pp) = &p.relationships.price_point {
-            let _ = write!(sb, "Price Point: {}\n", pp.data.id);
+            let _ = writeln!(sb, "Price Point: {}", pp.data.id);
         }
         sb.push_str("\n---\n");
     }
@@ -923,13 +923,13 @@ fn format_in_app_purchase_offer_code_custom_codes(codes: &[InAppPurchaseOfferCod
 /// Go `formatInAppPurchaseOfferCodeCustomCode`.
 fn format_in_app_purchase_offer_code_custom_code(c: &InAppPurchaseOfferCodeCustomCode) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", c.id);
-    let _ = write!(sb, "Code: {}\n", c.attributes.custom_code);
-    let _ = write!(sb, "Number of Codes: {}\n", c.attributes.number_of_codes);
+    let _ = writeln!(sb, "ID: {}", c.id);
+    let _ = writeln!(sb, "Code: {}", c.attributes.custom_code);
+    let _ = writeln!(sb, "Number of Codes: {}", c.attributes.number_of_codes);
     if !c.attributes.expiration_date.is_empty() {
-        let _ = write!(sb, "Expires: {}\n", c.attributes.expiration_date);
+        let _ = writeln!(sb, "Expires: {}", c.attributes.expiration_date);
     }
-    let _ = write!(sb, "Active: {}\n", c.attributes.active);
+    let _ = writeln!(sb, "Active: {}", c.attributes.active);
     sb
 }
 
@@ -950,14 +950,14 @@ fn format_in_app_purchase_offer_code_one_time_use_codes(codes: &[InAppPurchaseOf
 /// Go `formatInAppPurchaseOfferCodeOneTimeUseCode`.
 fn format_in_app_purchase_offer_code_one_time_use_code(c: &InAppPurchaseOfferCodeOneTimeUseCode) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", c.id);
-    let _ = write!(sb, "Number of Codes: {}\n", c.attributes.number_of_codes);
+    let _ = writeln!(sb, "ID: {}", c.id);
+    let _ = writeln!(sb, "Number of Codes: {}", c.attributes.number_of_codes);
     if !c.attributes.expiration_date.is_empty() {
-        let _ = write!(sb, "Expires: {}\n", c.attributes.expiration_date);
+        let _ = writeln!(sb, "Expires: {}", c.attributes.expiration_date);
     }
     if !c.attributes.environment.is_empty() {
-        let _ = write!(sb, "Environment: {}\n", c.attributes.environment);
+        let _ = writeln!(sb, "Environment: {}", c.attributes.environment);
     }
-    let _ = write!(sb, "Active: {}\n", c.attributes.active);
+    let _ = writeln!(sb, "Active: {}", c.attributes.active);
     sb
 }

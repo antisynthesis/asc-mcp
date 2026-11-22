@@ -831,10 +831,10 @@ fn format_app_infos(infos: &[AppInfo]) -> String {
         if i > 0 {
             result.push_str("\n---\n");
         }
-        let _ = write!(result, "App Info ID: {}\n", info.id);
-        let _ = write!(result, "State: {}\n", info.attributes.state);
+        let _ = writeln!(result, "App Info ID: {}", info.id);
+        let _ = writeln!(result, "State: {}", info.attributes.state);
         if !info.attributes.app_store_state.is_empty() {
-            let _ = write!(result, "App Store State: {}\n", info.attributes.app_store_state);
+            let _ = writeln!(result, "App Store State: {}", info.attributes.app_store_state);
         }
     }
     result
@@ -860,21 +860,21 @@ fn format_app_info_localizations(localizations: &[AppInfoLocalization]) -> Strin
 fn format_app_info_localization(loc: &AppInfoLocalization) -> String {
     let a = &loc.attributes;
     let mut result = format!("ID: {}\n", loc.id);
-    let _ = write!(result, "Locale: {}\n", a.locale);
+    let _ = writeln!(result, "Locale: {}", a.locale);
     if !a.name.is_empty() {
-        let _ = write!(result, "Name: {}\n", a.name);
+        let _ = writeln!(result, "Name: {}", a.name);
     }
     if !a.subtitle.is_empty() {
-        let _ = write!(result, "Subtitle: {}\n", a.subtitle);
+        let _ = writeln!(result, "Subtitle: {}", a.subtitle);
     }
     if !a.privacy_policy_url.is_empty() {
-        let _ = write!(result, "Privacy Policy URL: {}\n", a.privacy_policy_url);
+        let _ = writeln!(result, "Privacy Policy URL: {}", a.privacy_policy_url);
     }
     if !a.privacy_choices_url.is_empty() {
-        let _ = write!(result, "Privacy Choices URL: {}\n", a.privacy_choices_url);
+        let _ = writeln!(result, "Privacy Choices URL: {}", a.privacy_choices_url);
     }
     if !a.privacy_policy_text.is_empty() {
-        let _ = write!(result, "Privacy Policy Text: {}\n", a.privacy_policy_text);
+        let _ = writeln!(result, "Privacy Policy Text: {}", a.privacy_policy_text);
     }
     result
 }
@@ -915,26 +915,26 @@ fn go_truncate_ellipsis(s: &str, n: usize) -> String {
 fn format_version_localization(loc: &AppStoreVersionLocalization) -> String {
     let a = &loc.attributes;
     let mut result = format!("ID: {}\n", loc.id);
-    let _ = write!(result, "Locale: {}\n", a.locale);
+    let _ = writeln!(result, "Locale: {}", a.locale);
     if !a.description.is_empty() {
         let desc = if a.description.len() > 200 { go_truncate_ellipsis(&a.description, 200) } else { a.description.clone() };
-        let _ = write!(result, "Description: {}\n", desc);
+        let _ = writeln!(result, "Description: {}", desc);
     }
     if !a.keywords.is_empty() {
-        let _ = write!(result, "Keywords: {}\n", a.keywords);
+        let _ = writeln!(result, "Keywords: {}", a.keywords);
     }
     if !a.whats_new.is_empty() {
         let whats_new = if a.whats_new.len() > 200 { go_truncate_ellipsis(&a.whats_new, 200) } else { a.whats_new.clone() };
-        let _ = write!(result, "What's New: {}\n", whats_new);
+        let _ = writeln!(result, "What's New: {}", whats_new);
     }
     if !a.promotional_text.is_empty() {
-        let _ = write!(result, "Promotional Text: {}\n", a.promotional_text);
+        let _ = writeln!(result, "Promotional Text: {}", a.promotional_text);
     }
     if !a.marketing_url.is_empty() {
-        let _ = write!(result, "Marketing URL: {}\n", a.marketing_url);
+        let _ = writeln!(result, "Marketing URL: {}", a.marketing_url);
     }
     if !a.support_url.is_empty() {
-        let _ = write!(result, "Support URL: {}\n", a.support_url);
+        let _ = writeln!(result, "Support URL: {}", a.support_url);
     }
     result
 }

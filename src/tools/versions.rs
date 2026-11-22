@@ -773,18 +773,18 @@ fn format_app_store_versions(versions: &[AppStoreVersion]) -> String {
 /// Ported from `formatAppStoreVersion`.
 fn format_app_store_version(version: &AppStoreVersion) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", version.id);
-    let _ = write!(sb, "Version: {}\n", version.attributes.version_string);
-    let _ = write!(sb, "Platform: {}\n", version.attributes.platform);
-    let _ = write!(sb, "State: {}\n", version.attributes.app_store_state);
+    let _ = writeln!(sb, "ID: {}", version.id);
+    let _ = writeln!(sb, "Version: {}", version.attributes.version_string);
+    let _ = writeln!(sb, "Platform: {}", version.attributes.platform);
+    let _ = writeln!(sb, "State: {}", version.attributes.app_store_state);
     if !version.attributes.copyright.is_empty() {
-        let _ = write!(sb, "Copyright: {}\n", version.attributes.copyright);
+        let _ = writeln!(sb, "Copyright: {}", version.attributes.copyright);
     }
     if !version.attributes.release_type.is_empty() {
-        let _ = write!(sb, "Release Type: {}\n", version.attributes.release_type);
+        let _ = writeln!(sb, "Release Type: {}", version.attributes.release_type);
     }
     if let Some(created) = &version.attributes.created_date {
-        let _ = write!(sb, "Created: {}\n", created.format("2006-01-02"));
+        let _ = writeln!(sb, "Created: {}", created.format("2006-01-02"));
     }
     sb
 }
@@ -793,22 +793,22 @@ fn format_app_store_version(version: &AppStoreVersion) -> String {
 fn format_review_detail(detail: &AppStoreReviewDetail) -> String {
     let a = &detail.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", detail.id);
+    let _ = writeln!(sb, "ID: {}", detail.id);
     if !a.contact_first_name.is_empty() || !a.contact_last_name.is_empty() {
-        let _ = write!(sb, "Contact: {} {}\n", a.contact_first_name, a.contact_last_name);
+        let _ = writeln!(sb, "Contact: {} {}", a.contact_first_name, a.contact_last_name);
     }
     if !a.contact_email.is_empty() {
-        let _ = write!(sb, "Email: {}\n", a.contact_email);
+        let _ = writeln!(sb, "Email: {}", a.contact_email);
     }
     if !a.contact_phone.is_empty() {
-        let _ = write!(sb, "Phone: {}\n", a.contact_phone);
+        let _ = writeln!(sb, "Phone: {}", a.contact_phone);
     }
-    let _ = write!(sb, "Demo Account Required: {}\n", bool_v(a.demo_account_required));
+    let _ = writeln!(sb, "Demo Account Required: {}", bool_v(a.demo_account_required));
     if !a.demo_account_name.is_empty() {
-        let _ = write!(sb, "Demo Account: {}\n", a.demo_account_name);
+        let _ = writeln!(sb, "Demo Account: {}", a.demo_account_name);
     }
     if !a.notes.is_empty() {
-        let _ = write!(sb, "Notes: {}\n", a.notes);
+        let _ = writeln!(sb, "Notes: {}", a.notes);
     }
     sb
 }

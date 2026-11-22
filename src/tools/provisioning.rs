@@ -300,12 +300,12 @@ async fn handle_list_bundle_ids(c: Arc<Client>, args: Args) -> HandlerResult {
     let _ = write!(sb, "Found {} bundle IDs:\n\n", resp.data.len());
     for bundle_id in resp.data.iter() {
         let a = &bundle_id.attributes;
-        let _ = write!(sb, "**{}**\n", a.name);
-        let _ = write!(sb, "  - ID: {}\n", bundle_id.id);
-        let _ = write!(sb, "  - Identifier: {}\n", a.identifier);
-        let _ = write!(sb, "  - Platform: {}\n", a.platform);
+        let _ = writeln!(sb, "**{}**", a.name);
+        let _ = writeln!(sb, "  - ID: {}", bundle_id.id);
+        let _ = writeln!(sb, "  - Identifier: {}", a.identifier);
+        let _ = writeln!(sb, "  - Platform: {}", a.platform);
         if !a.seed_id.is_empty() {
-            let _ = write!(sb, "  - Seed ID: {}\n", a.seed_id);
+            let _ = writeln!(sb, "  - Seed ID: {}", a.seed_id);
         }
         sb.push('\n');
     }
@@ -338,11 +338,11 @@ async fn handle_get_bundle_id(c: Arc<Client>, args: Args) -> HandlerResult {
     let a = &bundle_id.attributes;
     let mut sb = String::new();
     let _ = write!(sb, "**{}**\n\n", a.name);
-    let _ = write!(sb, "- ID: {}\n", bundle_id.id);
-    let _ = write!(sb, "- Identifier: {}\n", a.identifier);
-    let _ = write!(sb, "- Platform: {}\n", a.platform);
+    let _ = writeln!(sb, "- ID: {}", bundle_id.id);
+    let _ = writeln!(sb, "- Identifier: {}", a.identifier);
+    let _ = writeln!(sb, "- Platform: {}", a.platform);
     if !a.seed_id.is_empty() {
-        let _ = write!(sb, "- Seed ID: {}\n", a.seed_id);
+        let _ = writeln!(sb, "- Seed ID: {}", a.seed_id);
     }
 
     Ok(data_result(&sb, &resp.data))
@@ -385,15 +385,15 @@ async fn handle_list_certificates(c: Arc<Client>, args: Args) -> HandlerResult {
         if display_name.is_empty() {
             display_name = a.name.clone();
         }
-        let _ = write!(sb, "**{}**\n", display_name);
-        let _ = write!(sb, "  - ID: {}\n", cert.id);
-        let _ = write!(sb, "  - Type: {}\n", a.certificate_type);
-        let _ = write!(sb, "  - Serial Number: {}\n", a.serial_number);
+        let _ = writeln!(sb, "**{}**", display_name);
+        let _ = writeln!(sb, "  - ID: {}", cert.id);
+        let _ = writeln!(sb, "  - Type: {}", a.certificate_type);
+        let _ = writeln!(sb, "  - Serial Number: {}", a.serial_number);
         if !a.platform.is_empty() {
-            let _ = write!(sb, "  - Platform: {}\n", a.platform);
+            let _ = writeln!(sb, "  - Platform: {}", a.platform);
         }
         if let Some(d) = &a.expiration_date {
-            let _ = write!(sb, "  - Expires: {}\n", d.format("2006-01-02"));
+            let _ = writeln!(sb, "  - Expires: {}", d.format("2006-01-02"));
         }
         sb.push('\n');
     }
@@ -434,17 +434,17 @@ async fn handle_list_profiles(c: Arc<Client>, args: Args) -> HandlerResult {
     let _ = write!(sb, "Found {} provisioning profiles:\n\n", resp.data.len());
     for profile in resp.data.iter() {
         let a = &profile.attributes;
-        let _ = write!(sb, "**{}**\n", a.name);
-        let _ = write!(sb, "  - ID: {}\n", profile.id);
-        let _ = write!(sb, "  - UUID: {}\n", a.uuid);
-        let _ = write!(sb, "  - Type: {}\n", a.profile_type);
-        let _ = write!(sb, "  - State: {}\n", a.profile_state);
-        let _ = write!(sb, "  - Platform: {}\n", a.platform);
+        let _ = writeln!(sb, "**{}**", a.name);
+        let _ = writeln!(sb, "  - ID: {}", profile.id);
+        let _ = writeln!(sb, "  - UUID: {}", a.uuid);
+        let _ = writeln!(sb, "  - Type: {}", a.profile_type);
+        let _ = writeln!(sb, "  - State: {}", a.profile_state);
+        let _ = writeln!(sb, "  - Platform: {}", a.platform);
         if let Some(d) = &a.created_date {
-            let _ = write!(sb, "  - Created: {}\n", d.format("2006-01-02"));
+            let _ = writeln!(sb, "  - Created: {}", d.format("2006-01-02"));
         }
         if let Some(d) = &a.expiration_date {
-            let _ = write!(sb, "  - Expires: {}\n", d.format("2006-01-02"));
+            let _ = writeln!(sb, "  - Expires: {}", d.format("2006-01-02"));
         }
         sb.push('\n');
     }
@@ -485,15 +485,15 @@ async fn handle_list_devices(c: Arc<Client>, args: Args) -> HandlerResult {
     let _ = write!(sb, "Found {} devices:\n\n", resp.data.len());
     for device in resp.data.iter() {
         let a = &device.attributes;
-        let _ = write!(sb, "**{}**\n", a.name);
-        let _ = write!(sb, "  - ID: {}\n", device.id);
-        let _ = write!(sb, "  - UDID: {}\n", a.udid);
-        let _ = write!(sb, "  - Model: {}\n", a.model);
-        let _ = write!(sb, "  - Device Class: {}\n", a.device_class);
-        let _ = write!(sb, "  - Platform: {}\n", a.platform);
-        let _ = write!(sb, "  - Status: {}\n", a.status);
+        let _ = writeln!(sb, "**{}**", a.name);
+        let _ = writeln!(sb, "  - ID: {}", device.id);
+        let _ = writeln!(sb, "  - UDID: {}", a.udid);
+        let _ = writeln!(sb, "  - Model: {}", a.model);
+        let _ = writeln!(sb, "  - Device Class: {}", a.device_class);
+        let _ = writeln!(sb, "  - Platform: {}", a.platform);
+        let _ = writeln!(sb, "  - Status: {}", a.status);
         if let Some(d) = &a.added_date {
-            let _ = write!(sb, "  - Added: {}\n", d.format("2006-01-02"));
+            let _ = writeln!(sb, "  - Added: {}", d.format("2006-01-02"));
         }
         sb.push('\n');
     }
@@ -544,11 +544,11 @@ async fn handle_register_device(c: Arc<Client>, args: Args) -> HandlerResult {
     let a = &resp.data.attributes;
     let mut sb = String::new();
     let _ = write!(sb, "Successfully registered device **{}**\n\n", a.name);
-    let _ = write!(sb, "- ID: {}\n", resp.data.id);
-    let _ = write!(sb, "- UDID: {}\n", a.udid);
-    let _ = write!(sb, "- Model: {}\n", a.model);
-    let _ = write!(sb, "- Platform: {}\n", a.platform);
-    let _ = write!(sb, "- Status: {}\n", a.status);
+    let _ = writeln!(sb, "- ID: {}", resp.data.id);
+    let _ = writeln!(sb, "- UDID: {}", a.udid);
+    let _ = writeln!(sb, "- Model: {}", a.model);
+    let _ = writeln!(sb, "- Platform: {}", a.platform);
+    let _ = writeln!(sb, "- Status: {}", a.status);
 
     Ok(data_result(&sb, &resp.data))
 }

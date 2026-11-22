@@ -127,16 +127,16 @@ async fn handle_list_builds(c: Arc<Client>, args: Args) -> HandlerResult {
     let _ = write!(sb, "Found {} builds:\n\n", resp.data.len());
     for build in resp.data.iter() {
         let a = &build.attributes;
-        let _ = write!(sb, "**Build {}**\n", a.version);
-        let _ = write!(sb, "  - ID: {}\n", build.id);
-        let _ = write!(sb, "  - Processing State: {}\n", a.processing_state);
-        let _ = write!(sb, "  - Min OS Version: {}\n", a.min_os_version);
-        let _ = write!(sb, "  - Expired: {}\n", a.expired);
+        let _ = writeln!(sb, "**Build {}**", a.version);
+        let _ = writeln!(sb, "  - ID: {}", build.id);
+        let _ = writeln!(sb, "  - Processing State: {}", a.processing_state);
+        let _ = writeln!(sb, "  - Min OS Version: {}", a.min_os_version);
+        let _ = writeln!(sb, "  - Expired: {}", a.expired);
         if let Some(d) = &a.uploaded_date {
-            let _ = write!(sb, "  - Uploaded: {}\n", d.format("2006-01-02 15:04"));
+            let _ = writeln!(sb, "  - Uploaded: {}", d.format("2006-01-02 15:04"));
         }
         if let Some(d) = &a.expiration_date {
-            let _ = write!(sb, "  - Expires: {}\n", d.format("2006-01-02"));
+            let _ = writeln!(sb, "  - Expires: {}", d.format("2006-01-02"));
         }
         sb.push('\n');
     }
@@ -169,18 +169,18 @@ async fn handle_get_build(c: Arc<Client>, args: Args) -> HandlerResult {
     let a = &build.attributes;
     let mut sb = String::new();
     let _ = write!(sb, "**Build {}**\n\n", a.version);
-    let _ = write!(sb, "- ID: {}\n", build.id);
-    let _ = write!(sb, "- Processing State: {}\n", a.processing_state);
-    let _ = write!(sb, "- Min OS Version: {}\n", a.min_os_version);
-    let _ = write!(sb, "- Build Audience Type: {}\n", a.build_audience_type);
-    let _ = write!(sb, "- Uses Non-Exempt Encryption: {}\n", a.uses_non_exempt_encryption);
-    let _ = write!(sb, "- Expired: {}\n", a.expired);
+    let _ = writeln!(sb, "- ID: {}", build.id);
+    let _ = writeln!(sb, "- Processing State: {}", a.processing_state);
+    let _ = writeln!(sb, "- Min OS Version: {}", a.min_os_version);
+    let _ = writeln!(sb, "- Build Audience Type: {}", a.build_audience_type);
+    let _ = writeln!(sb, "- Uses Non-Exempt Encryption: {}", a.uses_non_exempt_encryption);
+    let _ = writeln!(sb, "- Expired: {}", a.expired);
 
     if let Some(d) = &a.uploaded_date {
-        let _ = write!(sb, "- Uploaded: {}\n", d.format("2006-01-02 15:04:05"));
+        let _ = writeln!(sb, "- Uploaded: {}", d.format("2006-01-02 15:04:05"));
     }
     if let Some(d) = &a.expiration_date {
-        let _ = write!(sb, "- Expires: {}\n", d.format("2006-01-02"));
+        let _ = writeln!(sb, "- Expires: {}", d.format("2006-01-02"));
     }
 
     Ok(data_result(&sb, &resp.data))

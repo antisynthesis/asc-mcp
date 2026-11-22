@@ -560,14 +560,14 @@ fn format_users(users: &[User]) -> String {
 /// Ported from `formatUser`.
 fn format_user(user: &User) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", user.id);
-    let _ = write!(sb, "Username: {}\n", user.attributes.username);
-    let _ = write!(sb, "Name: {} {}\n", user.attributes.first_name, user.attributes.last_name);
+    let _ = writeln!(sb, "ID: {}", user.id);
+    let _ = writeln!(sb, "Username: {}", user.attributes.username);
+    let _ = writeln!(sb, "Name: {} {}", user.attributes.first_name, user.attributes.last_name);
     if !user.attributes.roles.is_empty() {
-        let _ = write!(sb, "Roles: {}\n", user.attributes.roles.join(", "));
+        let _ = writeln!(sb, "Roles: {}", user.attributes.roles.join(", "));
     }
-    let _ = write!(sb, "All Apps Visible: {}\n", user.attributes.all_apps_visible);
-    let _ = write!(sb, "Provisioning Allowed: {}\n", user.attributes.provisioning_allowed);
+    let _ = writeln!(sb, "All Apps Visible: {}", user.attributes.all_apps_visible);
+    let _ = writeln!(sb, "Provisioning Allowed: {}", user.attributes.provisioning_allowed);
     sb
 }
 
@@ -591,15 +591,15 @@ fn format_user_invitations(invitations: &[UserInvitation]) -> String {
 /// Ported from `formatUserInvitation`.
 fn format_user_invitation(inv: &UserInvitation) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", inv.id);
-    let _ = write!(sb, "Email: {}\n", inv.attributes.email);
-    let _ = write!(sb, "Name: {} {}\n", inv.attributes.first_name, inv.attributes.last_name);
+    let _ = writeln!(sb, "ID: {}", inv.id);
+    let _ = writeln!(sb, "Email: {}", inv.attributes.email);
+    let _ = writeln!(sb, "Name: {} {}", inv.attributes.first_name, inv.attributes.last_name);
     if !inv.attributes.roles.is_empty() {
-        let _ = write!(sb, "Roles: {}\n", inv.attributes.roles.join(", "));
+        let _ = writeln!(sb, "Roles: {}", inv.attributes.roles.join(", "));
     }
-    let _ = write!(sb, "All Apps Visible: {}\n", inv.attributes.all_apps_visible);
+    let _ = writeln!(sb, "All Apps Visible: {}", inv.attributes.all_apps_visible);
     if let Some(d) = &inv.attributes.expiration_date {
-        let _ = write!(sb, "Expires: {}\n", d.format("2006-01-02 15:04"));
+        let _ = writeln!(sb, "Expires: {}", d.format("2006-01-02 15:04"));
     }
     sb
 }

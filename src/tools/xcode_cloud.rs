@@ -499,11 +499,11 @@ fn format_ci_products(products: &[CiProduct]) -> String {
 fn format_ci_product(product: &CiProduct) -> String {
     let a = &product.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", product.id);
-    let _ = write!(sb, "Name: {}\n", a.name);
-    let _ = write!(sb, "Product Type: {}\n", a.product_type);
+    let _ = writeln!(sb, "ID: {}", product.id);
+    let _ = writeln!(sb, "Name: {}", a.name);
+    let _ = writeln!(sb, "Product Type: {}", a.product_type);
     if let Some(d) = &a.created_date {
-        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02"));
+        let _ = writeln!(sb, "Created: {}", d.format("2006-01-02"));
     }
     sb
 }
@@ -527,18 +527,18 @@ fn format_ci_workflows(workflows: &[CiWorkflow]) -> String {
 fn format_ci_workflow(workflow: &CiWorkflow) -> String {
     let a = &workflow.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", workflow.id);
-    let _ = write!(sb, "Name: {}\n", a.name);
+    let _ = writeln!(sb, "ID: {}", workflow.id);
+    let _ = writeln!(sb, "Name: {}", a.name);
     if !a.description.is_empty() {
-        let _ = write!(sb, "Description: {}\n", a.description);
+        let _ = writeln!(sb, "Description: {}", a.description);
     }
-    let _ = write!(sb, "Enabled: {}\n", a.is_enabled);
-    let _ = write!(sb, "Clean Build: {}\n", a.clean);
+    let _ = writeln!(sb, "Enabled: {}", a.is_enabled);
+    let _ = writeln!(sb, "Clean Build: {}", a.clean);
     if !a.container_file_path.is_empty() {
-        let _ = write!(sb, "Container File: {}\n", a.container_file_path);
+        let _ = writeln!(sb, "Container File: {}", a.container_file_path);
     }
     if let Some(d) = &a.last_modified_date {
-        let _ = write!(sb, "Last Modified: {}\n", d.format("2006-01-02 15:04"));
+        let _ = writeln!(sb, "Last Modified: {}", d.format("2006-01-02 15:04"));
     }
     sb
 }
@@ -562,28 +562,28 @@ fn format_ci_build_runs(runs: &[CiBuildRun]) -> String {
 fn format_ci_build_run(run: &CiBuildRun) -> String {
     let a = &run.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", run.id);
-    let _ = write!(sb, "Build #{}\n", a.number);
-    let _ = write!(sb, "Progress: {}\n", a.execution_progress);
+    let _ = writeln!(sb, "ID: {}", run.id);
+    let _ = writeln!(sb, "Build #{}", a.number);
+    let _ = writeln!(sb, "Progress: {}", a.execution_progress);
     if !a.completion_status.is_empty() {
-        let _ = write!(sb, "Status: {}\n", a.completion_status);
+        let _ = writeln!(sb, "Status: {}", a.completion_status);
     }
-    let _ = write!(sb, "Start Reason: {}\n", a.start_reason);
-    let _ = write!(sb, "Pull Request Build: {}\n", a.is_pull_request_build);
+    let _ = writeln!(sb, "Start Reason: {}", a.start_reason);
+    let _ = writeln!(sb, "Pull Request Build: {}", a.is_pull_request_build);
     if let Some(sc) = &a.source_commit {
-        let _ = write!(sb, "Commit: {}\n", sc.commit_sha);
+        let _ = writeln!(sb, "Commit: {}", sc.commit_sha);
         if !sc.message.is_empty() {
-            let _ = write!(sb, "Message: {}\n", sc.message);
+            let _ = writeln!(sb, "Message: {}", sc.message);
         }
     }
     if let Some(d) = &a.created_date {
-        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02 15:04"));
+        let _ = writeln!(sb, "Created: {}", d.format("2006-01-02 15:04"));
     }
     if let Some(d) = &a.started_date {
-        let _ = write!(sb, "Started: {}\n", d.format("2006-01-02 15:04"));
+        let _ = writeln!(sb, "Started: {}", d.format("2006-01-02 15:04"));
     }
     if let Some(d) = &a.finished_date {
-        let _ = write!(sb, "Finished: {}\n", d.format("2006-01-02 15:04"));
+        let _ = writeln!(sb, "Finished: {}", d.format("2006-01-02 15:04"));
     }
     sb
 }

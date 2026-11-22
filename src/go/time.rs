@@ -113,6 +113,9 @@ const DAYS: [&str; 7] = [
     "Saturday",
 ];
 
+/// Appends one formatted layout element.
+type FormatFn<'a> = dyn Fn(&mut String) + 'a;
+
 const RFC3339: &str = "2006-01-02T15:04:05Z07:00";
 
 /// Go's `ParseError.Error()`.
@@ -500,7 +503,7 @@ impl GoTime {
         let mut out = String::new();
         let mut l = layout;
         while !l.is_empty() {
-            let tokens: &[(&str, &dyn Fn(&mut String))] = &[
+            let tokens: &[(&str, &FormatFn)] = &[
                 ("January", &|o: &mut String| {
                     o.push_str(MONTHS[c.month as usize - 1])
                 }),

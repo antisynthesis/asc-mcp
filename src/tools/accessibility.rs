@@ -456,14 +456,14 @@ fn format_accessibility_declarations(declarations: &[AccessibilityDeclaration]) 
 /// Ported from `formatAccessibilityDeclaration`.
 fn format_accessibility_declaration(decl: &AccessibilityDeclaration) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "Declaration ID: {}\n", decl.id);
+    let _ = writeln!(sb, "Declaration ID: {}", decl.id);
 
     let attrs = &decl.attributes;
     if !attrs.device_family.is_empty() {
-        let _ = write!(sb, "Device Family: {}\n", attrs.device_family);
+        let _ = writeln!(sb, "Device Family: {}", attrs.device_family);
     }
     if !attrs.state.is_empty() {
-        let _ = write!(sb, "State: {}\n", attrs.state);
+        let _ = writeln!(sb, "State: {}", attrs.state);
     }
 
     let features: [(&str, Option<bool>); 9] = [
@@ -479,7 +479,7 @@ fn format_accessibility_declaration(decl: &AccessibilityDeclaration) -> String {
     ];
     for (label, value) in features {
         if let Some(v) = value {
-            let _ = write!(sb, "{}: {}\n", label, v);
+            let _ = writeln!(sb, "{}: {}", label, v);
         }
     }
 

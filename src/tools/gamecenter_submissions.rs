@@ -244,16 +244,16 @@ async fn handle_submit_game_center_leaderboard_entry(c: Arc<Client>, args: Args)
 fn format_game_center_player_achievement_submission(submission: &GameCenterPlayerAchievementSubmission) -> String {
     let a = &submission.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "Submitted achievement progress (ID: {})\n", submission.id);
-    let _ = write!(sb, "Vendor ID: {}\n", a.vendor_identifier);
-    let _ = write!(sb, "Player: {}\n", a.scoped_player_id);
-    let _ = write!(sb, "Percentage Achieved: {}\n", a.percentage_achieved);
-    let _ = write!(sb, "Pre-Released: {}\n", a.pre_released);
+    let _ = writeln!(sb, "Submitted achievement progress (ID: {})", submission.id);
+    let _ = writeln!(sb, "Vendor ID: {}", a.vendor_identifier);
+    let _ = writeln!(sb, "Player: {}", a.scoped_player_id);
+    let _ = writeln!(sb, "Percentage Achieved: {}", a.percentage_achieved);
+    let _ = writeln!(sb, "Pre-Released: {}", a.pre_released);
     if !a.submitted_date.is_empty() {
-        let _ = write!(sb, "Submitted: {}\n", a.submitted_date);
+        let _ = writeln!(sb, "Submitted: {}", a.submitted_date);
     }
     if !a.challenge_ids.is_empty() {
-        let _ = write!(sb, "Challenges: {}\n", a.challenge_ids.join(", "));
+        let _ = writeln!(sb, "Challenges: {}", a.challenge_ids.join(", "));
     }
     sb
 }
@@ -262,19 +262,19 @@ fn format_game_center_player_achievement_submission(submission: &GameCenterPlaye
 fn format_game_center_leaderboard_entry_submission(submission: &GameCenterLeaderboardEntrySubmission) -> String {
     let a = &submission.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "Submitted leaderboard entry (ID: {})\n", submission.id);
-    let _ = write!(sb, "Vendor ID: {}\n", a.vendor_identifier);
-    let _ = write!(sb, "Player: {}\n", a.scoped_player_id);
-    let _ = write!(sb, "Score: {}\n", a.score);
+    let _ = writeln!(sb, "Submitted leaderboard entry (ID: {})", submission.id);
+    let _ = writeln!(sb, "Vendor ID: {}", a.vendor_identifier);
+    let _ = writeln!(sb, "Player: {}", a.scoped_player_id);
+    let _ = writeln!(sb, "Score: {}", a.score);
     if !a.context.is_empty() {
-        let _ = write!(sb, "Context: {}\n", a.context);
+        let _ = writeln!(sb, "Context: {}", a.context);
     }
-    let _ = write!(sb, "Pre-Released: {}\n", a.pre_released);
+    let _ = writeln!(sb, "Pre-Released: {}", a.pre_released);
     if !a.submitted_date.is_empty() {
-        let _ = write!(sb, "Submitted: {}\n", a.submitted_date);
+        let _ = writeln!(sb, "Submitted: {}", a.submitted_date);
     }
     if !a.challenge_ids.is_empty() {
-        let _ = write!(sb, "Challenges: {}\n", a.challenge_ids.join(", "));
+        let _ = writeln!(sb, "Challenges: {}", a.challenge_ids.join(", "));
     }
     sb
 }

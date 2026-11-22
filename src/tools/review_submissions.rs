@@ -313,7 +313,7 @@ async fn handle_get_review_submission(c: Arc<Client>, args: Args) -> HandlerResu
         if !items.data.is_empty() {
             let _ = write!(sb, "\nItems ({}):\n", items.data.len());
             for item in items.data.iter() {
-                let _ = write!(sb, "- {} (state: {})\n", item.id, item.attributes.state);
+                let _ = writeln!(sb, "- {} (state: {})", item.id, item.attributes.state);
             }
         }
     }
@@ -542,15 +542,15 @@ fn format_review_submissions(submissions: &[ReviewSubmission]) -> String {
 /// Ported from `formatReviewSubmission`.
 fn format_review_submission(submission: &ReviewSubmission) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", submission.id);
+    let _ = writeln!(sb, "ID: {}", submission.id);
     if !submission.attributes.platform.is_empty() {
-        let _ = write!(sb, "Platform: {}\n", submission.attributes.platform);
+        let _ = writeln!(sb, "Platform: {}", submission.attributes.platform);
     }
     if !submission.attributes.state.is_empty() {
-        let _ = write!(sb, "State: {}\n", submission.attributes.state);
+        let _ = writeln!(sb, "State: {}", submission.attributes.state);
     }
     if let Some(d) = &submission.attributes.submitted_date {
-        let _ = write!(sb, "Submitted: {}\n", d.format("2006-01-02 15:04:05"));
+        let _ = writeln!(sb, "Submitted: {}", d.format("2006-01-02 15:04:05"));
     }
     sb
 }

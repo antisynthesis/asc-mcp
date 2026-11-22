@@ -504,33 +504,33 @@ fn format_beta_feedback_list(noun: &str, count: usize, write: impl FnOnce(&mut S
 /// Ported from `formatBetaFeedbackSubmission`.
 fn format_beta_feedback_submission(id: &str, attrs: &BetaFeedbackDeviceAttributes) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "Submission ID: {}\n", id);
+    let _ = writeln!(sb, "Submission ID: {}", id);
     if let Some(d) = &attrs.created_date {
-        let _ = write!(sb, "Created: {}\n", d.format("2006-01-02 15:04:05"));
+        let _ = writeln!(sb, "Created: {}", d.format("2006-01-02 15:04:05"));
     }
     if !attrs.comment.is_empty() {
-        let _ = write!(sb, "Comment: {}\n", attrs.comment);
+        let _ = writeln!(sb, "Comment: {}", attrs.comment);
     }
     if !attrs.email.is_empty() {
-        let _ = write!(sb, "Tester Email: {}\n", attrs.email);
+        let _ = writeln!(sb, "Tester Email: {}", attrs.email);
     }
     if !attrs.device_model.is_empty() {
-        let _ = write!(sb, "Device: {} ({} {})\n", attrs.device_model, attrs.device_platform, attrs.os_version);
+        let _ = writeln!(sb, "Device: {} ({} {})", attrs.device_model, attrs.device_platform, attrs.os_version);
     }
     if !attrs.app_platform.is_empty() {
-        let _ = write!(sb, "App Platform: {}\n", attrs.app_platform);
+        let _ = writeln!(sb, "App Platform: {}", attrs.app_platform);
     }
     if !attrs.locale.is_empty() {
-        let _ = write!(sb, "Locale: {}\n", attrs.locale);
+        let _ = writeln!(sb, "Locale: {}", attrs.locale);
     }
     if !attrs.architecture.is_empty() {
-        let _ = write!(sb, "Architecture: {}\n", attrs.architecture);
+        let _ = writeln!(sb, "Architecture: {}", attrs.architecture);
     }
     if !attrs.connection_type.is_empty() {
-        let _ = write!(sb, "Connection: {}\n", attrs.connection_type);
+        let _ = writeln!(sb, "Connection: {}", attrs.connection_type);
     }
     if !attrs.build_bundle_id.is_empty() {
-        let _ = write!(sb, "Build Bundle ID: {}\n", attrs.build_bundle_id);
+        let _ = writeln!(sb, "Build Bundle ID: {}", attrs.build_bundle_id);
     }
     for (i, shot) in attrs.screenshots.iter().enumerate() {
         let _ = write!(sb, "Screenshot {}: {} ({}x{}", i + 1, shot.url, shot.width, shot.height);
@@ -557,12 +557,12 @@ fn format_beta_build_usages(build_id: &str, groups: &[BetaBuildUsageGroup]) -> S
     for group in groups {
         for point in group.data_points.iter() {
             if let (Some(start), Some(end)) = (&point.start, &point.end) {
-                let _ = write!(sb, "{} to {}:\n", start.format("2006-01-02"), end.format("2006-01-02"));
+                let _ = writeln!(sb, "{} to {}:", start.format("2006-01-02"), end.format("2006-01-02"));
             }
             let v = &point.values;
-            let _ = write!(
+            let _ = writeln!(
                 sb,
-                "Installs: {}, Sessions: {}, Crashes: {}, Feedback: {}, Invites: {}\n",
+                "Installs: {}, Sessions: {}, Crashes: {}, Feedback: {}, Invites: {}",
                 v.install_count, v.session_count, v.crash_count, v.feedback_count, v.invite_count
             );
             sb.push('\n');

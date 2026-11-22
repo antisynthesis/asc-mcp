@@ -358,7 +358,7 @@ fn check_origin(inner: &Inner, h: &HeaderMap) -> bool {
     if origin.is_empty() {
         return true;
     }
-    if inner.allowed_origins.iter().any(|o| *o == origin) {
+    if inner.allowed_origins.contains(&origin) {
         return true;
     }
     let Some(rest) = origin
@@ -510,17 +510,18 @@ async fn read_body_limited(body: Body, limit: usize) -> Result<Vec<u8>, axum::Er
 
 /// Decodes the `=?base64?...?=` sentinel permitted on `Mcp-Name` and
 /// `Mcp-Param-*` (standard padded base64 of UTF-8; case-sensitive markers).
-pub fn decode_header_value(v: &str) -> Result<String, ()> {
+/// Returns `None` when a sentinel-wrapped value is not valid base64 UTF-8.
+pub fn decode_header_value(v: &str) -> Option<String> {
     const PREFIX: &str = "=?base64?";
     const SUFFIX: &str = "?=";
     if v.len() >= PREFIX.len() + SUFFIX.len() && v.starts_with(PREFIX) && v.ends_with(SUFFIX) {
         let inner = &v[PREFIX.len()..v.len() - SUFFIX.len()];
         let bytes = base64::engine::general_purpose::STANDARD
             .decode(inner)
-            .map_err(|_| ())?;
-        return String::from_utf8(bytes).map_err(|_| ());
+            .ok()?;
+        return String::from_utf8(bytes).ok();
     }
-    Ok(v.to_string())
+    Some(v.to_string())
 }
 
 fn mismatch(req: &Request, header: &str, detail: String) -> AxResponse {
@@ -595,7 +596,7 @@ async fn handle_modern_post(
         let raw = headers.get(NAME_HEADER).and_then(|v| v.to_str().ok());
         let decoded = raw.map(decode_header_value);
         match decoded {
-            Some(Ok(h)) if !h.is_empty() && h == name => {}
+            Some(Some(h)) if !h.is_empty() && h == name => {}
             _ => {
                 return mismatch(
                     &req,

@@ -1402,9 +1402,9 @@ fn format_game_center_leaderboard_sets(sets: &[GameCenterLeaderboardSet]) -> Str
 /// Ported from `formatGameCenterLeaderboardSet`.
 fn format_game_center_leaderboard_set(set: &GameCenterLeaderboardSet) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", set.id);
-    let _ = write!(sb, "Reference Name: {}\n", set.attributes.reference_name);
-    let _ = write!(sb, "Vendor ID: {}\n", set.attributes.vendor_identifier);
+    let _ = writeln!(sb, "ID: {}", set.id);
+    let _ = writeln!(sb, "Reference Name: {}", set.attributes.reference_name);
+    let _ = writeln!(sb, "Vendor ID: {}", set.attributes.vendor_identifier);
     sb
 }
 
@@ -1428,9 +1428,9 @@ fn format_game_center_leaderboard_set_versions(versions: &[GameCenterLeaderboard
 /// Ported from `formatGameCenterLeaderboardSetVersion`.
 fn format_game_center_leaderboard_set_version(version: &GameCenterLeaderboardSetVersion) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", version.id);
-    let _ = write!(sb, "Version: {}\n", version.attributes.version);
-    let _ = write!(sb, "State: {}\n", version.attributes.state);
+    let _ = writeln!(sb, "ID: {}", version.id);
+    let _ = writeln!(sb, "Version: {}", version.attributes.version);
+    let _ = writeln!(sb, "State: {}", version.attributes.state);
     sb
 }
 
@@ -1444,9 +1444,9 @@ fn format_game_center_leaderboard_set_localizations(localizations: &[GameCenterL
     let _ = write!(sb, "Found {} leaderboard set localizations:\n\n", localizations.len());
 
     for localization in localizations {
-        let _ = write!(sb, "ID: {}\n", localization.id);
-        let _ = write!(sb, "Locale: {}\n", localization.attributes.locale);
-        let _ = write!(sb, "Name: {}\n", localization.attributes.name);
+        let _ = writeln!(sb, "ID: {}", localization.id);
+        let _ = writeln!(sb, "Locale: {}", localization.attributes.locale);
+        let _ = writeln!(sb, "Name: {}", localization.attributes.name);
         sb.push_str("\n---\n");
     }
 
@@ -1463,9 +1463,9 @@ fn format_game_center_leaderboard_set_member_localizations(localizations: &[Game
     let _ = write!(sb, "Found {} member localizations:\n\n", localizations.len());
 
     for localization in localizations {
-        let _ = write!(sb, "ID: {}\n", localization.id);
-        let _ = write!(sb, "Locale: {}\n", localization.attributes.locale);
-        let _ = write!(sb, "Name: {}\n", localization.attributes.name);
+        let _ = writeln!(sb, "ID: {}", localization.id);
+        let _ = writeln!(sb, "Locale: {}", localization.attributes.locale);
+        let _ = writeln!(sb, "Name: {}", localization.attributes.name);
         sb.push_str("\n---\n");
     }
 

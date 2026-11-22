@@ -1143,10 +1143,10 @@ fn format_beta_app_review_submissions(submissions: &[BetaAppReviewSubmission]) -
 /// Ported from `formatBetaAppReviewSubmission`.
 fn format_beta_app_review_submission(sub: &BetaAppReviewSubmission) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", sub.id);
-    let _ = write!(sb, "State: {}\n", sub.attributes.beta_review_state);
+    let _ = writeln!(sb, "ID: {}", sub.id);
+    let _ = writeln!(sb, "State: {}", sub.attributes.beta_review_state);
     if let Some(d) = &sub.attributes.submitted_date {
-        let _ = write!(sb, "Submitted: {}\n", d.format("2006-01-02 15:04"));
+        let _ = writeln!(sb, "Submitted: {}", d.format("2006-01-02 15:04"));
     }
     sb
 }
@@ -1172,7 +1172,7 @@ fn go_byte_prefix(s: &str, n: usize) -> String {
 /// Ported from `formatBetaLicenseAgreement`.
 fn format_beta_license_agreement(agreement: &BetaLicenseAgreement) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", agreement.id);
+    let _ = writeln!(sb, "ID: {}", agreement.id);
     if !agreement.attributes.agreement_text.is_empty() {
         let mut text = agreement.attributes.agreement_text.clone();
         if text.len() > 500 {
@@ -1204,19 +1204,19 @@ fn format_beta_app_localizations(localizations: &[BetaAppLocalization]) -> Strin
 fn format_beta_app_localization(loc: &BetaAppLocalization) -> String {
     let a = &loc.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", loc.id);
-    let _ = write!(sb, "Locale: {}\n", a.locale);
+    let _ = writeln!(sb, "ID: {}", loc.id);
+    let _ = writeln!(sb, "Locale: {}", a.locale);
     if !a.description.is_empty() {
-        let _ = write!(sb, "Description: {}\n", a.description);
+        let _ = writeln!(sb, "Description: {}", a.description);
     }
     if !a.feedback_email.is_empty() {
-        let _ = write!(sb, "Feedback Email: {}\n", a.feedback_email);
+        let _ = writeln!(sb, "Feedback Email: {}", a.feedback_email);
     }
     if !a.marketing_url.is_empty() {
-        let _ = write!(sb, "Marketing URL: {}\n", a.marketing_url);
+        let _ = writeln!(sb, "Marketing URL: {}", a.marketing_url);
     }
     if !a.privacy_policy_url.is_empty() {
-        let _ = write!(sb, "Privacy Policy URL: {}\n", a.privacy_policy_url);
+        let _ = writeln!(sb, "Privacy Policy URL: {}", a.privacy_policy_url);
     }
     sb
 }
@@ -1239,10 +1239,10 @@ fn format_beta_build_localizations(localizations: &[BetaBuildLocalization]) -> S
 /// Ported from `formatBetaBuildLocalization`.
 fn format_beta_build_localization(loc: &BetaBuildLocalization) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", loc.id);
-    let _ = write!(sb, "Locale: {}\n", loc.attributes.locale);
+    let _ = writeln!(sb, "ID: {}", loc.id);
+    let _ = writeln!(sb, "Locale: {}", loc.attributes.locale);
     if !loc.attributes.whats_new.is_empty() {
-        let _ = write!(sb, "What's New: {}\n", loc.attributes.whats_new);
+        let _ = writeln!(sb, "What's New: {}", loc.attributes.whats_new);
     }
     sb
 }
@@ -1251,10 +1251,10 @@ fn format_beta_build_localization(loc: &BetaBuildLocalization) -> String {
 fn format_build_beta_detail(detail: &BuildBetaDetail) -> String {
     let a = &detail.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", detail.id);
-    let _ = write!(sb, "Auto Notify Enabled: {}\n", a.auto_notify_enabled);
-    let _ = write!(sb, "Internal Build State: {}\n", a.internal_build_state);
-    let _ = write!(sb, "External Build State: {}\n", a.external_build_state);
+    let _ = writeln!(sb, "ID: {}", detail.id);
+    let _ = writeln!(sb, "Auto Notify Enabled: {}", a.auto_notify_enabled);
+    let _ = writeln!(sb, "Internal Build State: {}", a.internal_build_state);
+    let _ = writeln!(sb, "External Build State: {}", a.external_build_state);
     sb
 }
 

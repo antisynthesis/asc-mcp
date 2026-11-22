@@ -334,9 +334,9 @@ pub(crate) fn format_app_price_points(price_points: &[AppPricePoint]) -> String 
 /// Go `formatAppPricePoint`.
 pub(crate) fn format_app_price_point(pp: &AppPricePoint) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", pp.id);
-    let _ = write!(sb, "Customer Price: {}\n", pp.attributes.customer_price);
-    let _ = write!(sb, "Proceeds: {}\n", pp.attributes.proceeds);
+    let _ = writeln!(sb, "ID: {}", pp.id);
+    let _ = writeln!(sb, "Customer Price: {}", pp.attributes.customer_price);
+    let _ = writeln!(sb, "Proceeds: {}", pp.attributes.proceeds);
     sb
 }
 
@@ -348,7 +348,7 @@ pub(crate) fn format_territories(territories: &[Territory]) -> String {
     let mut sb = String::new();
     let _ = write!(sb, "Found {} territories:\n\n", territories.len());
     for t in territories {
-        let _ = write!(sb, "ID: {} - Currency: {}\n", t.id, t.attributes.currency);
+        let _ = writeln!(sb, "ID: {} - Currency: {}", t.id, t.attributes.currency);
     }
     sb
 }
@@ -370,9 +370,9 @@ pub(crate) fn format_subscription_price_points(price_points: &[SubscriptionPrice
 /// Go `formatSubscriptionPricePoint`.
 pub(crate) fn format_subscription_price_point(pp: &SubscriptionPricePoint) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", pp.id);
-    let _ = write!(sb, "Customer Price: {}\n", pp.attributes.customer_price);
-    let _ = write!(sb, "Proceeds: {}\n", pp.attributes.proceeds);
-    let _ = write!(sb, "Proceeds Year 2: {}\n", pp.attributes.proceeds_year2);
+    let _ = writeln!(sb, "ID: {}", pp.id);
+    let _ = writeln!(sb, "Customer Price: {}", pp.attributes.customer_price);
+    let _ = writeln!(sb, "Proceeds: {}", pp.attributes.proceeds);
+    let _ = writeln!(sb, "Proceeds Year 2: {}", pp.attributes.proceeds_year2);
     sb
 }

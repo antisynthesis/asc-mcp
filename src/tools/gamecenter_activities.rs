@@ -1071,17 +1071,17 @@ fn format_game_center_activities(activities: &[GameCenterActivity]) -> String {
 fn format_game_center_activity(activity: &GameCenterActivity) -> String {
     let a = &activity.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", activity.id);
-    let _ = write!(sb, "Reference Name: {}\n", a.reference_name);
-    let _ = write!(sb, "Vendor ID: {}\n", a.vendor_identifier);
+    let _ = writeln!(sb, "ID: {}", activity.id);
+    let _ = writeln!(sb, "Reference Name: {}", a.reference_name);
+    let _ = writeln!(sb, "Vendor ID: {}", a.vendor_identifier);
     if !a.play_style.is_empty() {
-        let _ = write!(sb, "Play Style: {}\n", a.play_style);
+        let _ = writeln!(sb, "Play Style: {}", a.play_style);
     }
     if a.minimum_players_count > 0 || a.maximum_players_count > 0 {
-        let _ = write!(sb, "Players: {} - {}\n", a.minimum_players_count, a.maximum_players_count);
+        let _ = writeln!(sb, "Players: {} - {}", a.minimum_players_count, a.maximum_players_count);
     }
-    let _ = write!(sb, "Supports Party Code: {}\n", a.supports_party_code);
-    let _ = write!(sb, "Archived: {}\n", a.archived);
+    let _ = writeln!(sb, "Supports Party Code: {}", a.supports_party_code);
+    let _ = writeln!(sb, "Archived: {}", a.archived);
     sb
 }
 
@@ -1106,11 +1106,11 @@ fn format_game_center_activity_versions(versions: &[GameCenterActivityVersion]) 
 fn format_game_center_activity_version(version: &GameCenterActivityVersion) -> String {
     let a = &version.attributes;
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", version.id);
-    let _ = write!(sb, "Version: {}\n", a.version);
-    let _ = write!(sb, "State: {}\n", a.state);
+    let _ = writeln!(sb, "ID: {}", version.id);
+    let _ = writeln!(sb, "Version: {}", a.version);
+    let _ = writeln!(sb, "State: {}", a.state);
     if !a.fallback_url.is_empty() {
-        let _ = write!(sb, "Fallback URL: {}\n", a.fallback_url);
+        let _ = writeln!(sb, "Fallback URL: {}", a.fallback_url);
     }
     sb
 }
@@ -1126,11 +1126,11 @@ fn format_game_center_activity_localizations(localizations: &[GameCenterActivity
 
     for localization in localizations {
         let a = &localization.attributes;
-        let _ = write!(sb, "ID: {}\n", localization.id);
-        let _ = write!(sb, "Locale: {}\n", a.locale);
-        let _ = write!(sb, "Name: {}\n", a.name);
+        let _ = writeln!(sb, "ID: {}", localization.id);
+        let _ = writeln!(sb, "Locale: {}", a.locale);
+        let _ = writeln!(sb, "Name: {}", a.name);
         if !a.description.is_empty() {
-            let _ = write!(sb, "Description: {}\n", a.description);
+            let _ = writeln!(sb, "Description: {}", a.description);
         }
         sb.push_str("\n---\n");
     }

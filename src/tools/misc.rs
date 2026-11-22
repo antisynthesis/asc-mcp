@@ -912,7 +912,7 @@ fn go_truncate(s: &str, n: usize) -> String {
 /// Ported from `formatEndUserLicenseAgreement`.
 fn format_end_user_license_agreement(eula: &EndUserLicenseAgreement) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", eula.id);
+    let _ = writeln!(sb, "ID: {}", eula.id);
     let mut text = eula.attributes.agreement_text.clone();
     if text.len() > 500 {
         text = go_truncate(&text, 500);
@@ -941,9 +941,9 @@ fn format_app_categories(categories: &[AppCategory]) -> String {
 /// Ported from `formatAppCategory`.
 fn format_app_category(c: &AppCategory) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", c.id);
+    let _ = writeln!(sb, "ID: {}", c.id);
     if !c.attributes.platforms.is_empty() {
-        let _ = write!(sb, "Platforms: {}\n", c.attributes.platforms.join(", "));
+        let _ = writeln!(sb, "Platforms: {}", c.attributes.platforms.join(", "));
     }
     sb
 }
@@ -968,14 +968,14 @@ fn format_alternative_distribution_keys(keys: &[AlternativeDistributionKey]) -> 
 /// Ported from `formatAlternativeDistributionKey`.
 fn format_alternative_distribution_key(k: &AlternativeDistributionKey) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", k.id);
+    let _ = writeln!(sb, "ID: {}", k.id);
     if !k.attributes.public_key.is_empty() {
         // Show truncated public key
         let mut pk = k.attributes.public_key.clone();
         if pk.len() > 100 {
             pk = go_truncate(&pk, 100);
         }
-        let _ = write!(sb, "Public Key: {}\n", pk);
+        let _ = writeln!(sb, "Public Key: {}", pk);
     }
     sb
 }
@@ -983,7 +983,7 @@ fn format_alternative_distribution_key(k: &AlternativeDistributionKey) -> String
 /// Ported from `formatMarketplaceSearchDetail`.
 fn format_marketplace_search_detail(d: &MarketplaceSearchDetail) -> String {
     let mut sb = String::new();
-    let _ = write!(sb, "ID: {}\n", d.id);
-    let _ = write!(sb, "Catalog URL: {}\n", d.attributes.catalog_url);
+    let _ = writeln!(sb, "ID: {}", d.id);
+    let _ = writeln!(sb, "Catalog URL: {}", d.attributes.catalog_url);
     sb
 }
