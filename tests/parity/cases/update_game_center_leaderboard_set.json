@@ -1,0 +1,11 @@
+[
+  {
+    "name": "no-ref",
+    "args": {
+      "leaderboard_set_id": "s-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

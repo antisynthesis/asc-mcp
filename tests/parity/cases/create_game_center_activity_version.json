@@ -1,0 +1,13 @@
+[
+  {
+    "name": "no-fallback",
+    "args": {
+      "activity_id": "act-1"
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  }
+]

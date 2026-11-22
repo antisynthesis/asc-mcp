@@ -1,0 +1,15 @@
+[
+  {
+    "name": "limits",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "limit": 250,
+      "sort": [
+        "vendorIdentifier"
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

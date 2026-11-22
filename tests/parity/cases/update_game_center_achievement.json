@@ -1,0 +1,17 @@
+[
+  {
+    "name": "zeros",
+    "args": {
+      "achievement_id": "a-1",
+      "points": 0,
+      "show_before_earned": false,
+      "repeatable": false,
+      "archived": false
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  }
+]

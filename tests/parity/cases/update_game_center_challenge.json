@@ -1,0 +1,25 @@
+[
+  {
+    "name": "no-leaderboard",
+    "args": {
+      "challenge_id": "ch-1",
+      "repeatable": true
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  },
+  {
+    "name": "leaderboard",
+    "args": {
+      "challenge_id": "ch-1",
+      "leaderboard_id": "lb-9",
+      "archived": false
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

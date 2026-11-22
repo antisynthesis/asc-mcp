@@ -719,7 +719,22 @@ async fn handle_list_game_center_leaderboard_sets(c: Arc<Client>, args: Args) ->
         gc_list_params: GcListParams => "gcListParams", flatten;
     }
     }
-    todo!("port handleListGameCenterLeaderboardSets from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.game_center_detail_id.is_empty() {
+        return Ok(error_result("game_center_detail_id is required"));
+    }
+
+    let opts = params.gc_list_params.opts();
+    let resp = match paginated_fetch(&c, &params.gc_list_params.cursor, || c.list_game_center_leaderboard_sets(&params.game_center_detail_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list leaderboard sets: {e}"))),
+    };
+
+    Ok(list_result(&format_game_center_leaderboard_sets(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetGameCenterLeaderboardSet`.
@@ -729,7 +744,21 @@ async fn handle_get_game_center_leaderboard_set(c: Arc<Client>, args: Args) -> H
         leaderboard_set_id: String => "leaderboard_set_id";
     }
     }
-    todo!("port handleGetGameCenterLeaderboardSet from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.leaderboard_set_id.is_empty() {
+        return Ok(error_result("leaderboard_set_id is required"));
+    }
+
+    let resp = match c.get_game_center_leaderboard_set(&params.leaderboard_set_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get leaderboard set: {e}"))),
+    };
+
+    Ok(data_result(&format_game_center_leaderboard_set(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateGameCenterLeaderboardSet`.
@@ -742,7 +771,57 @@ async fn handle_create_game_center_leaderboard_set(c: Arc<Client>, args: Args) -
         vendor_identifier: String => "vendor_identifier";
     }
     }
-    todo!("port handleCreateGameCenterLeaderboardSet from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.reference_name.is_empty() {
+        return Ok(error_result("reference_name is required"));
+    }
+    if params.vendor_identifier.is_empty() {
+        return Ok(error_result("vendor_identifier is required"));
+    }
+    if params.game_center_detail_id.is_empty() == params.game_center_group_id.is_empty() {
+        return Ok(error_result("exactly one of game_center_detail_id or game_center_group_id is required"));
+    }
+
+    let mut rels = GameCenterLeaderboardSetCreateRelationships {
+        // The v2 API requires an initial leaderboard set version, created
+        // inline with a client-chosen temporary ID.
+        versions: RelationshipDataList {
+            data: GoSlice::from(vec![ResourceIdentifier { type_: "gameCenterLeaderboardSetVersions".into(), id: "${new-version}".into() }]),
+        },
+        ..Default::default()
+    };
+    if !params.game_center_detail_id.is_empty() {
+        rels.game_center_detail = Some(RelationshipData {
+            data: ResourceIdentifier { type_: "gameCenterDetails".into(), id: params.game_center_detail_id.clone() },
+        });
+    } else {
+        rels.game_center_group = Some(RelationshipData {
+            data: ResourceIdentifier { type_: "gameCenterGroups".into(), id: params.game_center_group_id.clone() },
+        });
+    }
+
+    let req = GameCenterLeaderboardSetCreateRequest {
+        data: GameCenterLeaderboardSetCreateData {
+            type_: "gameCenterLeaderboardSets".into(),
+            attributes: GameCenterLeaderboardSetCreateAttributes {
+                reference_name: params.reference_name.clone(),
+                vendor_identifier: params.vendor_identifier.clone(),
+            },
+            relationships: rels,
+        },
+        included: GoSlice::from(vec![GameCenterVersionInlineCreate { type_: "gameCenterLeaderboardSetVersions".into(), id: "${new-version}".into() }]),
+    };
+
+    let resp = match c.create_game_center_leaderboard_set(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create leaderboard set: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created leaderboard set: {} (ID: {})", resp.data.attributes.reference_name, resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateGameCenterLeaderboardSet`.
@@ -753,7 +832,32 @@ async fn handle_update_game_center_leaderboard_set(c: Arc<Client>, args: Args) -
         reference_name: String => "reference_name";
     }
     }
-    todo!("port handleUpdateGameCenterLeaderboardSet from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.leaderboard_set_id.is_empty() {
+        return Ok(error_result("leaderboard_set_id is required"));
+    }
+    if params.reference_name.is_empty() {
+        return Ok(error_result("reference_name is required"));
+    }
+
+    let req = GameCenterLeaderboardSetUpdateRequest {
+        data: GameCenterLeaderboardSetUpdateData {
+            type_: "gameCenterLeaderboardSets".into(),
+            id: params.leaderboard_set_id.clone(),
+            attributes: GameCenterLeaderboardSetUpdateAttributes { reference_name: params.reference_name.clone() },
+        },
+    };
+
+    let resp = match c.update_game_center_leaderboard_set(&params.leaderboard_set_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update leaderboard set: {e}"))),
+    };
+
+    Ok(data_result(&format!("Updated leaderboard set: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteGameCenterLeaderboardSet`.
@@ -763,7 +867,20 @@ async fn handle_delete_game_center_leaderboard_set(c: Arc<Client>, args: Args) -
         leaderboard_set_id: String => "leaderboard_set_id";
     }
     }
-    todo!("port handleDeleteGameCenterLeaderboardSet from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.leaderboard_set_id.is_empty() {
+        return Ok(error_result("leaderboard_set_id is required"));
+    }
+
+    if let Err(e) = c.delete_game_center_leaderboard_set(&params.leaderboard_set_id).await {
+        return Ok(error_result(format!("Failed to delete leaderboard set: {e}")));
+    }
+
+    Ok(CallToolResult::success("Leaderboard set deleted successfully"))
 }
 
 /// Ported from `Registry.handleListGameCenterLeaderboardSetMembers`.
@@ -774,17 +891,50 @@ async fn handle_list_game_center_leaderboard_set_members(c: Arc<Client>, args: A
         gc_list_params: GcListParams => "gcListParams", flatten;
     }
     }
-    todo!("port handleListGameCenterLeaderboardSetMembers from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.leaderboard_set_id.is_empty() {
+        return Ok(error_result("leaderboard_set_id is required"));
+    }
+
+    let opts = params.gc_list_params.opts();
+    let resp = match paginated_fetch(&c, &params.gc_list_params.cursor, || c.list_game_center_leaderboard_set_members(&params.leaderboard_set_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list leaderboard set members: {e}"))),
+    };
+
+    Ok(list_result(&super::gamecenter::format_game_center_leaderboards(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleAddGameCenterLeaderboardSetMembers`.
 async fn handle_add_game_center_leaderboard_set_members(c: Arc<Client>, args: Args) -> HandlerResult {
-    todo!("port handleAddGameCenterLeaderboardSetMembers from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let (set_id, ids) = match parse_leaderboard_set_membership(&args)? {
+        Ok(v) => v,
+        Err(err_result) => return Ok(err_result),
+    };
+
+    if let Err(e) = c.add_game_center_leaderboard_set_members(&set_id, &ids).await {
+        return Ok(error_result(format!("Failed to add leaderboard set members: {e}")));
+    }
+
+    Ok(CallToolResult::success(format!("Added {} leaderboard(s) to set {}", ids.data.len(), set_id)))
 }
 
 /// Ported from `Registry.handleRemoveGameCenterLeaderboardSetMembers`.
 async fn handle_remove_game_center_leaderboard_set_members(c: Arc<Client>, args: Args) -> HandlerResult {
-    todo!("port handleRemoveGameCenterLeaderboardSetMembers from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let (set_id, ids) = match parse_leaderboard_set_membership(&args)? {
+        Ok(v) => v,
+        Err(err_result) => return Ok(err_result),
+    };
+
+    if let Err(e) = c.remove_game_center_leaderboard_set_members(&set_id, &ids).await {
+        return Ok(error_result(format!("Failed to remove leaderboard set members: {e}")));
+    }
+
+    Ok(CallToolResult::success(format!("Removed {} leaderboard(s) from set {}", ids.data.len(), set_id)))
 }
 
 /// Ported from `Registry.handleListGameCenterLeaderboardSetVersions`.
@@ -795,7 +945,22 @@ async fn handle_list_game_center_leaderboard_set_versions(c: Arc<Client>, args: 
         gc_list_params: GcListParams => "gcListParams", flatten;
     }
     }
-    todo!("port handleListGameCenterLeaderboardSetVersions from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.leaderboard_set_id.is_empty() {
+        return Ok(error_result("leaderboard_set_id is required"));
+    }
+
+    let opts = params.gc_list_params.opts();
+    let resp = match paginated_fetch(&c, &params.gc_list_params.cursor, || c.list_game_center_leaderboard_set_versions(&params.leaderboard_set_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list leaderboard set versions: {e}"))),
+    };
+
+    Ok(list_result(&format_game_center_leaderboard_set_versions(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleGetGameCenterLeaderboardSetVersion`.
@@ -805,7 +970,21 @@ async fn handle_get_game_center_leaderboard_set_version(c: Arc<Client>, args: Ar
         version_id: String => "version_id";
     }
     }
-    todo!("port handleGetGameCenterLeaderboardSetVersion from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let resp = match c.get_game_center_leaderboard_set_version(&params.version_id).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to get leaderboard set version: {e}"))),
+    };
+
+    Ok(data_result(&format_game_center_leaderboard_set_version(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleCreateGameCenterLeaderboardSetVersion`.
@@ -815,7 +994,32 @@ async fn handle_create_game_center_leaderboard_set_version(c: Arc<Client>, args:
         leaderboard_set_id: String => "leaderboard_set_id";
     }
     }
-    todo!("port handleCreateGameCenterLeaderboardSetVersion from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.leaderboard_set_id.is_empty() {
+        return Ok(error_result("leaderboard_set_id is required"));
+    }
+
+    let req = GameCenterLeaderboardSetVersionCreateRequest {
+        data: GameCenterLeaderboardSetVersionCreateData {
+            type_: "gameCenterLeaderboardSetVersions".into(),
+            relationships: GameCenterLeaderboardSetVersionCreateRelationships {
+                leaderboard_set: RelationshipData {
+                    data: ResourceIdentifier { type_: "gameCenterLeaderboardSets".into(), id: params.leaderboard_set_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_game_center_leaderboard_set_version(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create leaderboard set version: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created leaderboard set version: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleListGameCenterLeaderboardSetLocalizations`.
@@ -826,7 +1030,22 @@ async fn handle_list_game_center_leaderboard_set_localizations(c: Arc<Client>, a
         gc_list_params: GcListParams => "gcListParams", flatten;
     }
     }
-    todo!("port handleListGameCenterLeaderboardSetLocalizations from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+
+    let opts = params.gc_list_params.opts();
+    let resp = match paginated_fetch(&c, &params.gc_list_params.cursor, || c.list_game_center_leaderboard_set_localizations(&params.version_id, opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list leaderboard set localizations: {e}"))),
+    };
+
+    Ok(list_result(&format_game_center_leaderboard_set_localizations(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleCreateGameCenterLeaderboardSetLocalization`.
@@ -838,7 +1057,42 @@ async fn handle_create_game_center_leaderboard_set_localization(c: Arc<Client>, 
         name: String => "name";
     }
     }
-    todo!("port handleCreateGameCenterLeaderboardSetLocalization from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.version_id.is_empty() {
+        return Ok(error_result("version_id is required"));
+    }
+    if params.locale.is_empty() {
+        return Ok(error_result("locale is required"));
+    }
+    if params.name.is_empty() {
+        return Ok(error_result("name is required"));
+    }
+
+    let req = GameCenterLeaderboardSetLocalizationCreateRequest {
+        data: GameCenterLeaderboardSetLocalizationCreateData {
+            type_: "gameCenterLeaderboardSetLocalizations".into(),
+            attributes: GameCenterLeaderboardSetLocalizationCreateAttributes {
+                locale: params.locale.clone(),
+                name: params.name.clone(),
+            },
+            relationships: GameCenterLeaderboardSetLocalizationCreateRelationships {
+                version: RelationshipData {
+                    data: ResourceIdentifier { type_: "gameCenterLeaderboardSetVersions".into(), id: params.version_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_game_center_leaderboard_set_localization(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create leaderboard set localization: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created leaderboard set localization {} for {}", resp.data.id, params.locale), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateGameCenterLeaderboardSetLocalization`.
@@ -849,7 +1103,32 @@ async fn handle_update_game_center_leaderboard_set_localization(c: Arc<Client>, 
         name: String => "name";
     }
     }
-    todo!("port handleUpdateGameCenterLeaderboardSetLocalization from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+    if params.name.is_empty() {
+        return Ok(error_result("name is required"));
+    }
+
+    let req = GameCenterLeaderboardSetLocalizationUpdateRequest {
+        data: GameCenterLeaderboardSetLocalizationUpdateData {
+            type_: "gameCenterLeaderboardSetLocalizations".into(),
+            id: params.localization_id.clone(),
+            attributes: GameCenterLeaderboardSetLocalizationUpdateAttributes { name: params.name.clone() },
+        },
+    };
+
+    let resp = match c.update_game_center_leaderboard_set_localization(&params.localization_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update leaderboard set localization: {e}"))),
+    };
+
+    Ok(data_result(&format!("Updated leaderboard set localization: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteGameCenterLeaderboardSetLocalization`.
@@ -859,7 +1138,20 @@ async fn handle_delete_game_center_leaderboard_set_localization(c: Arc<Client>, 
         localization_id: String => "localization_id";
     }
     }
-    todo!("port handleDeleteGameCenterLeaderboardSetLocalization from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+
+    if let Err(e) = c.delete_game_center_leaderboard_set_localization(&params.localization_id).await {
+        return Ok(error_result(format!("Failed to delete leaderboard set localization: {e}")));
+    }
+
+    Ok(CallToolResult::success("Leaderboard set localization deleted successfully"))
 }
 
 /// Ported from `Registry.handleUploadGameCenterLeaderboardSetImage`.
@@ -872,7 +1164,36 @@ async fn handle_upload_game_center_leaderboard_set_image(c: Arc<Client>, args: A
         file_data_base64: String => "file_data_base64";
     }
     }
-    todo!("port handleUploadGameCenterLeaderboardSetImage from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.localization_id.is_empty() {
+        return Ok(error_result("localization_id is required"));
+    }
+    if params.file_name.is_empty() {
+        return Ok(error_result("file_name is required"));
+    }
+
+    let body = match super::uploads::load_upload_body(&params.file_path, &params.file_data_base64) {
+        Ok(b) => b,
+        Err(e) => return Ok(error_result(e)),
+    };
+
+    let resp = match c.upload_game_center_leaderboard_set_image(&params.localization_id, &params.file_name, &body).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to upload leaderboard set image: {e}"))),
+    };
+
+    let text = format!(
+        "Uploaded leaderboard set image {} ({}, {} bytes) to localization {}.",
+        resp.data.id,
+        params.file_name,
+        body.len(),
+        params.localization_id
+    );
+    Ok(data_result(&text, &resp.data))
 }
 
 /// Ported from `Registry.handleListGameCenterLeaderboardSetMemberLocalizations`.
@@ -886,7 +1207,30 @@ async fn handle_list_game_center_leaderboard_set_member_localizations(c: Arc<Cli
         include: GoSlice<String> => "include";
     }
     }
-    todo!("port handleListGameCenterLeaderboardSetMemberLocalizations from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    // The collection endpoint is addressable only through both of its
+    // relationship filters; the API requires each one.
+    if params.leaderboard_set_id.is_empty() {
+        return Ok(error_result("leaderboard_set_id is required"));
+    }
+    if params.leaderboard_id.is_empty() {
+        return Ok(error_result("leaderboard_id is required"));
+    }
+    let mut filter: GoMap<GoSlice<String>> = GoMap::from_map(Default::default());
+    filter.insert("gameCenterLeaderboardSet", GoSlice::from(vec![params.leaderboard_set_id.clone()]));
+    filter.insert("gameCenterLeaderboard", GoSlice::from(vec![params.leaderboard_id.clone()]));
+
+    let opts = list_opts(super::gamecenter_content::gc_limit(params.limit), &filter, &GoSlice::nil(), &GoMap::nil(), &params.include);
+    let resp = match paginated_fetch(&c, &params.cursor, || c.list_game_center_leaderboard_set_member_localizations(opts.as_ref())).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to list member localizations: {e}"))),
+    };
+
+    Ok(list_result(&format_game_center_leaderboard_set_member_localizations(&resp.data), &resp.data, &resp.links))
 }
 
 /// Ported from `Registry.handleCreateGameCenterLeaderboardSetMemberLocalization`.
@@ -899,7 +1243,48 @@ async fn handle_create_game_center_leaderboard_set_member_localization(c: Arc<Cl
         name: String => "name";
     }
     }
-    todo!("port handleCreateGameCenterLeaderboardSetMemberLocalization from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.leaderboard_set_id.is_empty() {
+        return Ok(error_result("leaderboard_set_id is required"));
+    }
+    if params.leaderboard_id.is_empty() {
+        return Ok(error_result("leaderboard_id is required"));
+    }
+    if params.locale.is_empty() {
+        return Ok(error_result("locale is required"));
+    }
+    if params.name.is_empty() {
+        return Ok(error_result("name is required"));
+    }
+
+    let req = GameCenterLeaderboardSetMemberLocalizationCreateRequest {
+        data: GameCenterLeaderboardSetMemberLocalizationCreateData {
+            type_: "gameCenterLeaderboardSetMemberLocalizations".into(),
+            attributes: GameCenterLeaderboardSetMemberLocalizationCreateAttributes {
+                locale: params.locale.clone(),
+                name: params.name.clone(),
+            },
+            relationships: GameCenterLeaderboardSetMemberLocalizationCreateRelationships {
+                game_center_leaderboard_set: RelationshipData {
+                    data: ResourceIdentifier { type_: "gameCenterLeaderboardSets".into(), id: params.leaderboard_set_id.clone() },
+                },
+                game_center_leaderboard: RelationshipData {
+                    data: ResourceIdentifier { type_: "gameCenterLeaderboards".into(), id: params.leaderboard_id.clone() },
+                },
+            },
+        },
+    };
+
+    let resp = match c.create_game_center_leaderboard_set_member_localization(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to create member localization: {e}"))),
+    };
+
+    Ok(data_result(&format!("Created member localization {} for {}", resp.data.id, params.locale), &resp.data))
 }
 
 /// Ported from `Registry.handleUpdateGameCenterLeaderboardSetMemberLocalization`.
@@ -910,7 +1295,32 @@ async fn handle_update_game_center_leaderboard_set_member_localization(c: Arc<Cl
         name: String => "name";
     }
     }
-    todo!("port handleUpdateGameCenterLeaderboardSetMemberLocalization from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.member_localization_id.is_empty() {
+        return Ok(error_result("member_localization_id is required"));
+    }
+    if params.name.is_empty() {
+        return Ok(error_result("name is required"));
+    }
+
+    let req = GameCenterLeaderboardSetMemberLocalizationUpdateRequest {
+        data: GameCenterLeaderboardSetMemberLocalizationUpdateData {
+            type_: "gameCenterLeaderboardSetMemberLocalizations".into(),
+            id: params.member_localization_id.clone(),
+            attributes: GameCenterLeaderboardSetMemberLocalizationUpdateAttributes { name: params.name.clone() },
+        },
+    };
+
+    let resp = match c.update_game_center_leaderboard_set_member_localization(&params.member_localization_id, &req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to update member localization: {e}"))),
+    };
+
+    Ok(data_result(&format!("Updated member localization: {}", resp.data.id), &resp.data))
 }
 
 /// Ported from `Registry.handleDeleteGameCenterLeaderboardSetMemberLocalization`.
@@ -920,6 +1330,144 @@ async fn handle_delete_game_center_leaderboard_set_member_localization(c: Arc<Cl
         member_localization_id: String => "member_localization_id";
     }
     }
-    todo!("port handleDeleteGameCenterLeaderboardSetMemberLocalization from internal/asc/tools/gamecenter_leaderboard_sets.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.member_localization_id.is_empty() {
+        return Ok(error_result("member_localization_id is required"));
+    }
+
+    if let Err(e) = c.delete_game_center_leaderboard_set_member_localization(&params.member_localization_id).await {
+        return Ok(error_result(format!("Failed to delete member localization: {e}")));
+    }
+
+    Ok(CallToolResult::success("Member localization deleted successfully"))
 }
 
+/// Ported from `parseLeaderboardSetMembership`: decodes the arguments
+/// shared by the add and remove member tools into a linkages document.
+/// The inner `Err` carries the tool result when validation failed.
+fn parse_leaderboard_set_membership(args: &Args) -> Result<Result<(String, RelationshipDataList), CallToolResult>, String> {
+    go_struct! {
+    struct Params ("struct { LeaderboardSetID string \"json:\\\"leaderboard_set_id\\\"\"; LeaderboardIDs []string \"json:\\\"leaderboard_ids\\\"\" }", "") {
+        leaderboard_set_id: String => "leaderboard_set_id";
+        leaderboard_ids: GoSlice<String> => "leaderboard_ids";
+    }
+    }
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.leaderboard_set_id.is_empty() {
+        return Ok(Err(error_result("leaderboard_set_id is required")));
+    }
+    if params.leaderboard_ids.is_empty() {
+        return Ok(Err(error_result("leaderboard_ids is required")));
+    }
+
+    let mut linkages = RelationshipDataList { data: GoSlice::from(Vec::with_capacity(params.leaderboard_ids.len())) };
+    for id in params.leaderboard_ids.iter() {
+        if id.is_empty() {
+            continue;
+        }
+        linkages.data.push(ResourceIdentifier { type_: "gameCenterLeaderboards".into(), id: id.clone() });
+    }
+    if linkages.data.is_empty() {
+        return Ok(Err(error_result("leaderboard_ids is required")));
+    }
+
+    Ok(Ok((params.leaderboard_set_id, linkages)))
+}
+
+/// Ported from `formatGameCenterLeaderboardSets`.
+fn format_game_center_leaderboard_sets(sets: &[GameCenterLeaderboardSet]) -> String {
+    if sets.is_empty() {
+        return "No Game Center leaderboard sets found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} leaderboard sets:\n\n", sets.len());
+
+    for set in sets {
+        sb.push_str(&format_game_center_leaderboard_set(set));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatGameCenterLeaderboardSet`.
+fn format_game_center_leaderboard_set(set: &GameCenterLeaderboardSet) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", set.id);
+    let _ = write!(sb, "Reference Name: {}\n", set.attributes.reference_name);
+    let _ = write!(sb, "Vendor ID: {}\n", set.attributes.vendor_identifier);
+    sb
+}
+
+/// Ported from `formatGameCenterLeaderboardSetVersions`.
+fn format_game_center_leaderboard_set_versions(versions: &[GameCenterLeaderboardSetVersion]) -> String {
+    if versions.is_empty() {
+        return "No Game Center leaderboard set versions found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} leaderboard set versions:\n\n", versions.len());
+
+    for version in versions {
+        sb.push_str(&format_game_center_leaderboard_set_version(version));
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatGameCenterLeaderboardSetVersion`.
+fn format_game_center_leaderboard_set_version(version: &GameCenterLeaderboardSetVersion) -> String {
+    let mut sb = String::new();
+    let _ = write!(sb, "ID: {}\n", version.id);
+    let _ = write!(sb, "Version: {}\n", version.attributes.version);
+    let _ = write!(sb, "State: {}\n", version.attributes.state);
+    sb
+}
+
+/// Ported from `formatGameCenterLeaderboardSetLocalizations`.
+fn format_game_center_leaderboard_set_localizations(localizations: &[GameCenterLeaderboardSetLocalization]) -> String {
+    if localizations.is_empty() {
+        return "No Game Center leaderboard set localizations found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} leaderboard set localizations:\n\n", localizations.len());
+
+    for localization in localizations {
+        let _ = write!(sb, "ID: {}\n", localization.id);
+        let _ = write!(sb, "Locale: {}\n", localization.attributes.locale);
+        let _ = write!(sb, "Name: {}\n", localization.attributes.name);
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}
+
+/// Ported from `formatGameCenterLeaderboardSetMemberLocalizations`.
+fn format_game_center_leaderboard_set_member_localizations(localizations: &[GameCenterLeaderboardSetMemberLocalization]) -> String {
+    if localizations.is_empty() {
+        return "No Game Center leaderboard set member localizations found".into();
+    }
+
+    let mut sb = String::new();
+    let _ = write!(sb, "Found {} member localizations:\n\n", localizations.len());
+
+    for localization in localizations {
+        let _ = write!(sb, "ID: {}\n", localization.id);
+        let _ = write!(sb, "Locale: {}\n", localization.attributes.locale);
+        let _ = write!(sb, "Name: {}\n", localization.attributes.name);
+        sb.push_str("\n---\n");
+    }
+
+    sb
+}

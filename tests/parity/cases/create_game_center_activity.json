@@ -1,0 +1,63 @@
+[
+  {
+    "name": "detail-fallback",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v",
+      "fallback_url": "https://example.com/f",
+      "play_style": "SYNCHRONOUS",
+      "minimum_players_count": 2,
+      "maximum_players_count": 8,
+      "supports_party_code": false,
+      "properties": {
+        "a": "1",
+        "b": "2"
+      }
+    }
+  },
+  {
+    "name": "group-only",
+    "args": {
+      "game_center_group_id": "grp-1",
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v"
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  },
+  {
+    "name": "neither",
+    "args": {
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-vendor",
+    "args": {
+      "reference_name": "Ref"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "empty-props",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v",
+      "properties": {}
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

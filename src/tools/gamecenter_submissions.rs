@@ -140,7 +140,48 @@ async fn handle_submit_game_center_player_achievement(c: Arc<Client>, args: Args
         pre_released: Option<bool> => "pre_released";
     }
     }
-    todo!("port handleSubmitGameCenterPlayerAchievement from internal/asc/tools/gamecenter_submissions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.bundle_id.is_empty() {
+        return Ok(error_result("bundle_id is required"));
+    }
+    if params.vendor_identifier.is_empty() {
+        return Ok(error_result("vendor_identifier is required"));
+    }
+    if params.scoped_player_id.is_empty() {
+        return Ok(error_result("scoped_player_id is required"));
+    }
+    let Some(percentage_achieved) = params.percentage_achieved else {
+        return Ok(error_result("percentage_achieved is required"));
+    };
+    if !(0..=100).contains(&percentage_achieved) {
+        return Ok(error_result("percentage_achieved must be between 0 and 100"));
+    }
+
+    let req = GameCenterPlayerAchievementSubmissionCreateRequest {
+        data: GameCenterPlayerAchievementSubmissionCreateData {
+            type_: "gameCenterPlayerAchievementSubmissions".into(),
+            attributes: GameCenterPlayerAchievementSubmissionCreateAttributes {
+                bundle_id: params.bundle_id.clone(),
+                vendor_identifier: params.vendor_identifier.clone(),
+                scoped_player_id: params.scoped_player_id.clone(),
+                percentage_achieved,
+                challenge_ids: params.challenge_ids.clone(),
+                submitted_date: params.submitted_date.clone(),
+                pre_released: params.pre_released,
+            },
+        },
+    };
+
+    let resp = match c.create_game_center_player_achievement_submission(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to submit player achievement: {e}"))),
+    };
+
+    Ok(data_result(&format_game_center_player_achievement_submission(&resp.data), &resp.data))
 }
 
 /// Ported from `Registry.handleSubmitGameCenterLeaderboardEntry`.
@@ -157,6 +198,83 @@ async fn handle_submit_game_center_leaderboard_entry(c: Arc<Client>, args: Args)
         pre_released: Option<bool> => "pre_released";
     }
     }
-    todo!("port handleSubmitGameCenterLeaderboardEntry from internal/asc/tools/gamecenter_submissions.go")
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Err(format!("invalid arguments: {e}"));
+    }
+
+    if params.bundle_id.is_empty() {
+        return Ok(error_result("bundle_id is required"));
+    }
+    if params.vendor_identifier.is_empty() {
+        return Ok(error_result("vendor_identifier is required"));
+    }
+    if params.scoped_player_id.is_empty() {
+        return Ok(error_result("scoped_player_id is required"));
+    }
+    if params.score.is_empty() {
+        return Ok(error_result("score is required"));
+    }
+
+    let req = GameCenterLeaderboardEntrySubmissionCreateRequest {
+        data: GameCenterLeaderboardEntrySubmissionCreateData {
+            type_: "gameCenterLeaderboardEntrySubmissions".into(),
+            attributes: GameCenterLeaderboardEntrySubmissionCreateAttributes {
+                bundle_id: params.bundle_id.clone(),
+                vendor_identifier: params.vendor_identifier.clone(),
+                scoped_player_id: params.scoped_player_id.clone(),
+                score: params.score.clone(),
+                context: params.context.clone(),
+                challenge_ids: params.challenge_ids.clone(),
+                submitted_date: params.submitted_date.clone(),
+                pre_released: params.pre_released,
+            },
+        },
+    };
+
+    let resp = match c.create_game_center_leaderboard_entry_submission(&req).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to submit leaderboard entry: {e}"))),
+    };
+
+    Ok(data_result(&format_game_center_leaderboard_entry_submission(&resp.data), &resp.data))
 }
 
+/// Ported from `formatGameCenterPlayerAchievementSubmission`.
+fn format_game_center_player_achievement_submission(submission: &GameCenterPlayerAchievementSubmission) -> String {
+    let a = &submission.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "Submitted achievement progress (ID: {})\n", submission.id);
+    let _ = write!(sb, "Vendor ID: {}\n", a.vendor_identifier);
+    let _ = write!(sb, "Player: {}\n", a.scoped_player_id);
+    let _ = write!(sb, "Percentage Achieved: {}\n", a.percentage_achieved);
+    let _ = write!(sb, "Pre-Released: {}\n", a.pre_released);
+    if !a.submitted_date.is_empty() {
+        let _ = write!(sb, "Submitted: {}\n", a.submitted_date);
+    }
+    if !a.challenge_ids.is_empty() {
+        let _ = write!(sb, "Challenges: {}\n", a.challenge_ids.join(", "));
+    }
+    sb
+}
+
+/// Ported from `formatGameCenterLeaderboardEntrySubmission`.
+fn format_game_center_leaderboard_entry_submission(submission: &GameCenterLeaderboardEntrySubmission) -> String {
+    let a = &submission.attributes;
+    let mut sb = String::new();
+    let _ = write!(sb, "Submitted leaderboard entry (ID: {})\n", submission.id);
+    let _ = write!(sb, "Vendor ID: {}\n", a.vendor_identifier);
+    let _ = write!(sb, "Player: {}\n", a.scoped_player_id);
+    let _ = write!(sb, "Score: {}\n", a.score);
+    if !a.context.is_empty() {
+        let _ = write!(sb, "Context: {}\n", a.context);
+    }
+    let _ = write!(sb, "Pre-Released: {}\n", a.pre_released);
+    if !a.submitted_date.is_empty() {
+        let _ = write!(sb, "Submitted: {}\n", a.submitted_date);
+    }
+    if !a.challenge_ids.is_empty() {
+        let _ = write!(sb, "Challenges: {}\n", a.challenge_ids.join(", "));
+    }
+    sb
+}
