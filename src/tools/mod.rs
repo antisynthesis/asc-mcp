@@ -77,8 +77,19 @@ impl Registry {
             return Err(CallError::Failed("no App Store Connect client configured".into()));
         };
         // Run on its own task so a panicking handler is reported as a tool
-        // error instead of tearing down the connection.
-        match tokio::spawn(handler(client, args)).await {
+        // error instead of tearing down the connection. The task is
+        // aborted if this future is dropped (client cancellation, a closed
+        // HTTP connection, or the tool-call timeout), mirroring Go's
+        // context cancellation: the handler must not keep running, and
+        // keep calling the API, after nobody is waiting for it.
+        struct AbortOnDrop(tokio::task::JoinHandle<HandlerResult>);
+        impl Drop for AbortOnDrop {
+            fn drop(&mut self) {
+                self.0.abort();
+            }
+        }
+        let mut task = AbortOnDrop(tokio::spawn(handler(client, args)));
+        match (&mut task.0).await {
             Ok(r) => r.map_err(CallError::Failed),
             Err(e) if e.is_panic() => Err(CallError::Failed("internal error: tool handler panicked".into())),
             Err(_) => Err(CallError::Failed("context canceled".into())),

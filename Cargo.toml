@@ -27,6 +27,7 @@ axum-server = { version = "0.7", features = ["tls-rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 tower = "0.5"
 hyper = "1"
+hyper-util = { version = "0.1", features = ["tokio"] }
 clap = { version = "4", features = ["derive", "env"] }
 prometheus = { version = "0.14", features = ["process"] }
 p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }

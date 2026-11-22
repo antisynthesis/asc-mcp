@@ -23,6 +23,9 @@ use axum::response::{IntoResponse, Response as AxResponse};
 use axum::routing::any;
 use axum::Router;
 use base64::Engine;
+// hyper panics on the first connection if a header read timeout is set
+// without a timer.
+use hyper_util::rt::TokioTimer;
 use sha2::{Digest, Sha256};
 use subtle::ConstantTimeEq;
 
@@ -157,11 +160,11 @@ impl HttpServer {
                 .await
                 .map_err(|e| format!("tls config: {e}"))?;
             let mut srv = axum_server::bind_rustls(addr, cfg).handle(handle);
-            srv.http_builder().http1().header_read_timeout(Duration::from_secs(10));
+            srv.http_builder().http1().timer(TokioTimer::new()).header_read_timeout(Duration::from_secs(10));
             srv.serve(app).await
         } else {
             let mut srv = axum_server::bind(addr).handle(handle);
-            srv.http_builder().http1().header_read_timeout(Duration::from_secs(10));
+            srv.http_builder().http1().timer(TokioTimer::new()).header_read_timeout(Duration::from_secs(10));
             srv.serve(app).await
         };
         result.map_err(|e| e.to_string())
@@ -330,7 +333,7 @@ fn check_auth(inner: &Inner, h: &HeaderMap) -> bool {
 
 async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
     let headers = req.headers().clone();
-    let body = match axum::body::to_bytes(req.into_body(), MAX_HTTP_BODY_SIZE + 1).await {
+    let body = match read_body_limited(req.into_body(), MAX_HTTP_BODY_SIZE + 1).await {
         Ok(b) => b,
         Err(_) => return http_error(StatusCode::BAD_REQUEST, "failed to read request body"),
     };
@@ -393,6 +396,26 @@ async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
     }
     r.headers_mut().insert(PROTOCOL_VERSION_HEADER, HeaderValue::from_static(mcp::PROTOCOL_VERSION));
     r
+}
+
+/// Go `io.ReadAll(io.LimitReader(body, limit))`: reads at most `limit`
+/// bytes and stops there, so an oversized body is truncated (and then
+/// rejected with 413 by the caller) instead of failing as a read error.
+/// (`axum::body::to_bytes` errors once the limit is exceeded, which turned
+/// oversized bodies into 400s.)
+async fn read_body_limited(body: Body, limit: usize) -> Result<Vec<u8>, axum::Error> {
+    use futures::StreamExt;
+    let mut stream = body.into_data_stream();
+    let mut out = Vec::new();
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk?;
+        let take = chunk.len().min(limit - out.len());
+        out.extend_from_slice(&chunk[..take]);
+        if out.len() >= limit {
+            break;
+        }
+    }
+    Ok(out)
 }
 
 /// Decodes the `=?base64?...?=` sentinel permitted on `Mcp-Name` and

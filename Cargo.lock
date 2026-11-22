@@ -79,6 +79,7 @@ dependencies = [
  "futures",
  "hex",
  "hyper",
+ "hyper-util",
  "libc",
  "p256",
  "prometheus",
