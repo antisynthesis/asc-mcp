@@ -23,6 +23,14 @@ from the commit history. Hand-maintained notes live under
   reference build reconstructed from git history. It runs only on manual CI dispatch and will be removed with the
   handshake revisions.
 
+### Security
+- Over HTTP, `file_path` upload arguments are refused unless
+  `--upload-dir` is set; then only files inside that directory are
+  accepted, with symlinks resolved first. Previously any HTTP caller could
+  upload any file readable by the server process.
+- Deprecated handshake-era HTTP sessions are bound to the subject that
+  created them; other callers can neither use nor delete them.
+
 ### Fixed
 - MCP 2026-07-28 conformance:
   - `server/discover` rejects an explicitly unsupported `_meta` protocol
@@ -43,6 +51,26 @@ from the commit history. Hand-maintained notes live under
   - stops a tool call's API work when the client cancels or disconnects.
 
 ### Added
+- Multi-user HTTP deployments for agent platforms:
+  - **OAuth 2.1 resource server** (`--oauth-issuer`, `--oauth-audience`,
+    `--oauth-jwks-url`):
+    - RFC 9728 Protected Resource Metadata, with
+      `WWW-Authenticate` discovery challenges;
+    - JWT access tokens validated against the issuer's JWKS (issuer,
+      audience, expiry, not-before; asymmetric algorithms only);
+    - `asc:read` / `asc:write` scopes enforced per tool, with
+      `insufficient_scope` step-up challenges.
+  - **Per-request App Store Connect credentials**
+    (`--asc-credentials request`):
+    - callers send `X-ASC-Issuer-ID`, `X-ASC-Key-ID` and
+      `X-ASC-Private-Key`;
+    - the server mints and caches a token per key and holds no App Store
+      Connect secrets of its own.
+  - **Per-caller concurrency limit** (`--max-concurrent-per-caller`,
+    default 8): excess requests get 429 with `Retry-After`.
+  - **Configurable limits:** `--tool-timeout` and `--max-body-bytes`.
+  - **Audit logging:** request and tool-call logs carry the caller's
+    subject, client ID, request ID and W3C trace ID.
 - MCP 2026-07-28 protocol support alongside the existing handshake era.
   Modern clients carry their protocol version and capabilities in
   per-request `_meta`, discover the server through the new mandatory

@@ -507,13 +507,11 @@ fn format_build_upload(upload: &BuildUpload) -> String {
     if let Some(d) = &a.uploaded_date {
         let _ = writeln!(sb, "Uploaded: {}", d.format("2006-01-02 15:04:05"));
     }
-    if let Some(rel) = &upload.relationships {
-        if let Some(build) = &rel.build {
-            if !build.data.id.is_empty() {
+    if let Some(rel) = &upload.relationships
+        && let Some(build) = &rel.build
+            && !build.data.id.is_empty() {
                 let _ = writeln!(sb, "Build ID: {}", build.data.id);
             }
-        }
-    }
     sb
 }
 
@@ -536,11 +534,10 @@ fn format_build_upload_files(files: &[BuildUploadFile]) -> String {
         if !a.uti.is_empty() {
             let _ = writeln!(sb, "UTI: {}", a.uti);
         }
-        if let Some(ds) = &a.asset_delivery_state {
-            if !ds.state.is_empty() {
+        if let Some(ds) = &a.asset_delivery_state
+            && !ds.state.is_empty() {
                 let _ = writeln!(sb, "Delivery State: {}", ds.state);
             }
-        }
         sb.push_str("\n---\n");
     }
     sb

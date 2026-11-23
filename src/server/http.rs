@@ -31,6 +31,9 @@ use subtle::ConstantTimeEq;
 
 use super::dispatch::{Dispatcher, Outcome, Session, is_modern};
 use super::metrics::Metrics;
+use super::oauth::Verifier;
+use crate::api::Client;
+use crate::context::{Caller, RequestContext, UploadPolicy, trace_id_from_traceparent};
 use crate::logging;
 use crate::mcp::{self, Request, RequestMeta, Response};
 use crate::tools::Registry;
@@ -43,26 +46,92 @@ pub const PROTOCOL_VERSION_HEADER: &str = "MCP-Protocol-Version";
 pub const METHOD_HEADER: &str = "Mcp-Method";
 /// Mirrors `params.name` on modern `tools/call` requests.
 pub const NAME_HEADER: &str = "Mcp-Name";
-/// Largest accepted request body.
+/// Default largest accepted request body.
 pub const MAX_HTTP_BODY_SIZE: usize = 4 * 1024 * 1024;
+/// Header carrying the caller's App Store Connect issuer ID.
+pub const ASC_ISSUER_HEADER: &str = "X-ASC-Issuer-ID";
+/// Header carrying the caller's App Store Connect key ID.
+pub const ASC_KEY_ID_HEADER: &str = "X-ASC-Key-ID";
+/// Header carrying the caller's `.p8` private key, base64-encoded.
+pub const ASC_PRIVATE_KEY_HEADER: &str = "X-ASC-Private-Key";
+/// Most per-caller API clients kept in the pool.
+pub const MAX_POOLED_CLIENTS: usize = 1024;
+/// Idle time after which a pooled per-caller client is dropped.
+pub const POOLED_CLIENT_IDLE: Duration = Duration::from_secs(30 * 60);
 /// Idle time after which a legacy session is discarded.
 pub const SESSION_IDLE_TIMEOUT: Duration = Duration::from_secs(30 * 60);
 
+/// Where App Store Connect credentials come from.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum CredentialsMode {
+    /// The server's own credentials (`ASC_*` environment variables).
+    #[default]
+    Server,
+    /// Each request supplies its caller's credentials in the
+    /// `X-ASC-Issuer-ID`, `X-ASC-Key-ID` and `X-ASC-Private-Key` headers.
+    Request,
+}
+
 /// Transport options.
-#[derive(Debug, Clone, Default)]
+#[derive(Clone)]
 pub struct HttpOptions {
     /// Extra allowed `Origin` values. Loopback origins and the server's own
     /// origin are always allowed; requests without `Origin` are allowed.
     pub allowed_origins: Vec<String>,
-    /// Accepted Bearer tokens; empty leaves `/mcp` open.
+    /// Accepted static Bearer tokens. Mutually exclusive with `oauth`.
     pub auth_tokens: Vec<String>,
+    /// OAuth 2.1 access-token verification.
+    pub oauth: Option<Arc<Verifier>>,
+    /// Where App Store Connect credentials come from.
+    pub credentials: CredentialsMode,
+    /// Concurrent requests allowed per caller (0 = unlimited).
+    pub max_concurrent_per_caller: usize,
+    /// Largest accepted request body, in bytes.
+    pub max_body_bytes: usize,
+    /// Restrictions on `file_path` upload arguments.
+    pub uploads: UploadPolicy,
+    /// Upper bound on one tool call.
+    pub tool_timeout: Duration,
+}
+
+impl Default for HttpOptions {
+    fn default() -> Self {
+        Self {
+            allowed_origins: Vec::new(),
+            auth_tokens: Vec::new(),
+            oauth: None,
+            credentials: CredentialsMode::Server,
+            max_concurrent_per_caller: 0,
+            max_body_bytes: MAX_HTTP_BODY_SIZE,
+            uploads: UploadPolicy::Disabled,
+            tool_timeout: super::dispatch::TOOL_CALL_TIMEOUT,
+        }
+    }
+}
+
+/// Per-caller clients keyed by a digest of their key material, with the
+/// time each was last used.
+type ClientPool = HashMap<[u8; 32], (Arc<Client>, Instant)>;
+
+struct SessionEntry {
+    sess: Arc<Session>,
+    /// The subject that created the session; only it may use it.
+    owner: Option<String>,
 }
 
 struct Inner {
     dispatcher: Dispatcher,
-    sessions: Mutex<HashMap<String, Arc<Session>>>,
+    sessions: Mutex<HashMap<String, SessionEntry>>,
     allowed_origins: Vec<String>,
     auth_tokens: Vec<[u8; 32]>,
+    oauth: Option<Arc<Verifier>>,
+    credentials: CredentialsMode,
+    max_concurrent_per_caller: usize,
+    max_body_bytes: usize,
+    uploads: UploadPolicy,
+    http: reqwest::Client,
+    clients: Mutex<ClientPool>,
+    slots: Mutex<HashMap<String, Arc<tokio::sync::Semaphore>>>,
     metrics: Arc<Metrics>,
 }
 
@@ -84,7 +153,9 @@ impl HttpServer {
             .map(|t| Sha256::digest(t.as_bytes()).into())
             .collect();
         let inner = Inner {
-            dispatcher: Dispatcher::new(registry).with_metrics(metrics.clone()),
+            dispatcher: Dispatcher::new(registry)
+                .with_metrics(metrics.clone())
+                .with_tool_timeout(opts.tool_timeout),
             sessions: Mutex::new(HashMap::new()),
             allowed_origins: opts
                 .allowed_origins
@@ -92,6 +163,14 @@ impl HttpServer {
                 .map(|o| o.to_ascii_lowercase())
                 .collect(),
             auth_tokens: tokens,
+            oauth: opts.oauth,
+            credentials: opts.credentials,
+            max_concurrent_per_caller: opts.max_concurrent_per_caller,
+            max_body_bytes: opts.max_body_bytes,
+            uploads: opts.uploads,
+            http: crate::api::client::new_http_client(),
+            clients: Mutex::new(HashMap::new()),
+            slots: Mutex::new(HashMap::new()),
             metrics,
         };
         Self {
@@ -113,9 +192,24 @@ impl HttpServer {
             .len()
     }
 
-    /// The router: `/mcp`, `/healthz`, `/metrics`.
+    /// The router: `/mcp`, `/healthz`, `/metrics`, and Protected Resource
+    /// Metadata when OAuth is configured.
     pub fn router(&self) -> Router {
-        Router::new()
+        let mut router = Router::new();
+        if let Some(v) = &self.inner.oauth {
+            let doc = v.config().metadata_document();
+            for path in v.config().metadata_paths() {
+                let doc = doc.clone();
+                router = router.route(
+                    &path,
+                    axum::routing::get(move || {
+                        let doc = doc.clone();
+                        async move { axum::Json(doc) }
+                    }),
+                );
+            }
+        }
+        router
             .route("/mcp", any(handle_mcp))
             .route("/healthz", any(|| async { "ok" }))
             .route("/metrics", any(handle_metrics))
@@ -138,7 +232,7 @@ impl HttpServer {
             .lock()
             .unwrap_or_else(|e| e.into_inner());
         let before = sessions.len();
-        sessions.retain(|_, s| now.duration_since(s.last_active()) < max_idle);
+        sessions.retain(|_, s| now.duration_since(s.sess.last_active()) < max_idle);
         let reaped = before - sessions.len();
         if reaped > 0 {
             self.inner.metrics.sessions_reaped.inc_by(reaped as f64);
@@ -148,6 +242,23 @@ impl HttpServer {
                 .set(sessions.len() as f64);
         }
         reaped
+    }
+
+    /// Drops pooled per-caller clients idle longer than `max_idle` and
+    /// per-caller concurrency slots that are not in use.
+    pub fn prune_caller_state(&self, max_idle: Duration) {
+        let now = Instant::now();
+        self.inner
+            .clients
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .retain(|_, (_, used)| now.duration_since(*used) < max_idle);
+        let max = self.inner.max_concurrent_per_caller;
+        self.inner
+            .slots
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .retain(|_, sem| sem.available_permits() < max);
     }
 
     /// Serves on `addr` until `shutdown` resolves. TLS (1.2+) is used when
@@ -168,6 +279,7 @@ impl HttpServer {
             loop {
                 t.tick().await;
                 reaper.reap_idle(SESSION_IDLE_TIMEOUT);
+                reaper.prune_caller_state(POOLED_CLIENT_IDLE);
             }
         });
         let handle = axum_server::Handle::new();
@@ -271,6 +383,14 @@ fn new_hex_id(bytes: usize) -> String {
     hex::encode(b)
 }
 
+/// Identity and tracing details recorded in the access log.
+#[derive(Default)]
+struct LogInfo {
+    subject: String,
+    client_id: String,
+    trace_id: String,
+}
+
 /// Logging and metrics around the MCP endpoint.
 async fn handle_mcp(State(srv): State<HttpServer>, req: AxRequest) -> AxResponse {
     let start = Instant::now();
@@ -283,7 +403,8 @@ async fn handle_mcp(State(srv): State<HttpServer>, req: AxRequest) -> AxResponse
         .get::<ConnectInfo<SocketAddr>>()
         .map(|c| c.0.to_string())
         .unwrap_or_default();
-    let resp = serve_mcp(&srv, req).await;
+    let mut info = LogInfo::default();
+    let resp = serve_mcp(&srv, req, &request_id, &mut info).await;
     let elapsed = start.elapsed();
     let status = resp.status().as_u16();
     let m = &srv.inner.metrics;
@@ -303,6 +424,9 @@ async fn handle_mcp(State(srv): State<HttpServer>, req: AxRequest) -> AxResponse
             ("status", status.into()),
             ("duration", elapsed.into()),
             ("remote", remote.into()),
+            ("subject", info.subject.into()),
+            ("client_id", info.client_id.into()),
+            ("trace_id", info.trace_id.into()),
         ],
     );
     resp
@@ -312,22 +436,34 @@ fn header_str<'a>(h: &'a HeaderMap, name: &str) -> &'a str {
     h.get(name).and_then(|v| v.to_str().ok()).unwrap_or("")
 }
 
-async fn serve_mcp(srv: &HttpServer, req: AxRequest) -> AxResponse {
+async fn serve_mcp(
+    srv: &HttpServer,
+    req: AxRequest,
+    request_id: &str,
+    info: &mut LogInfo,
+) -> AxResponse {
     if !check_origin(&srv.inner, req.headers()) {
         return http_error(StatusCode::FORBIDDEN, "origin not allowed");
     }
-    if !check_auth(&srv.inner, req.headers()) {
-        srv.inner.metrics.auth_failures.inc();
-        let mut r = http_error(StatusCode::UNAUTHORIZED, "unauthorized");
-        r.headers_mut().insert(
-            header::WWW_AUTHENTICATE,
-            HeaderValue::from_static("Bearer realm=\"asc-mcp\""),
-        );
-        return r;
-    }
+    let caller = match authenticate(&srv.inner, req.headers()).await {
+        Ok(c) => c,
+        Err(resp) => {
+            srv.inner.metrics.auth_failures.inc();
+            return *resp;
+        }
+    };
+    info.subject = caller.subject.clone().unwrap_or_default();
+    info.client_id = caller.client_id.clone().unwrap_or_default();
     match *req.method() {
-        Method::POST => handle_post(srv, req).await,
-        Method::DELETE => handle_delete(srv, req.headers()),
+        Method::POST => {
+            // Per-caller concurrency limit: one agent cannot starve others.
+            let _permit = match acquire_slot(&srv.inner, &caller) {
+                Ok(p) => p,
+                Err(resp) => return *resp,
+            };
+            handle_post(srv, req, caller, request_id, info).await
+        }
+        Method::DELETE => handle_delete(srv, req.headers(), &caller),
         Method::OPTIONS => {
             let mut r = StatusCode::NO_CONTENT.into_response();
             r.headers_mut().insert(
@@ -386,29 +522,245 @@ fn check_origin(inner: &Inner, h: &HeaderMap) -> bool {
     matches!(hostname.as_str(), "localhost" | "127.0.0.1" | "[::1]")
 }
 
-/// Bearer-token check: SHA-256 digests compared in constant time.
-fn check_auth(inner: &Inner, h: &HeaderMap) -> bool {
-    if inner.auth_tokens.is_empty() {
-        return true;
+/// Formats a `WWW-Authenticate: Bearer ...` challenge.
+fn bearer_challenge(params: &[(&str, &str)]) -> HeaderValue {
+    let parts: Vec<String> = params
+        .iter()
+        .map(|(k, v)| format!("{k}=\"{}\"", v.replace(['"', '\\'], "")))
+        .collect();
+    HeaderValue::from_str(&format!("Bearer {}", parts.join(", ")))
+        .unwrap_or_else(|_| HeaderValue::from_static("Bearer"))
+}
+
+fn challenge_response(status: StatusCode, msg: &str, challenge: HeaderValue) -> Box<AxResponse> {
+    let mut r = http_error(status, msg);
+    r.headers_mut().insert(header::WWW_AUTHENTICATE, challenge);
+    Box::new(r)
+}
+
+/// Authenticates the request: an OAuth access token when OAuth is
+/// configured, a static Bearer token when tokens are configured, otherwise
+/// anonymous. Failures are ready-to-send 401 responses.
+async fn authenticate(inner: &Inner, h: &HeaderMap) -> Result<Caller, Box<AxResponse>> {
+    let bearer = header_str(h, "Authorization")
+        .strip_prefix("Bearer ")
+        .map(str::trim);
+    if let Some(v) = &inner.oauth {
+        let cfg = v.config();
+        let metadata = cfg.metadata_url();
+        let Some(token) = bearer.filter(|t| !t.is_empty()) else {
+            return Err(challenge_response(
+                StatusCode::UNAUTHORIZED,
+                "unauthorized",
+                bearer_challenge(&[("resource_metadata", &metadata), ("scope", &cfg.read_scope)]),
+            ));
+        };
+        return v.verify(token).await.map_err(|e| {
+            challenge_response(
+                StatusCode::UNAUTHORIZED,
+                "unauthorized",
+                bearer_challenge(&[
+                    ("error", "invalid_token"),
+                    ("error_description", &e.0),
+                    ("resource_metadata", &metadata),
+                ]),
+            )
+        });
     }
-    let Some(tok) = header_str(h, "Authorization").strip_prefix("Bearer ") else {
-        return false;
+    if inner.auth_tokens.is_empty() {
+        return Ok(Caller::default());
+    }
+    let unauthorized = || {
+        challenge_response(
+            StatusCode::UNAUTHORIZED,
+            "unauthorized",
+            HeaderValue::from_static("Bearer realm=\"asc-mcp\""),
+        )
     };
-    let presented: [u8; 32] = Sha256::digest(tok.trim().as_bytes()).into();
+    let tok = bearer.ok_or_else(unauthorized)?;
+    // SHA-256 digests compared in constant time.
+    let presented: [u8; 32] = Sha256::digest(tok.as_bytes()).into();
     let mut ok = subtle::Choice::from(0);
     for d in &inner.auth_tokens {
         ok |= presented.ct_eq(d);
     }
-    ok.into()
+    if !bool::from(ok) {
+        return Err(unauthorized());
+    }
+    // Static tokens identify a caller by a fingerprint, never the secret.
+    Ok(Caller {
+        subject: Some(format!("token:{}", &hex::encode(presented)[..12])),
+        ..Default::default()
+    })
 }
 
-async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
+/// Takes one of the caller's concurrency slots, or answers 429.
+fn acquire_slot(
+    inner: &Inner,
+    caller: &Caller,
+) -> Result<Option<tokio::sync::OwnedSemaphorePermit>, Box<AxResponse>> {
+    let max = inner.max_concurrent_per_caller;
+    if max == 0 {
+        return Ok(None);
+    }
+    let key = caller.subject.clone().unwrap_or_default();
+    let sem = inner
+        .slots
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .entry(key)
+        .or_insert_with(|| Arc::new(tokio::sync::Semaphore::new(max)))
+        .clone();
+    sem.try_acquire_owned().map(Some).map_err(|_| {
+        let mut r = http_error(
+            StatusCode::TOO_MANY_REQUESTS,
+            "too many concurrent requests for this caller",
+        );
+        r.headers_mut()
+            .insert(header::RETRY_AFTER, HeaderValue::from_static("1"));
+        Box::new(r)
+    })
+}
+
+/// The scope a request needs: write for tools that change state, read for
+/// everything else.
+fn required_scope<'a>(inner: &'a Inner, req: &Request) -> Option<&'a str> {
+    let cfg = inner.oauth.as_ref()?.config();
+    if req.method == "tools/call" {
+        let name = req
+            .params
+            .as_ref()
+            .and_then(|p| p.get("name"))
+            .and_then(|n| n.as_str())
+            .unwrap_or("");
+        let read_only = inner
+            .dispatcher
+            .registry()
+            .get(name)
+            .map(|t| t.def["annotations"]["readOnlyHint"] == serde_json::Value::Bool(true));
+        if read_only == Some(false) {
+            return Some(&cfg.write_scope);
+        }
+    }
+    Some(&cfg.read_scope)
+}
+
+/// Rejects a request whose token lacks the scope it needs with the step-up
+/// challenge the MCP authorization specification describes.
+fn check_scope(inner: &Inner, req: &Request, caller: &Caller) -> Result<(), Box<AxResponse>> {
+    let (Some(v), Some(required)) = (&inner.oauth, required_scope(inner, req)) else {
+        return Ok(());
+    };
+    if v.config().has_scope(caller, required) {
+        return Ok(());
+    }
+    let metadata = v.config().metadata_url();
+    let desc = format!("this operation requires the {required} scope");
+    Err(challenge_response(
+        StatusCode::FORBIDDEN,
+        "insufficient scope",
+        bearer_challenge(&[
+            ("error", "insufficient_scope"),
+            ("scope", required),
+            ("resource_metadata", &metadata),
+            ("error_description", &desc),
+        ]),
+    ))
+}
+
+/// Resolves the App Store Connect client for a request in
+/// [`CredentialsMode::Request`]: the caller's key material from headers,
+/// reusing a pooled client for the same key.
+fn caller_client(inner: &Inner, h: &HeaderMap) -> Result<Arc<Client>, String> {
+    let issuer = header_str(h, ASC_ISSUER_HEADER).trim();
+    let key_id = header_str(h, ASC_KEY_ID_HEADER).trim();
+    let key_b64 = header_str(h, ASC_PRIVATE_KEY_HEADER).trim();
+    if issuer.is_empty() || key_id.is_empty() || key_b64.is_empty() {
+        return Err(format!(
+            "App Store Connect credentials are required: send the {ASC_ISSUER_HEADER}, {ASC_KEY_ID_HEADER} and {ASC_PRIVATE_KEY_HEADER} (base64-encoded .p8) headers"
+        ));
+    }
+    let pem = base64::engine::general_purpose::STANDARD
+        .decode(key_b64)
+        .map_err(|_| {
+            format!(
+                "{ASC_PRIVATE_KEY_HEADER} must be the base64-encoded contents of the .p8 key file"
+            )
+        })?;
+    let mut hasher = Sha256::new();
+    for part in [issuer.as_bytes(), key_id.as_bytes(), &pem] {
+        hasher.update((part.len() as u64).to_be_bytes());
+        hasher.update(part);
+    }
+    let digest: [u8; 32] = hasher.finalize().into();
+    let mut pool = inner.clients.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some((client, used)) = pool.get_mut(&digest) {
+        *used = Instant::now();
+        return Ok(client.clone());
+    }
+    let client = Arc::new(
+        Client::from_key_material(issuer, key_id, &pem, inner.http.clone())
+            .map_err(|e| e.to_string())?,
+    );
+    if pool.len() >= MAX_POOLED_CLIENTS
+        && let Some(oldest) = pool
+            .iter()
+            .min_by_key(|(_, (_, used))| *used)
+            .map(|(k, _)| *k)
+    {
+        pool.remove(&oldest);
+    }
+    pool.insert(digest, (client.clone(), Instant::now()));
+    Ok(client)
+}
+
+/// Builds the request context handlers run under.
+fn request_context(
+    inner: &Inner,
+    h: &HeaderMap,
+    req: &Request,
+    caller: Caller,
+    request_id: &str,
+) -> RequestContext {
+    let trace_id = trace_id_from_traceparent(header_str(h, "traceparent")).or_else(|| {
+        req.params
+            .as_ref()
+            .and_then(|p| p.get("_meta"))
+            .and_then(|m| m.get("traceparent"))
+            .and_then(|t| t.as_str())
+            .and_then(trace_id_from_traceparent)
+    });
+    let (client, client_error) = match inner.credentials {
+        CredentialsMode::Server => (None, None),
+        CredentialsMode::Request => match caller_client(inner, h) {
+            Ok(c) => (Some(c), None),
+            Err(e) => (None, Some(e)),
+        },
+    };
+    RequestContext {
+        request_id: request_id.to_string(),
+        trace_id,
+        caller,
+        client,
+        client_error,
+        uploads: inner.uploads.clone(),
+    }
+}
+
+async fn handle_post(
+    srv: &HttpServer,
+    req: AxRequest,
+    caller: Caller,
+    request_id: &str,
+    info: &mut LogInfo,
+) -> AxResponse {
     let headers = req.headers().clone();
-    let body = match read_body_limited(req.into_body(), MAX_HTTP_BODY_SIZE + 1).await {
+    let limit = srv.inner.max_body_bytes;
+    let body = match read_body_limited(req.into_body(), limit + 1).await {
         Ok(b) => b,
         Err(_) => return http_error(StatusCode::BAD_REQUEST, "failed to read request body"),
     };
-    if body.len() > MAX_HTTP_BODY_SIZE {
+    if body.len() > limit {
         return http_error(StatusCode::PAYLOAD_TOO_LARGE, "request body too large");
     }
     let req = match crate::wire::json::parse(&body).and_then(|v| Request::from_value(&v)) {
@@ -420,6 +772,11 @@ async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
             );
         }
     };
+    if let Err(resp) = check_scope(&srv.inner, &req, &caller) {
+        return *resp;
+    }
+    let ctx = request_context(&srv.inner, &headers, &req, caller, request_id);
+    info.trace_id = ctx.trace_id.clone().unwrap_or_default();
     // Era detection. A malformed _meta cannot name a version, so the
     // header and method decide; initialize is always legacy.
     let meta = RequestMeta::parse(req.params.as_ref()).unwrap_or_default();
@@ -427,17 +784,24 @@ async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
     let modern = is_modern(&req.method, &meta)
         || (req.method != "initialize" && mcp::MODERN_PROTOCOL_VERSIONS.contains(&header_pv));
     if modern {
-        return handle_modern_post(srv, &headers, req, &meta).await;
+        return handle_modern_post(srv, &headers, req, &meta, ctx).await;
     }
 
     let inner = &srv.inner;
     let is_init = req.method == "initialize";
+    let owner = ctx.caller.subject.clone();
     let (sess_id, sess) = if is_init {
         let id = new_hex_id(16);
         let sess = Arc::new(Session::new());
         let active = {
             let mut s = inner.sessions.lock().unwrap_or_else(|e| e.into_inner());
-            s.insert(id.clone(), sess.clone());
+            s.insert(
+                id.clone(),
+                SessionEntry {
+                    sess: sess.clone(),
+                    owner,
+                },
+            );
             s.len()
         };
         inner.metrics.sessions_created.inc();
@@ -451,12 +815,15 @@ async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
                 &format!("missing {SESSION_HEADER} header"),
             );
         }
+        // A session belongs to the caller that created it; to anyone else
+        // it does not exist.
         let sess = inner
             .sessions
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .get(&id)
-            .cloned();
+            .filter(|e| e.owner == owner)
+            .map(|e| e.sess.clone());
         let Some(sess) = sess else {
             return http_error(StatusCode::NOT_FOUND, "unknown session");
         };
@@ -469,7 +836,10 @@ async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
         (id, sess)
     };
 
-    let Some(out) = inner.dispatcher.dispatch(&req, &sess).await else {
+    let out = Arc::new(ctx)
+        .scope(inner.dispatcher.dispatch(&req, &sess))
+        .await;
+    let Some(out) = out else {
         if is_init {
             inner
                 .sessions
@@ -480,10 +850,8 @@ async fn handle_post(srv: &HttpServer, req: AxRequest) -> AxResponse {
         return StatusCode::ACCEPTED.into_response();
     };
     let mut r = json_response(StatusCode::OK, &out.response);
-    if is_init {
-        if let Ok(v) = HeaderValue::from_str(&sess_id) {
-            r.headers_mut().insert(SESSION_HEADER, v);
-        }
+    if is_init && let Ok(v) = HeaderValue::from_str(&sess_id) {
+        r.headers_mut().insert(SESSION_HEADER, v);
     }
     r.headers_mut().insert(
         PROTOCOL_VERSION_HEADER,
@@ -554,6 +922,7 @@ async fn handle_modern_post(
     headers: &HeaderMap,
     req: Request,
     meta: &RequestMeta,
+    ctx: RequestContext,
 ) -> AxResponse {
     // Mcp-Method must mirror the body byte-for-byte (no decoding).
     let hm = headers.get(METHOD_HEADER).map(|v| v.as_bytes());
@@ -615,10 +984,8 @@ async fn handle_modern_post(
     }
 
     let sess = Session::new();
-    let out = srv
-        .inner
-        .dispatcher
-        .dispatch_modern_forced(&req, &sess)
+    let out = Arc::new(ctx)
+        .scope(srv.inner.dispatcher.dispatch_modern_forced(&req, &sess))
         .await;
     let Some(out) = out else {
         let mut r = StatusCode::ACCEPTED.into_response();
@@ -681,7 +1048,7 @@ pub fn status_for_modern_error(code: i64) -> StatusCode {
     }
 }
 
-fn handle_delete(srv: &HttpServer, h: &HeaderMap) -> AxResponse {
+fn handle_delete(srv: &HttpServer, h: &HeaderMap, caller: &Caller) -> AxResponse {
     let id = header_str(h, SESSION_HEADER);
     if id.is_empty() {
         return http_error(
@@ -691,7 +1058,9 @@ fn handle_delete(srv: &HttpServer, h: &HeaderMap) -> AxResponse {
     }
     let (existed, active) = {
         let mut s = srv.inner.sessions.lock().unwrap_or_else(|e| e.into_inner());
-        let existed = s.remove(id).is_some();
+        // Only the session's owner may end it.
+        let owned = s.get(id).is_some_and(|e| e.owner == caller.subject);
+        let existed = owned && s.remove(id).is_some();
         (existed, s.len())
     };
     if !existed {

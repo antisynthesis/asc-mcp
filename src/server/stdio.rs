@@ -121,10 +121,10 @@ impl StdioServer {
             .unwrap_or_else(|e| e.into_inner())
             .remove(&key);
         if let Some(tx) = tx {
-            if let Some(Value::String(reason)) = p.get("reason") {
-                if !reason.is_empty() {
-                    logging::printf(format!("request {key} cancelled by client: {reason}"));
-                }
+            if let Some(Value::String(reason)) = p.get("reason")
+                && !reason.is_empty()
+            {
+                logging::printf(format!("request {key} cancelled by client: {reason}"));
             }
             let _ = tx.send(());
         }

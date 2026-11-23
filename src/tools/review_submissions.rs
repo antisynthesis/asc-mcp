@@ -306,14 +306,13 @@ async fn handle_get_review_submission(c: Arc<Client>, args: Args) -> HandlerResu
     sb.push_str(&format_review_submission(&resp.data));
 
     // Best-effort: also show the attached items.
-    if let Ok(items) = c.list_review_submission_items(&params.review_submission_id, None).await {
-        if !items.data.is_empty() {
+    if let Ok(items) = c.list_review_submission_items(&params.review_submission_id, None).await
+        && !items.data.is_empty() {
             let _ = write!(sb, "\nItems ({}):\n", items.data.len());
             for item in items.data.iter() {
                 let _ = writeln!(sb, "- {} (state: {})", item.id, item.attributes.state);
             }
         }
-    }
 
     Ok(data_result(&sb, &resp.data))
 }

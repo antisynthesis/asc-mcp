@@ -277,11 +277,10 @@ async fn handle_list_bundle_ids(c: Arc<Client>, args: Args) -> HandlerResult {
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
-    if args.is_some() {
-        if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+    if args.is_some()
+        && let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
             return Err(format!("invalid arguments: {e}"));
         }
-    }
 
     let opts = list_opts(params.limit, &params.filter, &params.sort, &params.fields, &params.include);
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_bundle_ids(opts.as_ref())).await {
@@ -358,11 +357,10 @@ async fn handle_list_certificates(c: Arc<Client>, args: Args) -> HandlerResult {
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
-    if args.is_some() {
-        if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+    if args.is_some()
+        && let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
             return Err(format!("invalid arguments: {e}"));
         }
-    }
 
     let opts = list_opts(params.limit, &params.filter, &params.sort, &params.fields, &params.include);
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_certificates(opts.as_ref())).await {
@@ -411,11 +409,10 @@ async fn handle_list_profiles(c: Arc<Client>, args: Args) -> HandlerResult {
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
-    if args.is_some() {
-        if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+    if args.is_some()
+        && let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
             return Err(format!("invalid arguments: {e}"));
         }
-    }
 
     let opts = list_opts(params.limit, &params.filter, &params.sort, &params.fields, &params.include);
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_profiles(opts.as_ref())).await {
@@ -462,11 +459,10 @@ async fn handle_list_devices(c: Arc<Client>, args: Args) -> HandlerResult {
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
-    if args.is_some() {
-        if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+    if args.is_some()
+        && let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
             return Err(format!("invalid arguments: {e}"));
         }
-    }
 
     let opts = list_opts(params.limit, &params.filter, &params.sort, &params.fields, &params.include);
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_devices(opts.as_ref())).await {

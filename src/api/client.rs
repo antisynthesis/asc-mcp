@@ -49,19 +49,34 @@ impl Client {
     pub fn new(issuer_id: &str, key_id: &str, private_key_path: &str) -> Result<Self> {
         let tokens = TokenProvider::new(issuer_id, key_id, private_key_path)
             .map_err(|e| e.wrap("failed to create token provider"))?;
-        let base = std::env::var(BASE_URL_ENV)
-            .ok()
-            .filter(|s| !s.is_empty())
-            .unwrap_or_else(|| BASE_URL.into());
-        Ok(Self::with_token_provider(tokens, base))
+        Ok(Self::with_token_provider(tokens, default_base_url()))
+    }
+
+    /// Creates a client from in-memory key material (a caller's own
+    /// credentials) that shares `http`'s connection pool.
+    pub fn from_key_material(
+        issuer_id: &str,
+        key_id: &str,
+        private_key_pem: &[u8],
+        http: reqwest::Client,
+    ) -> Result<Self> {
+        let key = super::auth::parse_private_key(private_key_pem)
+            .map_err(|e| e.wrap("failed to parse private key"))?;
+        let tokens = TokenProvider::from_key(issuer_id, key_id, key);
+        Ok(Self::with_http(http, tokens, default_base_url()))
     }
 
     /// Creates a client with an explicit token provider and base URL.
     pub fn with_token_provider(tokens: TokenProvider, base_url: impl Into<String>) -> Self {
-        let http = reqwest::Client::builder()
-            .timeout(DEFAULT_TIMEOUT)
-            .build()
-            .unwrap_or_else(|_| reqwest::Client::new());
+        Self::with_http(new_http_client(), tokens, base_url)
+    }
+
+    /// Creates a client on an existing HTTP connection pool.
+    pub fn with_http(
+        http: reqwest::Client,
+        tokens: TokenProvider,
+        base_url: impl Into<String>,
+    ) -> Self {
         Self {
             http,
             tokens,
@@ -143,10 +158,10 @@ impl Client {
                 Ok(er) if !er.errors.is_empty() => api.errors = er.errors.into_vec(),
                 _ => api.raw_body = String::from_utf8_lossy(&body).into_owned(),
             }
-            if status == 429 {
-                if let Some(ra) = retry_after {
-                    api.retry_after = Some(parse_retry_after(&ra));
-                }
+            if status == 429
+                && let Some(ra) = retry_after
+            {
+                api.retry_after = Some(parse_retry_after(&ra));
             }
             return Err(api.into());
         }
@@ -246,6 +261,22 @@ impl Client {
     }
 }
 
+/// The API base URL: [`BASE_URL`], or [`BASE_URL_ENV`] when set.
+pub fn default_base_url() -> String {
+    std::env::var(BASE_URL_ENV)
+        .ok()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| BASE_URL.into())
+}
+
+/// A new HTTP connection pool configured for the App Store Connect API.
+pub fn new_http_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .timeout(DEFAULT_TIMEOUT)
+        .build()
+        .unwrap_or_else(|_| reqwest::Client::new())
+}
+
 async fn read_limited(mut resp: reqwest::Response, limit: usize) -> Result<Vec<u8>> {
     let mut out = Vec::new();
     loop {
@@ -278,10 +309,10 @@ fn is_retryable(err: &Error, method: &Method) -> bool {
 
 /// Delay before retry `attempt`, honouring a positive `Retry-After`.
 fn backoff_delay(attempt: u32, last: Option<&Error>) -> Duration {
-    if let Some(ra) = last.and_then(|e| e.api()).and_then(|a| a.retry_after) {
-        if !ra.is_zero() {
-            return ra.min(RETRY_MAX_DELAY);
-        }
+    if let Some(ra) = last.and_then(|e| e.api()).and_then(|a| a.retry_after)
+        && !ra.is_zero()
+    {
+        return ra.min(RETRY_MAX_DELAY);
     }
     let d = RETRY_BASE_DELAY.saturating_mul(1 << (attempt - 1));
     d.min(RETRY_MAX_DELAY)

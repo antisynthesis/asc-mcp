@@ -60,10 +60,10 @@ impl TokenProvider {
     /// missing or about to expire.
     pub fn get_token(&self) -> Result<String> {
         let mut cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some((token, expires)) = cache.as_ref() {
-            if SystemTime::now() + TOKEN_REFRESH_BUFFER < *expires {
-                return Ok(token.clone());
-            }
+        if let Some((token, expires)) = cache.as_ref()
+            && SystemTime::now() + TOKEN_REFRESH_BUFFER < *expires
+        {
+            return Ok(token.clone());
         }
         let (token, expires) = self.generate_token()?;
         *cache = Some((token.clone(), expires));
@@ -127,12 +127,11 @@ pub fn parse_private_key(data: &[u8]) -> Result<SigningKey> {
         Ok(k) => Ok(SigningKey::from(k)),
         Err(e) => {
             // Distinguish "valid PKCS#8 but not an EC key" from malformed input.
-            if let Ok(info) = p256::pkcs8::PrivateKeyInfo::try_from(der.as_slice()) {
-                if info.algorithm.oid
+            if let Ok(info) = p256::pkcs8::PrivateKeyInfo::try_from(der.as_slice())
+                && info.algorithm.oid
                     != p256::pkcs8::ObjectIdentifier::new_unwrap("1.2.840.10045.2.1")
-                {
-                    return Err(Error::msg("private key is not ECDSA"));
-                }
+            {
+                return Err(Error::msg("private key is not ECDSA"));
             }
             Err(Error::msg(format!(
                 "failed to parse PKCS8 private key: {e}"

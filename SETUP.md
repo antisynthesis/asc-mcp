@@ -10,6 +10,7 @@ server with Claude Desktop, Claude Code, the Codex app, and the Codex CLI.
 - [5. Claude Code (CLI)](#5-claude-code-cli)
 - [6. Codex (app, CLI, and IDE extension)](#6-codex-app-cli-and-ide-extension)
 - [7. Running over HTTP instead of stdio](#7-running-over-http-instead-of-stdio)
+- [8. Multi-user deployments on an agent platform](#8-multi-user-deployments-on-an-agent-platform)
 - [Troubleshooting](#troubleshooting)
 
 Every client below launches the same binary the same way: `asc-mcp serve`,
@@ -19,7 +20,7 @@ config file format.
 
 ## 1. Install the binary
 
-You need a stable Rust toolchain (1.85 or newer, via
+You need a stable Rust toolchain (1.88 or newer, via
 [rustup](https://rustup.rs)).
 
 ```bash
@@ -277,8 +278,25 @@ Useful flags:
 | `--tls-cert` / `--tls-key` | *(empty)* | Terminate TLS in process (TLS 1.2 minimum) |
 | `--log-format` | `json` | `json` or `text` |
 | `--log-level` | `info` | `debug`, `info`, `warn`, `error` |
+| `--oauth-issuer` / `--oauth-audience` | *(empty)* | Validate OAuth 2.1 access tokens (see [section 8](#8-multi-user-deployments-on-an-agent-platform)) |
+| `--asc-credentials` | `server` | `server` (the `ASC_*` env vars) or `request` (each caller sends its own key) |
+| `--max-concurrent-per-caller` | `8` | Concurrent requests per caller before 429; `0` disables |
+| `--max-body-bytes` | `4194304` | Largest request body (base64 uploads count toward it) |
+| `--tool-timeout` | `60` | Seconds a single tool call may run |
+| `--upload-dir` | *(empty)* | Directory `file_path` arguments may read from; unset, callers must send `file_data_base64` |
 
-**An empty `--auth-tokens` leaves the endpoint unauthenticated.** Anyone who
+Every flag in section 8 can also be set through an environment variable
+(`ASC_MCP_OAUTH_ISSUER`, `ASC_MCP_OAUTH_AUDIENCE`, `ASC_MCP_OAUTH_JWKS_URL`,
+`ASC_MCP_OAUTH_READ_SCOPE`, `ASC_MCP_OAUTH_WRITE_SCOPE`, `ASC_MCP_CREDENTIALS`,
+`ASC_MCP_MAX_CONCURRENT_PER_CALLER`, `ASC_MCP_MAX_BODY_BYTES`,
+`ASC_MCP_TOOL_TIMEOUT`, `ASC_MCP_UPLOAD_DIR`).
+
+Over HTTP, `file_path` upload arguments are refused unless `--upload-dir` is
+set, because they would let any caller upload files from the server's own
+disk. With `--upload-dir`, only files inside that directory are accepted;
+symlinks are resolved first, so a link cannot point outside it.
+
+**Without `--auth-tokens` or `--oauth-issuer` the endpoint is unauthenticated.** Anyone who
 can reach the port can act on your App Store Connect account. Set tokens for
 anything beyond a loopback bind, and put it behind TLS — either with the flags
 above or a terminating reverse proxy — before it crosses a network.
@@ -335,3 +353,74 @@ just closed, before it re-reads its config.
 `asc-mcp tools` lists every registered tool. Apple removes API operations
 between versions, and tools disappear with them; `CHANGELOG.md` records which
 ones and what replaced them.
+
+## 8. Multi-user deployments on an agent platform
+
+Run one `serve-http` deployment for many users and agents. It is
+stateless on the 2026-07-28 protocol, so replicas scale horizontally
+behind any load balancer. Two settings make it multi-user.
+
+**Authenticate callers with OAuth 2.1.** The server is an OAuth resource
+server, as the MCP authorization specification describes:
+
+```bash
+asc-mcp serve-http --addr 0.0.0.0:8080 \
+  --oauth-issuer https://auth.example.com \
+  --oauth-audience https://mcp.example.com/mcp \
+  --asc-credentials request
+```
+
+- **Discovery:** the server publishes Protected Resource Metadata (RFC 9728)
+  at `/.well-known/oauth-protected-resource/mcp`. It answers unauthenticated
+  requests with `401` and a `WWW-Authenticate` challenge that points to the
+  metadata, so MCP clients can discover your authorization server.
+- **Token requirements:**
+  - Access tokens must be JWTs signed by the issuer. The server finds the
+    issuer's keys through its RFC 8414 or OpenID Connect metadata;
+    `--oauth-jwks-url` overrides this.
+  - `aud` must contain `--oauth-audience`, the server's canonical URI.
+  - `iss`, `exp` and `nbf` are enforced.
+  - Only asymmetric signatures are accepted.
+- **Scopes:** tools marked read-only need `asc:read`. Tools that change App
+  Store Connect state need `asc:write`, which implies read. A token without
+  the needed scope gets `403` with an `insufficient_scope` challenge, so the
+  client can step up. Rename the scopes with `--oauth-read-scope` and
+  `--oauth-write-scope`.
+- **Audit log:** every tool call records the token's `sub` and `client_id`,
+  the request ID, and the W3C trace ID from `traceparent` (HTTP header or
+  `_meta`).
+
+**Let each caller bring its own App Store Connect key.** With
+`--asc-credentials request` the server holds no App Store Connect secrets.
+Every request sends its caller's key:
+
+| Header | Value |
+|--------|-------|
+| `X-ASC-Issuer-ID` | The key's issuer ID |
+| `X-ASC-Key-ID` | The key ID |
+| `X-ASC-Private-Key` | The `.p8` file contents, base64-encoded |
+
+- **Token minting:** the server mints its own short-lived App Store
+  Connect token from that key and caches it per key in memory. Keys are
+  never logged.
+- **No passthrough:** the platform's OAuth access token is never forwarded
+  to Apple. The MCP specification forbids token passthrough, which is why
+  a pre-minted App Store Connect token is not accepted either.
+- **Missing credentials:** a tool call without these headers returns a
+  tool error that names them. `tools/list` and `server/discover` need no
+  credentials.
+- **Transport security:** these headers carry private keys. Serve the
+  endpoint over TLS (`--tls-cert`/`--tls-key` or a terminating proxy). The
+  server warns at startup when per-request credentials are enabled on a
+  non-loopback listener without in-process TLS.
+
+**Isolation and limits:**
+- A caller only ever uses its own App Store Connect key.
+- Deprecated handshake-era sessions are bound to the subject that created
+  them. Any other caller gets `404`.
+- `--max-concurrent-per-caller` (default 8) keeps one agent from starving
+  the others. Excess requests get `429` with `Retry-After`.
+- `--tool-timeout` bounds each call. A client that disconnects cancels
+  its call's App Store Connect work.
+- App Store Connect rate limits are per key. The client retries `429` and
+  `5xx` responses with backoff and honours `Retry-After`.

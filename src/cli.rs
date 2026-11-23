@@ -47,7 +47,7 @@ enum Command {
     Serve,
     /// Start the MCP server over Streamable HTTP
     #[command(name = "serve-http", long_about = SERVE_HTTP_LONG)]
-    ServeHttp(ServeHttpArgs),
+    ServeHttp(Box<ServeHttpArgs>),
     /// Print version information
     #[command(long_about = "Print the version, commit hash, and build date of asc-mcp.")]
     Version,
@@ -123,6 +123,68 @@ struct ServeHttpArgs {
     /// PEM-encoded TLS private key file. Must be set together with --tls-cert.
     #[arg(long = "tls-key", default_value = "")]
     tls_key: String,
+    /// OAuth 2.1 authorization server issuer. Enables access-token validation (with --oauth-audience); mutually exclusive with --auth-tokens.
+    #[arg(
+        long = "oauth-issuer",
+        env = "ASC_MCP_OAUTH_ISSUER",
+        default_value = ""
+    )]
+    oauth_issuer: String,
+    /// This server's canonical resource URI, required as the token audience (e.g. https://mcp.example.com/mcp).
+    #[arg(
+        long = "oauth-audience",
+        env = "ASC_MCP_OAUTH_AUDIENCE",
+        default_value = ""
+    )]
+    oauth_audience: String,
+    /// JWKS URL; discovered from the issuer's metadata when unset.
+    #[arg(
+        long = "oauth-jwks-url",
+        env = "ASC_MCP_OAUTH_JWKS_URL",
+        default_value = ""
+    )]
+    oauth_jwks_url: String,
+    /// Scope required for read-only tools and other read operations.
+    #[arg(
+        long = "oauth-read-scope",
+        env = "ASC_MCP_OAUTH_READ_SCOPE",
+        default_value = "asc:read"
+    )]
+    oauth_read_scope: String,
+    /// Scope required for tools that change App Store Connect state (implies the read scope).
+    #[arg(
+        long = "oauth-write-scope",
+        env = "ASC_MCP_OAUTH_WRITE_SCOPE",
+        default_value = "asc:write"
+    )]
+    oauth_write_scope: String,
+    /// Where App Store Connect credentials come from: "server" (ASC_* environment variables) or "request" (each request sends X-ASC-Issuer-ID, X-ASC-Key-ID and X-ASC-Private-Key headers).
+    #[arg(
+        long = "asc-credentials",
+        env = "ASC_MCP_CREDENTIALS",
+        default_value = "server"
+    )]
+    asc_credentials: String,
+    /// Concurrent requests allowed per caller; 0 disables the limit.
+    #[arg(
+        long = "max-concurrent-per-caller",
+        env = "ASC_MCP_MAX_CONCURRENT_PER_CALLER",
+        default_value_t = 8
+    )]
+    max_concurrent_per_caller: usize,
+    /// Largest accepted request body in bytes (base64 uploads count toward it).
+    #[arg(long = "max-body-bytes", env = "ASC_MCP_MAX_BODY_BYTES", default_value_t = crate::server::http::MAX_HTTP_BODY_SIZE)]
+    max_body_bytes: usize,
+    /// Upper bound on a single tool call, in seconds.
+    #[arg(
+        long = "tool-timeout",
+        env = "ASC_MCP_TOOL_TIMEOUT",
+        default_value_t = 60
+    )]
+    tool_timeout: u64,
+    /// Directory that file_path upload arguments may read from. Unset, file_path is refused and callers must send file_data_base64.
+    #[arg(long = "upload-dir", env = "ASC_MCP_UPLOAD_DIR", default_value = "")]
+    upload_dir: String,
 }
 
 /// Runs the CLI and returns the process exit code.
@@ -130,7 +192,7 @@ pub async fn run() -> i32 {
     let cli = Cli::parse();
     let result = match cli.command {
         Command::Serve => serve().await,
-        Command::ServeHttp(a) => serve_http(a).await,
+        Command::ServeHttp(a) => serve_http(*a).await,
         Command::Version => {
             version();
             Ok(())
@@ -176,7 +238,24 @@ fn split_csv(s: &str) -> Vec<String> {
 }
 
 async fn serve_http(a: ServeHttpArgs) -> Result<(), String> {
-    let cfg = Config::load()?;
+    use crate::context::UploadPolicy;
+    use crate::server::http::CredentialsMode;
+    use crate::server::oauth::{OAuthConfig, Verifier};
+
+    let credentials = match a.asc_credentials.to_ascii_lowercase().as_str() {
+        "server" | "" => CredentialsMode::Server,
+        "request" => CredentialsMode::Request,
+        other => {
+            return Err(format!(
+                "unknown --asc-credentials mode: {other} (want server or request)"
+            ));
+        }
+    };
+    // Per-request credentials need no server-side App Store Connect key.
+    let cfg = match credentials {
+        CredentialsMode::Server => Some(Config::load()?),
+        CredentialsMode::Request => None,
+    };
     let level = logging::Level::parse(&a.log_level)?;
     let format = logging::parse_format(&a.log_format)?;
     logging::init(format, level);
@@ -185,19 +264,65 @@ async fn serve_http(a: ServeHttpArgs) -> Result<(), String> {
     } else {
         a.auth_tokens.clone()
     };
-    let opts = HttpOptions {
-        allowed_origins: split_csv(&a.allowed_origins),
-        auth_tokens: split_csv(&tokens),
+    let tokens = split_csv(&tokens);
+    let oauth = match (a.oauth_issuer.is_empty(), a.oauth_audience.is_empty()) {
+        (true, true) => None,
+        (false, false) => {
+            if !tokens.is_empty() {
+                return Err("--oauth-issuer and --auth-tokens are mutually exclusive".into());
+            }
+            Some(Verifier::new(OAuthConfig {
+                issuer: a.oauth_issuer.clone(),
+                audience: a.oauth_audience.clone(),
+                jwks_url: (!a.oauth_jwks_url.is_empty()).then(|| a.oauth_jwks_url.clone()),
+                read_scope: a.oauth_read_scope.clone(),
+                write_scope: a.oauth_write_scope.clone(),
+            }))
+        }
+        _ => return Err("--oauth-issuer and --oauth-audience must be set together".into()),
     };
-    if opts.auth_tokens.is_empty() {
+    let uploads = if a.upload_dir.is_empty() {
+        UploadPolicy::Disabled
+    } else {
+        let root = std::fs::canonicalize(&a.upload_dir).map_err(|e| {
+            format!(
+                "--upload-dir: {}",
+                crate::wire::os::path_error("stat", &a.upload_dir, &e)
+            )
+        })?;
+        UploadPolicy::Within(root)
+    };
+    let use_tls = !a.tls_cert.is_empty() && !a.tls_key.is_empty();
+    if oauth.is_none() && tokens.is_empty() {
         logging::warn(
-            "serve-http running without auth tokens; the /mcp endpoint is open to anyone who can reach it",
+            "serve-http running without authentication; the /mcp endpoint is open to anyone who can reach it",
             &[],
         );
     }
-    let registry = build_registry(&cfg)?;
+    let loopback = a.addr.starts_with("127.")
+        || a.addr.starts_with("localhost")
+        || a.addr.starts_with("[::1]");
+    if credentials == CredentialsMode::Request && !use_tls && !loopback {
+        logging::warn(
+            "per-request App Store Connect credentials are enabled without in-process TLS; make sure a TLS-terminating proxy fronts this listener",
+            &[],
+        );
+    }
+    let opts = HttpOptions {
+        allowed_origins: split_csv(&a.allowed_origins),
+        auth_tokens: tokens,
+        oauth,
+        credentials,
+        max_concurrent_per_caller: a.max_concurrent_per_caller,
+        max_body_bytes: a.max_body_bytes,
+        uploads,
+        tool_timeout: std::time::Duration::from_secs(a.tool_timeout.max(1)),
+    };
+    let registry = match &cfg {
+        Some(cfg) => build_registry(cfg)?,
+        None => Arc::new(Registry::new(None)),
+    };
     let srv = HttpServer::new(registry, opts);
-    let use_tls = !a.tls_cert.is_empty() && !a.tls_key.is_empty();
     if use_tls {
         logging::printf(format!("serving MCP over HTTPS on {}", a.addr));
     } else {

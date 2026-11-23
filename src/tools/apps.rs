@@ -122,11 +122,10 @@ async fn handle_list_apps(c: Arc<Client>, args: Args) -> HandlerResult {
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
-    if args.is_some() {
-        if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+    if args.is_some()
+        && let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
             return Err(format!("invalid arguments: {e}"));
         }
-    }
     if params.limit <= 0 {
         params.limit = 50;
     }

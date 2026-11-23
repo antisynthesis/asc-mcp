@@ -150,6 +150,7 @@ json_struct! {
 pub struct Dispatcher {
     registry: Arc<Registry>,
     metrics: Option<Arc<Metrics>>,
+    tool_timeout: Duration,
 }
 
 impl Dispatcher {
@@ -158,7 +159,14 @@ impl Dispatcher {
         Self {
             registry,
             metrics: None,
+            tool_timeout: TOOL_CALL_TIMEOUT,
         }
+    }
+
+    /// Sets the upper bound on a single tool call.
+    pub fn with_tool_timeout(mut self, t: Duration) -> Self {
+        self.tool_timeout = t;
+        self
     }
 
     /// Enables tool-call metrics.
@@ -323,10 +331,10 @@ impl Dispatcher {
             if req.is_notification() {
                 return None;
             }
-            if !meta.protocol_version.is_empty() {
-                if let Some(e) = self.check_modern_meta(req, meta) {
-                    return Some(e);
-                }
+            if !meta.protocol_version.is_empty()
+                && let Some(e) = self.check_modern_meta(req, meta)
+            {
+                return Some(e);
             }
             return Some(self.handle_discover(req));
         }
@@ -341,16 +349,16 @@ impl Dispatcher {
                 if req.is_notification() {
                     return None;
                 }
-                if let Some(Value::Object(p)) = &req.params {
-                    if p.contains_key("cursor") {
-                        // This server never issues cursors for tools/list.
-                        return Some(err(
-                            req,
-                            mcp::ERR_INVALID_PARAMS,
-                            "Invalid params",
-                            "invalid cursor",
-                        ));
-                    }
+                if let Some(Value::Object(p)) = &req.params
+                    && p.contains_key("cursor")
+                {
+                    // This server never issues cursors for tools/list.
+                    return Some(err(
+                        req,
+                        mcp::ERR_INVALID_PARAMS,
+                        "Invalid params",
+                        "invalid cursor",
+                    ));
                 }
                 let result = json!({
                     "tools": self.tool_defs(),
@@ -425,10 +433,10 @@ impl Dispatcher {
 
     fn handle_initialize(&self, req: &Request, sess: &Session) -> Outcome {
         let mut params = InitializeParams::default();
-        if let Some(p) = &req.params {
-            if let Err(e) = unmarshal_value(p, &mut params) {
-                return err(req, mcp::ERR_INVALID_PARAMS, "Invalid params", e);
-            }
+        if let Some(p) = &req.params
+            && let Err(e) = unmarshal_value(p, &mut params)
+        {
+            return err(req, mcp::ERR_INVALID_PARAMS, "Invalid params", e);
         }
         let negotiated = mcp::negotiate_protocol_version(&params.protocol_version);
         warn_handshake_deprecated(negotiated);
@@ -464,22 +472,22 @@ impl Dispatcher {
                         "params.name must be a string",
                     );
                 }
-                if let Some(a) = p.get("arguments") {
-                    if !a.is_object() {
-                        return err(
-                            req,
-                            mcp::ERR_INVALID_PARAMS,
-                            "Invalid params",
-                            "params.arguments must be an object",
-                        );
-                    }
+                if let Some(a) = p.get("arguments")
+                    && !a.is_object()
+                {
+                    return err(
+                        req,
+                        mcp::ERR_INVALID_PARAMS,
+                        "Invalid params",
+                        "params.arguments must be an object",
+                    );
                 }
             }
         }
         let name = params.name.clone();
         let start = Instant::now();
         let call = self.registry.call_tool(&name, params.arguments.0.clone());
-        let outcome = match tokio::time::timeout(TOOL_CALL_TIMEOUT, call).await {
+        let outcome = match tokio::time::timeout(self.tool_timeout, call).await {
             Ok(r) => r,
             Err(_) => Err(CallError::Failed("context deadline exceeded".into())),
         };
@@ -493,14 +501,26 @@ impl Dispatcher {
         if let Some(m) = &self.metrics {
             m.observe_tool(&name, label, elapsed);
         }
-        logging::info(
-            "tool_call",
-            &[
-                ("tool", name.as_str().into()),
-                ("result", label.into()),
-                ("duration", elapsed.into()),
-            ],
-        );
+        // Audit record: who called which tool, with what outcome. Caller
+        // details are present on authenticated transports.
+        let mut attrs: Vec<(&str, logging::Val)> = vec![
+            ("tool", name.as_str().into()),
+            ("result", label.into()),
+            ("duration", elapsed.into()),
+        ];
+        if let Some(ctx) = crate::context::RequestContext::current() {
+            attrs.push(("request_id", ctx.request_id.clone().into()));
+            if let Some(s) = &ctx.caller.subject {
+                attrs.push(("subject", s.clone().into()));
+            }
+            if let Some(c) = &ctx.caller.client_id {
+                attrs.push(("client_id", c.clone().into()));
+            }
+            if let Some(t) = &ctx.trace_id {
+                attrs.push(("trace_id", t.clone().into()));
+            }
+        }
+        logging::info("tool_call", &attrs);
         let result = match outcome {
             Ok(r) => r,
             Err(CallError::UnknownTool(_)) => {

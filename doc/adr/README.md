@@ -15,6 +15,7 @@ This directory contains Architecture Decision Records (ADRs) for the asc-mcp pro
 | [0007](0007-tool-organization.md) | MCP Tool Organization | Accepted |
 | [0008](0008-error-handling.md) | Error Handling Strategy | Accepted |
 | [0009](0009-rust-implementation.md) | Rust Implementation and JSON Wire Format | Accepted |
+| [0010](0010-multi-user-deployment.md) | Multi-User Deployment Model | Accepted |
 
 ## About ADRs
 

@@ -81,10 +81,27 @@ impl Registry {
         let Some(handler) = self.handlers.get(name) else {
             return Err(CallError::UnknownTool(format!("unknown tool: {name}")));
         };
-        let Some(client) = self.client.clone() else {
+        // A request context (multi-user HTTP) carries the caller's own
+        // client; otherwise the server-wide client is used.
+        let ctx = crate::context::RequestContext::current();
+        let client = match &ctx {
+            Some(c) if c.client.is_some() => c.client.clone(),
+            Some(c) if c.client_error.is_some() => {
+                return Err(CallError::Failed(
+                    c.client_error.clone().unwrap_or_default(),
+                ));
+            }
+            _ => self.client.clone(),
+        };
+        let Some(client) = client else {
             return Err(CallError::Failed(
                 "no App Store Connect client configured".into(),
             ));
+        };
+        let fut = handler(client, args);
+        let fut: HandlerFuture = match ctx {
+            Some(c) => Box::pin(c.scope(fut)),
+            None => fut,
         };
         // Run on its own task so a panicking handler is reported as a tool
         // error instead of tearing down the connection. The task is
@@ -98,7 +115,7 @@ impl Registry {
                 self.0.abort();
             }
         }
-        let mut task = AbortOnDrop(tokio::spawn(handler(client, args)));
+        let mut task = AbortOnDrop(tokio::spawn(fut));
         match (&mut task.0).await {
             Ok(r) => r.map_err(CallError::Failed),
             Err(e) if e.is_panic() => Err(CallError::Failed(

@@ -36,7 +36,7 @@ upload flow for screenshots, previews, and review attachments:
 
 ## Prerequisites
 
-- Rust 1.85 or later (stable toolchain via [rustup](https://rustup.rs))
+- Rust 1.88 or later (stable toolchain via [rustup](https://rustup.rs))
 - App Store Connect API credentials
 
 ## Getting App Store Connect API Credentials
@@ -803,13 +803,26 @@ Two transports are supported, sharing the same dispatcher and tool registry:
   - `--tls-cert` / `--tls-key`: PEM cert+key to terminate TLS in
     process (TLS 1.2 minimum). Omit both to listen plain HTTP behind a
     TLS-terminating reverse proxy.
+  - `--oauth-issuer` / `--oauth-audience`: act as an OAuth 2.1 resource
+    server. The server publishes RFC 9728 metadata, validates JWT access
+    tokens (issuer, audience, expiry) and enforces `asc:read` / `asc:write`
+    scopes with step-up challenges.
+  - `--asc-credentials request`: each caller sends its own App Store
+    Connect key in `X-ASC-*` headers, so the server stores no App Store
+    Connect secrets.
+  - `--max-concurrent-per-caller`, `--tool-timeout`, `--max-body-bytes`,
+    `--upload-dir`: per-caller limits and upload restrictions for shared
+    deployments.
+
+  See [SETUP.md §8](SETUP.md#8-multi-user-deployments-on-an-agent-platform)
+  for multi-user deployments on an agent platform.
   - `--log-format` (json|text), `--log-level` (debug|info|warn|error).
 
 Asset uploads (screenshots, previews, review attachments) use the
 three-step App Store Connect handshake (reserve → chunked upload →
 commit) under the hood. Tools accept either a local `file_path` or a
-base64-encoded `file_data_base64` so they work both from stdio and over
-the HTTP transport.
+base64-encoded `file_data_base64`. Over HTTP, `file_path` is only honoured
+inside a configured `--upload-dir`.
 
 ```
 asc-mcp/
@@ -817,7 +830,8 @@ asc-mcp/
 │   ├── main.rs, cli.rs   # Entry point and command-line interface
 │   ├── config.rs         # Environment configuration
 │   ├── mcp.rs            # MCP protocol types and constants
-│   ├── server/           # Dispatcher, stdio and Streamable HTTP transports, metrics
+│   ├── context.rs        # Per-request caller identity, client and upload policy
+│   ├── server/           # Dispatcher, stdio and Streamable HTTP transports, OAuth, metrics
 │   ├── api/              # App Store Connect client, auth, models, endpoints
 │   ├── tools/            # Tool definitions and handlers, one file per area
 │   └── wire/             # JSON wire format, text formatting, timestamps, URL escaping

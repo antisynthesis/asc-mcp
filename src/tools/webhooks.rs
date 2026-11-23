@@ -660,10 +660,9 @@ fn format_webhook_delivery(delivery: &WebhookDelivery) -> String {
     if !a.error_message.is_empty() {
         let _ = writeln!(sb, "Error: {}", a.error_message);
     }
-    if let Some(r) = &a.response {
-        if r.http_status_code != 0 {
+    if let Some(r) = &a.response
+        && r.http_status_code != 0 {
             let _ = writeln!(sb, "Response Status: {}", r.http_status_code);
         }
-    }
     sb
 }

@@ -289,11 +289,10 @@ async fn handle_list_beta_groups(c: Arc<Client>, args: Args) -> HandlerResult {
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
-    if args.is_some() {
-        if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+    if args.is_some()
+        && let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
             return Err(format!("invalid arguments: {e}"));
         }
-    }
 
     let opts = list_opts(params.limit, &params.filter, &params.sort, &params.fields, &params.include);
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_beta_groups(&params.app_id, opts.as_ref())).await {
@@ -417,11 +416,10 @@ async fn handle_list_beta_testers(c: Arc<Client>, args: Args) -> HandlerResult {
     }
     }
     let mut params = Params { limit: 50, ..Default::default() };
-    if args.is_some() {
-        if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+    if args.is_some()
+        && let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
             return Err(format!("invalid arguments: {e}"));
         }
-    }
 
     let opts = list_opts(params.limit, &params.filter, &params.sort, &params.fields, &params.include);
     let resp = match paginated_fetch(&c, &params.cursor, || c.list_beta_testers(&params.beta_group_id, opts.as_ref())).await {

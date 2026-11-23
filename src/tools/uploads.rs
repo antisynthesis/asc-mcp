@@ -151,6 +151,7 @@ pub(crate) fn load_upload_body(file_path: &str, file_data_base64: &str) -> Resul
         return Ok(b);
     }
     let abs = abs_path(file_path).map_err(|e| format!("resolve file_path: {e}"))?;
+    check_upload_policy(&abs)?;
     let meta = std::fs::metadata(&abs)
         .map_err(|e| format!("stat file_path: {}", crate::wire::os::path_error("stat", &abs, &e)))?;
     if meta.is_dir() {
@@ -160,6 +161,31 @@ pub(crate) fn load_upload_body(file_path: &str, file_data_base64: &str) -> Resul
         return Err(format!("file at {abs} exceeds max size of {MAX_LOADED_FILE_SIZE} bytes"));
     }
     std::fs::read(&abs).map_err(|e| crate::wire::os::path_error("open", &abs, &e))
+}
+
+/// Applies the request's upload policy to a resolved `file_path`. Over a
+/// shared (multi-user) transport, local paths would let any caller upload
+/// the server's own files, so they are refused unless the operator named an
+/// upload directory, and then only paths inside it (after resolving
+/// symlinks) are accepted.
+fn check_upload_policy(abs: &str) -> Result<(), String> {
+    use crate::context::{RequestContext, UploadPolicy};
+    let Some(ctx) = RequestContext::current() else { return Ok(()) };
+    match &ctx.uploads {
+        UploadPolicy::Unrestricted => Ok(()),
+        UploadPolicy::Disabled => Err(
+            "file_path is not available on this server; send the file contents as file_data_base64".into(),
+        ),
+        UploadPolicy::Within(root) => {
+            let real = std::fs::canonicalize(abs)
+                .map_err(|e| format!("stat file_path: {}", crate::wire::os::path_error("stat", abs, &e)))?;
+            if real.starts_with(root) {
+                Ok(())
+            } else {
+                Err(format!("file_path must be inside the server's upload directory ({})", root.display()))
+            }
+        }
+    }
 }
 
 /// Decodes base64 in the standard or URL-safe alphabet, with or without

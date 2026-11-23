@@ -186,10 +186,10 @@ async fn serve(State(st): State<MockState>, req: Request) -> Response {
         resp.body,
     )
         .into_response();
-    if !resp.content_type.is_empty() {
-        if let Ok(v) = resp.content_type.parse() {
-            r.headers_mut().insert(axum::http::header::CONTENT_TYPE, v);
-        }
+    if !resp.content_type.is_empty()
+        && let Ok(v) = resp.content_type.parse()
+    {
+        r.headers_mut().insert(axum::http::header::CONTENT_TYPE, v);
     }
     for (k, v) in resp.headers {
         if let (Ok(k), Ok(v)) = (k.parse::<axum::http::HeaderName>(), v.parse()) {

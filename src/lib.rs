@@ -3,6 +3,7 @@
 pub mod api;
 pub mod cli;
 pub mod config;
+pub mod context;
 pub mod logging;
 pub mod mcp;
 pub mod server;

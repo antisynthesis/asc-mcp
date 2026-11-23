@@ -322,10 +322,10 @@ impl CallToolResult {
         if let Some(rt) = self.result_type {
             m.insert("resultType".into(), Value::String(rt.into()));
         }
-        if let Some(meta) = &self.meta {
-            if !meta.is_empty() {
-                m.insert("_meta".into(), Value::Object(meta.clone()));
-            }
+        if let Some(meta) = &self.meta
+            && !meta.is_empty()
+        {
+            m.insert("_meta".into(), Value::Object(meta.clone()));
         }
         Value::Object(m)
     }

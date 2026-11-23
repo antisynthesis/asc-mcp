@@ -871,11 +871,10 @@ async fn handle_get_in_app_purchase_availability(c: Arc<Client>, args: Args) -> 
     let _ = writeln!(sb, "ID: {}", resp.data.id);
     let _ = writeln!(sb, "Available In New Territories: {}", resp.data.attributes.available_in_new_territories);
     // Best-effort: also show the territories the availability covers.
-    if let Ok(territories) = c.list_in_app_purchase_available_territories(&resp.data.id, None).await {
-        if !territories.data.is_empty() {
+    if let Ok(territories) = c.list_in_app_purchase_available_territories(&resp.data.id, None).await
+        && !territories.data.is_empty() {
             let _ = write!(sb, "\n{}", format_territories(&territories.data));
         }
-    }
     Ok(data_result(&sb, &resp.data))
 }
 
@@ -981,11 +980,10 @@ async fn handle_get_subscription_plan_availability(c: Arc<Client>, args: Args) -
     };
     let mut sb = format_subscription_plan_availability(&resp.data);
     // Best-effort: also show the territories the plan is available in.
-    if let Ok(territories) = c.list_subscription_plan_available_territories(&resp.data.id, None).await {
-        if !territories.data.is_empty() {
+    if let Ok(territories) = c.list_subscription_plan_available_territories(&resp.data.id, None).await
+        && !territories.data.is_empty() {
             let _ = write!(sb, "\n{}", format_territories(&territories.data));
         }
-    }
     Ok(data_result(&sb, &resp.data))
 }
 
