@@ -15,21 +15,104 @@ permissions:
   contents: write   # create the GitHub release
   packages: write   # push images to ghcr.io
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
-  goreleaser:
-    name: goreleaser
+  build:
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: x86_64-unknown-linux-musl,  runner: ubuntu-latest,    os: linux,  arch: x86_64, docker: amd64 }
+          - { target: aarch64-unknown-linux-musl, runner: ubuntu-24.04-arm, os: linux,  arch: arm64,  docker: arm64 }
+          - { target: x86_64-apple-darwin,        runner: macos-latest,     os: darwin, arch: x86_64 }
+          - { target: aarch64-apple-darwin,       runner: macos-latest,     os: darwin, arch: arm64 }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install musl tools
+        if: matrix.os == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-snapshot-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build
+        shell: bash
+        env:
+          ASC_MCP_VERSION: ${{ steps.version.outputs.version }}
+          ASC_MCP_COMMIT: ${{ github.sha }}
+        run: |
+          export ASC_MCP_BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        run: |
+          name="asc-mcp_${{ steps.version.outputs.version }}_${{ matrix.os }}_${{ matrix.arch }}"
+          mkdir -p "pkg/$name" dist
+          cp "target/${{ matrix.target }}/release/asc-mcp" LICENSE README.md CHANGELOG.md "pkg/$name/"
+          tar -C "pkg/$name" -czf "dist/$name.tar.gz" .
+          if [[ -n "${{ matrix.docker }}" ]]; then
+            mkdir -p "docker/${{ matrix.docker }}"
+            cp "target/${{ matrix.target }}/release/asc-mcp" "docker/${{ matrix.docker }}/asc-mcp"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.target }}
+          path: dist/*.tar.gz
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.docker != ''
+        with:
+          name: docker-${{ matrix.docker }}
+          path: docker/
+          retention-days: 1
+
+  publish:
+    name: publish
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # goreleaser inspects the full history for the changelog
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/download-artifact@v4
         with:
-          go-version-file: go.mod
-          cache: true
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: docker-*
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum *.tar.gz > checksums.txt
+          cat checksums.txt
+          chmod +x amd64/asc-mcp arm64/asc-mcp
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -47,25 +130,45 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: goreleaser (snapshot)
-        if: ${{ inputs.snapshot }}
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: '~> v2'
-          args: release --clean --snapshot --skip=publish
+      - name: Resolve version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-snapshot-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: goreleaser (release)
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.release
+          platforms: linux/amd64,linux/arm64
+          push: ${{ !inputs.snapshot }}
+          tags: |
+            ghcr.io/antisynthesis/asc-mcp:${{ steps.version.outputs.version }}
+            ghcr.io/antisynthesis/asc-mcp:latest
+          labels: |
+            org.opencontainers.image.title=asc-mcp
+            org.opencontainers.image.description=MCP server for Apple App Store Connect
+            org.opencontainers.image.source=https://github.com/antisynthesis/asc-mcp
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Create GitHub release
         if: ${{ !inputs.snapshot }}
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          distribution: goreleaser
-          version: '~> v2'
-          args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          prerelease=""
+          [[ "${{ steps.version.outputs.version }}" == *-* ]] && prerelease="--prerelease"
+          gh release create "${GITHUB_REF_NAME}" dist/*.tar.gz dist/checksums.txt \
+            --title "v${{ steps.version.outputs.version }}" --generate-notes $prerelease \
+            --notes "**Container image**: \`ghcr.io/antisynthesis/asc-mcp:${{ steps.version.outputs.version }}\`"
 
-      - name: Upload artifacts
+      - name: Upload snapshot artifacts
         if: ${{ inputs.snapshot }}
         uses: actions/upload-artifact@v4
         with:

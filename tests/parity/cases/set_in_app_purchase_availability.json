@@ -1,0 +1,11 @@
+[
+  {
+    "name": "flag-default",
+    "args": {
+      "iap_id": "i1",
+      "territory_ids": [
+        "USA"
+      ]
+    }
+  }
+]

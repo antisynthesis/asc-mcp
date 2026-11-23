@@ -1,0 +1,27 @@
+[
+  {
+    "name": "limits",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "limit": 999,
+      "sort": [
+        "-referenceName"
+      ],
+      "filter": {
+        "archived": [
+          "false"
+        ]
+      }
+    }
+  },
+  {
+    "name": "neg",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "limit": -1
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

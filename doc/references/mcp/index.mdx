@@ -2,6 +2,8 @@
 title: Specification
 ---
 
+<div id="enable-section-numbers" />
+
 [Model Context Protocol](https://modelcontextprotocol.io) (MCP) is an open protocol that
 enables seamless integration between LLM applications and external data sources and
 tools. Whether you're building an AI-powered IDE, enhancing a chat interface, or creating
@@ -10,7 +12,7 @@ they need.
 
 This specification defines the authoritative protocol requirements, based on the
 TypeScript schema in
-[schema.ts](https://github.com/modelcontextprotocol/specification/blob/main/schema/2024-11-05/schema.ts).
+[schema.ts](https://github.com/modelcontextprotocol/specification/blob/main/schema/2026-07-28/schema.ts).
 
 For implementation guides and examples, visit
 [modelcontextprotocol.io](https://modelcontextprotocol.io).
@@ -48,8 +50,8 @@ and tools into the ecosystem of AI applications.
 ### Base Protocol
 
 - [JSON-RPC](https://www.jsonrpc.org/) message format
-- Stateful connections
-- Server and client capability negotiation
+- Stateless, self-contained requests
+- Per-request capability negotiation
 
 ### Features
 
@@ -59,9 +61,9 @@ Servers offer any of the following features to clients:
 - **Prompts**: Templated messages and workflows for users
 - **Tools**: Functions for the AI model to execute
 
-Clients may offer the following feature to servers:
+Clients may offer the following features to servers:
 
-- **Sampling**: Server-initiated agentic behaviors and recursive LLM interactions
+- **Elicitation**: Server requests for additional information from users
 
 ### Additional Utilities
 
@@ -69,7 +71,22 @@ Clients may offer the following feature to servers:
 - Progress tracking
 - Cancellation
 - Error reporting
-- Logging
+
+### Extensions
+
+Beyond the core protocol, MCP defines optional [extensions](/extensions/overview)
+that add modular, specialized, or experimental functionality. Extensions
+are always opt-in and require explicit support from both client and server, [negotiated
+through capabilities](/extensions/overview#negotiation) that clients declare on each
+request and servers declare in their `server/discover` result.
+Notable extensions include:
+
+- **[Tasks](/extensions/tasks/overview)**: Asynchronous execution of long-running
+  operations, with polling, mid-flight input, and durable handles
+- **[Skills over MCP](/community/working-groups/skills-over-mcp)**: Rich, structured
+  instructions for agent workflows, discovered and consumed through MCP
+- **[MCP Apps](/extensions/apps/overview)**: Interactive UI elements (charts, forms,
+  video players) rendered inline within conversations
 
 ## Security and Trust & Safety
 
@@ -91,17 +108,11 @@ considerations that all implementors must carefully address.
 
 3. **Tool Safety**
    - Tools represent arbitrary code execution and must be treated with appropriate
-     caution
+     caution.
+     - In particular, descriptions of tool behavior such as annotations should be
+       considered untrusted, unless obtained from a trusted server.
    - Hosts must obtain explicit user consent before invoking any tool
    - Users should understand what each tool does before authorizing its use
-
-4. **LLM Sampling Controls**
-   - Users must explicitly approve any LLM sampling requests
-   - Users should control:
-     - Whether sampling occurs at all
-     - The actual prompt that will be sent
-     - What results the server can see
-   - The protocol intentionally limits server visibility into prompts
 
 ### Implementation Guidelines
 
@@ -122,22 +133,22 @@ Explore the detailed specification for each protocol component:
   <Card
     title="Architecture"
     icon="sitemap"
-    href="/specification/2024-11-05/architecture"
+    href="/specification/2026-07-28/architecture"
   />
   <Card
     title="Base Protocol"
     icon="code"
-    href="/specification/2024-11-05/basic"
+    href="/specification/2026-07-28/basic"
   />
   <Card
     title="Server Features"
     icon="server"
-    href="/specification/2024-11-05/server"
+    href="/specification/2026-07-28/server"
   />
   <Card
     title="Client Features"
     icon="user"
-    href="/specification/2024-11-05/client"
+    href="/specification/2026-07-28/client"
   />
-  <Card title="Contributing" icon="pencil" href="/development/contributing" />
+  <Card title="Contributing" icon="pencil" href="/community/contributing" />
 </CardGroup>

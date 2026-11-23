@@ -1,0 +1,21 @@
+[
+  {
+    "name": "with-filter",
+    "args": {
+      "app_info_id": "a",
+      "filter": {
+        "locale": [
+          "en-US"
+        ]
+      },
+      "fields": {
+        "appInfoLocalizations": [
+          "name"
+        ]
+      }
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

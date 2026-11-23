@@ -1,0 +1,12 @@
+[
+  {
+    "name": "escaped",
+    "args": {
+      "workflow_id": "w/1"
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

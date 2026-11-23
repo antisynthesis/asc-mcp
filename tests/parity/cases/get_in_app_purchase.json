@@ -1,0 +1,11 @@
+[
+  {
+    "name": "escaped-id",
+    "args": {
+      "iap_id": "a/b c?d"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

@@ -1,0 +1,19 @@
+[
+  {
+    "background_asset_id": "b1",
+    "archived": false
+  },
+  {
+    "background_asset_id": "b1",
+    "archived": true
+  },
+  {
+    "name": "no-archived",
+    "args": {
+      "background_asset_id": "b1"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

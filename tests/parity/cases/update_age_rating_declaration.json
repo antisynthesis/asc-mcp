@@ -1,0 +1,23 @@
+[
+  {
+    "name": "partial-false",
+    "args": {
+      "declaration_id": "d1",
+      "contests": "NONE",
+      "horror_or_fear_themes": "FREQUENT_OR_INTENSE",
+      "gambling": false,
+      "seventeen_plus": false
+    }
+  },
+  {
+    "name": "empty-strings",
+    "args": {
+      "declaration_id": "d1",
+      "contests": "",
+      "violence_realistic": ""
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

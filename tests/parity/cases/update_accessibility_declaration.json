@@ -1,0 +1,15 @@
+[
+  {
+    "declaration_id": "d1",
+    "publish": true
+  },
+  {
+    "declaration_id": "d1",
+    "publish": false,
+    "supports_reduced_motion": true,
+    "supports_voice_control": false,
+    "supports_sufficient_contrast": true,
+    "supports_differentiate_without_color_alone": true,
+    "supports_audio_descriptions": false
+  }
+]

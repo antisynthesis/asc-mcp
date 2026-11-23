@@ -1,0 +1,21 @@
+[
+  {
+    "vendor_number": "8",
+    "report_type": "SALES",
+    "report_sub_type": "SUMMARY",
+    "frequency": "DAILY",
+    "report_date": "2024-01-01"
+  },
+  {
+    "name": "missing-frequency",
+    "args": {
+      "vendor_number": "8",
+      "report_type": "SALES",
+      "report_sub_type": "SUMMARY",
+      "report_date": "d"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

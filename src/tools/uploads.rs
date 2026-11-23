@@ -1,0 +1,371 @@
+//! Asset upload tools.
+
+#![allow(unused_imports)]
+
+use super::prelude::*;
+
+/// Registers this module's tools in definition order.
+pub(super) fn register_upload_tools(r: &mut Registry) {
+    r.register(
+        tool(r##"{
+            "name": "upload_app_screenshot",
+            "description": "Reserve, upload, and commit an App Store screenshot to an existing screenshot set. Provide exactly one of file_path or file_data_base64. Returns the final screenshot record once Apple has confirmed the bytes.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "file_data_base64": {
+                        "type": "string",
+                        "description": "Standard base64 (RFC 4648) encoded bytes of the file. Use this when the client must transport the file across a remote transport such as HTTP."
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "description": "The original file name (e.g. iphone6.5-1.png). Apple uses this verbatim in the asset URL."
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Absolute path to the file on the server's local filesystem. Use this when the MCP server and the file are on the same host (most stdio scenarios)."
+                    },
+                    "screenshot_set_id": {
+                        "type": "string",
+                        "description": "The App Screenshot Set ID that the new screenshot will belong to."
+                    }
+                },
+                "required": [
+                    "screenshot_set_id",
+                    "file_name"
+                ]
+            },
+            "annotations": {
+                "title": "Upload App Screenshot",
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": true
+            }
+        }"##),
+        handler!(handle_upload_app_screenshot),
+    );
+    r.register(
+        tool(r##"{
+            "name": "upload_app_preview",
+            "description": "Reserve, upload, and commit an App Store preview video to an existing preview set. Provide exactly one of file_path or file_data_base64. mime_type defaults to video/mp4 if omitted. Returns the final preview record once Apple has confirmed the bytes.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "file_data_base64": {
+                        "type": "string",
+                        "description": "Standard base64 (RFC 4648) encoded bytes of the file. Use this when the client must transport the file across a remote transport such as HTTP."
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "description": "The original file name (e.g. iphone6.5-1.mp4)."
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Absolute path to the file on the server's local filesystem. Use this when the MCP server and the file are on the same host (most stdio scenarios)."
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "description": "MIME type of the preview file. Defaults to video/mp4."
+                    },
+                    "preview_set_id": {
+                        "type": "string",
+                        "description": "The App Preview Set ID that the new preview will belong to."
+                    }
+                },
+                "required": [
+                    "preview_set_id",
+                    "file_name"
+                ]
+            },
+            "annotations": {
+                "title": "Upload App Preview",
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": true
+            }
+        }"##),
+        handler!(handle_upload_app_preview),
+    );
+    r.register(
+        tool(r##"{
+            "name": "upload_review_attachment",
+            "description": "Reserve, upload, and commit an App Store review attachment (PDF, screenshot, or other supporting material) to an App Store Review Detail. Provide exactly one of file_path or file_data_base64.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "file_data_base64": {
+                        "type": "string",
+                        "description": "Standard base64 (RFC 4648) encoded bytes of the file. Use this when the client must transport the file across a remote transport such as HTTP."
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "description": "The original file name."
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Absolute path to the file on the server's local filesystem. Use this when the MCP server and the file are on the same host (most stdio scenarios)."
+                    },
+                    "review_detail_id": {
+                        "type": "string",
+                        "description": "The App Store Review Detail ID that the attachment will belong to."
+                    }
+                },
+                "required": [
+                    "review_detail_id",
+                    "file_name"
+                ]
+            },
+            "annotations": {
+                "title": "Upload Review Attachment",
+                "readOnlyHint": false,
+                "destructiveHint": false,
+                "idempotentHint": false,
+                "openWorldHint": true
+            }
+        }"##),
+        handler!(handle_upload_review_attachment),
+    );
+}
+
+/// The largest payload loaded from disk or decoded
+/// from base64 before it reaches the API client.
+pub(crate) const MAX_LOADED_FILE_SIZE: usize = api::MAX_UPLOAD_SIZE;
+
+/// Resolves exactly one of `file_path` (local stdio sessions) or
+/// `file_data_base64` (remote transports) to the bytes to upload. Error
+/// strings are part of the tool output and kept stable.
+pub(crate) fn load_upload_body(file_path: &str, file_data_base64: &str) -> Result<Vec<u8>, String> {
+    let has_path = !file_path.is_empty();
+    let has_data = !file_data_base64.is_empty();
+    if has_path == has_data {
+        return Err("provide exactly one of file_path or file_data_base64".into());
+    }
+    if has_data {
+        let b = decode_base64_flexible(file_data_base64)
+            .map_err(|e| format!("file_data_base64 is not valid base64: {e}"))?;
+        if b.len() > MAX_LOADED_FILE_SIZE {
+            return Err(format!("file_data exceeds max size of {MAX_LOADED_FILE_SIZE} bytes"));
+        }
+        return Ok(b);
+    }
+    let abs = abs_path(file_path).map_err(|e| format!("resolve file_path: {e}"))?;
+    check_upload_policy(&abs)?;
+    let meta = std::fs::metadata(&abs)
+        .map_err(|e| format!("stat file_path: {}", crate::wire::os::path_error("stat", &abs, &e)))?;
+    if meta.is_dir() {
+        return Err("file_path is a directory".into());
+    }
+    if meta.len() as usize > MAX_LOADED_FILE_SIZE {
+        return Err(format!("file at {abs} exceeds max size of {MAX_LOADED_FILE_SIZE} bytes"));
+    }
+    std::fs::read(&abs).map_err(|e| crate::wire::os::path_error("open", &abs, &e))
+}
+
+/// Applies the request's upload policy to a resolved `file_path`. Over a
+/// shared (multi-user) transport, local paths would let any caller upload
+/// the server's own files, so they are refused unless the operator named an
+/// upload directory, and then only paths inside it (after resolving
+/// symlinks) are accepted.
+fn check_upload_policy(abs: &str) -> Result<(), String> {
+    use crate::context::{RequestContext, UploadPolicy};
+    let Some(ctx) = RequestContext::current() else { return Ok(()) };
+    match &ctx.uploads {
+        UploadPolicy::Unrestricted => Ok(()),
+        UploadPolicy::Disabled => Err(
+            "file_path is not available on this server; send the file contents as file_data_base64".into(),
+        ),
+        UploadPolicy::Within(root) => {
+            let real = std::fs::canonicalize(abs)
+                .map_err(|e| format!("stat file_path: {}", crate::wire::os::path_error("stat", abs, &e)))?;
+            if real.starts_with(root) {
+                Ok(())
+            } else {
+                Err(format!("file_path must be inside the server's upload directory ({})", root.display()))
+            }
+        }
+    }
+}
+
+/// Decodes base64 in the standard or URL-safe alphabet, with or without
+/// padding. CR and LF are ignored and non-canonical trailing bits are
+/// accepted.
+pub(crate) fn decode_base64_flexible(s: &str) -> Result<Vec<u8>, String> {
+    use base64::alphabet::{STANDARD, URL_SAFE};
+    use base64::engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig};
+    use base64::Engine;
+    let cleaned: String = s.chars().filter(|c| *c != '\r' && *c != '\n').collect();
+    let cfg = |pad: DecodePaddingMode| {
+        GeneralPurposeConfig::new().with_decode_allow_trailing_bits(true).with_decode_padding_mode(pad)
+    };
+    let engines = [
+        GeneralPurpose::new(&STANDARD, cfg(DecodePaddingMode::RequireCanonical)),
+        GeneralPurpose::new(&STANDARD, cfg(DecodePaddingMode::RequireNone)),
+        GeneralPurpose::new(&URL_SAFE, cfg(DecodePaddingMode::RequireCanonical)),
+        GeneralPurpose::new(&URL_SAFE, cfg(DecodePaddingMode::RequireNone)),
+    ];
+    for e in &engines {
+        if let Ok(b) = e.decode(&cleaned) {
+            return Ok(b);
+        }
+    }
+    Err("unrecognized base64 encoding".into())
+}
+
+/// Makes a path absolute: joins relative paths onto the working directory and
+/// cleans the result lexically.
+pub(crate) fn abs_path(path: &str) -> Result<String, String> {
+    let joined = if path.starts_with('/') {
+        path.to_string()
+    } else {
+        let cwd = std::env::current_dir().map_err(|e| crate::wire::os::errno_text(&e))?;
+        format!("{}/{}", cwd.display(), path)
+    };
+    Ok(clean_path(&joined))
+}
+
+/// Lexically cleans a Unix path: collapses repeated and `.` segments,
+/// resolves `..` where possible, and returns `.` for an empty path.
+pub(crate) fn clean_path(path: &str) -> String {
+    if path.is_empty() {
+        return ".".into();
+    }
+    let rooted = path.starts_with('/');
+    let mut out: Vec<&str> = Vec::new();
+    for part in path.split('/') {
+        match part {
+            "" | "." => {}
+            ".." => {
+                if out.last().is_some_and(|p| *p != "..") {
+                    out.pop();
+                } else if !rooted {
+                    out.push("..");
+                }
+            }
+            p => out.push(p),
+        }
+    }
+    let body = out.join("/");
+    match (rooted, body.is_empty()) {
+        (true, _) => format!("/{body}"),
+        (false, true) => ".".into(),
+        (false, false) => body,
+    }
+}
+
+/// Handles `upload_app_screenshot`.
+async fn handle_upload_app_screenshot(c: Arc<Client>, args: Args) -> HandlerResult {
+    json_struct! {
+    struct Params ("struct { ScreenshotSetID string \"json:\\\"screenshot_set_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; FilePath string \"json:\\\"file_path\\\"\"; FileDataBase64 string \"json:\\\"file_data_base64\\\"\" }", "") {
+        screenshot_set_id: String => "screenshot_set_id";
+        file_name: String => "file_name";
+        file_path: String => "file_path";
+        file_data_base64: String => "file_data_base64";
+    }
+    }
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Ok(error_result(format!("invalid arguments: {e}")));
+    }
+    if params.screenshot_set_id.is_empty() {
+        return Ok(error_result("screenshot_set_id is required"));
+    }
+    if params.file_name.is_empty() {
+        return Ok(error_result("file_name is required"));
+    }
+    let body = match load_upload_body(&params.file_path, &params.file_data_base64) {
+        Ok(b) => b,
+        Err(e) => return Ok(error_result(e)),
+    };
+    let resp = match c.upload_app_screenshot(&params.screenshot_set_id, &params.file_name, &body).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to upload screenshot: {e}"))),
+    };
+    let text = format!(
+        "Uploaded screenshot {} ({}, {} bytes) to set {}.",
+        resp.data.id,
+        params.file_name,
+        body.len(),
+        params.screenshot_set_id
+    );
+    Ok(data_result(&text, &resp.data))
+}
+
+/// Handles `upload_app_preview`.
+async fn handle_upload_app_preview(c: Arc<Client>, args: Args) -> HandlerResult {
+    json_struct! {
+    struct Params ("struct { PreviewSetID string \"json:\\\"preview_set_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; MimeType string \"json:\\\"mime_type\\\"\"; FilePath string \"json:\\\"file_path\\\"\"; FileDataBase64 string \"json:\\\"file_data_base64\\\"\" }", "") {
+        preview_set_id: String => "preview_set_id";
+        file_name: String => "file_name";
+        mime_type: String => "mime_type";
+        file_path: String => "file_path";
+        file_data_base64: String => "file_data_base64";
+    }
+    }
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Ok(error_result(format!("invalid arguments: {e}")));
+    }
+    if params.preview_set_id.is_empty() {
+        return Ok(error_result("preview_set_id is required"));
+    }
+    if params.file_name.is_empty() {
+        return Ok(error_result("file_name is required"));
+    }
+    let body = match load_upload_body(&params.file_path, &params.file_data_base64) {
+        Ok(b) => b,
+        Err(e) => return Ok(error_result(e)),
+    };
+    let resp = match c.upload_app_preview(&params.preview_set_id, &params.file_name, &params.mime_type, &body).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to upload preview: {e}"))),
+    };
+    let text = format!(
+        "Uploaded preview {} ({}, {} bytes) to set {}.",
+        resp.data.id,
+        params.file_name,
+        body.len(),
+        params.preview_set_id
+    );
+    Ok(data_result(&text, &resp.data))
+}
+
+/// Handles `upload_review_attachment`.
+async fn handle_upload_review_attachment(c: Arc<Client>, args: Args) -> HandlerResult {
+    json_struct! {
+    struct Params ("struct { ReviewDetailID string \"json:\\\"review_detail_id\\\"\"; FileName string \"json:\\\"file_name\\\"\"; FilePath string \"json:\\\"file_path\\\"\"; FileDataBase64 string \"json:\\\"file_data_base64\\\"\" }", "") {
+        review_detail_id: String => "review_detail_id";
+        file_name: String => "file_name";
+        file_path: String => "file_path";
+        file_data_base64: String => "file_data_base64";
+    }
+    }
+    let mut params = Params::default();
+    if let Err(e) = unmarshal_args(args.as_ref(), &mut params) {
+        return Ok(error_result(format!("invalid arguments: {e}")));
+    }
+    if params.review_detail_id.is_empty() {
+        return Ok(error_result("review_detail_id is required"));
+    }
+    if params.file_name.is_empty() {
+        return Ok(error_result("file_name is required"));
+    }
+    let body = match load_upload_body(&params.file_path, &params.file_data_base64) {
+        Ok(b) => b,
+        Err(e) => return Ok(error_result(e)),
+    };
+    let resp = match c.upload_app_store_review_attachment(&params.review_detail_id, &params.file_name, &body).await {
+        Ok(r) => r,
+        Err(e) => return Ok(error_result(format!("Failed to upload review attachment: {e}"))),
+    };
+    let text = format!(
+        "Uploaded review attachment {} ({}, {} bytes) to review detail {}.",
+        resp.data.id,
+        params.file_name,
+        body.len(),
+        params.review_detail_id
+    );
+    Ok(data_result(&text, &resp.data))
+}
+

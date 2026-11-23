@@ -1,0 +1,20 @@
+[
+  {
+    "name": "limit-over-max",
+    "args": {
+      "limit": 500
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "limit-negative",
+    "args": {
+      "limit": -3
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

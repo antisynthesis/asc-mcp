@@ -1,16 +1,21 @@
-# Runtime-only image used by goreleaser. The asc-mcp binary is built by
-# goreleaser for the target platform and COPYd in; this image does NOT
-# compile Go itself. For local development image builds, use Dockerfile.
+# Runtime-only image used by the release workflow. The asc-mcp binaries
+# are built by the workflow for each target platform and copied in from
+# dist/<arch>/; this image does NOT compile Rust itself. For local image
+# builds, use Dockerfile.
 FROM alpine:3.20
+
+ARG TARGETARCH
 
 RUN apk --no-cache add ca-certificates && \
     adduser -D -g '' -u 10001 appuser
 
-COPY asc-mcp /usr/local/bin/asc-mcp
+COPY dist/${TARGETARCH}/asc-mcp /usr/local/bin/asc-mcp
 
 USER appuser
 
 EXPOSE 8080
 
 ENTRYPOINT ["/usr/local/bin/asc-mcp"]
-CMD ["serve-http", "--addr", ":8080"]
+# Inside a container the server must listen on all interfaces; the
+# binary's own default is loopback-only.
+CMD ["serve-http", "--addr", "0.0.0.0:8080"]

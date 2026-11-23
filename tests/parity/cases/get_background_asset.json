@@ -1,0 +1,9 @@
+[
+  {
+    "background_asset_id": "b1",
+    "include": [
+      "app",
+      "appStoreVersion"
+    ]
+  }
+]

@@ -1,0 +1,21 @@
+[
+  {
+    "name": "filter-sort",
+    "args": {
+      "app_id": "A1",
+      "filter": {
+        "rating": [
+          "5"
+        ]
+      },
+      "sort": [
+        "-createdDate"
+      ],
+      "limit": 500
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

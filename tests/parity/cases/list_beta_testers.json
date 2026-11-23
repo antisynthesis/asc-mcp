@@ -1,0 +1,30 @@
+[
+  {
+    "name": "group-and-filter",
+    "args": {
+      "beta_group_id": "G1",
+      "filter": {
+        "betaGroups": [
+          "G2"
+        ],
+        "email": [
+          "x@y.z"
+        ]
+      }
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  },
+  {
+    "name": "no-clamp",
+    "args": {
+      "limit": 300
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

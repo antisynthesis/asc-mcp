@@ -1,0 +1,23 @@
+[
+  {
+    "name": "zero-pointers",
+    "args": {
+      "experiment_id": "e",
+      "traffic_proportion": 0,
+      "started": false
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "only-started",
+    "args": {
+      "experiment_id": "e",
+      "started": true
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

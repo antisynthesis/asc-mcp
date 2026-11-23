@@ -1,0 +1,33 @@
+[
+  {
+    "name": "group",
+    "args": {
+      "game_center_group_id": "grp-1",
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v"
+    }
+  },
+  {
+    "name": "detail",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v"
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  },
+  {
+    "name": "neither",
+    "args": {
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

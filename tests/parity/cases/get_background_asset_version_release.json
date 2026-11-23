@@ -1,0 +1,20 @@
+[
+  {
+    "release_type": "EXTERNAL_BETA",
+    "release_id": "r1"
+  },
+  {
+    "release_type": "APP_STORE",
+    "release_id": "r1"
+  },
+  {
+    "name": "bad-type",
+    "args": {
+      "release_type": "BOGUS",
+      "release_id": "r1"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

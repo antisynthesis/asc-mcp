@@ -1,0 +1,12 @@
+[
+  {
+    "name": "missing-name",
+    "args": {
+      "app_info_id": "a",
+      "locale": "en-US"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

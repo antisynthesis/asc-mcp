@@ -1,0 +1,11 @@
+[
+  {
+    "name": "missing-name",
+    "args": {
+      "app_id": "a"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

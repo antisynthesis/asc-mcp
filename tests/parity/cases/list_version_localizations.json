@@ -1,0 +1,14 @@
+[
+  {
+    "name": "with-sort",
+    "args": {
+      "version_id": "v",
+      "sort": [
+        "locale"
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

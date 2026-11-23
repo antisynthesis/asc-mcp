@@ -1,0 +1,63 @@
+[
+  {
+    "name": "some-empty",
+    "args": {
+      "leaderboard_set_id": "s-1",
+      "leaderboard_ids": [
+        "a",
+        "",
+        "b"
+      ]
+    },
+    "modes": [
+      "rich",
+      "rawerror",
+      "notfound"
+    ]
+  },
+  {
+    "name": "all-empty",
+    "args": {
+      "leaderboard_set_id": "s-1",
+      "leaderboard_ids": [
+        "",
+        ""
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-ids",
+    "args": {
+      "leaderboard_set_id": "s-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "null-ids",
+    "args": {
+      "leaderboard_set_id": "s-1",
+      "leaderboard_ids": null
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "bad-id-type",
+    "args": {
+      "leaderboard_set_id": "s-1",
+      "leaderboard_ids": [
+        "a",
+        3
+      ]
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

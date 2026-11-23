@@ -1,0 +1,19 @@
+[
+  {
+    "name": "platform-mac",
+    "args": {
+      "app_id": "a",
+      "version_id": "v",
+      "platform": "MAC_OS"
+    }
+  },
+  {
+    "name": "missing-version",
+    "args": {
+      "app_id": "a"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

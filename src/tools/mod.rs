@@ -1,0 +1,176 @@
+//! MCP tool implementations for App Store Connect.
+
+use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
+use std::sync::Arc;
+
+use serde_json::Value;
+
+use crate::api::Client;
+use crate::mcp::{CallToolResult, Tool};
+
+mod all;
+pub mod pagination;
+include!("modules.rs");
+
+/// Raw tool arguments, kept verbatim (`None` when the request had no
+/// `arguments` member).
+pub type Args = Option<Value>;
+
+/// A handler outcome. `Err` carries a message that is reported to the
+/// client as an `isError` tool result.
+pub type HandlerResult = Result<CallToolResult, String>;
+
+/// A boxed handler future.
+pub type HandlerFuture = Pin<Box<dyn Future<Output = HandlerResult> + Send>>;
+
+/// A tool handler.
+pub type Handler = Arc<dyn Fn(Arc<Client>, Args) -> HandlerFuture + Send + Sync>;
+
+/// Error returned by [`Registry::call_tool`] for unregistered names.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CallError {
+    /// No tool with that name is registered.
+    UnknownTool(String),
+    /// The tool ran and failed (reported as an `isError` result).
+    Failed(String),
+}
+
+/// Tool definitions and their handlers, in registration order.
+pub struct Registry {
+    client: Option<Arc<Client>>,
+    tools: Vec<Tool>,
+    handlers: HashMap<String, Handler>,
+}
+
+impl Registry {
+    /// Creates a registry with every built-in tool. `client` may be `None`
+    /// when the registry is only used to list tools.
+    pub fn new(client: Option<Arc<Client>>) -> Self {
+        let mut r = Self {
+            client,
+            tools: Vec::new(),
+            handlers: HashMap::new(),
+        };
+        all::register_all(&mut r);
+        r
+    }
+
+    /// Creates a registry with no tools (tests).
+    pub fn empty(client: Option<Arc<Client>>) -> Self {
+        Self {
+            client,
+            tools: Vec::new(),
+            handlers: HashMap::new(),
+        }
+    }
+
+    /// All tool definitions, in deterministic registration order.
+    pub fn list_tools(&self) -> &[Tool] {
+        &self.tools
+    }
+
+    /// Looks up a tool definition.
+    pub fn get(&self, name: &str) -> Option<&Tool> {
+        self.tools.iter().find(|t| t.name == name)
+    }
+
+    /// Executes a tool by name.
+    pub async fn call_tool(&self, name: &str, args: Args) -> Result<CallToolResult, CallError> {
+        let Some(handler) = self.handlers.get(name) else {
+            return Err(CallError::UnknownTool(format!("unknown tool: {name}")));
+        };
+        // A request context (multi-user HTTP) carries the caller's own
+        // client; otherwise the server-wide client is used.
+        let ctx = crate::context::RequestContext::current();
+        let client = match &ctx {
+            Some(c) if c.client.is_some() => c.client.clone(),
+            Some(c) if c.client_error.is_some() => {
+                return Err(CallError::Failed(
+                    c.client_error.clone().unwrap_or_default(),
+                ));
+            }
+            _ => self.client.clone(),
+        };
+        let Some(client) = client else {
+            return Err(CallError::Failed(
+                "no App Store Connect client configured".into(),
+            ));
+        };
+        let fut = handler(client, args);
+        let fut: HandlerFuture = match ctx {
+            Some(c) => Box::pin(c.scope(fut)),
+            None => fut,
+        };
+        // Run on its own task so a panicking handler is reported as a tool
+        // error instead of tearing down the connection. The task is
+        // aborted if this future is dropped (client cancellation, a closed
+        // HTTP connection, or the tool-call timeout): the handler must not
+        // keep running, and keep calling the API, after nobody is waiting
+        // for it.
+        struct AbortOnDrop(tokio::task::JoinHandle<HandlerResult>);
+        impl Drop for AbortOnDrop {
+            fn drop(&mut self) {
+                self.0.abort();
+            }
+        }
+        let mut task = AbortOnDrop(tokio::spawn(fut));
+        match (&mut task.0).await {
+            Ok(r) => r.map_err(CallError::Failed),
+            Err(e) if e.is_panic() => Err(CallError::Failed(
+                "internal error: tool handler panicked".into(),
+            )),
+            Err(_) => Err(CallError::Failed("context canceled".into())),
+        }
+    }
+
+    /// Adds a tool beyond the built-in set (tests inject fakes this way).
+    pub fn register(&mut self, tool: Tool, handler: Handler) {
+        self.handlers.insert(tool.name.clone(), handler);
+        self.tools.push(tool);
+    }
+}
+
+/// Parses a compiled-in tool definition.
+pub(crate) fn tool(json: &str) -> Tool {
+    Tool::from_json(json)
+}
+
+/// Wraps an `async fn(Arc<Client>, Args) -> HandlerResult` as a [`Handler`].
+#[macro_export]
+#[doc(hidden)]
+macro_rules! handler {
+    ($f:path) => {
+        ::std::sync::Arc::new(|c, a| {
+            ::std::boxed::Box::pin($f(c, a)) as $crate::tools::HandlerFuture
+        }) as $crate::tools::Handler
+    };
+}
+pub(crate) use handler;
+
+/// Everything tool modules need.
+#[allow(unused_imports)]
+pub(crate) mod prelude {
+    pub(crate) use std::fmt::Write as _;
+    pub(crate) use std::sync::Arc;
+
+    pub(crate) use serde_json::{Value, json};
+
+    pub(crate) use super::pagination::*;
+    pub(crate) use super::{Args, HandlerResult, Registry, handler, tool};
+    pub(crate) use crate::api::model::*;
+    pub(crate) use crate::api::{self, Client, ListOptions, sha256_hex};
+    pub(crate) use crate::json_struct;
+    pub(crate) use crate::mcp::CallToolResult;
+    pub(crate) use crate::wire::fmt::{bool_v, float_prec, float_v, quote, slice_v};
+    pub(crate) use crate::wire::json::{self as wirejson, unmarshal_args};
+    pub(crate) use crate::wire::url::Values;
+    pub(crate) use crate::wire::{
+        Base64Bytes, JsonDecode, JsonEncode, JsonMap, JsonSlice, RawMessage, Timestamp,
+    };
+
+    // Types shared across tool files.
+    pub(crate) use super::commerce_versions::CommerceListParams;
+    pub(crate) use super::gamecenter_content::GcListParams;
+}

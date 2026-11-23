@@ -36,7 +36,7 @@ upload flow for screenshots, previews, and review attachments:
 
 ## Prerequisites
 
-- Go 1.26.7 or later (older toolchains fetch it automatically)
+- Rust 1.88 or later (stable toolchain via [rustup](https://rustup.rs))
 - App Store Connect API credentials
 
 ## Getting App Store Connect API Credentials
@@ -761,57 +761,95 @@ make lint
 
 ## Architecture
 
-The MCP protocol layer, JWT/ES256 signing, and HTTP client are implemented
-using only the Go standard library. The CLI is built on
-[`spf13/cobra`](https://github.com/spf13/cobra) (see ADR-0004). No other
-runtime dependencies are required.
+`asc-mcp` is written in Rust on Tokio. The App Store Connect client uses
+`reqwest` (rustls); the HTTP transport uses `axum`; ES256 JWTs are signed
+with the RustCrypto `p256` crate. Wire types use an explicit JSON
+wire-format layer (`src/wire/`) so request bodies, results and error text
+stay byte-stable (ADR-0009).
 
-The server is dual-era: it speaks the stateless MCP protocol revision
-`2026-07-28` (per-request `_meta` version/capabilities, `server/discover`,
-no sessions) and still serves handshake-based clients, negotiating
-`2025-11-25`, `2025-06-18`, `2025-03-26`, or `2024-11-05` via `initialize`.
-Each request picks its era: a `_meta` `io.modelcontextprotocol/protocolVersion`
-key (or a `server/discover` call) selects the modern path; everything else
-takes the legacy path unchanged.
+The server speaks MCP revision `2026-07-28`: stateless, with per-request
+`_meta` version and capabilities, `server/discover`,
+`subscriptions/listen`, and no sessions. For compatibility it also serves
+handshake-based clients, negotiating `2025-11-25`, `2025-06-18`,
+`2025-03-26` or `2024-11-05` via `initialize`. **Those handshake revisions
+are deprecated** and will be removed in the next major release. Each request picks its
+era. A `_meta` `io.modelcontextprotocol/protocolVersion` key, a
+`server/discover` call, or (over HTTP) a modern `MCP-Protocol-Version`
+header selects the modern path. `initialize` and everything else take the
+legacy path.
 
 Two transports are supported, sharing the same dispatcher and tool registry:
 
 - `asc-mcp serve` — stdio. JSON-RPC messages on stdin/stdout. Use this when
   the server is spawned by a desktop client such as Claude Desktop.
-- `asc-mcp serve-http --addr :8080` — Streamable HTTP. `POST /mcp` for
-  JSON-RPC submissions, `GET /healthz` for the K8s probe, `GET /metrics`
-  for Prometheus scraping. Modern (`2026-07-28`) requests are sessionless
-  and must carry the `Mcp-Method` header (plus `Mcp-Name` on `tools/call`);
-  legacy clients get an `Mcp-Session-Id` on initialize, echo it on every
-  subsequent request, and may `DELETE /mcp` to end the session. Useful
-  flags:
+- `asc-mcp serve-http --addr 127.0.0.1:8080` — Streamable HTTP:
+  - `POST /mcp` for JSON-RPC submissions, `GET /healthz` for the K8s
+    probe, `GET /metrics` for Prometheus scraping.
+  - Modern (`2026-07-28`) requests are sessionless. They must carry
+    `MCP-Protocol-Version` and `Mcp-Method` headers that match the body,
+    plus `Mcp-Name` on `tools/call`.
+  - Deprecated handshake clients get an `Mcp-Session-Id` on initialize,
+    echo it on every subsequent request, and may `DELETE /mcp` to end the
+    session.
+
+  Useful flags:
+  - `--addr`: bind address, loopback by default. Use `0.0.0.0:8080` in
+    containers.
   - `--auth-tokens` (or `ASC_MCP_AUTH_TOKENS` env): comma-separated
     Bearer tokens. Required for any non-trusted-network deployment.
-  - `--allowed-origins`: comma-separated Origin allowlist (DNS rebinding
-    defense for browser clients).
+  - `--allowed-origins`: additional allowed `Origin` values. Loopback
+    origins and the server's own origin are always accepted; any other
+    browser origin is rejected with 403 (DNS rebinding defense).
   - `--tls-cert` / `--tls-key`: PEM cert+key to terminate TLS in
     process (TLS 1.2 minimum). Omit both to listen plain HTTP behind a
     TLS-terminating reverse proxy.
+  - `--oauth-issuer` / `--oauth-audience`: act as an OAuth 2.1 resource
+    server. The server publishes RFC 9728 metadata, validates JWT access
+    tokens (issuer, audience, expiry) and enforces `asc:read` / `asc:write`
+    scopes with step-up challenges.
+  - `--asc-credentials request`: each caller sends its own App Store
+    Connect key in `X-ASC-*` headers, so the server stores no App Store
+    Connect secrets.
+  - `--max-concurrent-per-caller`, `--tool-timeout`, `--max-body-bytes`,
+    `--upload-dir`: per-caller limits and upload restrictions for shared
+    deployments.
+
+  See [SETUP.md §8](SETUP.md#8-multi-user-deployments-on-an-agent-platform)
+  for multi-user deployments on an agent platform.
   - `--log-format` (json|text), `--log-level` (debug|info|warn|error).
 
 Asset uploads (screenshots, previews, review attachments) use the
 three-step App Store Connect handshake (reserve → chunked upload →
 commit) under the hood. Tools accept either a local `file_path` or a
-base64-encoded `file_data_base64` so they work both from stdio and over
-the HTTP transport.
+base64-encoded `file_data_base64`. Over HTTP, `file_path` is only honoured
+inside a configured `--upload-dir`.
 
 ```
 asc-mcp/
-├── cmd/asc-mcp/          # Application entry point
-├── internal/asc/
-│   ├── api/              # App Store Connect API client
-│   ├── config/           # Configuration management
-│   ├── server/           # MCP server implementation
-│   └── tools/            # Tool implementations
+├── src/
+│   ├── main.rs, cli.rs   # Entry point and command-line interface
+│   ├── config.rs         # Environment configuration
+│   ├── mcp.rs            # MCP protocol types and constants
+│   ├── context.rs        # Per-request caller identity, client and upload policy
+│   ├── server/           # Dispatcher, stdio and Streamable HTTP transports, OAuth, metrics
+│   ├── api/              # App Store Connect client, auth, models, endpoints
+│   ├── tools/            # Tool definitions and handlers, one file per area
+│   └── wire/             # JSON wire format, text formatting, timestamps, URL escaping
+├── tests/                # Integration tests (tests/parity: deprecated reference check)
 ├── config/               # Configuration templates
 ├── script/               # Build and test scripts
-└── doc/                  # Documentation
+├── ops/k8s/              # Kubernetes manifests
+└── doc/                  # Documentation and ADRs
 ```
+
+### Deprecated: reference comparison
+
+`tests/parity/` holds a deprecated differential check. It runs every tool,
+and the stdio and HTTP protocol paths, against a historical reference build
+reconstructed from git history (`make parity`; needs a Go toolchain). It
+runs only on manual CI dispatch and will be removed with the handshake
+protocol revisions. The integration tests in `tests/` are the supported
+test suite.
 
 ## License
 

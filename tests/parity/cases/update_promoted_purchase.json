@@ -1,0 +1,10 @@
+[
+  {
+    "name": "disable",
+    "args": {
+      "promoted_purchase_id": "pp1",
+      "enabled": false,
+      "visible_for_all_users": false
+    }
+  }
+]

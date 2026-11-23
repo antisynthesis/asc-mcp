@@ -1,0 +1,33 @@
+[
+  {
+    "name": "limits",
+    "args": {
+      "leaderboard_set_id": "s-1",
+      "leaderboard_id": "lb-1",
+      "limit": 500,
+      "include": [
+        "gameCenterLeaderboard"
+      ]
+    }
+  },
+  {
+    "name": "neg-limit",
+    "args": {
+      "leaderboard_set_id": "s-1",
+      "leaderboard_id": "lb-1",
+      "limit": -3
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-lb",
+    "args": {
+      "leaderboard_set_id": "s-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

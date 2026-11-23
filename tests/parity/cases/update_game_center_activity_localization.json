@@ -1,0 +1,23 @@
+[
+  {
+    "name": "desc-only",
+    "args": {
+      "localization_id": "l-1",
+      "description": "d"
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  },
+  {
+    "name": "neither",
+    "args": {
+      "localization_id": "l-1"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

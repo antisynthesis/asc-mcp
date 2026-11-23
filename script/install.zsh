@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BINARY_NAME="asc-mcp"
-INSTALL_DIR="${INSTALL_DIR:-${GOPATH:-$HOME/go}/bin}"
+INSTALL_DIR="${INSTALL_DIR:-${CARGO_HOME:-$HOME/.cargo}/bin}"
 
 echo "Building ${BINARY_NAME}..."
 ./script/build.zsh

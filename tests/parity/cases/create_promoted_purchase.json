@@ -1,0 +1,20 @@
+[
+  {
+    "name": "disabled-hidden",
+    "args": {
+      "app_id": "app1",
+      "in_app_purchase_id": "iap1",
+      "enabled": false,
+      "visible_for_all_users": false
+    }
+  },
+  {
+    "name": "missing-iap",
+    "args": {
+      "app_id": "app1"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

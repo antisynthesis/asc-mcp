@@ -1,0 +1,24 @@
+[
+  {
+    "name": "missing-offer-id",
+    "args": {
+      "subscription_id": "s1",
+      "reference_name": "r"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "empty-prices",
+    "args": {
+      "subscription_id": "s1",
+      "reference_name": "r",
+      "offer_id": "o1",
+      "price_ids": []
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

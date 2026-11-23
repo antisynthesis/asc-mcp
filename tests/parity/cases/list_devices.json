@@ -1,0 +1,17 @@
+[
+  {
+    "name": "filter",
+    "args": {
+      "filter": {
+        "status": [
+          "ENABLED"
+        ]
+      },
+      "limit": 500
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

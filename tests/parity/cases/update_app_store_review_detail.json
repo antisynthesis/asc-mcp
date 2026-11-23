@@ -1,0 +1,23 @@
+[
+  {
+    "name": "demo-false",
+    "args": {
+      "detail_id": "x",
+      "demo_account_required": false
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "demo-true",
+    "args": {
+      "detail_id": "x",
+      "demo_account_required": true,
+      "notes": "n"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "name": "no-expiry",
+    "args": {
+      "offer_code_id": "o1",
+      "custom_code": "SPRING",
+      "number_of_codes": 5
+    }
+  }
+]

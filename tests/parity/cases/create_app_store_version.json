@@ -1,0 +1,22 @@
+[
+  {
+    "name": "missing-version-string",
+    "args": {
+      "app_id": "a",
+      "platform": "IOS"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "missing-platform",
+    "args": {
+      "app_id": "a",
+      "version_string": "1.0"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

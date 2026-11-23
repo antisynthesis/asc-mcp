@@ -1,0 +1,23 @@
+[
+  {
+    "name": "neg-size",
+    "args": {
+      "version_id": "v1",
+      "file_name": "a.png",
+      "file_size": -1
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-name",
+    "args": {
+      "version_id": "v1",
+      "file_size": 10
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

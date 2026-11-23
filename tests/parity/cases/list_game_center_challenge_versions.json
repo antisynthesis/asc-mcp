@@ -1,0 +1,12 @@
+[
+  {
+    "name": "limit-max",
+    "args": {
+      "challenge_id": "ch-1",
+      "limit": 200
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

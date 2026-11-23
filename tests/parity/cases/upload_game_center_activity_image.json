@@ -1,0 +1,49 @@
+[
+  {
+    "name": "loc-path",
+    "args": {
+      "localization_id": "l-1",
+      "file_name": "a.png",
+      "file_path": "$FILE"
+    }
+  },
+  {
+    "name": "ver-b64",
+    "args": {
+      "version_id": "v-1",
+      "file_name": "a.png",
+      "file_data_base64": "$B64"
+    }
+  },
+  {
+    "name": "loc-none",
+    "args": {
+      "localization_id": "l-1",
+      "file_name": "a.png"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "loc-badb64",
+    "args": {
+      "localization_id": "l-1",
+      "file_name": "a.png",
+      "file_data_base64": "!!!"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-name",
+    "args": {
+      "localization_id": "l-1",
+      "file_path": "$FILE"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

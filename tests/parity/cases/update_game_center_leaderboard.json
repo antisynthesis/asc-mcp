@@ -1,0 +1,14 @@
+[
+  {
+    "name": "archived",
+    "args": {
+      "leaderboard_id": "lb-1",
+      "archived": true
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  }
+]

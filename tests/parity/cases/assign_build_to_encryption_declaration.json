@@ -1,0 +1,22 @@
+[
+  {
+    "name": "missing-build",
+    "args": {
+      "declaration_id": "d1"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "escaped-id",
+    "args": {
+      "declaration_id": "d/1",
+      "build_id": "b 1/2"
+    },
+    "modes": [
+      "rich",
+      "notfound"
+    ]
+  }
+]

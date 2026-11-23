@@ -1,0 +1,37 @@
+[
+  {
+    "name": "limit-zero",
+    "args": {
+      "limit": 0
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  },
+  {
+    "name": "no-clamp",
+    "args": {
+      "limit": 500
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  },
+  {
+    "name": "app-and-filter-app",
+    "args": {
+      "app_id": "A1",
+      "filter": {
+        "app": [
+          "A2"
+        ]
+      }
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

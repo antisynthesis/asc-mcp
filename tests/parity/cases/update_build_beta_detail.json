@@ -1,0 +1,24 @@
+[
+  {
+    "name": "false",
+    "args": {
+      "detail_id": "D1",
+      "auto_notify_enabled": false
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  },
+  {
+    "name": "null",
+    "args": {
+      "detail_id": "D1",
+      "auto_notify_enabled": null
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

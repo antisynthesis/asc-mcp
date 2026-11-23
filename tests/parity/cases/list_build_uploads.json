@@ -1,0 +1,21 @@
+[
+  {
+    "name": "filter-sort",
+    "args": {
+      "app_id": "A1",
+      "filter": {
+        "state": [
+          "PROCESSING"
+        ]
+      },
+      "sort": [
+        "-createdDate"
+      ],
+      "limit": 201
+    },
+    "modes": [
+      "rich",
+      "sparse"
+    ]
+  }
+]

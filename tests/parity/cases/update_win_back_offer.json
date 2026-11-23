@@ -1,0 +1,11 @@
+[
+  {
+    "name": "id-only",
+    "args": {
+      "offer_id": "o1"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

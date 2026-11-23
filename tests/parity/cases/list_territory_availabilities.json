@@ -1,0 +1,12 @@
+[
+  {
+    "name": "limit-over-max",
+    "args": {
+      "availability_id": "av1",
+      "limit": 201
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

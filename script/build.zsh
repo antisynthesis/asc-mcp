@@ -3,22 +3,18 @@ set -euo pipefail
 
 BINARY_NAME="asc-mcp"
 BUILD_DIR="bin"
-VERSION="${VERSION:-dev}"
-COMMIT="${COMMIT:-$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')}"
-BUILD_DATE="${BUILD_DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
-
-LDFLAGS="-w -s"
-LDFLAGS="${LDFLAGS} -X github.com/antisynthesis/asc-mcp/internal/asc/cmd.Version=${VERSION}"
-LDFLAGS="${LDFLAGS} -X github.com/antisynthesis/asc-mcp/internal/asc/cmd.Commit=${COMMIT}"
-LDFLAGS="${LDFLAGS} -X github.com/antisynthesis/asc-mcp/internal/asc/cmd.BuildDate=${BUILD_DATE}"
+export ASC_MCP_VERSION="${VERSION:-dev}"
+export ASC_MCP_COMMIT="${COMMIT:-$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')}"
+export ASC_MCP_BUILD_DATE="${BUILD_DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 
 mkdir -p "${BUILD_DIR}"
 
 echo "Building ${BINARY_NAME}..."
-echo "  Version:    ${VERSION}"
-echo "  Commit:     ${COMMIT}"
-echo "  Build Date: ${BUILD_DATE}"
+echo "  Version:    ${ASC_MCP_VERSION}"
+echo "  Commit:     ${ASC_MCP_COMMIT}"
+echo "  Build Date: ${ASC_MCP_BUILD_DATE}"
 
-go build -ldflags="${LDFLAGS}" -o "${BUILD_DIR}/${BINARY_NAME}" ./cmd/asc-mcp
+cargo build --release --locked
+cp "target/release/${BINARY_NAME}" "${BUILD_DIR}/${BINARY_NAME}"
 
 echo "Build complete: ${BUILD_DIR}/${BINARY_NAME}"

@@ -1,0 +1,37 @@
+[
+  {
+    "name": "no-flag",
+    "args": {
+      "subscription_id": "s1",
+      "plan_type": "MONTHLY",
+      "territory_ids": [
+        "USA",
+        "GBR"
+      ]
+    }
+  },
+  {
+    "name": "flag-false",
+    "args": {
+      "subscription_id": "s1",
+      "plan_type": "MONTHLY",
+      "territory_ids": [
+        "USA"
+      ],
+      "available_in_new_territories": false
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "no-territories",
+    "args": {
+      "subscription_id": "s1",
+      "plan_type": "MONTHLY"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

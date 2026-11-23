@@ -1,0 +1,38 @@
+[
+  {
+    "name": "group-leaderboard",
+    "args": {
+      "game_center_group_id": "grp-1",
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v",
+      "leaderboard_id": "lb-1",
+      "repeatable": false
+    }
+  },
+  {
+    "name": "detail-type",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v",
+      "challenge_type": "OTHER"
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  },
+  {
+    "name": "both",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "game_center_group_id": "grp-1",
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

@@ -6,10 +6,7 @@ docker_build(
     'asc-mcp',
     '.',
     dockerfile='Dockerfile',
-    live_update=[
-        sync('.', '/app'),
-        run('cd /app && go build -o /asc-mcp ./cmd/asc-mcp'),
-    ],
+    only=['Cargo.toml', 'Cargo.lock', 'build.rs', 'src/'],
 )
 
 # Load Kubernetes manifests from ops/k8s
@@ -32,7 +29,7 @@ k8s_resource(
 local_resource(
     'test',
     cmd='./script/test.zsh',
-    deps=['internal/', 'cmd/'],
+    deps=['src/', 'tests/'],
     labels=['test'],
     auto_init=False,
     trigger_mode=TRIGGER_MODE_MANUAL,
@@ -41,8 +38,8 @@ local_resource(
 # Local resource for linting
 local_resource(
     'lint',
-    cmd='go vet ./... && go fmt ./...',
-    deps=['internal/', 'cmd/'],
+    cmd='./script/lint.zsh',
+    deps=['src/', 'tests/'],
     labels=['lint'],
     auto_init=False,
     trigger_mode=TRIGGER_MODE_MANUAL,
@@ -52,7 +49,7 @@ local_resource(
 local_resource(
     'build-local',
     cmd='./script/build.zsh',
-    deps=['internal/', 'cmd/', 'go.mod', 'go.sum'],
+    deps=['src/', 'Cargo.toml', 'Cargo.lock', 'build.rs'],
     labels=['build'],
     auto_init=False,
     trigger_mode=TRIGGER_MODE_MANUAL,

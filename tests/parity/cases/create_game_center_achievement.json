@@ -1,0 +1,28 @@
+[
+  {
+    "name": "bools",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "reference_name": "Ref",
+      "vendor_identifier": "com.v",
+      "points": 0,
+      "show_before_earned": false,
+      "repeatable": false
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  },
+  {
+    "name": "no-vendor",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "reference_name": "Ref"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

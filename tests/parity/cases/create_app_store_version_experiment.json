@@ -1,0 +1,35 @@
+[
+  {
+    "name": "traffic-default",
+    "args": {
+      "app_id": "a",
+      "name": "n",
+      "platform": "IOS"
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "traffic-30",
+    "args": {
+      "app_id": "a",
+      "name": "n",
+      "platform": "IOS",
+      "traffic_proportion": 30
+    },
+    "modes": [
+      "rich"
+    ]
+  },
+  {
+    "name": "missing-platform",
+    "args": {
+      "app_id": "a",
+      "name": "n"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

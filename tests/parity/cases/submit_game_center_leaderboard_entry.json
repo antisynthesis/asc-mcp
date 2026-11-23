@@ -1,0 +1,41 @@
+[
+  {
+    "name": "minimal",
+    "args": {
+      "bundle_id": "com.b",
+      "vendor_identifier": "v",
+      "scoped_player_id": "p",
+      "score": "100"
+    },
+    "modes": [
+      "rich",
+      "sparse",
+      "rawerror"
+    ]
+  },
+  {
+    "name": "full-extra",
+    "args": {
+      "bundle_id": "com.b",
+      "vendor_identifier": "v",
+      "scoped_player_id": "p",
+      "score": "100",
+      "context": "7",
+      "challenge_ids": [
+        "c1"
+      ],
+      "pre_released": false
+    }
+  },
+  {
+    "name": "no-score",
+    "args": {
+      "bundle_id": "com.b",
+      "vendor_identifier": "v",
+      "scoped_player_id": "p"
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

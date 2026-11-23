@@ -1,0 +1,19 @@
+[
+  {
+    "name": "not-all-apps",
+    "args": {
+      "user_id": "u1",
+      "all_apps_visible": false
+    }
+  },
+  {
+    "name": "empty-roles",
+    "args": {
+      "user_id": "u1",
+      "roles": []
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

@@ -1,0 +1,33 @@
+[
+  {
+    "name": "limits",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "limit": 201,
+      "filter": {
+        "referenceName": [
+          "Weekly Ladder"
+        ]
+      },
+      "fields": {
+        "gameCenterActivities": [
+          "referenceName",
+          "playStyle"
+        ]
+      },
+      "include": [
+        "versions"
+      ]
+    }
+  },
+  {
+    "name": "limit-zero",
+    "args": {
+      "game_center_detail_id": "gcd-1",
+      "limit": 0
+    },
+    "modes": [
+      "rich"
+    ]
+  }
+]

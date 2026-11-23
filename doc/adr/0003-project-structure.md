@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+Deprecated. This record describes an earlier implementation and no longer
+applies. The project structure is described in ADR-0009 and the README.
 
 ## Context
 
